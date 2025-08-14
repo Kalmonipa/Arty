@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "prettier": "3.6.2",
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "bar": "npm run build; npm run start",
+    "prettier:fix": "npx prettier . --write"
+  }
+}
