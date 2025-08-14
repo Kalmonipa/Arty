@@ -9,5 +9,9 @@
     "start": "node dist/main.js",
     "bar": "npm run build; npm run start",
     "prettier:fix": "npx prettier . --write"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "ts-node": "^10.9.2"
   }
 }

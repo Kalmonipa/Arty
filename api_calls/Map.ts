@@ -10,20 +10,17 @@ export async function getLocationOfContent(
     headers: MyHeaders,
   };
 
-  var endpoint: string = "maps";
+  var apiUrl = new URL(`${ApiUrl}/maps`)
 
-  if (contentCode || contentType) {
-    endpoint += "?";
-  }
-
+  // ToDo: Need to add an & in between each of the query params if there are multiple
   if (contentCode) {
-    endpoint += `content_code=${contentCode}`;
+    apiUrl.searchParams.set('content_code', contentCode);
   }
   if (contentType) {
-    endpoint += `content_type=${contentType}`;
+    apiUrl.searchParams.set('content_type', contentType);
   }
 
-    const response = await fetch(`${ApiUrl}/${endpoint}`, requestOptions)
+    const response = await fetch(`${apiUrl}`, requestOptions)
     .then(response => { return response.json()})
     .catch(error => console.log("error", error));
 

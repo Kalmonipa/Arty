@@ -20,7 +20,7 @@ export async function getCharacter(characterName: string) {
   }
 }
 
-function moveCharacter(x: string, y: string) {
+export function moveCharacter(charName: string, x: number, y: number) {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,
@@ -30,7 +30,7 @@ function moveCharacter(x: string, y: string) {
     }),
   };
 
-  fetch(`${ApiUrl}/action/move`, requestOptions)
+  fetch(`${ApiUrl}/my/${charName}/action/move`, requestOptions)
     .then((response) => response.text())
     .then((result) => console.log(result))
     .catch((error) => console.log("error", error));
