@@ -39,8 +39,6 @@ export async function getCharacterLocation(
  */
 export function getInventorySpace(char: Character): number {
   var usedSpace = 0;
-  logger.info('Getting character info')
-  logger.info(char)
   char.inventory.forEach((invSlot) => { // ToDo: this is throwing an undefined error because the response doesn't contain a data object
     usedSpace += invSlot.quantity;
   });
