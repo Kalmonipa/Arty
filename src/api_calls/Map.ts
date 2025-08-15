@@ -1,5 +1,6 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import { AllMaps, MapSchema } from "../types/MapData";
+import { logger } from '../utils'
 
 export async function getLocationOfContent(
   contentCode?: string,
@@ -23,7 +24,7 @@ export async function getLocationOfContent(
     .then((response) => {
       return response.json();
     })
-    .catch((error) => console.log("error", error));
+    .catch((error) => logger.error("error", error));
 
   return response;
 }

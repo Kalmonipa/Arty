@@ -1,5 +1,6 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import { Character, CharacterMovement } from "../types/CharacterData";
+import { logger } from '../utils'
 
 export async function getCharacter(characterName: string): Promise<Character> {
   var requestOptions = {
@@ -13,10 +14,9 @@ export async function getCharacter(characterName: string): Promise<Character> {
       requestOptions,
     );
     const data = await response.json();
-    //console.log(data);
-    return data;
+    return data.data;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 }
 
@@ -29,7 +29,7 @@ export async function getCharacterLocation(
   char: string,
 ): Promise<{ x: number; y: number }> {
   const latestInfo = await getCharacter(char);
-  return { x: latestInfo.data.x, y: latestInfo.data.y };
+  return { x: latestInfo.x, y: latestInfo.y };
 }
 
 /**
@@ -39,8 +39,10 @@ export async function getCharacterLocation(
  */
 export function getInventorySpace(char: Character): number {
   var usedSpace = 0;
-  char.data.inventory.forEach((slot) => {
-    usedSpace += slot.quantity;
+  logger.info('Getting character info')
+  logger.info(char)
+  char.inventory.forEach((invSlot) => { // ToDo: this is throwing an undefined error because the response doesn't contain a data object
+    usedSpace += invSlot.quantity;
   });
   return usedSpace;
 }
@@ -77,7 +79,7 @@ export async function moveCharacter(
       );
     } else {
       const result = await response.json();
-      console.log(result);
+      //logger.info(result);
       return result;
     }
   } catch (error) {

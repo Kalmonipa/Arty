@@ -50,7 +50,6 @@ export async function getResourceLocations(
   try {
     const response = await fetch(apiUrl, requestOptions);
     const data = await response.json();
-    //console.log(data);
     return data;
   } catch (error) {
     console.error(error);

@@ -1,3 +1,17 @@
+import * as winston from 'winston'
+
+export const logger = winston.createLogger({
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'arty.log' })
+  ]
+});
+
+/**
+ * @description Checks that the env variables are set. If any are undefined, throw an error
+ * @param name 
+ * @returns the env var value
+ */
 export function getEnv(name: string): string {
   if (typeof process.env[name] === "undefined") {
     throw new Error(`Variable ${name} undefined.`);

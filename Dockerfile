@@ -4,19 +4,16 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --only=production
+RUN npm ci 
 
 COPY src/ ./src/
 COPY tsconfig.json ./
 
-RUN npm run build
+RUN npm run build &&\
+ addgroup -g 1001 -S arty &&\
+ adduser -S arty -u 1001 &&\
+ chown -R arty:arty /app
 
-EXPOSE 3000
-
-RUN addgroup -g 1001 -S arty
-RUN adduser -S arty -u 1001
-
-RUN chown -R arty:arty /app
 USER arty
 
 CMD ["npm", "run", "start"]

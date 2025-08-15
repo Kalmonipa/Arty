@@ -1,7 +1,6 @@
 import { MapSchema } from "./MapData";
 
 export type Character = {
-  data: {
     name: string;
     account: string;
     skin:
@@ -88,14 +87,7 @@ export type Character = {
     task_progress: number;
     task_total: number;
     inventory_max_items: number;
-    inventory: [
-      {
-        slot: number;
-        code: string;
-        quantity: number;
-      },
-    ];
-  };
+    inventory: InventorySlot[];
 };
 
 export type CharacterMovement = {
@@ -113,3 +105,9 @@ export type Cooldown = {
   expiration: Date;
   reason: string;
 };
+
+export type InventorySlot = {
+  slot: number;
+  code: string;
+  quantity: number;
+}
