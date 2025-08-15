@@ -1,38 +1,54 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { ResourceQueryParameters } from '../types/ResourceData'
+import { AllResources, ResourceQueryParameters } from "../types/ResourceData";
+import { SkillData } from "../types/SkillData";
 
-export async function getResourceLocations(queryParams: ResourceQueryParameters) {
+export async function gatherResources(charName: string): Promise<SkillData> {
+  var requestOptions = {
+    method: "POST",
+    headers: MyHeaders,
+  };
+
+  var apiUrl = new URL(`${ApiUrl}/my/${charName}/action/gathering`);
+
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function getResourceLocations(
+  queryParams: ResourceQueryParameters,
+): Promise<AllResources> {
   var requestOptions = {
     method: "GET",
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/resources`)
+  var apiUrl = new URL(`${ApiUrl}/resources`);
 
   if (queryParams.drop) {
-    apiUrl.searchParams.set('drop', queryParams.drop)
+    apiUrl.searchParams.set("drop", queryParams.drop);
   }
   if (queryParams.max_level) {
-    apiUrl.searchParams.set('max_level', queryParams.max_level.toString())
+    apiUrl.searchParams.set("max_level", queryParams.max_level.toString());
   }
   if (queryParams.min_level) {
-    apiUrl.searchParams.set('min_level', queryParams.min_level.toString())
+    apiUrl.searchParams.set("min_level", queryParams.min_level.toString());
   }
   if (queryParams.page) {
-    apiUrl.searchParams.set('page', queryParams.page.toString())
+    apiUrl.searchParams.set("page", queryParams.page.toString());
   }
   if (queryParams.size) {
-    apiUrl.searchParams.set('size', queryParams.size.toString())
+    apiUrl.searchParams.set("size", queryParams.size.toString());
   }
   if (queryParams.skill) {
-    apiUrl.searchParams.set('skill', queryParams.skill)
+    apiUrl.searchParams.set("skill", queryParams.skill);
   }
 
   try {
-    const response = await fetch(
-      apiUrl,
-      requestOptions,
-    );
+    const response = await fetch(apiUrl, requestOptions);
     const data = await response.json();
     //console.log(data);
     return data;

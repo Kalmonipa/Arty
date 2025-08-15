@@ -1,11 +1,11 @@
-import { getEnv } from './utils'
-import dotenv from 'dotenv'; 
+import { getEnv } from "./utils";
+import dotenv from "dotenv";
 
-dotenv.config({quiet: true});
+dotenv.config({ quiet: true });
 
-export const charName = "LongLegLarry";
+export const CharName = getEnv("CHARACTER_NAME");
 export const ApiUrl = `https://api.artifactsmmo.com`;
-export const ApiToken = getEnv('API_TOKEN');
+export const ApiToken = getEnv("API_TOKEN");
 
 export const MyHeaders = new Headers({
   "Content-Type": "application/json",

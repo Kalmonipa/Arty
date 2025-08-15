@@ -99,10 +99,12 @@ export type Character = {
 };
 
 export type CharacterMovement = {
-  cooldown: Cooldown;
-  destination: MapSchema;
-  character: Character;
-}
+  data: {
+    cooldown: Cooldown;
+    destination: MapSchema;
+    character: Character;
+  };
+};
 
 export type Cooldown = {
   total_seconds: number;
@@ -110,4 +112,4 @@ export type Cooldown = {
   started_at: Date;
   expiration: Date;
   reason: string;
-}
+};

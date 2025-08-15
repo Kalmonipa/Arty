@@ -7,7 +7,6 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
-    "bar": "npm run build; npm run start",
     "prettier:fix": "npx prettier . --write"
   },
   "dependencies": {
