@@ -3,4 +3,5 @@ node_modules
 .gitignore
 README.md
 .env
+logs
 arty.log

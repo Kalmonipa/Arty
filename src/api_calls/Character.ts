@@ -1,6 +1,6 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import { Character, CharacterMovement } from "../types/CharacterData";
-import { logger } from '../utils'
+import { logger } from "../utils";
 
 export async function getCharacter(characterName: string): Promise<Character> {
   var requestOptions = {
@@ -29,6 +29,7 @@ export async function getCharacterLocation(
   char: string,
 ): Promise<{ x: number; y: number }> {
   const latestInfo = await getCharacter(char);
+  logger.debug(`Character location: x: ${latestInfo.x}, y: ${latestInfo.y}`);
   return { x: latestInfo.x, y: latestInfo.y };
 }
 
@@ -39,7 +40,7 @@ export async function getCharacterLocation(
  */
 export function getInventorySpace(char: Character): number {
   var usedSpace = 0;
-  char.inventory.forEach((invSlot) => { // ToDo: this is throwing an undefined error because the response doesn't contain a data object
+  char.inventory.forEach((invSlot) => {
     usedSpace += invSlot.quantity;
   });
   return usedSpace;
@@ -72,15 +73,16 @@ export async function moveCharacter(
       requestOptions,
     );
     if (!response.ok) {
-      console.error(
-        `ERROR: Response status: ${response.status}; Reason: ${response}`,
-      );
+      logger.error(`Move failed: ${response.status}`);
+    }
+    if (response.status === 490) {
+      logger.error("Character is already at the location");
     } else {
       const result = await response.json();
       //logger.info(result);
       return result;
     }
   } catch (error) {
-    console.error(error.message);
+    logger.error(error.message);
   }
 }

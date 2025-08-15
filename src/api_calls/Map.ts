@@ -1,8 +1,8 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { AllMaps, MapSchema } from "../types/MapData";
-import { logger } from '../utils'
+import { AllMaps } from "../types/MapData";
+import { logger } from "../utils";
 
-export async function getLocationOfContent(
+export async function getContentLocation(
   contentCode?: string,
   contentType?: string,
 ): Promise<AllMaps> {
@@ -28,3 +28,7 @@ export async function getLocationOfContent(
 
   return response;
 }
+
+/**
+ * @description Find closest map to current location
+ */

@@ -1,6 +1,6 @@
 # MyArtifacts
 
-Run the following (bar is short for build and run):
+Run the following:
 
 ```
 npm install
