@@ -1,3 +1,5 @@
+import { MapSchema } from "./MapData";
+
 export type Character = {
   data: {
     name: string;
@@ -95,3 +97,17 @@ export type Character = {
     ];
   };
 };
+
+export type CharacterMovement = {
+  cooldown: Cooldown;
+  destination: MapSchema;
+  character: Character;
+}
+
+export type Cooldown = {
+  total_seconds: number;
+  remaining_seconds: number;
+  started_at: Date;
+  expiration: Date;
+  reason: string;
+}

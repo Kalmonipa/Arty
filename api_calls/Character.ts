@@ -1,5 +1,5 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { Character } from "../types/CharacterData";
+import { Character, CharacterMovement } from "../types/CharacterData";
 
 export async function getCharacter(characterName: string) {
   var requestOptions = {
@@ -20,7 +20,7 @@ export async function getCharacter(characterName: string) {
   }
 }
 
-export function moveCharacter(charName: string, x: number, y: number) {
+export async function moveCharacter(charName: string, x: number, y: number): Promise<CharacterMovement> {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,
@@ -30,8 +30,16 @@ export function moveCharacter(charName: string, x: number, y: number) {
     }),
   };
 
-  fetch(`${ApiUrl}/my/${charName}/action/move`, requestOptions)
-    .then((response) => response.text())
-    .then((result) => console.log(result))
-    .catch((error) => console.log("error", error));
+  try {
+    const response = await fetch(`${ApiUrl}/my/${charName}/action/move`, requestOptions);
+    if (!response.ok) {
+      console.error(`ERROR: Response status: ${response.status}; Reason: ${response}`);
+    } else {
+      const result = await response.json();
+      console.log(result);
+      return result
+    }
+  } catch (error) {
+    console.error(error.message);
+  }
 }

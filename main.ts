@@ -20,14 +20,16 @@ async function main() {
   }
 
   const fishingTypes = await getResourceLocations(queryParams)
-  console.log(fishingTypes)
+  //console.log(fishingTypes)
 
   const fishingLocations = await getLocationOfContent(fishingTypes.data[0].code, "resource");
-  console.log(fishingLocations)
+  //console.log(fishingLocations)
 
-  console.log(character.data.name)
+  //console.log(character.data.name)
 
-  moveCharacter(character.data.name, fishingLocations.x,fishingLocations.y)
+  //console.log(fishingLocations.data[0].x)
+
+  moveCharacter(character.data.name, fishingLocations.data[0].x,fishingLocations.data[0].y)
 }
 
 main();

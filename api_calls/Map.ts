@@ -1,10 +1,10 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { MapSchema } from "../types/MapData";
+import { AllMaps, MapSchema } from "../types/MapData";
 
 export async function getLocationOfContent(
   contentCode?: string,
   contentType?: string,
-): Promise<MapSchema> {
+): Promise<AllMaps> {
   var requestOptions = {
     method: "GET",
     headers: MyHeaders,
@@ -12,7 +12,6 @@ export async function getLocationOfContent(
 
   var apiUrl = new URL(`${ApiUrl}/maps`)
 
-  // ToDo: Need to add an & in between each of the query params if there are multiple
   if (contentCode) {
     apiUrl.searchParams.set('content_code', contentCode);
   }

@@ -1,7 +1,7 @@
 import { getEnv } from './utils'
 import dotenv from 'dotenv'; 
 
-dotenv.config({quiet: false});
+dotenv.config({quiet: true});
 
 export const charName = "LongLegLarry";
 export const ApiUrl = `https://api.artifactsmmo.com`;
