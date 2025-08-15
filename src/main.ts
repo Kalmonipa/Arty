@@ -2,6 +2,7 @@ import { CharName } from "./constants";
 import {
   getCharacter,
   getCharacterLocation,
+  getInventorySpace,
   moveCharacter,
 } from "./api_calls/Character";
 import { getLocationOfContent } from "./api_calls/Map";
@@ -10,7 +11,7 @@ import { getResourceLocations, gatherResources } from "./api_calls/Resources";
 import { ResourceQueryParameters } from "./types/ResourceData";
 import { sleep } from "./utils";
 
-const shouldStopActions = false
+let shouldStopActions = false;
 
 async function main() {
   let character: Character = await getCharacter(CharName);
@@ -57,17 +58,26 @@ async function main() {
     await sleep(moveResponse.data.cooldown.remaining_seconds);
   }
 
-  console.log(`Gathering resources at x: ${character.data.x}, y: ${character.data.y}`)
+  console.log(
+    `Gathering resources at x: ${character.data.x}, y: ${character.data.y}`,
+  );
   const gatherResponse = await gatherResources(CharName);
   character = gatherResponse.data.character;
   await sleep(gatherResponse.data.cooldown.remaining_seconds);
 
+  let usedInventorySpace = getInventorySpace(character);
+  // ToDo: Remove the hardcoded 90 and use a percentage of available inventory space
+  if (usedInventorySpace >= 90) {
+    console.log(`Inventory is almost full. Stopping`);
+    shouldStopActions = true;
+  }
+
   // Continue looping through until we stop the program
   if (!shouldStopActions) {
-  main();
+    main();
   } else {
-    console.log('Reached end of activities. Exiting')
-    process.exit()
+    console.log("Reached end of activities. Exiting");
+    process.exit();
   }
 }
 

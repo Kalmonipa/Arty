@@ -32,6 +32,26 @@ export async function getCharacterLocation(
   return { x: latestInfo.data.x, y: latestInfo.data.y };
 }
 
+/**
+ * Calculates how much inventory space is being used
+ * ToDo: Calculate this as a percentage of the total space
+ * @param char Character info to parse
+ */
+export function getInventorySpace(char: Character): number {
+  var usedSpace = 0;
+  char.data.inventory.forEach((slot) => {
+    usedSpace += slot.quantity;
+  });
+  return usedSpace;
+}
+
+/**
+ * Move the character to the specified coords
+ * @param charName
+ * @param x
+ * @param y
+ * @returns
+ */
 export async function moveCharacter(
   charName: string,
   x: number,
