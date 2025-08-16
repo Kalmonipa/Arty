@@ -1,5 +1,5 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { Character, CharacterMovement } from "../types/CharacterData";
+import { Character, CharacterMovement, CharacterRest } from "../types/CharacterData";
 import { logger } from "../utils";
 
 export async function getCharacter(characterName: string): Promise<Character> {
@@ -31,19 +31,6 @@ export async function getCharacterLocation(
   const latestInfo = await getCharacter(char);
   logger.debug(`Character location: x: ${latestInfo.x}, y: ${latestInfo.y}`);
   return { x: latestInfo.x, y: latestInfo.y };
-}
-
-/**
- * Calculates how much inventory space is being used
- * ToDo: Calculate this as a percentage of the total space
- * @param char Character info to parse
- */
-export function getInventorySpace(char: Character): number {
-  var usedSpace = 0;
-  char.inventory.forEach((invSlot) => {
-    usedSpace += invSlot.quantity;
-  });
-  return usedSpace;
 }
 
 /**
@@ -80,6 +67,35 @@ export async function moveCharacter(
     } else {
       const result = await response.json();
       //logger.info(result);
+      return result;
+    }
+  } catch (error) {
+    logger.error(error.message);
+  }
+}
+
+export async function restCharacter(character: Character): Promise<CharacterRest> {
+    var requestOptions = {
+    method: "POST",
+    headers: MyHeaders,
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/rest`,
+      requestOptions,
+    );
+    // if (!response.ok) {
+    //   logger.error(`Move failed: ${response.status}`);
+    // }
+    if (response.status === 486) {
+      logger.error(`${character.name} is already doing an action`);
+    } else if (response.status === 498) {
+      logger.error(`${character.name} does not exist`);
+    } else if (response.status === 499) {
+      logger.error(`${character.name} is in cooldown`);
+    } else {
+      const result = await response.json();
       return result;
     }
   } catch (error) {

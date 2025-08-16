@@ -98,6 +98,12 @@ export type CharacterMovement = {
   };
 };
 
+export type CharacterRest = {
+  cooldown: Cooldown;
+  hp_restored: number;
+  character: Character;
+}
+
 export type Cooldown = {
   total_seconds: number;
   remaining_seconds: number;
@@ -105,6 +111,15 @@ export type Cooldown = {
   expiration: Date;
   reason: string;
 };
+
+/**
+ * @param percentage The percentage of health we are currently on
+ * @param difference The amount needed to get to 100%
+ */
+export type HealthStatus = {
+  percentage: number;
+  difference: number;
+}
 
 export type InventorySlot = {
   slot: number;

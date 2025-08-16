@@ -1,10 +1,18 @@
-import { Character } from "./types/CharacterData";
+import { Character, HealthStatus } from "./types/CharacterData";
 import { getContentLocation } from "./api_calls/Map";
 import { logger, sleep } from "./utils";
 import { moveCharacter } from "./api_calls/Character";
 import { depositItems } from "./api_calls/Bank";
 import { SimpleItem } from "./types/ItemData";
 import { BankItemTransaction } from "./types/BankData";
+
+/**
+ * Returns the percentage of health we have and what is needed to get to 100%
+ * @param character 
+ */
+export function checkHealth(character: Character): HealthStatus {
+  return {percentage: (character.hp / character.max_hp) * 100, difference: character.max_hp - character.hp}
+}
 
 export async function findClosestBankAndDepositItems(
   character: Character,
@@ -51,4 +59,17 @@ export async function findClosestBankAndDepositItems(
   }
 
   return await depositItems(character.name, itemsToDeposit);
+}
+
+/**
+ * Returns what percentage of the backpack is full
+ * @param char Character info to parse
+ */
+export function getInventorySpace(char: Character): number {
+  var usedSpace = 0;
+  char.inventory.forEach((invSlot) => {
+    usedSpace += invSlot.quantity;
+  });
+
+  return (usedSpace / char.inventory_max_items) * 100;
 }

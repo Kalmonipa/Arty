@@ -8,9 +8,9 @@ export const logger = pino({
     targets: [
       {
         level: "trace",
-        target: 'pino/file',
+        target: "pino/file",
         options: {
-          destination: './logs/arty.log',
+          destination: "./logs/arty.log",
         },
       },
       {

@@ -51,7 +51,7 @@ export async function getResourceLocations(
   try {
     const response = await fetch(apiUrl, requestOptions);
     if (!response.ok) {
-      logger.error(`/resources failed: ${response.status}`)
+      logger.error(`/resources failed: ${response.status}`);
     }
     return await response.json();
   } catch (error) {
