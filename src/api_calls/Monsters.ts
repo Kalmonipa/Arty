@@ -1,15 +1,17 @@
 import { ApiUrl, MyHeaders } from "../constants";
+import { Character, CharacterFight } from '../types/CharacterData'
+import { AllMonsters, MonsterQueryParameters } from "../types/MonsterData";
 import { AllResources, ResourceQueryParameters } from "../types/ResourceData";
 import { SkillData } from "../types/SkillData";
 import { logger } from "../utils";
 
-export async function gatherResources(charName: string): Promise<SkillData> {
-  var requestOptions = {
+export async function fightMonster(characterName: string): Promise<CharacterFight> {
+      var requestOptions = {
     method: "POST",
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${charName}/action/gathering`);
+  var apiUrl = new URL(`${ApiUrl}/my/${characterName}/action/fight`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
@@ -19,15 +21,15 @@ export async function gatherResources(charName: string): Promise<SkillData> {
   }
 }
 
-export async function getResourceInformation(
-  queryParams: ResourceQueryParameters,
-): Promise<AllResources> {
+export async function getMonsterInformation(
+  queryParams: MonsterQueryParameters,
+): Promise<AllMonsters> {
   var requestOptions = {
     method: "GET",
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/resources`);
+  var apiUrl = new URL(`${ApiUrl}/monsters`);
 
   if (queryParams.drop) {
     apiUrl.searchParams.set("drop", queryParams.drop);
@@ -44,14 +46,14 @@ export async function getResourceInformation(
   if (queryParams.size) {
     apiUrl.searchParams.set("size", queryParams.size.toString());
   }
-  if (queryParams.skill) {
-    apiUrl.searchParams.set("skill", queryParams.skill);
+  if (queryParams.name) {
+    apiUrl.searchParams.set("name", queryParams.name);
   }
 
   try {
     const response = await fetch(apiUrl, requestOptions);
     if (!response.ok) {
-      logger.error(`/resources failed: ${response.status}`);
+      logger.error(`/monters failed: ${response.status}`);
     }
     return await response.json();
   } catch (error) {

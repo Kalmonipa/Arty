@@ -101,7 +101,8 @@ export async function restCharacter(
     } else if (response.status === 499) {
       logger.error(`${character.name} is in cooldown`);
     } else {
-      const result = await response.json();
+      const result: CharacterRest = await response.json();
+      logger.info(`Resting for ${result.data.cooldown.remaining_seconds}`)
       return result;
     }
   } catch (error) {

@@ -6,8 +6,7 @@ import {
 } from "../api_calls/Character";
 import { getContentLocation } from "../api_calls/Map";
 import { Character } from "../types/CharacterData";
-import { getResourceLocations, gatherResources } from "../api_calls/Resources";
-import { ResourceQueryParameters } from "../types/ResourceData";
+import { getResourceInformation, gatherResources } from "../api_calls/Resources";
 import { logger, sleep } from "../utils";
 import {
   cooldownStatus,
@@ -32,12 +31,10 @@ export async function beFisherman() {
     );
   }
 
-  const queryParams: ResourceQueryParameters = {
+  const fishingTypes = await getResourceInformation({
     skill: "fishing",
     max_level: character.fishing_level,
-  };
-
-  const fishingTypes = await getResourceLocations(queryParams);
+  });
 
   const fishingLocations = await getContentLocation(
     fishingTypes.data[fishingTypes.data.length - 1].code,
@@ -55,7 +52,7 @@ export async function beFisherman() {
       latestLocation.y === fishingLocations.data[0].y
     ) {
       logger.info(
-        `We're already at the location x: ${latestLocation.x}, y: ${latestLocation.y}`,
+        `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
       );
     } else {
       logger.info(
@@ -73,7 +70,7 @@ export async function beFisherman() {
   }
 
   logger.info(`Gathering resources at x: ${character.x}, y: ${character.y}`);
-  const gatherResponse = await gatherResources(CharName);
+  const gatherResponse = await gatherResources(character.name);
   character = gatherResponse.data.character;
   await sleep(gatherResponse.data.cooldown.remaining_seconds);
 }

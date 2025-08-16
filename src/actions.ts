@@ -35,10 +35,9 @@ export function cooldownStatus(character: Character): {
   const now = new Date();
 
   if (now > targetDate) {
-    logger.info("Cooldown has expired");
     return { inCooldown: false, timeRemaining: 0 };
   } else {
-    console.log(`Cooldown is still ongoing. Will expire at ${timestamp}`);
+    logger.info(`Cooldown is still ongoing. Waiting for ${Math.floor((targetDate.getTime() - now.getTime()) / 1000)} ${timestamp}`);
     return {
       inCooldown: true,
       timeRemaining: Math.floor((targetDate.getTime() - now.getTime()) / 1000),
@@ -61,7 +60,7 @@ export async function findClosestBankAndDepositItems(
     character.y === bankLocations[0].y
   ) {
     logger.info(
-      `We're already at the location x: ${character.x}, y: ${character.y}`,
+      `Already at location x: ${character.x}, y: ${character.y}`,
     );
   } else {
     logger.info(`Moving to x: ${bankLocations[0].x}, y: ${bankLocations[0].y}`);

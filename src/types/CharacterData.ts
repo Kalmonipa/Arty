@@ -1,3 +1,4 @@
+import { Fight } from "./FightData";
 import { MapSchema } from "./MapData";
 
 export type Character = {
@@ -90,6 +91,14 @@ export type Character = {
   inventory: InventorySlot[];
 };
 
+export type CharacterFight = {
+  data: {
+    cooldown: Cooldown;
+    fight: Fight;
+    character: Character;
+  }
+}
+
 export type CharacterMovement = {
   data: {
     cooldown: Cooldown;
@@ -99,9 +108,11 @@ export type CharacterMovement = {
 };
 
 export type CharacterRest = {
+  data: {
   cooldown: Cooldown;
   hp_restored: number;
   character: Character;
+  }
 };
 
 export type Cooldown = {
