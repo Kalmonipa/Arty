@@ -20,12 +20,9 @@ export async function depositItems(
       `${ApiUrl}/my/${charName}/action/bank/deposit/item`,
       requestOptions,
     );
-    if (!response.ok) {
-      logger.error("Depositing failed:", response);
-    }
     const data = await response.json();
     return data.data;
   } catch (error) {
-    logger.error(error);
+    logger.error(error, "deposit failed");
   }
 }

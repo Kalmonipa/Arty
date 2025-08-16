@@ -20,13 +20,13 @@ export async function getContentLocation(
     apiUrl.searchParams.set("content_type", contentType);
   }
 
-  const response = await fetch(`${apiUrl}`, requestOptions)
-    .then((response) => {
-      return response.json();
-    })
-    .catch((error) => logger.error("error", error));
-
-  return response;
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    logger.error(error, "get content location failed");
+  }
 }
 
 /**

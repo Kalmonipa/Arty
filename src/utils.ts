@@ -1,11 +1,31 @@
-import * as winston from "winston";
-import * as path from 'path'
+import path from "path";
+import pino from "pino";
 
-export const logger = winston.createLogger({
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: path.join(__dirname,'/logs/arty.log') }),
-  ],
+// ToDo: Show log level (info, error) in logs output instead of integer value
+export const logger = pino({
+  base: undefined,
+  transport: {
+    targets: [
+      {
+        level: "trace",
+        target: 'pino/file',
+        options: {
+          destination: path.join(__dirname, 'logs/arty.log'),
+        },
+      },
+      {
+        level: "trace",
+        target: "pino-pretty",
+        options: {},
+      },
+    ],
+  },
+  // formatters: {
+  //   level: (label) => {
+  //     return { level: label };
+  //   },
+  // },
+  timestamp: pino.stdTimeFunctions.isoTime, //'DD-MM-YYYY HH:mm:ss.SSS'
 });
 
 /**
