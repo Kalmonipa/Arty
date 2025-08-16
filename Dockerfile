@@ -12,11 +12,10 @@ COPY tsconfig.json ./
 RUN npm run build &&\
  addgroup -g 1001 -S arty &&\
  adduser -S arty -u 1001 &&\
+ mkdir -p /app/logs &&\
+ touch /app/logs/arty.log &&\
  chown -R arty:arty /app
 
 USER arty
-
-RUN mkdir /app/logs &&\
- touch /app/logs/arty.log
 
 CMD ["npm", "run", "start"]
