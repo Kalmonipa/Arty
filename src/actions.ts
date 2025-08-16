@@ -5,13 +5,45 @@ import { moveCharacter } from "./api_calls/Character";
 import { depositItems } from "./api_calls/Bank";
 import { SimpleItem } from "./types/ItemData";
 import { BankItemTransaction } from "./types/BankData";
+import { ErrorResponse } from "./types/ResponseData";
+import { checkErrorCodes } from "./api_calls/ErrorHandling";
 
 /**
  * Returns the percentage of health we have and what is needed to get to 100%
- * @param character 
+ * @param character
  */
 export function checkHealth(character: Character): HealthStatus {
-  return {percentage: (character.hp / character.max_hp) * 100, difference: character.max_hp - character.hp}
+  return {
+    percentage: (character.hp / character.max_hp) * 100,
+    difference: character.max_hp - character.hp,
+  };
+}
+
+/**
+ * Checks if the character is in cooldown. Sleep until if finishes if yes
+ * @param character
+ * @returns {boolean}
+ */
+export function cooldownStatus(character: Character): {
+  inCooldown: boolean;
+  timeRemaining: number;
+} {
+  const timestamp = character.cooldown_expiration;
+
+  const targetDate = new Date(timestamp);
+
+  const now = new Date();
+
+  if (now > targetDate) {
+    logger.info("Cooldown has expired");
+    return { inCooldown: false, timeRemaining: 0 };
+  } else {
+    console.log(`Cooldown is still ongoing. Will expire at ${timestamp}`);
+    return {
+      inCooldown: true,
+      timeRemaining: Math.floor((targetDate.getTime() - now.getTime()) / 1000),
+    };
+  }
 }
 
 export async function findClosestBankAndDepositItems(
@@ -58,7 +90,12 @@ export async function findClosestBankAndDepositItems(
     }
   }
 
-  return await depositItems(character.name, itemsToDeposit);
+  try {
+    const depositResponse = await depositItems(character.name, itemsToDeposit);
+    return depositResponse;
+  } catch (error) {
+    logger.error(`Deposit failed: ${error}`);
+  }
 }
 
 /**

@@ -8,18 +8,21 @@ async function main() {
   const role = getEnv("ROLE");
 
   while (!shouldStopActions) {
-    switch (role) {
-      case "fisherman": {
-        beFisherman();
-      }
-      case "fighter": {
-        beFighter();
-      }
+  switch (role) {
+    case "fisherman": {
+      await beFisherman();
+      break;
+    }
+    case "fighter": {
+      await beFighter();
+      break;
     }
   }
+}
 
-  logger.error("Reached end of activities. Exiting");
-  process.exit();
+  // logger.error("Reached end of activities. Exiting");
+  // process.exit();
+
 }
 
 main();

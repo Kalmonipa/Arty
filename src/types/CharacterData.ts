@@ -102,7 +102,7 @@ export type CharacterRest = {
   cooldown: Cooldown;
   hp_restored: number;
   character: Character;
-}
+};
 
 export type Cooldown = {
   total_seconds: number;
@@ -119,7 +119,7 @@ export type Cooldown = {
 export type HealthStatus = {
   percentage: number;
   difference: number;
-}
+};
 
 export type InventorySlot = {
   slot: number;

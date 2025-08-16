@@ -9,7 +9,11 @@ import { Character } from "../types/CharacterData";
 import { getResourceLocations, gatherResources } from "../api_calls/Resources";
 import { ResourceQueryParameters } from "../types/ResourceData";
 import { logger, sleep } from "../utils";
-import { findClosestBankAndDepositItems, getInventorySpace, } from "../actions";
+import {
+  cooldownStatus,
+  findClosestBankAndDepositItems,
+  getInventorySpace,
+} from "../actions";
 
 export async function beFisherman() {
   let character: Character = await getCharacter(CharName);
@@ -42,24 +46,30 @@ export async function beFisherman() {
 
   const latestLocation = await getCharacterLocation(character.name);
 
-  if (
-    latestLocation.x === fishingLocations.data[0].x &&
-    latestLocation.y === fishingLocations.data[0].y
-  ) {
-    logger.info(
-      `We're already at the location x: ${latestLocation.x}, y: ${latestLocation.y}`,
-    );
+  let cooldown = cooldownStatus(character);
+  if (cooldown.inCooldown) {
+    sleep(cooldown.timeRemaining);
   } else {
-    logger.info(
-      `Moving to x: ${fishingLocations.data[0].x}, y: ${fishingLocations.data[0].y}`,
-    );
-    const moveResponse = await moveCharacter(
-      character.name,
-      fishingLocations.data[0].x,
-      fishingLocations.data[0].y,
-    );
-    character = moveResponse.data.character;
-    await sleep(moveResponse.data.cooldown.remaining_seconds);
+    if (
+      latestLocation.x === fishingLocations.data[0].x &&
+      latestLocation.y === fishingLocations.data[0].y
+    ) {
+      logger.info(
+        `We're already at the location x: ${latestLocation.x}, y: ${latestLocation.y}`,
+      );
+    } else {
+      logger.info(
+        `Moving to x: ${fishingLocations.data[0].x}, y: ${fishingLocations.data[0].y}`,
+      );
+
+      const moveResponse = await moveCharacter(
+        character.name,
+        fishingLocations.data[0].x,
+        fishingLocations.data[0].y,
+      );
+      character = moveResponse.data.character;
+      await sleep(moveResponse.data.cooldown.remaining_seconds);
+    }
   }
 
   logger.info(`Gathering resources at x: ${character.x}, y: ${character.y}`);

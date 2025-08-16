@@ -1,4 +1,3 @@
-import path from "path";
 import pino from "pino";
 
 // ToDo: Show log level (info, error) in logs output instead of integer value

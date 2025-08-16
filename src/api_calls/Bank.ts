@@ -1,5 +1,6 @@
 import { BankItemTransaction } from "../types/BankData";
 import { Item, SimpleItem } from "../types/ItemData";
+import { ApiResult, ErrorResponse } from "../types/ResponseData";
 import { ApiUrl, MyHeaders } from "../constants";
 import { logger } from "../utils";
 
@@ -13,13 +14,14 @@ export async function depositItems(
     body: JSON.stringify(items),
   };
 
-  logger.info(requestOptions);
-
   try {
     const response = await fetch(
       `${ApiUrl}/my/${charName}/action/bank/deposit/item`,
       requestOptions,
     );
+    //   if (!response.ok) {
+    //     return { success: false, status: response.status, error: 'deposit failed'};
+    // }
     const data = await response.json();
     return data.data;
   } catch (error) {

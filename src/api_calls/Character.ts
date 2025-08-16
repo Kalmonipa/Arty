@@ -1,5 +1,9 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { Character, CharacterMovement, CharacterRest } from "../types/CharacterData";
+import {
+  Character,
+  CharacterMovement,
+  CharacterRest,
+} from "../types/CharacterData";
 import { logger } from "../utils";
 
 export async function getCharacter(characterName: string): Promise<Character> {
@@ -74,8 +78,10 @@ export async function moveCharacter(
   }
 }
 
-export async function restCharacter(character: Character): Promise<CharacterRest> {
-    var requestOptions = {
+export async function restCharacter(
+  character: Character,
+): Promise<CharacterRest> {
+  var requestOptions = {
     method: "POST",
     headers: MyHeaders,
   };

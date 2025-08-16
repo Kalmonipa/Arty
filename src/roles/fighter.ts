@@ -1,4 +1,4 @@
-import { checkHealth } from '../actions'
+import { checkHealth } from "../actions";
 import { CharName } from "../constants";
 import { logger } from "../utils";
 import { getCharacter, restCharacter } from "../api_calls/Character";
@@ -16,14 +16,14 @@ export async function beFighter() {
   // 5. Fight
   // 6. Repeat
 
-  const healthStatus: HealthStatus = checkHealth(character)
+  const healthStatus: HealthStatus = checkHealth(character);
 
   if (healthStatus.percentage !== 100) {
     if (healthStatus.difference < 300) {
-        const restResponse = await restCharacter(character)
-        character = restResponse.character
+      const restResponse = await restCharacter(character);
+      character = restResponse.character;
     } //else {
-        // Eat food
+    // Eat food
     //}
   }
 
