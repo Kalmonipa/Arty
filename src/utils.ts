@@ -44,6 +44,7 @@ export function getEnv(name: string): string {
  * @description Used after every action to wait for the cooldown period to finish
  * @param cooldown Number of seconds to sleep for
  */
-export const sleep = (cooldown: number) => 
-  new Promise((r) => setTimeout(r, cooldown * 1000));
-
+export const sleep = (cooldown: number) => {
+  logger.info(`Sleeping for ${cooldown} seconds`);
+  return new Promise((r) => setTimeout(r, cooldown * 1000));
+}
