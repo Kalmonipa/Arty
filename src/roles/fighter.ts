@@ -80,7 +80,7 @@ export async function beFighter() {
     }
   
     logger.info(`Fighting monster at x: ${character.x}, y: ${character.y}`);
-    const fightResponse = await fightMonster(CharName);
+    const fightResponse = await fightMonster(character.name);
     logger.info(`Fight was a ${fightResponse.data.fight.result}`)
     //logger.info(fightResponse.data)
     character = fightResponse.data.character;

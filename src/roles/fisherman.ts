@@ -24,7 +24,7 @@ export async function beFisherman() {
     logger.warn(`Inventory is almost full. Depositing items`);
     const depositResponse = await findClosestBankAndDepositItems(character);
     character = depositResponse.character;
-    sleep(depositResponse.cooldown.remaining_seconds);
+    await sleep(depositResponse.cooldown.remaining_seconds);
   } else {
     logger.info(
       `Backpack: ${usedInventorySpace}/${character.inventory_max_items}`,
@@ -45,7 +45,7 @@ export async function beFisherman() {
 
   let cooldown = cooldownStatus(character);
   if (cooldown.inCooldown) {
-    sleep(cooldown.timeRemaining);
+    await sleep(cooldown.timeRemaining);
   } else {
     if (
       latestLocation.x === fishingLocations.data[0].x &&

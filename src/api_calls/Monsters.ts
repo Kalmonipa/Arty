@@ -1,8 +1,6 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { Character, CharacterFight } from '../types/CharacterData'
+import { CharacterFight } from '../types/CharacterData'
 import { AllMonsters, MonsterQueryParameters } from "../types/MonsterData";
-import { AllResources, ResourceQueryParameters } from "../types/ResourceData";
-import { SkillData } from "../types/SkillData";
 import { logger } from "../utils";
 
 export async function fightMonster(characterName: string): Promise<CharacterFight> {
