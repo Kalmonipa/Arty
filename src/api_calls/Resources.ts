@@ -1,6 +1,7 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import { AllResources, ResourceQueryParameters } from "../types/ResourceData";
 import { SkillData } from "../types/SkillData";
+import { logger } from "../utils";
 
 export async function gatherResources(charName: string): Promise<SkillData> {
   var requestOptions = {
@@ -49,8 +50,11 @@ export async function getResourceLocations(
 
   try {
     const response = await fetch(apiUrl, requestOptions);
+    if (!response.ok) {
+      logger.error(`/resources failed: ${response.status}`)
+    }
     return await response.json();
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 }

@@ -22,8 +22,11 @@ export async function getContentLocation(
 
   try {
     const response = await fetch(apiUrl, requestOptions);
+    if (!response.ok) {
+      logger.error(`/maps failed: ${response.status}`)
+    }
     const data = await response.json();
-    return data.data;
+    return data;
   } catch (error) {
     logger.error(error, "get content location failed");
   }
