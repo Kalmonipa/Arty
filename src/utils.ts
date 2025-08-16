@@ -10,7 +10,7 @@ export const logger = pino({
         level: "trace",
         target: 'pino/file',
         options: {
-          destination: path.join(__dirname, 'logs/arty.log'),
+          destination: './logs/arty.log',
         },
       },
       {
