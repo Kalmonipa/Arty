@@ -1,12 +1,14 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import {
-  Character,
-  CharacterMovement,
-  CharacterRest,
-} from "../types/CharacterData";
+  CharacterMovementResponseSchema,
+  CharacterRestResponseSchema,
+  CharacterSchema,
+} from "../types/types";
 import { logger } from "../utils";
 
-export async function getCharacter(characterName: string): Promise<Character> {
+export async function getCharacter(
+  characterName: string,
+): Promise<CharacterSchema> {
   var requestOptions = {
     method: "GET",
     headers: MyHeaders,
@@ -48,7 +50,7 @@ export async function moveCharacter(
   charName: string,
   x: number,
   y: number,
-): Promise<CharacterMovement> {
+): Promise<CharacterMovementResponseSchema> {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,
@@ -79,8 +81,8 @@ export async function moveCharacter(
 }
 
 export async function restCharacter(
-  character: Character,
-): Promise<CharacterRest> {
+  character: CharacterSchema,
+): Promise<CharacterRestResponseSchema> {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,
@@ -101,8 +103,8 @@ export async function restCharacter(
     } else if (response.status === 499) {
       logger.error(`${character.name} is in cooldown`);
     } else {
-      const result: CharacterRest = await response.json();
-      logger.info(`Resting for ${result.data.cooldown.remaining_seconds}`)
+      const result: CharacterRestResponseSchema = await response.json();
+      logger.info(`Resting for ${result.data.cooldown.remaining_seconds}`);
       return result;
     }
   } catch (error) {

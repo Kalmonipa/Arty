@@ -1,10 +1,15 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { CharacterFight } from '../types/CharacterData'
-import { AllMonsters, MonsterQueryParameters } from "../types/MonsterData";
+import {
+  CharacterFightResponseSchema,
+  GetAllMonstersMonstersGetResponse,
+  GetAllMonstersMonstersGetData,
+} from "../types/types";
 import { logger } from "../utils";
 
-export async function fightMonster(characterName: string): Promise<CharacterFight> {
-      var requestOptions = {
+export async function fightMonster(
+  characterName: string,
+): Promise<CharacterFightResponseSchema> {
+  var requestOptions = {
     method: "POST",
     headers: MyHeaders,
   };
@@ -20,8 +25,8 @@ export async function fightMonster(characterName: string): Promise<CharacterFigh
 }
 
 export async function getMonsterInformation(
-  queryParams: MonsterQueryParameters,
-): Promise<AllMonsters> {
+  data: GetAllMonstersMonstersGetData,
+): Promise<GetAllMonstersMonstersGetResponse> {
   var requestOptions = {
     method: "GET",
     headers: MyHeaders,
@@ -29,23 +34,23 @@ export async function getMonsterInformation(
 
   var apiUrl = new URL(`${ApiUrl}/monsters`);
 
-  if (queryParams.drop) {
-    apiUrl.searchParams.set("drop", queryParams.drop);
+  if (data.query.drop) {
+    apiUrl.searchParams.set("drop", data.query.drop);
   }
-  if (queryParams.max_level) {
-    apiUrl.searchParams.set("max_level", queryParams.max_level.toString());
+  if (data.query.max_level) {
+    apiUrl.searchParams.set("max_level", data.query.max_level.toString());
   }
-  if (queryParams.min_level) {
-    apiUrl.searchParams.set("min_level", queryParams.min_level.toString());
+  if (data.query.min_level) {
+    apiUrl.searchParams.set("min_level", data.query.min_level.toString());
   }
-  if (queryParams.page) {
-    apiUrl.searchParams.set("page", queryParams.page.toString());
+  if (data.query.page) {
+    apiUrl.searchParams.set("page", data.query.page.toString());
   }
-  if (queryParams.size) {
-    apiUrl.searchParams.set("size", queryParams.size.toString());
+  if (data.query.size) {
+    apiUrl.searchParams.set("size", data.query.size.toString());
   }
-  if (queryParams.name) {
-    apiUrl.searchParams.set("name", queryParams.name);
+  if (data.query.name) {
+    apiUrl.searchParams.set("name", data.query.name);
   }
 
   try {

@@ -1,13 +1,11 @@
-import { BankItemTransaction } from "../types/BankData";
-import { Item, SimpleItem } from "../types/ItemData";
-import { ApiResult, ErrorResponse } from "../types/ResponseData";
+import { BankItemTransactionSchema, SimpleItemSchema } from "../types/types";
 import { ApiUrl, MyHeaders } from "../constants";
 import { logger } from "../utils";
 
 export async function depositItems(
   charName: string,
-  items: SimpleItem[],
-): Promise<BankItemTransaction> {
+  items: SimpleItemSchema[],
+): Promise<BankItemTransactionSchema> {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,

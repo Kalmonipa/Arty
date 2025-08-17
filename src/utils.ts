@@ -47,4 +47,4 @@ export function getEnv(name: string): string {
 export const sleep = (cooldown: number) => {
   logger.info(`Sleeping for ${cooldown} seconds`);
   return new Promise((r) => setTimeout(r, cooldown * 1000));
-}
+};

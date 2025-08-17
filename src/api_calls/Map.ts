@@ -1,11 +1,11 @@
 import { ApiUrl, MyHeaders } from "../constants";
-import { AllMaps } from "../types/MapData";
+import { GetAllMapsMapsGetResponse } from "../types/types";
 import { logger } from "../utils";
 
 export async function getContentLocation(
   contentCode?: string,
   contentType?: string,
-): Promise<AllMaps> {
+): Promise<GetAllMapsMapsGetResponse> {
   var requestOptions = {
     method: "GET",
     headers: MyHeaders,

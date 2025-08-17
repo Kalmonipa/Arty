@@ -1,9 +1,8 @@
-import { Character, Cooldown } from "./CharacterData";
-import { SimpleItem } from "./ItemData";
+import { CharacterSchema, CooldownSchema, SimpleItemSchema } from "./types";
 
 export type BankItemTransaction = {
-  cooldown: Cooldown;
-  items: SimpleItem;
-  bank: SimpleItem;
-  character: Character;
+  cooldown: CooldownSchema;
+  items: SimpleItemSchema[];
+  bank: SimpleItemSchema[];
+  character: CharacterSchema;
 };
