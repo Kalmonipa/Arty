@@ -2,7 +2,7 @@ import { getEnv, logger } from "./utils";
 import { beAlchemist } from "./roles/alchemist";
 import { beFisherman } from "./roles/fisherman";
 import { beFighter } from "./roles/fighter";
-import { beLumberjack } from "./roles/lumberjack"
+import { beLumberjack } from "./roles/lumberjack";
 import { beMiner } from "./roles/miner";
 
 let role = getEnv("ROLE"); // ToDo: Pick a random role if none supplied

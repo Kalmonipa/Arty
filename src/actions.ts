@@ -2,7 +2,7 @@ import { depositItems } from "./api_calls/Bank";
 import { moveCharacter } from "./api_calls/Character";
 import { getAllItemInformation } from "./api_calls/Items";
 import { getContentLocation } from "./api_calls/Map";
-import { MaxInventorySlots } from './constants'
+import { MaxInventorySlots } from "./constants";
 import { logger, sleep } from "./utils";
 import { HealthStatus } from "./types/CharacterData";
 import {
@@ -43,12 +43,14 @@ export function cooldownStatus(character: CharacterSchema): {
   if (now > targetDate) {
     return { inCooldown: false, timeRemaining: 0 };
   } else {
+    const timeToWait =
+      Math.floor((targetDate.getTime() - now.getTime()) / 1000) + 2;
     logger.info(
-      `Cooldown is still ongoing. Waiting for ${Math.floor((targetDate.getTime() - now.getTime()) / 1000)} seconds until ${timestamp}`,
+      `Cooldown is still ongoing. Waiting for ${timeToWait} seconds until ${timestamp}`,
     );
     return {
       inCooldown: true,
-      timeRemaining: Math.floor((targetDate.getTime() - now.getTime()) / 1000),
+      timeRemaining: timeToWait,
     };
   }
 }
@@ -160,7 +162,11 @@ export async function evaluateCraftingWithCurrentInventory(
       sourceItemInd++
     ) {
       //logger.warn(`Source item index: ${sourceItemInd}`)
-      for (var invItemsInd = 0; invItemsInd < MaxInventorySlots; invItemsInd++) {
+      for (
+        var invItemsInd = 0;
+        invItemsInd < MaxInventorySlots;
+        invItemsInd++
+      ) {
         //logger.warn(`Inv item index: ${invItemsInd}`)
         if (
           neededSourceItems[sourceItemInd].code ===
@@ -172,7 +178,9 @@ export async function evaluateCraftingWithCurrentInventory(
               neededSourceItems[sourceItemInd].quantity,
           ) > 0
         ) {
-          logger.info(`Item ${neededSourceItems[sourceItemInd].code} can be crafted into ${response.data[targetItemInd].code}`)
+          logger.info(
+            `Item ${neededSourceItems[sourceItemInd].code} can be crafted into ${response.data[targetItemInd].code}`,
+          );
           itemsNeeded.push({
             code: response.data[targetItemInd].code,
             // We want to return the number of items we can craft
@@ -188,7 +196,7 @@ export async function evaluateCraftingWithCurrentInventory(
     }
   }
 
-  return itemsNeeded
+  return itemsNeeded;
   //itemsNeeded.forEach(function (craftingSchema) {
 }
 

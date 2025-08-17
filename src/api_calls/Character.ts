@@ -26,7 +26,7 @@ export async function craftItem(
     );
     // if (!response.ok) {
     //   logger.error(`Craft failed: ${response.status}`);
-    // } else 
+    // } else
     if (response.status === 486) {
       logger.error(`${character.name} is already doing an action`);
     } else if (response.status === 493) {
@@ -34,7 +34,8 @@ export async function craftItem(
     } else if (response.status === 497) {
       logger.error(`${character.name}s inventory is full`);
     } else {
-      const result: ActionCraftingMyNameActionCraftingPostResponse = await response.json();
+      const result: ActionCraftingMyNameActionCraftingPostResponse =
+        await response.json();
       if (result.data.details.items.length === 1) {
         logger.info(
           `Crafted ${result.data.details.items[0].quantity} ${result.data.details.items[0].code}`,
