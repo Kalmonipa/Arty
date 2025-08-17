@@ -1,11 +1,13 @@
 import { getEnv, logger } from "./utils";
+import { beAlchemist } from "./roles/alchemist";
 import { beFisherman } from "./roles/fisherman";
 import { beFighter } from "./roles/fighter";
+import { beLumberjack } from "./roles/lumberjack"
 import { beMiner } from "./roles/miner";
 
 let role = getEnv("ROLE"); // ToDo: Pick a random role if none supplied
 let shouldStopActions = false;
-let validRoles = ["fisherman", "fighter", "miner"];
+let validRoles = ["alchemist", "fisherman", "fighter", "lumberjack", "miner"];
 
 async function main() {
   if (!validRoles.includes(role)) {
@@ -15,12 +17,20 @@ async function main() {
 
   while (!shouldStopActions) {
     switch (role) {
+      case "alchemist": {
+        await beAlchemist();
+        break;
+      }
       case "fisherman": {
         await beFisherman();
         break;
       }
       case "fighter": {
         await beFighter();
+        break;
+      }
+      case "lumberjack": {
+        await beLumberjack();
         break;
       }
       case "miner": {

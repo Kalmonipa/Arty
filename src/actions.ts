@@ -111,7 +111,7 @@ export function getInventoryFullness(char: CharacterSchema): number {
     usedSpace += invSlot.quantity;
   });
 
-  return (usedSpace / char.inventory_max_items) * 100;
+  return Math.round((usedSpace / char.inventory_max_items) * 100);
 }
 
 /**
@@ -206,7 +206,7 @@ export async function evaluateDepositItemsInBank(
     await sleep(depositResponse.cooldown.remaining_seconds);
   } else {
     logger.info(
-      `Backpack: ${usedInventorySpace}/${character.inventory_max_items}`,
+      `Backpack: ${usedInventorySpace}% of ${character.inventory_max_items} slots`,
     );
   }
   return character;

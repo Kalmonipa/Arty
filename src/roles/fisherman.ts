@@ -80,7 +80,7 @@ export async function beFisherman() {
     await sleep(depositResponse.cooldown.remaining_seconds);
   } else {
     logger.info(
-      `Backpack: ${usedInventorySpace}/${character.inventory_max_items}`,
+      `Backpack: ${usedInventorySpace}% of ${character.inventory_max_items} slots`,
     );
   }
 
