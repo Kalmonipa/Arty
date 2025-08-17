@@ -21,6 +21,9 @@ export async function depositItems(
     //     return { success: false, status: response.status, error: 'deposit failed'};
     // }
     const data = await response.json();
+    items.forEach(function (item) {
+      logger.info(`Deposited ${item.quantity} ${item.code}`)
+    })
     return data.data;
   } catch (error) {
     logger.error(error, "deposit failed");

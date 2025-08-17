@@ -1,11 +1,16 @@
-import { HealthStatus } from "./types/CharacterData";
-import { getContentLocation } from "./api_calls/Map";
-import { logger, sleep } from "./utils";
-import { moveCharacter } from "./api_calls/Character";
 import { depositItems } from "./api_calls/Bank";
+import { moveCharacter } from "./api_calls/Character";
+import { getAllItemInformation } from "./api_calls/Items";
+import { getContentLocation } from "./api_calls/Map";
+import { MaxInventorySlots } from './constants'
+import { logger, sleep } from "./utils";
+import { HealthStatus } from "./types/CharacterData";
 import {
   BankItemTransactionSchema,
   CharacterSchema,
+  CraftingSchema,
+  CraftSkill,
+  GetAllItemsItemsGetData,
   SimpleItemSchema,
 } from "./types/types";
 
@@ -39,7 +44,7 @@ export function cooldownStatus(character: CharacterSchema): {
     return { inCooldown: false, timeRemaining: 0 };
   } else {
     logger.info(
-      `Cooldown is still ongoing. Waiting for ${Math.floor((targetDate.getTime() - now.getTime()) / 1000)} ${timestamp}`,
+      `Cooldown is still ongoing. Waiting for ${Math.floor((targetDate.getTime() - now.getTime()) / 1000)} seconds until ${timestamp}`,
     );
     return {
       inCooldown: true,
@@ -76,8 +81,6 @@ export async function findBankAndDepositItems(
 
   var itemsToDeposit: SimpleItemSchema[] = [];
 
-  //logger.info(character.inventory);
-
   for (var i = 0; i < character.inventory.length; i++) {
     // logger.info(
     //   `${character.inventory[i].code}: ${character.inventory[i].quantity}`,
@@ -102,7 +105,7 @@ export async function findBankAndDepositItems(
  * Returns what percentage of the backpack is full
  * @param char Character info to parse
  */
-export function getInventorySpace(char: CharacterSchema): number {
+export function getInventoryFullness(char: CharacterSchema): number {
   var usedSpace = 0;
   char.inventory.forEach((invSlot) => {
     usedSpace += invSlot.quantity;
@@ -112,12 +115,90 @@ export function getInventorySpace(char: CharacterSchema): number {
 }
 
 /**
+ * @description Evaluates whether character has the ingredients to craft something
+ * @returns {CraftingSchema}
+ */
+export async function evaluateCraftingWithCurrentInventory(
+  character: CharacterSchema,
+  characterLevel: number,
+  craftingSkill: CraftSkill,
+): Promise<CraftingSchema[]> {
+  if (character.inventory.length === 0) {
+    logger.warn(`${character.name} has no inventory items to craft with`);
+    return [];
+  }
+
+  const getAllItemsParams: GetAllItemsItemsGetData = {
+    query: {
+      craft_skill: craftingSkill,
+      max_level: characterLevel,
+    },
+    url: "/items",
+  };
+
+  const response = await getAllItemInformation(getAllItemsParams);
+  if (response.data.length === 0) {
+    logger.warn("Not able to craft anything");
+    return [];
+  }
+
+  const itemsNeeded: CraftingSchema[] = [];
+
+  for (
+    var targetItemInd = 0;
+    targetItemInd < response.data.length;
+    targetItemInd++
+  ) {
+    //logger.warn(`Target item index: ${targetItemInd}`)
+
+    const neededSourceItems = response.data[targetItemInd].craft.items;
+    //logger.info(neededSourceItems)
+
+    for (
+      var sourceItemInd = 0;
+      sourceItemInd < neededSourceItems.length;
+      sourceItemInd++
+    ) {
+      //logger.warn(`Source item index: ${sourceItemInd}`)
+      for (var invItemsInd = 0; invItemsInd < MaxInventorySlots; invItemsInd++) {
+        //logger.warn(`Inv item index: ${invItemsInd}`)
+        if (
+          neededSourceItems[sourceItemInd].code ===
+            character.inventory[invItemsInd].code &&
+          neededSourceItems[sourceItemInd].quantity <=
+            character.inventory[invItemsInd].quantity &&
+          Math.trunc(
+            character.inventory[invItemsInd].quantity /
+              neededSourceItems[sourceItemInd].quantity,
+          ) > 0
+        ) {
+          logger.info(`Item ${neededSourceItems[sourceItemInd].code} can be crafted into ${response.data[targetItemInd].code}`)
+          itemsNeeded.push({
+            code: response.data[targetItemInd].code,
+            // We want to return the number of items we can craft
+            // e.g. if an item requires 4 of a resouce, and we have 14
+            // we can only craft 3 items
+            quantity: Math.trunc(
+              character.inventory[invItemsInd].quantity /
+                neededSourceItems[sourceItemInd].quantity,
+            ),
+          });
+        }
+      }
+    }
+  }
+
+  return itemsNeeded
+  //itemsNeeded.forEach(function (craftingSchema) {
+}
+
+/**
  * @description Check if char needs to visit the bank and deposit items
  */
 export async function evaluateDepositItemsInBank(
   character: CharacterSchema,
 ): Promise<CharacterSchema> {
-  let usedInventorySpace = getInventorySpace(character);
+  let usedInventorySpace = getInventoryFullness(character);
   if (usedInventorySpace >= 90) {
     logger.warn(`Inventory is almost full. Depositing items`);
     const depositResponse = await findBankAndDepositItems(character);

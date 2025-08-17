@@ -1,10 +1,53 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import {
+  ActionCraftingMyNameActionCraftingPostData,
+  ActionCraftingMyNameActionCraftingPostResponse,
   CharacterMovementResponseSchema,
   CharacterRestResponseSchema,
   CharacterSchema,
+  SkillDataSchema,
 } from "../types/types";
 import { logger } from "../utils";
+
+export async function craftItem(
+  character: CharacterSchema,
+  craftData: ActionCraftingMyNameActionCraftingPostData,
+): Promise<ActionCraftingMyNameActionCraftingPostResponse> {
+  var requestOptions = {
+    method: "POST",
+    headers: MyHeaders,
+    body: JSON.stringify(craftData.body),
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/crafting`,
+      requestOptions,
+    );
+    // if (!response.ok) {
+    //   logger.error(`Craft failed: ${response.status}`);
+    // } else 
+    if (response.status === 486) {
+      logger.error(`${character.name} is already doing an action`);
+    } else if (response.status === 493) {
+      logger.error(`${character.name}s skill level is too low`);
+    } else if (response.status === 497) {
+      logger.error(`${character.name}s inventory is full`);
+    } else {
+      const result: ActionCraftingMyNameActionCraftingPostResponse = await response.json();
+      if (result.data.details.items.length === 1) {
+        logger.info(
+          `Crafted ${result.data.details.items[0].quantity} ${result.data.details.items[0].code}`,
+        );
+      } else {
+        logger.info(`Crafted ${craftData.body.code}`);
+      }
+      return result;
+    }
+  } catch (error) {
+    logger.error(error.message);
+  }
+}
 
 export async function getCharacter(
   characterName: string,
@@ -72,7 +115,6 @@ export async function moveCharacter(
       logger.error("Character is already at the location");
     } else {
       const result = await response.json();
-      //logger.info(result);
       return result;
     }
   } catch (error) {

@@ -1,5 +1,6 @@
 import { CharName } from "../constants";
 import {
+  craftItem,
   getCharacter,
   getCharacterLocation,
   moveCharacter,
@@ -10,15 +11,78 @@ import {
   gatherResources,
 } from "../api_calls/Resources";
 import { logger, sleep } from "../utils";
-import { cooldownStatus, evaluateDepositItemsInBank } from "../actions";
+import {
+  cooldownStatus,
+  findBankAndDepositItems,
+  evaluateCraftingWithCurrentInventory,
+  getInventoryFullness,
+} from "../actions";
 import { CharacterSchema } from "../types/types";
 
 export async function beFisherman() {
   let character: CharacterSchema = await getCharacter(CharName);
+  let shouldCraft: boolean = false;
 
   // ToDo: Check the cooldown timer to see if we're currently in a cooldown period. If yes, wait it out
 
-  character = await evaluateDepositItemsInBank(character);
+  let usedInventorySpace = getInventoryFullness(character);
+  if (usedInventorySpace >= 90) {
+    logger.info(`Inventory is ${usedInventorySpace}% full`);
+    shouldCraft = true;
+
+    const itemsToCraft = await evaluateCraftingWithCurrentInventory(
+      character,
+      character.fishing_level,
+      "cooking",
+    );
+
+    if (itemsToCraft.length === 0) {
+      logger.info("No items to craft");
+    } else {
+      const cookingLocations = await getContentLocation("cooking", "workshop");
+
+      const latestLocation = await getCharacterLocation(character.name);
+
+      if (
+        latestLocation.x === cookingLocations.data[0].x &&
+        latestLocation.y === cookingLocations.data[0].y
+      ) {
+        logger.info(
+          `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
+        );
+      } else {
+        logger.info(
+          `Moving to x: ${cookingLocations.data[0].x}, y: ${cookingLocations.data[0].y}`,
+        );
+
+        const moveResponse = await moveCharacter(
+          character.name,
+          cookingLocations.data[0].x,
+          cookingLocations.data[0].y,
+        );
+        character = moveResponse.data.character;
+        await sleep(moveResponse.data.cooldown.remaining_seconds);
+      }
+
+      for (var i = 0; i < itemsToCraft.length; i++) {
+        const craftResponse = await craftItem(character, {
+          body: itemsToCraft[i],
+          path: { name: character.name },
+          url: "/my/{name}/action/crafting",
+        });
+        character = craftResponse.data.character;
+        await sleep(craftResponse.data.cooldown.remaining_seconds);
+      }
+    }
+
+    const depositResponse = await findBankAndDepositItems(character);
+    character = depositResponse.character;
+    await sleep(depositResponse.cooldown.remaining_seconds);
+  } else {
+    logger.info(
+      `Backpack: ${usedInventorySpace}/${character.inventory_max_items}`,
+    );
+  }
 
   const fishingTypes = await getResourceInformation({
     query: {
