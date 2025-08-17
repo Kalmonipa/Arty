@@ -1,8 +1,7 @@
 import {
   checkHealth,
   cooldownStatus,
-  findClosestBankAndDepositItems,
-  getInventorySpace,
+  evaluateDepositItemsInBank,
 } from "../actions";
 import { CharName } from "../constants";
 import { logger, sleep } from "../utils";
@@ -41,17 +40,7 @@ export async function beFighter() {
     //}
   }
 
-  let usedInventorySpace = getInventorySpace(character);
-  if (usedInventorySpace >= 90) {
-    logger.warn(`Inventory is almost full. Depositing items`);
-    const depositResponse = await findClosestBankAndDepositItems(character);
-    character = depositResponse.character;
-    await sleep(depositResponse.cooldown.remaining_seconds);
-  } else {
-    logger.info(
-      `Backpack: ${usedInventorySpace}/${character.inventory_max_items}`,
-    );
-  }
+  character = await evaluateDepositItemsInBank(character);
 
   const monsterInfo = await getMonsterInformation({
     query: {
@@ -62,7 +51,9 @@ export async function beFighter() {
 
   // ToDo: Evaluate which monster to fight from the list based on resistances, health, etc
 
-  logger.info(`Intending to fight ${monsterInfo.data[monsterInfo.data.length - 1].name}`)
+  logger.info(
+    `Intending to fight ${monsterInfo.data[monsterInfo.data.length - 1].name}`,
+  );
 
   const monsterLocations = await getContentLocation(
     monsterInfo.data[monsterInfo.data.length - 1].code,

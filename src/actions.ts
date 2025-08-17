@@ -48,7 +48,7 @@ export function cooldownStatus(character: CharacterSchema): {
   }
 }
 
-export async function findClosestBankAndDepositItems(
+export async function findBankAndDepositItems(
   character: CharacterSchema,
 ): Promise<BankItemTransactionSchema> {
   // ToDo: Implement a function to find the closest map.
@@ -109,4 +109,24 @@ export function getInventorySpace(char: CharacterSchema): number {
   });
 
   return (usedSpace / char.inventory_max_items) * 100;
+}
+
+/**
+ * @description Check if char needs to visit the bank and deposit items
+ */
+export async function evaluateDepositItemsInBank(
+  character: CharacterSchema,
+): Promise<CharacterSchema> {
+  let usedInventorySpace = getInventorySpace(character);
+  if (usedInventorySpace >= 90) {
+    logger.warn(`Inventory is almost full. Depositing items`);
+    const depositResponse = await findBankAndDepositItems(character);
+    character = depositResponse.character;
+    await sleep(depositResponse.cooldown.remaining_seconds);
+  } else {
+    logger.info(
+      `Backpack: ${usedInventorySpace}/${character.inventory_max_items}`,
+    );
+  }
+  return character;
 }

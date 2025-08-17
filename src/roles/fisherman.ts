@@ -10,11 +10,7 @@ import {
   gatherResources,
 } from "../api_calls/Resources";
 import { logger, sleep } from "../utils";
-import {
-  cooldownStatus,
-  findClosestBankAndDepositItems,
-  getInventorySpace,
-} from "../actions";
+import { cooldownStatus, evaluateDepositItemsInBank } from "../actions";
 import { CharacterSchema } from "../types/types";
 
 export async function beFisherman() {
@@ -22,17 +18,7 @@ export async function beFisherman() {
 
   // ToDo: Check the cooldown timer to see if we're currently in a cooldown period. If yes, wait it out
 
-  let usedInventorySpace = getInventorySpace(character);
-  if (usedInventorySpace >= 90) {
-    logger.warn(`Inventory is almost full. Depositing items`);
-    const depositResponse = await findClosestBankAndDepositItems(character);
-    character = depositResponse.character;
-    await sleep(depositResponse.cooldown.remaining_seconds);
-  } else {
-    logger.info(
-      `Backpack: ${usedInventorySpace}/${character.inventory_max_items}`,
-    );
-  }
+  character = await evaluateDepositItemsInBank(character);
 
   const fishingTypes = await getResourceInformation({
     query: {

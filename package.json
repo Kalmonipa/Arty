@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
-    "prettier:fix": "npx prettier . --write"
+    "prettier:fix": "npx prettier . --write --log-level silent"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
