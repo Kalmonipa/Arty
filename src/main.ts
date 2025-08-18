@@ -4,10 +4,18 @@ import { beFisherman } from "./roles/fisherman";
 import { beFighter } from "./roles/fighter";
 import { beLumberjack } from "./roles/lumberjack";
 import { beMiner } from "./roles/miner";
+import { beTaskmaster } from "./roles/taskmaster";
 
 let role = getEnv("ROLE"); // ToDo: Pick a random role if none supplied
 let shouldStopActions = false;
-let validRoles = ["alchemist", "fisherman", "fighter", "lumberjack", "miner"];
+let validRoles = [
+  "alchemist",
+  "fisherman",
+  "fighter",
+  "lumberjack",
+  "miner",
+  "taskmaster",
+];
 
 async function main() {
   if (!validRoles.includes(role)) {
@@ -35,6 +43,10 @@ async function main() {
       }
       case "miner": {
         await beMiner();
+        break;
+      }
+      case "taskmaster": {
+        shouldStopActions = await beTaskmaster(); // Returns true when task is complete
         break;
       }
     }

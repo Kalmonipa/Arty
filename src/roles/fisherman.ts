@@ -5,7 +5,7 @@ import {
   getCharacterLocation,
   moveCharacter,
 } from "../api_calls/Character";
-import { getContentLocation } from "../api_calls/Map";
+import { getMaps } from "../api_calls/Map";
 import {
   getResourceInformation,
   gatherResources,
@@ -39,7 +39,7 @@ export async function beFisherman() {
     if (itemsToCraft.length === 0) {
       logger.info("No items to craft");
     } else {
-      const cookingLocations = await getContentLocation("cooking", "workshop");
+      const cookingLocations = await getMaps("cooking", "workshop");
 
       const latestLocation = await getCharacterLocation(character.name);
 
@@ -92,7 +92,7 @@ export async function beFisherman() {
     url: "/resources",
   });
 
-  const fishingLocations = await getContentLocation(
+  const fishingLocations = await getMaps(
     fishingTypes.data[fishingTypes.data.length - 1].code,
     "resource",
   );

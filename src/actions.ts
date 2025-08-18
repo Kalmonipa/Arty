@@ -1,7 +1,7 @@
 import { depositItems } from "./api_calls/Bank";
 import { moveCharacter } from "./api_calls/Character";
 import { getAllItemInformation } from "./api_calls/Items";
-import { getContentLocation } from "./api_calls/Map";
+import { getMaps } from "./api_calls/Map";
 import { MaxInventorySlots } from "./constants";
 import { logger, sleep } from "./utils";
 import { HealthStatus } from "./types/CharacterData";
@@ -60,7 +60,7 @@ export async function findBankAndDepositItems(
 ): Promise<BankItemTransactionSchema> {
   // ToDo: Implement a function to find the closest map.
   // Currently we just go to the first one
-  const bankLocations = (await getContentLocation("bank")).data;
+  const bankLocations = (await getMaps("bank")).data;
   logger.info(
     `Found bank at x: ${bankLocations[0].x}, y: ${bankLocations[0].y}`,
   );

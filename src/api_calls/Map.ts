@@ -2,7 +2,7 @@ import { ApiUrl, MyHeaders } from "../constants";
 import { GetAllMapsMapsGetResponse } from "../types/types";
 import { logger } from "../utils";
 
-export async function getContentLocation(
+export async function getMaps(
   contentCode?: string,
   contentType?: string,
 ): Promise<GetAllMapsMapsGetResponse> {

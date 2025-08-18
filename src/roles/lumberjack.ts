@@ -4,7 +4,7 @@ import {
   getCharacterLocation,
   moveCharacter,
 } from "../api_calls/Character";
-import { getContentLocation } from "../api_calls/Map";
+import { getMaps } from "../api_calls/Map";
 import {
   getResourceInformation,
   gatherResources,
@@ -29,7 +29,7 @@ export async function beLumberjack() {
     url: "/resources",
   });
 
-  const treeLocations = await getContentLocation(
+  const treeLocations = await getMaps(
     woodcuttingTypes.data[woodcuttingTypes.data.length - 1].code,
     "resource",
   );

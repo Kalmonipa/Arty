@@ -15,18 +15,52 @@ import { getMaps } from "../api_calls/Map";
 import { fightMonster, getMonsterInformation } from "../api_calls/Monsters";
 import { HealthStatus } from "../types/CharacterData";
 import { CharacterSchema } from "../types/types";
+import { completeTask } from "../api_calls/Tasks";
 
-export async function beFighter() {
+/**
+ * Currently only supports Monster tasks
+ * ToDo: Implement gathering tasks
+ */
+export async function beTaskmaster(): Promise<boolean> {
   let character: CharacterSchema = await getCharacter(CharName);
 
-  // List of steps for fighting
-  // 1. Check health
-  //    - Heal if needed (rest or eat food). Start with rest because low max health
-  // 2. Check inventory space
-  // 3. Find nearest monster to fight
-  // 4. Move to monster
-  // 5. Fight
-  // 6. Repeat
+  if (character.task_total === character.task_progress) {
+    logger.info(`Task ${character.task} complete`);
+
+    const taskMasterLocations = await getMaps("monsters", "task_master");
+
+    const latestLocation = await getCharacterLocation(character.name);
+
+    if (
+      latestLocation.x === taskMasterLocations.data[0].x &&
+      latestLocation.y === taskMasterLocations.data[0].y
+    ) {
+      logger.info(
+        `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
+      );
+    } else {
+      logger.info(
+        `Moving to x: ${taskMasterLocations.data[0].x}, y: ${taskMasterLocations.data[0].y}`,
+      );
+
+      const moveResponse = await moveCharacter(
+        character.name,
+        taskMasterLocations.data[0].x,
+        taskMasterLocations.data[0].y,
+      );
+      character = moveResponse.data.character;
+      await sleep(moveResponse.data.cooldown.remaining_seconds);
+    }
+
+    const completeTaskResponse = await completeTask(character.name);
+    character = completeTaskResponse.data.character;
+    await sleep(completeTaskResponse.data.cooldown.remaining_seconds);
+    return true; // Tells the caller to stop all actions because role is complete
+  } else {
+    logger.info(
+      `Killed ${character.task_progress} of ${character.task_total} ${character.task}`,
+    );
+  }
 
   const healthStatus: HealthStatus = checkHealth(character);
 
@@ -42,23 +76,7 @@ export async function beFighter() {
 
   character = await evaluateDepositItemsInBank(character);
 
-  const monsterInfo = await getMonsterInformation({
-    query: {
-      max_level: character.level,
-    },
-    url: "/monsters",
-  });
-
-  // ToDo: Evaluate which monster to fight from the list based on resistances, health, etc
-
-  logger.info(
-    `Intending to fight ${monsterInfo.data[monsterInfo.data.length - 1].name}`,
-  );
-
-  const monsterLocations = await getMaps(
-    monsterInfo.data[monsterInfo.data.length - 1].code,
-    "monster",
-  );
+  const monsterLocations = await getMaps(character.task, "monster");
 
   const latestLocation = await getCharacterLocation(character.name);
 
@@ -88,10 +106,12 @@ export async function beFighter() {
   }
 
   logger.info(
-    `Fighting ${monsterInfo.data[monsterInfo.data.length - 1].name} at x: ${character.x}, y: ${character.y}`,
+    `Fighting ${character.task} at x: ${character.x}, y: ${character.y}`,
   );
   const fightResponse = await fightMonster(character.name);
   logger.info(`Fight was a ${fightResponse.data.fight.result}`);
   character = fightResponse.data.character;
   await sleep(fightResponse.data.cooldown.remaining_seconds);
+
+  return false; // We want the loop to continue so return false
 }

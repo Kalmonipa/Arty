@@ -4,7 +4,7 @@ import {
   getCharacterLocation,
   moveCharacter,
 } from "../api_calls/Character";
-import { getContentLocation } from "../api_calls/Map";
+import { getMaps } from "../api_calls/Map";
 import {
   getResourceInformation,
   gatherResources,
@@ -29,7 +29,7 @@ export async function beAlchemist() {
     url: "/resources",
   });
 
-  const alchemicalLocations = await getContentLocation(
+  const alchemicalLocations = await getMaps(
     alchemicalTypes.data[alchemicalTypes.data.length - 1].code,
     "resource",
   );
