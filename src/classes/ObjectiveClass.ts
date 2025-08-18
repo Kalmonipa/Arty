@@ -6,7 +6,6 @@ export class Objective {
   requirements?: SimpleItemSchema;
 
   constructor(requirements?: SimpleItemSchema) {
-    requirements = this.requirements
+    requirements = this.requirements;
   }
-
 }

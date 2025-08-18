@@ -3,13 +3,13 @@ import { CharacterSchema, MapSchema } from "../types/types";
 import { logger } from "../utils";
 
 class Character {
-    name: string;
-    data: CharacterSchema;
+  name: string;
+  data: CharacterSchema;
 
-    constructor(name: string) {
-        name = this.name;
-        // Do something
-    }
+  constructor(name: string) {
+    name = this.name;
+    // Do something
+  }
 
   /**
    * Returns the percentage of health we have and what is needed to get to 100%
@@ -32,11 +32,11 @@ class Character {
     timeRemaining: number;
   } {
     const timestamp = this.data.cooldown_expiration;
-  
+
     const targetDate = new Date(timestamp);
-  
+
     const now = new Date();
-  
+
     if (now > targetDate) {
       return { inCooldown: false, timeRemaining: 0 };
     } else {
@@ -55,12 +55,10 @@ class Character {
   /**
    * @description Finds the closest map based on manhattan distance from current location
    */
-  evaluateClosestMap(
-    maps: MapSchema[],
-  ): MapSchema {
+  evaluateClosestMap(maps: MapSchema[]): MapSchema {
     var closestDistance = 1000000;
     var closestMap: MapSchema;
-  
+
     maps.forEach((map) => {
       var dist = this.data.x - map.x + (this.data.y - map.y);
       if (dist < closestDistance) {
@@ -68,9 +66,9 @@ class Character {
         closestMap = map;
       }
     });
-  
+
     logger.info(`Closest map is at x: ${closestMap.x}, y: ${closestMap.y}`);
-  
+
     return closestMap;
   }
 }
