@@ -11,6 +11,7 @@ import {
   CraftingSchema,
   CraftSkill,
   GetAllItemsItemsGetData,
+  MapSchema,
   SimpleItemSchema,
 } from "./types/types";
 
@@ -104,16 +105,26 @@ export async function findBankAndDepositItems(
 }
 
 /**
- * Returns what percentage of the backpack is full
- * @param char Character info to parse
+ * @description Finds the closest map based on manhattan distance from current location
  */
-export function getInventoryFullness(char: CharacterSchema): number {
-  var usedSpace = 0;
-  char.inventory.forEach((invSlot) => {
-    usedSpace += invSlot.quantity;
+export function evaluateClosestMap(
+  character: CharacterSchema,
+  maps: MapSchema[],
+): MapSchema {
+  var closestDistance = 1000000;
+  var closestMap: MapSchema;
+
+  maps.forEach((map) => {
+    var dist = character.x - map.x + (character.y - map.y);
+    if (dist < closestDistance) {
+      closestDistance = dist;
+      closestMap = map;
+    }
   });
 
-  return Math.round((usedSpace / char.inventory_max_items) * 100);
+  logger.info(`Closest map is at x: ${closestMap.x}, y: ${closestMap.y}`);
+
+  return closestMap;
 }
 
 /**
@@ -218,4 +229,17 @@ export async function evaluateDepositItemsInBank(
     );
   }
   return character;
+}
+
+/**
+ * Returns what percentage of the backpack is full
+ * @param char Character info to parse
+ */
+export function getInventoryFullness(char: CharacterSchema): number {
+  var usedSpace = 0;
+  char.inventory.forEach((invSlot) => {
+    usedSpace += invSlot.quantity;
+  });
+
+  return Math.round((usedSpace / char.inventory_max_items) * 100);
 }

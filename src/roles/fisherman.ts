@@ -16,14 +16,13 @@ import {
   findBankAndDepositItems,
   evaluateCraftingWithCurrentInventory,
   getInventoryFullness,
+  evaluateClosestMap,
 } from "../actions";
 import { CharacterSchema } from "../types/types";
 
 export async function beFisherman() {
   let character: CharacterSchema = await getCharacter(CharName);
   let shouldCraft: boolean = false;
-
-  // ToDo: Check the cooldown timer to see if we're currently in a cooldown period. If yes, wait it out
 
   let usedInventorySpace = getInventoryFullness(character);
   if (usedInventorySpace >= 90) {
@@ -41,24 +40,29 @@ export async function beFisherman() {
     } else {
       const cookingLocations = await getMaps("cooking", "workshop");
 
+      const closestCookingSpot = evaluateClosestMap(
+        character,
+        cookingLocations.data,
+      );
+
       const latestLocation = await getCharacterLocation(character.name);
 
       if (
-        latestLocation.x === cookingLocations.data[0].x &&
-        latestLocation.y === cookingLocations.data[0].y
+        latestLocation.x === closestCookingSpot.x &&
+        latestLocation.y === closestCookingSpot.y
       ) {
         logger.info(
           `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
         );
       } else {
         logger.info(
-          `Moving to x: ${cookingLocations.data[0].x}, y: ${cookingLocations.data[0].y}`,
+          `Moving to x: ${closestCookingSpot.x}, y: ${closestCookingSpot.y}`,
         );
 
         const moveResponse = await moveCharacter(
           character.name,
-          cookingLocations.data[0].x,
-          cookingLocations.data[0].y,
+          closestCookingSpot.x,
+          closestCookingSpot.y,
         );
         character = moveResponse.data.character;
         await sleep(moveResponse.data.cooldown.remaining_seconds);
@@ -97,6 +101,11 @@ export async function beFisherman() {
     "resource",
   );
 
+  const closestFishingSpot = evaluateClosestMap(
+    character,
+    fishingLocations.data,
+  );
+
   const latestLocation = await getCharacterLocation(character.name);
 
   let cooldown = cooldownStatus(character);
@@ -105,21 +114,21 @@ export async function beFisherman() {
   }
 
   if (
-    latestLocation.x === fishingLocations.data[0].x &&
-    latestLocation.y === fishingLocations.data[0].y
+    latestLocation.x === closestFishingSpot.x &&
+    latestLocation.y === closestFishingSpot.y
   ) {
     logger.info(
       `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
     );
   } else {
     logger.info(
-      `Moving to x: ${fishingLocations.data[0].x}, y: ${fishingLocations.data[0].y}`,
+      `Moving to x: ${closestFishingSpot.x}, y: ${closestFishingSpot.y}`,
     );
 
     const moveResponse = await moveCharacter(
       character.name,
-      fishingLocations.data[0].x,
-      fishingLocations.data[0].y,
+      closestFishingSpot.x,
+      closestFishingSpot.y,
     );
     character = moveResponse.data.character;
     await sleep(moveResponse.data.cooldown.remaining_seconds);

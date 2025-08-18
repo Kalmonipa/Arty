@@ -11,9 +11,12 @@ import {
 } from "../api_calls/Resources";
 import { logger, sleep } from "../utils";
 import { cooldownStatus, evaluateDepositItemsInBank } from "../actions";
-import { CharacterSchema } from "../types/types";
+import { CharacterSchema, DataPageMapSchema } from "../types/types";
 
-export async function beLumberjack() {
+export async function beLumberjack(objective?: {
+  content_code: string;
+  quantity: number;
+}) {
   let character: CharacterSchema = await getCharacter(CharName);
 
   // ToDo: Check the cooldown timer to see if we're currently in a cooldown period. If yes, wait it out
@@ -29,10 +32,15 @@ export async function beLumberjack() {
     url: "/resources",
   });
 
-  const treeLocations = await getMaps(
-    woodcuttingTypes.data[woodcuttingTypes.data.length - 1].code,
-    "resource",
-  );
+  var treeLocations: DataPageMapSchema;
+  if (objective) {
+    treeLocations = await getMaps(objective.content_code, "resource");
+  } else {
+    treeLocations = await getMaps(
+      woodcuttingTypes.data[woodcuttingTypes.data.length - 1].code,
+      "resource",
+    );
+  }
 
   const latestLocation = await getCharacterLocation(character.name);
 
