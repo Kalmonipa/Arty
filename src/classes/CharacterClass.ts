@@ -1,6 +1,5 @@
-import { getCharacter } from "../api_calls/Character";
 import { HealthStatus } from "../types/CharacterData";
-import { CharacterSchema, MapSchema, SimpleItemSchema } from "../types/types";
+import { CharacterSchema, MapSchema } from "../types/types";
 import { logger } from "../utils";
 
 class Character {
@@ -16,10 +15,10 @@ class Character {
    * Returns the percentage of health we have and what is needed to get to 100%
    * @param character
    */
-  checkHealth(character: CharacterSchema): HealthStatus {
+  checkHealth(): HealthStatus {
     return {
-      percentage: (character.hp / character.max_hp) * 100,
-      difference: character.max_hp - character.hp,
+      percentage: (this.data.hp / this.data.max_hp) * 100,
+      difference: this.data.max_hp - this.data.hp,
     };
   }
 
@@ -28,11 +27,11 @@ class Character {
    * @param character
    * @returns {boolean}
    */
-  cooldownStatus(character: CharacterSchema): {
+  cooldownStatus(): {
     inCooldown: boolean;
     timeRemaining: number;
   } {
-    const timestamp = character.cooldown_expiration;
+    const timestamp = this.data.cooldown_expiration;
   
     const targetDate = new Date(timestamp);
   
@@ -57,14 +56,13 @@ class Character {
    * @description Finds the closest map based on manhattan distance from current location
    */
   evaluateClosestMap(
-    character: CharacterSchema,
     maps: MapSchema[],
   ): MapSchema {
     var closestDistance = 1000000;
     var closestMap: MapSchema;
   
     maps.forEach((map) => {
-      var dist = character.x - map.x + (character.y - map.y);
+      var dist = this.data.x - map.x + (this.data.y - map.y);
       if (dist < closestDistance) {
         closestDistance = dist;
         closestMap = map;
