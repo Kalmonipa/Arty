@@ -1,14 +1,20 @@
-import { actionMove } from "../api_calls/Character";
+import { actionCraft, actionGather, actionMove, actionRest } from "../api_calls/Actions";
 import { HealthStatus } from "../types/CharacterData";
-import { CharacterSchema, MapSchema } from "../types/types";
+import {
+  CharacterSchema,
+  CraftingSchema,
+  DestinationSchema,
+  MapSchema,
+  SimpleItemSchema,
+} from "../types/types";
 import { logger, sleep } from "../utils";
+import { ApiError } from "./ErrorClass";
 
-class Character {
-  name: string;
+export class Character {
   data: CharacterSchema;
 
-  constructor(name: string) {
-    name = this.name;
+  constructor(data: CharacterSchema) {
+    this.data = data;
     // Do something
   }
 
@@ -54,6 +60,27 @@ class Character {
   }
 
   /**
+   * @description Craft the item. Character must be on the correct crafting map
+   */
+  async craft(targetItem: CraftingSchema) {
+    logger.info(`Crafting ${targetItem.quantity} ${targetItem.code} at x: ${this.data.x}, y: ${this.data.y}`);
+
+    const craftResponse = await actionCraft(this.data.name, targetItem);
+
+    if (craftResponse instanceof ApiError) {
+      logger.warn(
+        `${craftResponse.error.message} [Code: ${craftResponse.error.code}]`,
+      );
+      if (craftResponse.error.code === 499) {
+        await sleep(5)
+      }
+      return true;
+    }
+
+    this.data = craftResponse.data.character;
+  }
+
+  /**
    * @description Finds the closest map based on manhattan distance from current location
    */
   evaluateClosestMap(maps: MapSchema[]): MapSchema {
@@ -76,26 +103,85 @@ class Character {
   /**
    * @description moves the character to the destination if they are not already there
    */
-  async moveCharacter(targetX: number, targetY: number) {
-    if (
-        this.data.x === targetX &&
-        this.data.y === targetY
-      ) {
-        logger.info(
-          `Already at location x: ${targetX}, y: ${this.data.y}`,
-        );
-      } else {
-        logger.info(
-          `Moving to x: ${targetX}, y: ${targetY}`,
-        );
-    
-        const moveResponse = await actionMove(
-          this.data.name,
-          targetX,
-          targetX,
-        );
-        this.data = moveResponse.data.character;
-        await sleep(moveResponse.data.cooldown.remaining_seconds);
+  async gather() {
+    logger.info(`Gathering at x: ${this.data.x}, y: ${this.data.y}`);
+
+    const gatherResponse = await actionGather(this.data.name);
+
+    if (gatherResponse instanceof ApiError) {
+      logger.warn(
+        `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
+      );
+      if (gatherResponse.error.code === 499) {
+        await sleep(5)
       }
+      return true;
+    }
+
+    this.data = gatherResponse.data.character;
   }
+
+  /**
+ * Returns what percentage of the backpack is full
+ * @param char Character info to parse
+ */
+ getInventoryFullness(): number {
+  var usedSpace = 0;
+  this.data.inventory.forEach((invSlot) => {
+    usedSpace += invSlot.quantity;
+  });
+
+  return Math.round((usedSpace / this.data.inventory_max_items) * 100);
+}
+
+
+  /**
+   * @description moves the character to the destination if they are not already there
+   */
+  async move(destination: DestinationSchema) {
+
+    if (this.data.x === destination.x && this.data.y === destination.y) {
+      return;
+    }
+
+    logger.info(`Moving to x: ${destination.x}, y: ${destination.y}`);
+
+    const moveResponse = await actionMove(this.data.name, {
+      x: destination.x,
+      y: destination.y,
+    });
+
+    if (moveResponse instanceof ApiError) {
+      logger.warn(
+        `${moveResponse.error.message} [Code: ${moveResponse.error.code}]`,
+      );
+      if (moveResponse.error.code === 499) {
+        await sleep(5)
+      }
+      return true;
+    }
+    this.data = moveResponse.data.character;
+  }
+    /**
+   * @description moves the character to the destination if they are not already there
+   */
+  async rest() {
+    const restResponse = await actionRest(this.data.name);
+
+    if (restResponse instanceof ApiError) {
+      logger.warn(
+        `${restResponse.error.message} [Code: ${restResponse.error.code}]`,
+      );
+      if (restResponse.error.code === 499) {
+        await sleep(5)
+      }
+      return true;
+    }
+
+    logger.info(
+      `Recovered ${restResponse.data.hp_restored} health`,
+    );
+    this.data = restResponse.data.character;
+  }
+
 }

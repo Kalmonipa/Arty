@@ -28,8 +28,9 @@ export async function beTaskmaster(): Promise<boolean> {
   if (character.task_total === character.task_progress) {
     logger.info(`Task ${character.task} complete`);
 
-    const taskMasterLocation = await getMaps("monsters", "tasks_master")
-    .then(locations => evaluateClosestMap(character, locations.data));
+    const taskMasterLocation = await getMaps("monsters", "tasks_master").then(
+      (locations) => evaluateClosestMap(character, locations.data),
+    );
 
     const latestLocation = await getCharacterLocation(character.name);
 
@@ -56,8 +57,12 @@ export async function beTaskmaster(): Promise<boolean> {
 
     const completeTaskResponse = await completeTask(character.name);
     var itemsReceived: string;
-    completeTaskResponse.data.rewards.items.forEach(item => itemsReceived += item.code)
-    logger.info(`Received ${itemsReceived} and ${completeTaskResponse.data.rewards.gold} gold for completing task`)
+    completeTaskResponse.data.rewards.items.forEach(
+      (item) => (itemsReceived += item.code),
+    );
+    logger.info(
+      `Received ${itemsReceived} and ${completeTaskResponse.data.rewards.gold} gold for completing task`,
+    );
     character = completeTaskResponse.data.character;
     await sleep(completeTaskResponse.data.cooldown.remaining_seconds);
     return true; // Tells the caller to stop all actions because role is complete
@@ -81,8 +86,9 @@ export async function beTaskmaster(): Promise<boolean> {
 
   character = await evaluateDepositItemsInBank(character);
 
-  const monsterLocation = await getMaps(character.task, "monster")
-  .then((locations) => evaluateClosestMap(character, locations.data));
+  const monsterLocation = await getMaps(character.task, "monster").then(
+    (locations) => evaluateClosestMap(character, locations.data),
+  );
 
   const latestLocation = await getCharacterLocation(character.name);
 
@@ -98,9 +104,7 @@ export async function beTaskmaster(): Promise<boolean> {
       `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
     );
   } else {
-    logger.info(
-      `Moving to x: ${monsterLocation.x}, y: ${monsterLocation.y}`,
-    );
+    logger.info(`Moving to x: ${monsterLocation.x}, y: ${monsterLocation.y}`);
 
     const moveResponse = await actionMove(
       character.name,

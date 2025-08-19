@@ -5,6 +5,9 @@ import { beFighter } from "./roles/fighter";
 import { beLumberjack } from "./roles/lumberjack";
 import { beMiner } from "./roles/miner";
 import { beTaskmaster } from "./roles/taskmaster";
+import { Character } from "./classes/CharacterClass";
+import { CharName } from "./constants";
+import { getCharacter } from "./api_calls/Character";
 
 let role = getEnv("ROLE"); // ToDo: Pick a random role if none supplied
 let shouldStopActions = false;
@@ -15,6 +18,7 @@ let validRoles = [
   "lumberjack",
   "miner",
   "taskmaster",
+  "test",
 ];
 
 async function main() {
@@ -48,6 +52,14 @@ async function main() {
       case "taskmaster": {
         shouldStopActions = await beTaskmaster(); // Returns true when task is complete
         break;
+      }
+      case "test": {
+        const charData = await getCharacter(CharName);
+        const char = new Character(charData);
+        await char.move({x: 5, y: 2})
+        await char.gather()
+        
+        //shouldStopActions = true;
       }
     }
   }
