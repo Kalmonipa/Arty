@@ -8,7 +8,7 @@ import { logger, sleep } from "../utils";
 import {
   getCharacter,
   getCharacterLocation,
-  moveCharacter,
+  actionMove,
   restCharacter,
 } from "../api_calls/Character";
 import { getMaps } from "../api_calls/Map";
@@ -78,7 +78,7 @@ export async function beFighter() {
       `Moving to x: ${monsterLocations.data[0].x}, y: ${monsterLocations.data[0].y}`,
     );
 
-    const moveResponse = await moveCharacter(
+    const moveResponse = await actionMove(
       character.name,
       monsterLocations.data[0].x,
       monsterLocations.data[0].y,

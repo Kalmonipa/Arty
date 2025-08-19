@@ -1,5 +1,5 @@
 import { depositItems } from "./api_calls/Bank";
-import { moveCharacter } from "./api_calls/Character";
+import { actionMove } from "./api_calls/Character";
 import { getAllItemInformation } from "./api_calls/Items";
 import { getMaps } from "./api_calls/Map";
 import { MaxInventorySlots } from "./constants";
@@ -73,7 +73,7 @@ export async function findBankAndDepositItems(
     logger.info(`Already at location x: ${character.x}, y: ${character.y}`);
   } else {
     logger.info(`Moving to x: ${bankLocations[0].x}, y: ${bankLocations[0].y}`);
-    const moveResponse = await moveCharacter(
+    const moveResponse = await actionMove(
       character.name,
       bankLocations[0].x,
       bankLocations[0].y,

@@ -9,7 +9,7 @@ import { logger, sleep } from "../utils";
 import {
   getCharacter,
   getCharacterLocation,
-  moveCharacter,
+  actionMove,
   restCharacter,
 } from "../api_calls/Character";
 import { getMaps } from "../api_calls/Map";
@@ -45,7 +45,7 @@ export async function beTaskmaster(): Promise<boolean> {
         `Moving to x: ${taskMasterLocation.x}, y: ${taskMasterLocation.y}`,
       );
 
-      const moveResponse = await moveCharacter(
+      const moveResponse = await actionMove(
         character.name,
         taskMasterLocation.x,
         taskMasterLocation.y,
@@ -102,7 +102,7 @@ export async function beTaskmaster(): Promise<boolean> {
       `Moving to x: ${monsterLocation.x}, y: ${monsterLocation.y}`,
     );
 
-    const moveResponse = await moveCharacter(
+    const moveResponse = await actionMove(
       character.name,
       monsterLocation.x,
       monsterLocation.y,

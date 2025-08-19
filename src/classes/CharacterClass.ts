@@ -1,6 +1,7 @@
+import { actionMove } from "../api_calls/Character";
 import { HealthStatus } from "../types/CharacterData";
 import { CharacterSchema, MapSchema } from "../types/types";
-import { logger } from "../utils";
+import { logger, sleep } from "../utils";
 
 class Character {
   name: string;
@@ -70,5 +71,31 @@ class Character {
     logger.info(`Closest map is at x: ${closestMap.x}, y: ${closestMap.y}`);
 
     return closestMap;
+  }
+
+  /**
+   * @description moves the character to the destination if they are not already there
+   */
+  async moveCharacter(targetX: number, targetY: number) {
+    if (
+        this.data.x === targetX &&
+        this.data.y === targetY
+      ) {
+        logger.info(
+          `Already at location x: ${targetX}, y: ${this.data.y}`,
+        );
+      } else {
+        logger.info(
+          `Moving to x: ${targetX}, y: ${targetY}`,
+        );
+    
+        const moveResponse = await actionMove(
+          this.data.name,
+          targetX,
+          targetX,
+        );
+        this.data = moveResponse.data.character;
+        await sleep(moveResponse.data.cooldown.remaining_seconds);
+      }
   }
 }

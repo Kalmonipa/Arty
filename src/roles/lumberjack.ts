@@ -2,7 +2,7 @@ import { CharName } from "../constants";
 import {
   getCharacter,
   getCharacterLocation,
-  moveCharacter,
+  actionMove,
 } from "../api_calls/Character";
 import { getMaps } from "../api_calls/Map";
 import {
@@ -61,7 +61,7 @@ export async function beLumberjack(objective?: {
       `Moving to x: ${treeLocations.data[0].x}, y: ${treeLocations.data[0].y}`,
     );
 
-    const moveResponse = await moveCharacter(
+    const moveResponse = await actionMove(
       character.name,
       treeLocations.data[0].x,
       treeLocations.data[0].y,

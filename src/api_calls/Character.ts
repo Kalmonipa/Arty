@@ -1,4 +1,5 @@
 import { ApiUrl, MyHeaders } from "../constants";
+import { ApiError } from "../classes/ErrorClass";
 import {
   ActionCraftingMyNameActionCraftingPostData,
   ActionCraftingMyNameActionCraftingPostResponse,
@@ -90,7 +91,7 @@ export async function getCharacterLocation(
  * @param y
  * @returns
  */
-export async function moveCharacter(
+export async function actionMove(
   charName: string,
   x: number,
   y: number,
@@ -110,16 +111,17 @@ export async function moveCharacter(
       requestOptions,
     );
     if (!response.ok) {
-      logger.error(`Move failed: ${response.status}`);
-    }
-    if (response.status === 490) {
+      throw new Error(`Move failed: ${response.status}`);
+    } else if (response.status === 490) {
       logger.error("Character is already at the location");
     } else {
+      {
       const result = await response.json();
       return result;
     }
+  }
   } catch (error) {
-    logger.error(error.message);
+    logger.error(error)
   }
 }
 
