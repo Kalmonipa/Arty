@@ -1,5 +1,6 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import {
+  DataPageResourceSchema,
   GetAllResourcesResourcesGetData,
   GetAllResourcesResourcesGetResponse,
   SkillResponseSchema,
@@ -26,7 +27,7 @@ export async function gatherResources(
 
 export async function getResourceInformation(
   data: GetAllResourcesResourcesGetData,
-): Promise<GetAllResourcesResourcesGetResponse> {
+): Promise<DataPageResourceSchema> {
   var requestOptions = {
     method: "GET",
     headers: MyHeaders,

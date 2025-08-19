@@ -11,7 +11,7 @@ import {
   actionMove,
   restCharacter,
 } from "../api_calls/Character";
-import { getMaps } from "../api_calls/Map";
+import { getMaps } from "../api_calls/Maps";
 import { fightMonster, getMonsterInformation } from "../api_calls/Monsters";
 import { HealthStatus } from "../types/CharacterData";
 import { CharacterSchema } from "../types/types";

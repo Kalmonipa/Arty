@@ -1,3 +1,4 @@
+import { ApiError } from "../classes/ErrorClass";
 import { ApiUrl, MyHeaders } from "../constants";
 import { GetAllMapsMapsGetResponse } from "../types/types";
 import { logger } from "../utils";
@@ -21,17 +22,10 @@ export async function getMaps(
   }
 
   try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      logger.error(`/maps failed: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
+    const result = (await fetch(apiUrl, requestOptions)).json();
+
+    return result;
   } catch (error) {
-    logger.error(error, "get content location failed");
+    logger.error(error, "get maps failed");
   }
 }
-
-/**
- * @description Find closest map to current location
- */

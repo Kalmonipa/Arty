@@ -5,7 +5,7 @@ import {
   getCharacterLocation,
   actionMove,
 } from "../api_calls/Character";
-import { getMaps } from "../api_calls/Map";
+import { getMaps } from "../api_calls/Maps";
 import {
   getResourceInformation,
   gatherResources,

@@ -1,7 +1,6 @@
 import { depositItems } from "./api_calls/Bank";
 import { actionMove } from "./api_calls/Character";
 import { getAllItemInformation } from "./api_calls/Items";
-import { getMaps } from "./api_calls/Map";
 import { MaxInventorySlots } from "./constants";
 import { logger, sleep } from "./utils";
 import { HealthStatus } from "./types/CharacterData";
@@ -14,6 +13,7 @@ import {
   MapSchema,
   SimpleItemSchema,
 } from "./types/types";
+import { getMaps } from "./api_calls/Maps";
 
 /**
  * Returns the percentage of health we have and what is needed to get to 100%

@@ -1,3 +1,4 @@
+import { Character } from "../classes/CharacterClass";
 import { ApiError } from "../classes/ErrorClass";
 import { ApiUrl, MyHeaders } from "../constants";
 import {
@@ -24,7 +25,7 @@ import { logger, sleep } from "../utils";
  * @returns {SkillResponseSchema}
  */
 export async function actionCraft(
-  characterName: string,
+  character: CharacterSchema,
   craftData: CraftingSchema,
 ): Promise<SkillResponseSchema | ApiError> {
   var requestOptions = {
@@ -35,19 +36,29 @@ export async function actionCraft(
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${characterName}/action/crafting`,
+      `${ApiUrl}/my/${character.name}/action/crafting`,
       requestOptions,
     );
 
     if (!response.ok) {
-        var message: string
-        switch (response.status) {
-            case 404: message = 'Craft not found.'; break;
-            case 478: message = 'Missing item or insufficient quantity.'; break;
-            case 486: message = 'An action is already in progress for this character.'; break;
-            case 493: message = 'The characters skill level is too low.'; break;
-            case 497: message = 'The characters inventory is full.'; break;
-        }
+      var message: string;
+      switch (response.status) {
+        case 404:
+          message = "Craft not found.";
+          break;
+        case 478:
+          message = "Missing item or insufficient quantity.";
+          break;
+        case 486:
+          message = "An action is already in progress for this character.";
+          break;
+        case 493:
+          message = "The characters skill level is too low.";
+          break;
+        case 497:
+          message = "The characters inventory is full.";
+          break;
+      }
       throw new ApiError({
         code: response.status,
         message: message,
@@ -71,31 +82,41 @@ export async function actionCraft(
  * @returns {SkillResponseSchema}
  */
 export async function actionDepositGold(
-  characterName: string,
+  character: CharacterSchema,
   quantity: number,
 ): Promise<BankGoldTransactionResponseSchema | ApiError> {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,
-    body: JSON.stringify({quantity: quantity}),
+    body: JSON.stringify({ quantity: quantity }),
   };
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${characterName}/action/bank/deposit/gold`,
+      `${ApiUrl}/my/${character.name}/action/bank/deposit/gold`,
       requestOptions,
     );
 
-
     if (!response.ok) {
-        var message: string
-        switch (response.status) {
-            case 461: message = 'Some of your items or your gold in the bank are already part of an ongoing transaction.'; break;
-            case 486: message = 'An action is already in progress for this character.'; break;
-            case 492: message = 'The character does not have enough gold.'; break;
-            case 498: message = 'Character not found.'; break;
-            case 499: message = 'The character is in cooldown.'; break;
-        }
+      var message: string;
+      switch (response.status) {
+        case 461:
+          message =
+            "Some of your items or your gold in the bank are already part of an ongoing transaction.";
+          break;
+        case 486:
+          message = "An action is already in progress for this character.";
+          break;
+        case 492:
+          message = "The character does not have enough gold.";
+          break;
+        case 498:
+          message = "Character not found.";
+          break;
+        case 499:
+          message = "The character is in cooldown.";
+          break;
+      }
       throw new ApiError({
         code: response.status,
         message: message,
@@ -103,7 +124,9 @@ export async function actionDepositGold(
     }
 
     const result: BankGoldTransactionResponseSchema = await response.json();
-      logger.info(`Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`);
+    logger.info(
+      `Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
+    );
     return result;
   } catch (error) {
     return error;
@@ -117,7 +140,7 @@ export async function actionDepositGold(
  * @returns {BankItemTransactionResponseSchema}
  */
 export async function actionDepositItem(
-  characterName: string,
+  character: CharacterSchema,
   items: SimpleItemSchema[],
 ): Promise<BankItemTransactionResponseSchema | ApiError> {
   var requestOptions = {
@@ -128,20 +151,30 @@ export async function actionDepositItem(
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${characterName}/action/bank/deposit/item`,
+      `${ApiUrl}/my/${character.name}/action/bank/deposit/item`,
       requestOptions,
     );
 
-
     if (!response.ok) {
-        var message: string
-        switch (response.status) {
-            case 404: message = 'Item not found.'; break;
-            case 461: message = 'Some of your items or your gold in the bank are already part of an ongoing transaction.'; break;
-            case 462: message = 'Your bank is full.'; break;
-            case 478: message = 'Missing item or insufficient quantity.'; break;
-            case 486: message = 'An action is already in progress for this character.'; break;
-        }
+      var message: string;
+      switch (response.status) {
+        case 404:
+          message = "Item not found.";
+          break;
+        case 461:
+          message =
+            "Some of your items or your gold in the bank are already part of an ongoing transaction.";
+          break;
+        case 462:
+          message = "Your bank is full.";
+          break;
+        case 478:
+          message = "Missing item or insufficient quantity.";
+          break;
+        case 486:
+          message = "An action is already in progress for this character.";
+          break;
+      }
       throw new ApiError({
         code: response.status,
         message: message,
@@ -154,8 +187,8 @@ export async function actionDepositItem(
     });
     return result;
   } catch (error) {
-return error  
-}
+    return error;
+  }
 }
 
 /**
@@ -165,7 +198,7 @@ return error
  * @returns {CharacterFightResponseSchema}
  */
 export async function actionFight(
-  characterName: string,
+  character: CharacterSchema,
 ): Promise<CharacterFightResponseSchema | ApiError> {
   var requestOptions = {
     method: "POST",
@@ -174,19 +207,29 @@ export async function actionFight(
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${characterName}/action/fight`,
+      `${ApiUrl}/my/${character.name}/action/fight`,
       requestOptions,
     );
 
     if (!response.ok) {
-        var message: string
-        switch (response.status) {
-            case 486: message = 'An action is already in progress for this character.'; break;
-            case 497: message = 'The characters inventory is full.'; break;
-            case 498: message = 'Character not found.'; break;
-            case 499: message = 'The character is in cooldown.'; break;
-            case 598: message = 'Monster not found on this map.'; break;
-        }
+      var message: string;
+      switch (response.status) {
+        case 486:
+          message = "An action is already in progress for this character.";
+          break;
+        case 497:
+          message = "The characters inventory is full.";
+          break;
+        case 498:
+          message = "Character not found.";
+          break;
+        case 499:
+          message = "The character is in cooldown.";
+          break;
+        case 598:
+          message = "Monster not found on this map.";
+          break;
+      }
       throw new ApiError({
         code: response.status,
         message: message,
@@ -207,32 +250,44 @@ export async function actionFight(
 }
 
 export async function actionGather(
-  characterName: string,
+  character: CharacterSchema,
 ): Promise<SkillResponseSchema | ApiError> {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${characterName}/action/gathering`);
+  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/gathering`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-        var message: string
-        switch (response.status) {
-            case 486: message = 'An action is already in progress for this character.'; break;
-            case 493: message = 'The characters skill level is too low.'; break;
-            case 497: message = 'The characters inventory is full.'; break;
-            case 498: message = 'Character not found.'; break;
-            case 499: message = 'The character is in cooldown.'; break;
-        }
+      var message: string;
+      switch (response.status) {
+        case 486:
+          message = "An action is already in progress for this character.";
+          break;
+        case 493:
+          message = "The characters skill level is too low.";
+          break;
+        case 497:
+          message = "The characters inventory is full.";
+          break;
+        case 498:
+          message = "Character not found.";
+          break;
+        case 499:
+          message = "The character is in cooldown.";
+          break;
+      }
       throw new ApiError({
         code: response.status,
         message: message,
       });
     }
+
+    logger.info(`Gathering at x: ${character.x}, y: ${character.y}`)
 
     const result: SkillResponseSchema = await response.json();
 
@@ -251,7 +306,7 @@ export async function actionGather(
  * @returns
  */
 export async function actionMove(
-  characterName: string,
+  character: CharacterSchema,
   destination: DestinationSchema,
 ): Promise<CharacterMovementResponseSchema | ApiError> {
   var requestOptions = {
@@ -262,19 +317,29 @@ export async function actionMove(
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${characterName}/action/move`,
+      `${ApiUrl}/my/${character.name}/action/move`,
       requestOptions,
     );
 
     if (!response.ok) {
-        var message: string
-        switch (response.status) {
-            case 404: message = 'Map not found'; break;
-            case 486: message = 'An action is already in progress for this character.'; break;
-            case 490: message = 'The character is already at the destination.'; break;
-            case 498: message = 'Character not found.'; break;
-            case 499: message = 'The character is in cooldown.'; break;
-        }
+      var message: string;
+      switch (response.status) {
+        case 404:
+          message = "Map not found";
+          break;
+        case 486:
+          message = "An action is already in progress for this character.";
+          break;
+        case 490:
+          message = "The character is already at the destination.";
+          break;
+        case 498:
+          message = "Character not found.";
+          break;
+        case 499:
+          message = "The character is in cooldown.";
+          break;
+      }
       throw new ApiError({
         code: response.status,
         message: message,
@@ -292,7 +357,7 @@ export async function actionMove(
 }
 
 export async function actionRest(
-  characterName: string,
+  character: CharacterSchema,
 ): Promise<CharacterRestResponseSchema | ApiError> {
   var requestOptions = {
     method: "POST",
@@ -301,17 +366,23 @@ export async function actionRest(
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${characterName}/action/rest`,
+      `${ApiUrl}/my/${character.name}/action/rest`,
       requestOptions,
     );
 
     if (!response.ok) {
-        var message: string
-        switch (response.status) {
-            case 486: message = 'An action is already in progress for this character.'; break;
-            case 498: message = 'Character not found.'; break;
-            case 499: message = 'The character is in cooldown.'; break;
-        }
+      var message: string;
+      switch (response.status) {
+        case 486:
+          message = "An action is already in progress for this character.";
+          break;
+        case 498:
+          message = "Character not found.";
+          break;
+        case 499:
+          message = "The character is in cooldown.";
+          break;
+      }
       throw new ApiError({
         code: response.status,
         message: message,

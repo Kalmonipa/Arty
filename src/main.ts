@@ -56,10 +56,8 @@ async function main() {
       case "test": {
         const charData = await getCharacter(CharName);
         const char = new Character(charData);
-        await char.move({x: 5, y: 2})
-        await char.gather()
-        
-        //shouldStopActions = true;
+        //await char.move({ x: 5, y: 2 });
+        shouldStopActions = await char.gather(10, "shrimp");
       }
     }
   }

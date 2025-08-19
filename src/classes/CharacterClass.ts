@@ -1,11 +1,17 @@
-import { actionCraft, actionGather, actionMove, actionRest } from "../api_calls/Actions";
+import {
+  actionCraft,
+  actionGather,
+  actionMove,
+  actionRest,
+} from "../api_calls/Actions";
+import { getMaps } from "../api_calls/Maps";
+import { getResourceInformation } from "../api_calls/Resources";
 import { HealthStatus } from "../types/CharacterData";
 import {
   CharacterSchema,
   CraftingSchema,
   DestinationSchema,
   MapSchema,
-  SimpleItemSchema,
 } from "../types/types";
 import { logger, sleep } from "../utils";
 import { ApiError } from "./ErrorClass";
@@ -15,7 +21,6 @@ export class Character {
 
   constructor(data: CharacterSchema) {
     this.data = data;
-    // Do something
   }
 
   /**
@@ -27,6 +32,18 @@ export class Character {
       percentage: (this.data.hp / this.data.max_hp) * 100,
       difference: this.data.max_hp - this.data.hp,
     };
+  }
+
+  /**
+   * @description Check inventory for a specific item
+   */
+  checkQuantityOfItemInInv(contentCode: string): number {
+    const foundItem = this.data.inventory.find(item => item.code === contentCode);
+    if (foundItem) {
+      return foundItem.quantity;
+    } else {
+      return 0;
+}
   }
 
   /**
@@ -63,16 +80,18 @@ export class Character {
    * @description Craft the item. Character must be on the correct crafting map
    */
   async craft(targetItem: CraftingSchema) {
-    logger.info(`Crafting ${targetItem.quantity} ${targetItem.code} at x: ${this.data.x}, y: ${this.data.y}`);
+    logger.info(
+      `Crafting ${targetItem.quantity} ${targetItem.code} at x: ${this.data.x}, y: ${this.data.y}`,
+    );
 
-    const craftResponse = await actionCraft(this.data.name, targetItem);
+    const craftResponse = await actionCraft(this.data, targetItem);
 
     if (craftResponse instanceof ApiError) {
       logger.warn(
         `${craftResponse.error.message} [Code: ${craftResponse.error.code}]`,
       );
       if (craftResponse.error.code === 499) {
-        await sleep(5)
+        await sleep(5);
       }
       return true;
     }
@@ -86,6 +105,10 @@ export class Character {
   evaluateClosestMap(maps: MapSchema[]): MapSchema {
     var closestDistance = 1000000;
     var closestMap: MapSchema;
+
+    if (maps.length === 0) {
+      return
+    }
 
     maps.forEach((map) => {
       var dist = this.data.x - map.x + (this.data.y - map.y);
@@ -101,52 +124,82 @@ export class Character {
   }
 
   /**
-   * @description moves the character to the destination if they are not already there
+   * @description Makes the necessary steps to gather the requested amount of items
    */
-  async gather() {
-    logger.info(`Gathering at x: ${this.data.x}, y: ${this.data.y}`);
-
-    const gatherResponse = await actionGather(this.data.name);
-
-    if (gatherResponse instanceof ApiError) {
-      logger.warn(
-        `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
-      );
-      if (gatherResponse.error.code === 499) {
-        await sleep(5)
-      }
+  async gather(expectedQuantity: number, contentCode: string): Promise<boolean> {
+    var numHeld = this.checkQuantityOfItemInInv(contentCode);
+    logger.info(`${numHeld} ${contentCode} in inventory`)
+    if (numHeld >= expectedQuantity) {
+      logger.info(`There are already ${numHeld} in the inventory. Exiting`)
       return true;
     }
 
-    this.data = gatherResponse.data.character;
+    logger.info(`Finding resource map type for ${contentCode}`)
+
+    const resources = await getResourceInformation({query: {drop: contentCode}, url: '/resources'})
+
+    logger.info(`Finding location of ${resources.data[0].code}`);
+
+    const maps = (await getMaps(resources.data[0].code)).data
+
+    if (maps.length === 0) {
+      logger.error(`Cannot find any maps for ${resources.data[0].code}`)
+      return true
+    }
+
+    const contentLocation = this.evaluateClosestMap(maps);
+
+    await this.move({ x: contentLocation.x, y: contentLocation.y });
+
+    for (var count = 0; count < numHeld; count++) {
+      const gatherResponse = await actionGather(this.data);
+
+      if (gatherResponse instanceof ApiError) {
+        logger.warn(
+          `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
+        );
+        if (gatherResponse.error.code === 499) {
+          await sleep(5);
+        }
+        return true;
+      }
+
+      this.data = gatherResponse.data.character;
+    }
+
+    numHeld = this.checkQuantityOfItemInInv(contentCode);
+    if (numHeld >= expectedQuantity) {
+      return true;
+    } else {
+      this.gather(expectedQuantity - numHeld, contentCode);
+    }
+    return false;
   }
 
   /**
- * Returns what percentage of the backpack is full
- * @param char Character info to parse
- */
- getInventoryFullness(): number {
-  var usedSpace = 0;
-  this.data.inventory.forEach((invSlot) => {
-    usedSpace += invSlot.quantity;
-  });
+   * Returns what percentage of the backpack is full
+   * @param char Character info to parse
+   */
+  getInventoryFullness(): number {
+    var usedSpace = 0;
+    this.data.inventory.forEach((invSlot) => {
+      usedSpace += invSlot.quantity;
+    });
 
-  return Math.round((usedSpace / this.data.inventory_max_items) * 100);
-}
-
+    return Math.round((usedSpace / this.data.inventory_max_items) * 100);
+  }
 
   /**
    * @description moves the character to the destination if they are not already there
    */
   async move(destination: DestinationSchema) {
-
     if (this.data.x === destination.x && this.data.y === destination.y) {
       return;
     }
 
     logger.info(`Moving to x: ${destination.x}, y: ${destination.y}`);
 
-    const moveResponse = await actionMove(this.data.name, {
+    const moveResponse = await actionMove(this.data, {
       x: destination.x,
       y: destination.y,
     });
@@ -156,32 +209,30 @@ export class Character {
         `${moveResponse.error.message} [Code: ${moveResponse.error.code}]`,
       );
       if (moveResponse.error.code === 499) {
-        await sleep(5)
+        await sleep(5);
       }
       return true;
     }
     this.data = moveResponse.data.character;
   }
-    /**
+
+  /**
    * @description moves the character to the destination if they are not already there
    */
   async rest() {
-    const restResponse = await actionRest(this.data.name);
+    const restResponse = await actionRest(this.data);
 
     if (restResponse instanceof ApiError) {
       logger.warn(
         `${restResponse.error.message} [Code: ${restResponse.error.code}]`,
       );
       if (restResponse.error.code === 499) {
-        await sleep(5)
+        await sleep(5);
       }
       return true;
     }
 
-    logger.info(
-      `Recovered ${restResponse.data.hp_restored} health`,
-    );
+    logger.info(`Recovered ${restResponse.data.hp_restored} health`);
     this.data = restResponse.data.character;
   }
-
 }
