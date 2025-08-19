@@ -4,8 +4,9 @@ export class ApiError extends Error {
         message: string;
     }
 
-    constructor(error: any) {
-        super()
-        error = this.error
+    constructor(error: { code: number; message: string }) {
+        super(error.message);
+        this.error = error;
+        this.name = 'ApiError';
     }
 }

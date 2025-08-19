@@ -95,7 +95,7 @@ export async function actionMove(
   charName: string,
   x: number,
   y: number,
-): Promise<CharacterMovementResponseSchema> {
+): Promise<CharacterMovementResponseSchema | ApiError> {
   var requestOptions = {
     method: "POST",
     headers: MyHeaders,
@@ -110,18 +110,39 @@ export async function actionMove(
       `${ApiUrl}/my/${charName}/action/move`,
       requestOptions,
     );
-    if (!response.ok) {
-      throw new Error(`Move failed: ${response.status}`);
-    } else if (response.status === 490) {
+    
+    const result = await response.json();
+    
+    // Check if the response contains an error
+    if (result.error) {
+      const apiError = new ApiError(result.error);
+      logger.error(`Move failed: ${result.error.message} (Code: ${result.error.code})`);
+      return apiError;
+    }
+    
+    // Handle specific HTTP status codes
+    if (response.status === 490) {
       logger.error("Character is already at the location");
-    } else {
-      {
-      const result = await response.json();
       return result;
     }
-  }
+    
+    if (!response.ok) {
+      const apiError = new ApiError({
+        code: response.status,
+        message: `Move failed with status: ${response.status}`
+      });
+      logger.error(`Move failed: ${response.status}`);
+      return apiError;
+    }
+    
+    return result;
   } catch (error) {
-    logger.error(error)
+    const apiError = new ApiError({
+      code: 0,
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    logger.error(`Move request failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return apiError;
   }
 }
 
