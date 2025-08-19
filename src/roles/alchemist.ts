@@ -2,7 +2,7 @@ import { CharName } from "../constants";
 import {
   getCharacter,
   getCharacterLocation,
-  moveCharacter,
+  actionMove,
 } from "../api_calls/Character";
 import { getMaps } from "../api_calls/Map";
 import {
@@ -51,7 +51,7 @@ export async function beAlchemist() {
       `Moving to x: ${alchemicalLocations.data[0].x}, y: ${alchemicalLocations.data[0].y}`,
     );
 
-    const moveResponse = await moveCharacter(
+    const moveResponse = await actionMove(
       character.name,
       alchemicalLocations.data[0].x,
       alchemicalLocations.data[0].y,

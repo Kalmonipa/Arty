@@ -3,7 +3,7 @@ import {
   craftItem,
   getCharacter,
   getCharacterLocation,
-  moveCharacter,
+  actionMove,
 } from "../api_calls/Character";
 import { getMaps } from "../api_calls/Map";
 import {
@@ -59,7 +59,7 @@ export async function beFisherman() {
           `Moving to x: ${closestCookingSpot.x}, y: ${closestCookingSpot.y}`,
         );
 
-        const moveResponse = await moveCharacter(
+        const moveResponse = await actionMove(
           character.name,
           closestCookingSpot.x,
           closestCookingSpot.y,
@@ -125,7 +125,7 @@ export async function beFisherman() {
       `Moving to x: ${closestFishingSpot.x}, y: ${closestFishingSpot.y}`,
     );
 
-    const moveResponse = await moveCharacter(
+    const moveResponse = await actionMove(
       character.name,
       closestFishingSpot.x,
       closestFishingSpot.y,

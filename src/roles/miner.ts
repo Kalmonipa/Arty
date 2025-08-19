@@ -2,7 +2,7 @@ import { CharName } from "../constants";
 import {
   getCharacter,
   getCharacterLocation,
-  moveCharacter,
+  actionMove,
 } from "../api_calls/Character";
 import { getMaps } from "../api_calls/Map";
 import {
@@ -12,6 +12,7 @@ import {
 import { logger, sleep } from "../utils";
 import { cooldownStatus, evaluateDepositItemsInBank } from "../actions";
 import { CharacterSchema } from "../types/types";
+import { ApiError } from "../classes/ErrorClass";
 
 export async function beMiner() {
   let character: CharacterSchema = await getCharacter(CharName);
@@ -53,11 +54,33 @@ export async function beMiner() {
       `Moving to x: ${miningLocations.data[0].x}, y: ${miningLocations.data[0].y}`,
     );
 
-    const moveResponse = await moveCharacter(
+    const moveResponse = await actionMove(
       character.name,
       miningLocations.data[0].x,
       miningLocations.data[0].y,
     );
+
+    // Check if the response is an error
+    if (moveResponse instanceof ApiError) {
+      logger.error(
+        `Failed to move character: ${moveResponse.error.message} (Code: ${moveResponse.error.code})`,
+      );
+
+      // Handle specific error codes
+      if (moveResponse.error.code === 452) {
+        logger.error(
+          "Token is missing or empty. Please check your authentication.",
+        );
+        // You might want to retry with a fresh token or exit the function
+        return;
+      }
+
+      // For other errors, you might want to retry or handle differently
+      logger.error("Move operation failed, skipping this iteration");
+      return;
+    }
+
+    // If we get here, the move was successful
     character = moveResponse.data.character;
     await sleep(moveResponse.data.cooldown.remaining_seconds);
   }
