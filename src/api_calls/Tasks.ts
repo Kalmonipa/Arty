@@ -1,5 +1,6 @@
 import { ApiUrl, MyHeaders } from "../constants";
 import { RewardDataResponseSchema } from "../types/types";
+import { logger } from "../utils";
 
 export async function completeTask(
   characterName: string,

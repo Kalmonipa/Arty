@@ -1,6 +1,7 @@
 import {
   checkHealth,
   cooldownStatus,
+  evaluateClosestMap,
   evaluateDepositItemsInBank,
 } from "../actions";
 import { CharName } from "../constants";
@@ -27,32 +28,36 @@ export async function beTaskmaster(): Promise<boolean> {
   if (character.task_total === character.task_progress) {
     logger.info(`Task ${character.task} complete`);
 
-    const taskMasterLocations = await getMaps("monsters", "task_master");
+    const taskMasterLocation = await getMaps("monsters", "tasks_master")
+    .then(locations => evaluateClosestMap(character, locations.data));
 
     const latestLocation = await getCharacterLocation(character.name);
 
     if (
-      latestLocation.x === taskMasterLocations.data[0].x &&
-      latestLocation.y === taskMasterLocations.data[0].y
+      latestLocation.x === taskMasterLocation.x &&
+      latestLocation.y === taskMasterLocation.y
     ) {
       logger.info(
         `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
       );
     } else {
       logger.info(
-        `Moving to x: ${taskMasterLocations.data[0].x}, y: ${taskMasterLocations.data[0].y}`,
+        `Moving to x: ${taskMasterLocation.x}, y: ${taskMasterLocation.y}`,
       );
 
       const moveResponse = await moveCharacter(
         character.name,
-        taskMasterLocations.data[0].x,
-        taskMasterLocations.data[0].y,
+        taskMasterLocation.x,
+        taskMasterLocation.y,
       );
       character = moveResponse.data.character;
       await sleep(moveResponse.data.cooldown.remaining_seconds);
     }
 
     const completeTaskResponse = await completeTask(character.name);
+    var itemsReceived: string;
+    completeTaskResponse.data.rewards.items.forEach(item => itemsReceived += item.code)
+    logger.info(`Received ${itemsReceived} and ${completeTaskResponse.data.rewards.gold} gold for completing task`)
     character = completeTaskResponse.data.character;
     await sleep(completeTaskResponse.data.cooldown.remaining_seconds);
     return true; // Tells the caller to stop all actions because role is complete
@@ -76,7 +81,8 @@ export async function beTaskmaster(): Promise<boolean> {
 
   character = await evaluateDepositItemsInBank(character);
 
-  const monsterLocations = await getMaps(character.task, "monster");
+  const monsterLocation = await getMaps(character.task, "monster")
+  .then((locations) => evaluateClosestMap(character, locations.data));
 
   const latestLocation = await getCharacterLocation(character.name);
 
@@ -85,21 +91,21 @@ export async function beTaskmaster(): Promise<boolean> {
     await sleep(cooldown.timeRemaining);
   }
   if (
-    latestLocation.x === monsterLocations.data[0].x &&
-    latestLocation.y === monsterLocations.data[0].y
+    latestLocation.x === monsterLocation.x &&
+    latestLocation.y === monsterLocation.y
   ) {
     logger.info(
       `Already at location x: ${latestLocation.x}, y: ${latestLocation.y}`,
     );
   } else {
     logger.info(
-      `Moving to x: ${monsterLocations.data[0].x}, y: ${monsterLocations.data[0].y}`,
+      `Moving to x: ${monsterLocation.x}, y: ${monsterLocation.y}`,
     );
 
     const moveResponse = await moveCharacter(
       character.name,
-      monsterLocations.data[0].x,
-      monsterLocations.data[0].y,
+      monsterLocation.x,
+      monsterLocation.y,
     );
     character = moveResponse.data.character;
     await sleep(moveResponse.data.cooldown.remaining_seconds);
