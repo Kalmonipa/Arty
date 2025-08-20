@@ -1,24 +1,24 @@
-import { CharName } from "../constants";
+import { CharName } from '../constants';
 import {
   craftItem,
   getCharacter,
   getCharacterLocation,
   actionMove,
-} from "../api_calls/Character";
-import { getMaps } from "../api_calls/Maps";
+} from '../api_calls/Character';
+import { getMaps } from '../api_calls/Maps';
 import {
   getResourceInformation,
   gatherResources,
-} from "../api_calls/Resources";
-import { logger, sleep } from "../utils";
+} from '../api_calls/Resources';
+import { logger, sleep } from '../utils';
 import {
   cooldownStatus,
   findBankAndDepositItems,
   evaluateCraftingWithCurrentInventory,
   getInventoryFullness,
   evaluateClosestMap,
-} from "../actions";
-import { CharacterSchema } from "../types/types";
+} from '../actions';
+import { CharacterSchema } from '../types/types';
 
 export async function beFisherman() {
   let character: CharacterSchema = await getCharacter(CharName);
@@ -32,13 +32,13 @@ export async function beFisherman() {
     const itemsToCraft = await evaluateCraftingWithCurrentInventory(
       character,
       character.fishing_level,
-      "cooking",
+      'cooking',
     );
 
     if (itemsToCraft.length === 0) {
-      logger.info("No items to craft");
+      logger.info('No items to craft');
     } else {
-      const cookingLocations = await getMaps("cooking", "workshop");
+      const cookingLocations = await getMaps('cooking', 'workshop');
 
       const closestCookingSpot = evaluateClosestMap(
         character,
@@ -72,7 +72,7 @@ export async function beFisherman() {
         const craftResponse = await craftItem(character, {
           body: itemsToCraft[i],
           path: { name: character.name },
-          url: "/my/{name}/action/crafting",
+          url: '/my/{name}/action/crafting',
         });
         character = craftResponse.data.character;
         await sleep(craftResponse.data.cooldown.remaining_seconds);
@@ -90,15 +90,15 @@ export async function beFisherman() {
 
   const fishingTypes = await getResourceInformation({
     query: {
-      skill: "fishing",
+      skill: 'fishing',
       max_level: character.fishing_level,
     },
-    url: "/resources",
+    url: '/resources',
   });
 
   const fishingLocations = await getMaps(
     fishingTypes.data[fishingTypes.data.length - 1].code,
-    "resource",
+    'resource',
   );
 
   const closestFishingSpot = evaluateClosestMap(

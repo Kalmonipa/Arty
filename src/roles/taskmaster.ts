@@ -3,20 +3,20 @@ import {
   cooldownStatus,
   evaluateClosestMap,
   evaluateDepositItemsInBank,
-} from "../actions";
-import { CharName } from "../constants";
-import { logger, sleep } from "../utils";
+} from '../actions';
+import { CharName } from '../constants';
+import { logger, sleep } from '../utils';
 import {
   getCharacter,
   getCharacterLocation,
   actionMove,
   restCharacter,
-} from "../api_calls/Character";
-import { getMaps } from "../api_calls/Maps";
-import { fightMonster, getMonsterInformation } from "../api_calls/Monsters";
-import { HealthStatus } from "../types/CharacterData";
-import { CharacterSchema } from "../types/types";
-import { completeTask } from "../api_calls/Tasks";
+} from '../api_calls/Character';
+import { getMaps } from '../api_calls/Maps';
+import { fightMonster, getMonsterInformation } from '../api_calls/Monsters';
+import { HealthStatus } from '../types/CharacterData';
+import { CharacterSchema } from '../types/types';
+import { completeTask } from '../api_calls/Tasks';
 
 /**
  * Currently only supports Monster tasks
@@ -28,7 +28,7 @@ export async function beTaskmaster(): Promise<boolean> {
   if (character.task_total === character.task_progress) {
     logger.info(`Task ${character.task} complete`);
 
-    const taskMasterLocation = await getMaps("monsters", "tasks_master").then(
+    const taskMasterLocation = await getMaps('monsters', 'tasks_master').then(
       (locations) => evaluateClosestMap(character, locations.data),
     );
 
@@ -86,7 +86,7 @@ export async function beTaskmaster(): Promise<boolean> {
 
   character = await evaluateDepositItemsInBank(character);
 
-  const monsterLocation = await getMaps(character.task, "monster").then(
+  const monsterLocation = await getMaps(character.task, 'monster').then(
     (locations) => evaluateClosestMap(character, locations.data),
   );
 

@@ -1,29 +1,20 @@
-import { getMaps } from "../api_calls/Maps";
-import { ApiUrl, MyHeaders } from "../constants";
-import { HealthStatus } from "../types/CharacterData";
-import {
-  CharacterSchema,
-  GetAllMapsMapsGetResponse,
-  MapSchema,
-  SimpleItemSchema,
-} from "../types/types";
-import { logger } from "../utils";
-import { Character } from "./CharacterClass";
+import * as crypto from 'node:crypto';
+import { ObjectiveStatus, ObjectiveTargets } from '../types/ObjectiveData';
+import { Character } from './CharacterClass';
 
-export class Objective {
-  character: Character;
-  target?: SimpleItemSchema;
+export abstract class Objective {
+  objectiveId: string;
+  status: ObjectiveStatus;
 
-  constructor(character: Character, target?: SimpleItemSchema) {
-    this.character = character;
-    this.target = target;
+  constructor(objectiveId: string, status: ObjectiveStatus) {
+    // appending a random string to the objectiveId to ensure uniqueness
+    this.objectiveId =
+      objectiveId + `_${crypto.randomBytes(2).toString('hex')}`;
+    this.status = status;
   }
 
-  async findObjectiveLocations(): Promise<MapSchema[]> {
-    var contentCode: string;
-    if (this.target.code) {
-      contentCode = this.target.code;
-    }
-    return (await getMaps(contentCode)).data;
-  }
+  abstract execute(
+    character: Character,
+    target?: ObjectiveTargets,
+  ): Promise<boolean>;
 }

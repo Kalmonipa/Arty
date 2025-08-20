@@ -1,4 +1,4 @@
-import { CharacterSchema, CooldownSchema, SimpleItemSchema } from "./types";
+import { CharacterSchema, CooldownSchema, SimpleItemSchema } from './types';
 
 export type BankItemTransaction = {
   cooldown: CooldownSchema;

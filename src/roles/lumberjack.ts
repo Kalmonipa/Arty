@@ -1,17 +1,17 @@
-import { CharName } from "../constants";
+import { CharName } from '../constants';
 import {
   getCharacter,
   getCharacterLocation,
   actionMove,
-} from "../api_calls/Character";
-import { getMaps } from "../api_calls/Maps";
+} from '../api_calls/Character';
+import { getMaps } from '../api_calls/Maps';
 import {
   getResourceInformation,
   gatherResources,
-} from "../api_calls/Resources";
-import { logger, sleep } from "../utils";
-import { cooldownStatus, evaluateDepositItemsInBank } from "../actions";
-import { CharacterSchema, DataPageMapSchema } from "../types/types";
+} from '../api_calls/Resources';
+import { logger, sleep } from '../utils';
+import { cooldownStatus, evaluateDepositItemsInBank } from '../actions';
+import { CharacterSchema, DataPageMapSchema } from '../types/types';
 
 export async function beLumberjack(objective?: {
   content_code: string;
@@ -26,19 +26,19 @@ export async function beLumberjack(objective?: {
   // ToDo: Gathering roles can all use the same flow and have logic to choose which resource to find
   const woodcuttingTypes = await getResourceInformation({
     query: {
-      skill: "woodcutting",
+      skill: 'woodcutting',
       max_level: character.woodcutting_level,
     },
-    url: "/resources",
+    url: '/resources',
   });
 
   var treeLocations: DataPageMapSchema;
   if (objective) {
-    treeLocations = await getMaps(objective.content_code, "resource");
+    treeLocations = await getMaps(objective.content_code, 'resource');
   } else {
     treeLocations = await getMaps(
       woodcuttingTypes.data[woodcuttingTypes.data.length - 1].code,
-      "resource",
+      'resource',
     );
   }
 

@@ -1,26 +1,56 @@
 import {
   actionCraft,
+  actionDepositItems,
+  actionFight,
   actionGather,
   actionMove,
   actionRest,
-} from "../api_calls/Actions";
-import { getMaps } from "../api_calls/Maps";
-import { getResourceInformation } from "../api_calls/Resources";
-import { HealthStatus } from "../types/CharacterData";
+  actionWithdrawItem,
+} from '../api_calls/Actions';
+import { getMaps } from '../api_calls/Maps';
+import { HealthStatus } from '../types/CharacterData';
+import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   CharacterSchema,
   CraftingSchema,
   DestinationSchema,
   MapSchema,
-} from "../types/types";
-import { logger, sleep } from "../utils";
-import { ApiError } from "./ErrorClass";
+} from '../types/types';
+import { logger, sleep } from '../utils';
+import { CraftObjective } from './CraftObjectiveClass';
+import { ApiError } from './ErrorClass';
+import { GatherObjective } from './GatherObjectiveClass';
+import { Objective } from './ObjectiveClass';
 
 export class Character {
   data: CharacterSchema;
+  jobList: Objective[] = [];
+
+  // Max default number of slots. Can be increased with a backpack
+  maxInventorySlots = 20;
 
   constructor(data: CharacterSchema) {
     this.data = data;
+  }
+
+  /**
+   * Adds an objective to the end of the job list
+   * @param obj
+   */
+  addJob(obj: Objective) {
+    this.jobList.push(obj);
+    logger.info(`Added to job list: ${obj.objectiveId}`);
+  }
+
+  /**
+   * Executes all jobs in the job list
+   */
+  async executeJobList() {
+    for (const obj of this.jobList) {
+      logger.info(`Executing job ${obj.objectiveId}`);
+      await obj.execute(this);
+    }
+    return true;
   }
 
   /**
@@ -38,12 +68,14 @@ export class Character {
    * @description Check inventory for a specific item
    */
   checkQuantityOfItemInInv(contentCode: string): number {
-    const foundItem = this.data.inventory.find(item => item.code === contentCode);
+    const foundItem = this.data.inventory.find(
+      (item) => item.code === contentCode,
+    );
     if (foundItem) {
       return foundItem.quantity;
     } else {
       return 0;
-}
+    }
   }
 
   /**
@@ -55,9 +87,7 @@ export class Character {
     inCooldown: boolean;
     timeRemaining: number;
   } {
-    const timestamp = this.data.cooldown_expiration;
-
-    const targetDate = new Date(timestamp);
+    const targetDate = new Date(this.data.cooldown_expiration);
 
     const now = new Date();
 
@@ -65,9 +95,9 @@ export class Character {
       return { inCooldown: false, timeRemaining: 0 };
     } else {
       const timeToWait =
-        Math.floor((targetDate.getTime() - now.getTime()) / 1000) + 2;
+        Math.floor((targetDate.getTime() - now.getTime()) / 1000) + 2; // Arbitrarily adding 2 secconds here
       logger.info(
-        `Cooldown is still ongoing. Waiting for ${timeToWait} seconds until ${timestamp}`,
+        `Cooldown is still ongoing. Waiting for ${timeToWait} seconds until ${this.data.cooldown_expiration}`,
       );
       return {
         inCooldown: true,
@@ -79,24 +109,48 @@ export class Character {
   /**
    * @description Craft the item. Character must be on the correct crafting map
    */
-  async craft(targetItem: CraftingSchema) {
-    logger.info(
-      `Crafting ${targetItem.quantity} ${targetItem.code} at x: ${this.data.x}, y: ${this.data.y}`,
+  craft(quantity: number, code: string) {
+    this.addJob(
+      new CraftObjective(this, {
+        code: code,
+        quantity: quantity,
+      }),
     );
+  }
 
-    const craftResponse = await actionCraft(this.data, targetItem);
+  /**
+   * @description withdraw the specified items from the bank
+   */
+  async deposit(quantity: number, itemCode: string): Promise<boolean> {
+    logger.info(`Finding location of the bank`);
 
-    if (craftResponse instanceof ApiError) {
-      logger.warn(
-        `${craftResponse.error.message} [Code: ${craftResponse.error.code}]`,
-      );
-      if (craftResponse.error.code === 499) {
-        await sleep(5);
-      }
+    const maps = (await getMaps(undefined, 'bank')).data;
+
+    if (maps.length === 0) {
+      logger.error(`Cannot find the bank. This shouldn't happen ??`);
       return true;
     }
 
-    this.data = craftResponse.data.character;
+    const contentLocation = this.evaluateClosestMap(maps);
+
+    await this.move({ x: contentLocation.x, y: contentLocation.y });
+
+    const response = await actionDepositItems(this.data, [
+      { quantity: quantity, code: itemCode },
+    ]);
+
+    if (response instanceof ApiError) {
+      if (response.error.code === 499) {
+        logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
+        await sleep(5);
+      }
+    } else {
+      response.data.items.forEach((item) => {
+        logger.info(`Deposited ${item.quantity} ${item.code} into the bank`);
+      });
+      this.data = response.data.character;
+    }
+    return true;
   }
 
   /**
@@ -107,7 +161,7 @@ export class Character {
     var closestMap: MapSchema;
 
     if (maps.length === 0) {
-      return
+      return;
     }
 
     maps.forEach((map) => {
@@ -118,62 +172,70 @@ export class Character {
       }
     });
 
-    logger.info(`Closest map is at x: ${closestMap.x}, y: ${closestMap.y}`);
+    if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
+      logger.info(`Closest map is at x: ${closestMap.x}, y: ${closestMap.y}`);
+    }
 
     return closestMap;
   }
 
   /**
-   * @description Makes the necessary steps to gather the requested amount of items
+   * @description Fight the requested amount of mobs
    */
-  async gather(expectedQuantity: number, contentCode: string): Promise<boolean> {
-    var numHeld = this.checkQuantityOfItemInInv(contentCode);
-    logger.info(`${numHeld} ${contentCode} in inventory`)
-    if (numHeld >= expectedQuantity) {
-      logger.info(`There are already ${numHeld} in the inventory. Exiting`)
-      return true;
-    }
+  async fight(targetNumber: number, contentCode: string): Promise<boolean> {
+    logger.info(`Finding location of ${contentCode}`);
 
-    logger.info(`Finding resource map type for ${contentCode}`)
-
-    const resources = await getResourceInformation({query: {drop: contentCode}, url: '/resources'})
-
-    logger.info(`Finding location of ${resources.data[0].code}`);
-
-    const maps = (await getMaps(resources.data[0].code)).data
+    const maps = (await getMaps(contentCode)).data;
 
     if (maps.length === 0) {
-      logger.error(`Cannot find any maps for ${resources.data[0].code}`)
-      return true
+      logger.error(`Cannot find any maps for ${contentCode}`);
+      return true;
     }
 
     const contentLocation = this.evaluateClosestMap(maps);
 
     await this.move({ x: contentLocation.x, y: contentLocation.y });
 
-    for (var count = 0; count < numHeld; count++) {
-      const gatherResponse = await actionGather(this.data);
+    for (var count = 0; count < targetNumber; count++) {
+      logger.info(`Fought ${count}/${targetNumber} ${contentCode}s`);
+      const healthStatus: HealthStatus = this.checkHealth();
 
-      if (gatherResponse instanceof ApiError) {
-        logger.warn(
-          `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
-        );
-        if (gatherResponse.error.code === 499) {
+      if (healthStatus.percentage !== 100) {
+        if (healthStatus.difference < 300) {
+          await this.rest();
+        } //else {
+        // Eat food
+        //}
+      }
+
+      const response = await actionFight(this.data);
+
+      if (response instanceof ApiError) {
+        logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+        if (response.error.code === 499) {
           await sleep(5);
         }
         return true;
       }
 
-      this.data = gatherResponse.data.character;
+      this.data = response.data.character;
     }
 
-    numHeld = this.checkQuantityOfItemInInv(contentCode);
-    if (numHeld >= expectedQuantity) {
-      return true;
-    } else {
-      this.gather(expectedQuantity - numHeld, contentCode);
-    }
-    return false;
+    logger.info(`Successfully fought ${targetNumber} ${contentCode}s`);
+
+    return true;
+  }
+
+  /**
+   * @description calls the gather endpoint on the current map
+   */
+  async gather(quantity: number, code: string) {
+    this.addJob(
+      new GatherObjective(this, {
+        code: code,
+        quantity: quantity,
+      }),
+    );
   }
 
   /**
@@ -229,10 +291,43 @@ export class Character {
       if (restResponse.error.code === 499) {
         await sleep(5);
       }
+    } else {
+      logger.info(
+        `Recovered ${restResponse.data.hp_restored} health from resting`,
+      );
+      this.data = restResponse.data.character;
+    }
+  }
+
+  /**
+   * @description withdraw the specified items from the bank
+   */
+  async withdraw(quantity: number, itemCode: string): Promise<boolean> {
+    logger.info(`Finding location of the bank`);
+
+    const maps = (await getMaps(undefined, 'bank')).data;
+
+    if (maps.length === 0) {
+      logger.error(`Cannot find the bank. This shouldn't happen ??`);
       return true;
     }
 
-    logger.info(`Recovered ${restResponse.data.hp_restored} health`);
-    this.data = restResponse.data.character;
+    const contentLocation = this.evaluateClosestMap(maps);
+
+    await this.move({ x: contentLocation.x, y: contentLocation.y });
+
+    const response = await actionWithdrawItem(this.data, [
+      { quantity: quantity, code: itemCode },
+    ]);
+
+    if (response instanceof ApiError) {
+      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+      if (response.error.code === 499) {
+        await sleep(5);
+      }
+    } else {
+      this.data = response.data.character;
+    }
+    return true;
   }
 }

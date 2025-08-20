@@ -139,7 +139,7 @@ export type AccountLeaderboardSchema = {
 /**
  * AccountLeaderboardType
  */
-export type AccountLeaderboardType = "achievements_points" | "gold";
+export type AccountLeaderboardType = 'achievements_points' | 'gold';
 
 export type AccountLeaderboardTypeAZAZ09 = AccountLeaderboardType;
 
@@ -147,10 +147,10 @@ export type AccountLeaderboardTypeAZAZ09 = AccountLeaderboardType;
  * AccountStatus
  */
 export type AccountStatus =
-  | "standard"
-  | "founder"
-  | "gold_founder"
-  | "vip_founder";
+  | 'standard'
+  | 'founder'
+  | 'gold_founder'
+  | 'vip_founder';
 
 /**
  * AchievementResponseSchema
@@ -218,15 +218,15 @@ export type AchievementSchema = {
  * AchievementType
  */
 export type AchievementType =
-  | "combat_kill"
-  | "combat_drop"
-  | "combat_level"
-  | "gathering"
-  | "crafting"
-  | "recycling"
-  | "task"
-  | "other"
-  | "use";
+  | 'combat_kill'
+  | 'combat_drop'
+  | 'combat_level'
+  | 'gathering'
+  | 'crafting'
+  | 'recycling'
+  | 'task'
+  | 'other'
+  | 'use';
 
 export type AchievementTypeAZAZ09 = AchievementType;
 
@@ -234,32 +234,32 @@ export type AchievementTypeAZAZ09 = AchievementType;
  * ActionType
  */
 export type ActionType =
-  | "movement"
-  | "fight"
-  | "crafting"
-  | "gathering"
-  | "buy_ge"
-  | "sell_ge"
-  | "buy_npc"
-  | "sell_npc"
-  | "cancel_ge"
-  | "delete_item"
-  | "deposit_item"
-  | "withdraw_item"
-  | "deposit_gold"
-  | "withdraw_gold"
-  | "equip"
-  | "unequip"
-  | "task"
-  | "christmas_exchange"
-  | "recycling"
-  | "rest"
-  | "use"
-  | "buy_bank_expansion"
-  | "give_item"
-  | "give_gold"
-  | "change_skin"
-  | "rename";
+  | 'movement'
+  | 'fight'
+  | 'crafting'
+  | 'gathering'
+  | 'buy_ge'
+  | 'sell_ge'
+  | 'buy_npc'
+  | 'sell_npc'
+  | 'cancel_ge'
+  | 'delete_item'
+  | 'deposit_item'
+  | 'withdraw_item'
+  | 'deposit_gold'
+  | 'withdraw_gold'
+  | 'equip'
+  | 'unequip'
+  | 'task'
+  | 'christmas_exchange'
+  | 'recycling'
+  | 'rest'
+  | 'use'
+  | 'buy_bank_expansion'
+  | 'give_item'
+  | 'give_gold'
+  | 'change_skin'
+  | 'rename';
 
 /**
  * ActiveEventSchema
@@ -732,15 +732,15 @@ export type CharacterLeaderboardSchema = {
  * CharacterLeaderboardType
  */
 export type CharacterLeaderboardType =
-  | "combat"
-  | "woodcutting"
-  | "mining"
-  | "fishing"
-  | "weaponcrafting"
-  | "gearcrafting"
-  | "jewelrycrafting"
-  | "cooking"
-  | "alchemy";
+  | 'combat'
+  | 'woodcutting'
+  | 'mining'
+  | 'fishing'
+  | 'weaponcrafting'
+  | 'gearcrafting'
+  | 'jewelrycrafting'
+  | 'cooking'
+  | 'alchemy';
 
 export type CharacterLeaderboardTypeAZAZ09 = CharacterLeaderboardType;
 
@@ -1206,14 +1206,14 @@ export type CharacterSchema = {
  * CharacterSkin
  */
 export type CharacterSkin =
-  | "men1"
-  | "men2"
-  | "men3"
-  | "women1"
-  | "women2"
-  | "women3"
-  | "corrupted1"
-  | "zombie1";
+  | 'men1'
+  | 'men2'
+  | 'men3'
+  | 'women1'
+  | 'women2'
+  | 'women3'
+  | 'corrupted1'
+  | 'zombie1';
 
 /**
  * CharactersListSchema
@@ -1229,7 +1229,7 @@ export type CharactersListSchema = {
 /**
  * ConditionOperator
  */
-export type ConditionOperator = "eq" | "ne" | "gt" | "lt";
+export type ConditionOperator = 'eq' | 'ne' | 'gt' | 'lt';
 
 /**
  * ConditionSchema
@@ -1311,13 +1311,13 @@ export type CraftSchema = {
  * CraftSkill
  */
 export type CraftSkill =
-  | "weaponcrafting"
-  | "gearcrafting"
-  | "jewelrycrafting"
-  | "cooking"
-  | "woodcutting"
-  | "mining"
-  | "alchemy";
+  | 'weaponcrafting'
+  | 'gearcrafting'
+  | 'jewelrycrafting'
+  | 'cooking'
+  | 'woodcutting'
+  | 'mining'
+  | 'alchemy';
 
 export type CraftSkillAZAZ09 = CraftSkill;
 
@@ -2002,20 +2002,20 @@ export type EffectSchema = {
  * EffectSubtype
  */
 export type EffectSubtype =
-  | "stat"
-  | "other"
-  | "heal"
-  | "buff"
-  | "debuff"
-  | "special"
-  | "gathering"
-  | "teleport"
-  | "gold";
+  | 'stat'
+  | 'other'
+  | 'heal'
+  | 'buff'
+  | 'debuff'
+  | 'special'
+  | 'gathering'
+  | 'teleport'
+  | 'gold';
 
 /**
  * EffectType
  */
-export type EffectType = "equipment" | "consumable" | "combat";
+export type EffectType = 'equipment' | 'consumable' | 'combat';
 
 /**
  * EquipRequestSchema
@@ -2140,7 +2140,7 @@ export type EventSchema = {
 /**
  * FightResult
  */
-export type FightResult = "win" | "loss";
+export type FightResult = 'win' | 'loss';
 
 /**
  * FightSchema
@@ -2393,7 +2393,7 @@ export type GeTransactionSchema = {
 /**
  * GatheringSkill
  */
-export type GatheringSkill = "mining" | "woodcutting" | "fishing" | "alchemy";
+export type GatheringSkill = 'mining' | 'woodcutting' | 'fishing' | 'alchemy';
 
 export type GatheringSkillAZAZ09 = GatheringSkill;
 
@@ -2638,42 +2638,42 @@ export type ItemSchema = {
  * ItemSlot
  */
 export type ItemSlot =
-  | "weapon"
-  | "shield"
-  | "helmet"
-  | "body_armor"
-  | "leg_armor"
-  | "boots"
-  | "ring1"
-  | "ring2"
-  | "amulet"
-  | "artifact1"
-  | "artifact2"
-  | "artifact3"
-  | "utility1"
-  | "utility2"
-  | "bag"
-  | "rune";
+  | 'weapon'
+  | 'shield'
+  | 'helmet'
+  | 'body_armor'
+  | 'leg_armor'
+  | 'boots'
+  | 'ring1'
+  | 'ring2'
+  | 'amulet'
+  | 'artifact1'
+  | 'artifact2'
+  | 'artifact3'
+  | 'utility1'
+  | 'utility2'
+  | 'bag'
+  | 'rune';
 
 /**
  * ItemType
  */
 export type ItemType =
-  | "utility"
-  | "body_armor"
-  | "weapon"
-  | "resource"
-  | "leg_armor"
-  | "helmet"
-  | "boots"
-  | "shield"
-  | "amulet"
-  | "ring"
-  | "artifact"
-  | "currency"
-  | "consumable"
-  | "rune"
-  | "bag";
+  | 'utility'
+  | 'body_armor'
+  | 'weapon'
+  | 'resource'
+  | 'leg_armor'
+  | 'helmet'
+  | 'boots'
+  | 'shield'
+  | 'amulet'
+  | 'ring'
+  | 'artifact'
+  | 'currency'
+  | 'consumable'
+  | 'rune'
+  | 'bag';
 
 export type ItemTypeAZAZ09 = ItemType;
 
@@ -2726,40 +2726,40 @@ export type LogSchema = {
  * LogType
  */
 export type LogType =
-  | "spawn"
-  | "movement"
-  | "fight"
-  | "crafting"
-  | "gathering"
-  | "buy_ge"
-  | "sell_ge"
-  | "buy_npc"
-  | "sell_npc"
-  | "cancel_ge"
-  | "delete_item"
-  | "deposit_item"
-  | "withdraw_item"
-  | "deposit_gold"
-  | "withdraw_gold"
-  | "equip"
-  | "unequip"
-  | "new_task"
-  | "task_exchange"
-  | "task_cancelled"
-  | "task_completed"
-  | "task_trade"
-  | "christmas_exchange"
-  | "recycling"
-  | "rest"
-  | "use"
-  | "buy_bank_expansion"
-  | "achievement"
-  | "give_item"
-  | "give_gold"
-  | "receive_item"
-  | "receive_gold"
-  | "change_skin"
-  | "rename";
+  | 'spawn'
+  | 'movement'
+  | 'fight'
+  | 'crafting'
+  | 'gathering'
+  | 'buy_ge'
+  | 'sell_ge'
+  | 'buy_npc'
+  | 'sell_npc'
+  | 'cancel_ge'
+  | 'delete_item'
+  | 'deposit_item'
+  | 'withdraw_item'
+  | 'deposit_gold'
+  | 'withdraw_gold'
+  | 'equip'
+  | 'unequip'
+  | 'new_task'
+  | 'task_exchange'
+  | 'task_cancelled'
+  | 'task_completed'
+  | 'task_trade'
+  | 'christmas_exchange'
+  | 'recycling'
+  | 'rest'
+  | 'use'
+  | 'buy_bank_expansion'
+  | 'achievement'
+  | 'give_item'
+  | 'give_gold'
+  | 'receive_item'
+  | 'receive_gold'
+  | 'change_skin'
+  | 'rename';
 
 /**
  * MapContentSchema
@@ -2780,13 +2780,13 @@ export type MapContentSchema = {
  * MapContentType
  */
 export type MapContentType =
-  | "monster"
-  | "resource"
-  | "workshop"
-  | "bank"
-  | "grand_exchange"
-  | "tasks_master"
-  | "npc";
+  | 'monster'
+  | 'resource'
+  | 'workshop'
+  | 'bank'
+  | 'grand_exchange'
+  | 'tasks_master'
+  | 'npc';
 
 export type MapContentTypeAZAZ09 = MapContentType;
 
@@ -3069,7 +3069,7 @@ export type NpcSchema = {
 /**
  * NPCType
  */
-export type NpcType = "merchant" | "trader";
+export type NpcType = 'merchant' | 'trader';
 
 export type NpcTypeAZAZ09 = NpcType;
 
@@ -3461,14 +3461,14 @@ export type SimpleItemSchema = {
  * Skill
  */
 export type Skill =
-  | "weaponcrafting"
-  | "gearcrafting"
-  | "jewelrycrafting"
-  | "cooking"
-  | "woodcutting"
-  | "mining"
-  | "alchemy"
-  | "fishing";
+  | 'weaponcrafting'
+  | 'gearcrafting'
+  | 'jewelrycrafting'
+  | 'cooking'
+  | 'woodcutting'
+  | 'mining'
+  | 'alchemy'
+  | 'fishing';
 
 /**
  * SkillDataSchema
@@ -3727,7 +3727,7 @@ export type TaskTradeSchema = {
 /**
  * TaskType
  */
-export type TaskType = "monsters" | "items";
+export type TaskType = 'monsters' | 'items';
 
 export type TaskTypeAZAZ09 = TaskType;
 
@@ -3803,7 +3803,7 @@ export type GetServerDetailsGetData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/";
+  url: '/';
 };
 
 export type GetServerDetailsGetResponses = {
@@ -3820,7 +3820,7 @@ export type GetBankDetailsMyBankGetData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/my/bank";
+  url: '/my/bank';
 };
 
 export type GetBankDetailsMyBankGetResponses = {
@@ -3853,7 +3853,7 @@ export type GetBankItemsMyBankItemsGetData = {
      */
     size?: number;
   };
-  url: "/my/bank/items";
+  url: '/my/bank/items';
 };
 
 export type GetBankItemsMyBankItemsGetResponses = {
@@ -3886,7 +3886,7 @@ export type GetGeSellOrdersMyGrandexchangeOrdersGetData = {
      */
     size?: number;
   };
-  url: "/my/grandexchange/orders";
+  url: '/my/grandexchange/orders';
 };
 
 export type GetGeSellOrdersMyGrandexchangeOrdersGetResponses = {
@@ -3924,7 +3924,7 @@ export type GetGeSellHistoryMyGrandexchangeHistoryGetData = {
      */
     size?: number;
   };
-  url: "/my/grandexchange/history";
+  url: '/my/grandexchange/history';
 };
 
 export type GetGeSellHistoryMyGrandexchangeHistoryGetResponses = {
@@ -3941,7 +3941,7 @@ export type GetAccountDetailsMyDetailsGetData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/my/details";
+  url: '/my/details';
 };
 
 export type GetAccountDetailsMyDetailsGetResponses = {
@@ -3958,7 +3958,7 @@ export type ChangePasswordMyChangePasswordPostData = {
   body: ChangePassword;
   path?: never;
   query?: never;
-  url: "/my/change_password";
+  url: '/my/change_password';
 };
 
 export type ChangePasswordMyChangePasswordPostErrors = {
@@ -3992,7 +3992,7 @@ export type ActionMoveMyNameActionMovePostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/move";
+  url: '/my/{name}/action/move';
 };
 
 export type ActionMoveMyNameActionMovePostErrors = {
@@ -4038,7 +4038,7 @@ export type ActionRestMyNameActionRestPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/rest";
+  url: '/my/{name}/action/rest';
 };
 
 export type ActionRestMyNameActionRestPostErrors = {
@@ -4076,7 +4076,7 @@ export type ActionEquipItemMyNameActionEquipPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/equip";
+  url: '/my/{name}/action/equip';
 };
 
 export type ActionEquipItemMyNameActionEquipPostErrors = {
@@ -4146,7 +4146,7 @@ export type ActionUnequipItemMyNameActionUnequipPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/unequip";
+  url: '/my/{name}/action/unequip';
 };
 
 export type ActionUnequipItemMyNameActionUnequipPostErrors = {
@@ -4204,7 +4204,7 @@ export type ActionUseItemMyNameActionUsePostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/use";
+  url: '/my/{name}/action/use';
 };
 
 export type ActionUseItemMyNameActionUsePostErrors = {
@@ -4258,7 +4258,7 @@ export type ActionFightMyNameActionFightPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/fight";
+  url: '/my/{name}/action/fight';
 };
 
 export type ActionFightMyNameActionFightPostErrors = {
@@ -4304,7 +4304,7 @@ export type ActionGatheringMyNameActionGatheringPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/gathering";
+  url: '/my/{name}/action/gathering';
 };
 
 export type ActionGatheringMyNameActionGatheringPostErrors = {
@@ -4354,7 +4354,7 @@ export type ActionCraftingMyNameActionCraftingPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/crafting";
+  url: '/my/{name}/action/crafting';
 };
 
 export type ActionCraftingMyNameActionCraftingPostErrors = {
@@ -4412,7 +4412,7 @@ export type ActionDepositBankGoldMyNameActionBankDepositGoldPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/bank/deposit/gold";
+  url: '/my/{name}/action/bank/deposit/gold';
 };
 
 export type ActionDepositBankGoldMyNameActionBankDepositGoldPostErrors = {
@@ -4466,7 +4466,7 @@ export type ActionDepositBankItemMyNameActionBankDepositItemPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/bank/deposit/item";
+  url: '/my/{name}/action/bank/deposit/item';
 };
 
 export type ActionDepositBankItemMyNameActionBankDepositItemPostErrors = {
@@ -4527,7 +4527,7 @@ export type ActionWithdrawBankItemMyNameActionBankWithdrawItemPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/bank/withdraw/item";
+  url: '/my/{name}/action/bank/withdraw/item';
 };
 
 export type ActionWithdrawBankItemMyNameActionBankWithdrawItemPostErrors = {
@@ -4585,7 +4585,7 @@ export type ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/bank/withdraw/gold";
+  url: '/my/{name}/action/bank/withdraw/gold';
 };
 
 export type ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostErrors = {
@@ -4635,7 +4635,7 @@ export type ActionBuyBankExpansionMyNameActionBankBuyExpansionPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/bank/buy_expansion";
+  url: '/my/{name}/action/bank/buy_expansion';
 };
 
 export type ActionBuyBankExpansionMyNameActionBankBuyExpansionPostErrors = {
@@ -4681,7 +4681,7 @@ export type ActionNpcBuyItemMyNameActionNpcBuyPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/npc/buy";
+  url: '/my/{name}/action/npc/buy';
 };
 
 export type ActionNpcBuyItemMyNameActionNpcBuyPostErrors = {
@@ -4743,7 +4743,7 @@ export type ActionNpcSellItemMyNameActionNpcSellPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/npc/sell";
+  url: '/my/{name}/action/npc/sell';
 };
 
 export type ActionNpcSellItemMyNameActionNpcSellPostErrors = {
@@ -4801,7 +4801,7 @@ export type ActionRecyclingMyNameActionRecyclingPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/recycling";
+  url: '/my/{name}/action/recycling';
 };
 
 export type ActionRecyclingMyNameActionRecyclingPostErrors = {
@@ -4863,7 +4863,7 @@ export type ActionGeBuyItemMyNameActionGrandexchangeBuyPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/grandexchange/buy";
+  url: '/my/{name}/action/grandexchange/buy';
 };
 
 export type ActionGeBuyItemMyNameActionGrandexchangeBuyPostErrors = {
@@ -4929,7 +4929,7 @@ export type ActionGeCreateSellOrderMyNameActionGrandexchangeSellPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/grandexchange/sell";
+  url: '/my/{name}/action/grandexchange/sell';
 };
 
 export type ActionGeCreateSellOrderMyNameActionGrandexchangeSellPostErrors = {
@@ -4992,7 +4992,7 @@ export type ActionGeCancelSellOrderMyNameActionGrandexchangeCancelPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/grandexchange/cancel";
+  url: '/my/{name}/action/grandexchange/cancel';
 };
 
 export type ActionGeCancelSellOrderMyNameActionGrandexchangeCancelPostErrors = {
@@ -5051,7 +5051,7 @@ export type ActionCompleteTaskMyNameActionTaskCompletePostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/task/complete";
+  url: '/my/{name}/action/task/complete';
 };
 
 export type ActionCompleteTaskMyNameActionTaskCompletePostErrors = {
@@ -5105,7 +5105,7 @@ export type ActionTaskExchangeMyNameActionTaskExchangePostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/task/exchange";
+  url: '/my/{name}/action/task/exchange';
 };
 
 export type ActionTaskExchangeMyNameActionTaskExchangePostErrors = {
@@ -5155,7 +5155,7 @@ export type ActionAcceptNewTaskMyNameActionTaskNewPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/task/new";
+  url: '/my/{name}/action/task/new';
 };
 
 export type ActionAcceptNewTaskMyNameActionTaskNewPostErrors = {
@@ -5201,7 +5201,7 @@ export type ActionTaskTradeMyNameActionTaskTradePostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/task/trade";
+  url: '/my/{name}/action/task/trade';
 };
 
 export type ActionTaskTradeMyNameActionTaskTradePostErrors = {
@@ -5255,7 +5255,7 @@ export type ActionTaskCancelMyNameActionTaskCancelPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/task/cancel";
+  url: '/my/{name}/action/task/cancel';
 };
 
 export type ActionTaskCancelMyNameActionTaskCancelPostErrors = {
@@ -5301,7 +5301,7 @@ export type ActionGiveGoldMyNameActionGiveGoldPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/give/gold";
+  url: '/my/{name}/action/give/gold';
 };
 
 export type ActionGiveGoldMyNameActionGiveGoldPostErrors = {
@@ -5343,7 +5343,7 @@ export type ActionGiveItemsMyNameActionGiveItemPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/give/item";
+  url: '/my/{name}/action/give/item';
 };
 
 export type ActionGiveItemsMyNameActionGiveItemPostErrors = {
@@ -5393,7 +5393,7 @@ export type ActionDeleteItemMyNameActionDeletePostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/delete";
+  url: '/my/{name}/action/delete';
 };
 
 export type ActionDeleteItemMyNameActionDeletePostErrors = {
@@ -5435,7 +5435,7 @@ export type ActionChangeSkinMyNameActionChangeSkinPostData = {
     name: string;
   };
   query?: never;
-  url: "/my/{name}/action/change_skin";
+  url: '/my/{name}/action/change_skin';
 };
 
 export type ActionChangeSkinMyNameActionChangeSkinPostErrors = {
@@ -5478,7 +5478,7 @@ export type GetAllCharactersLogsMyLogsGetData = {
      */
     size?: number;
   };
-  url: "/my/logs";
+  url: '/my/logs';
 };
 
 export type GetAllCharactersLogsMyLogsGetErrors = {
@@ -5519,7 +5519,7 @@ export type GetCharacterLogsMyLogsNameGetData = {
      */
     size?: number;
   };
-  url: "/my/logs/{name}";
+  url: '/my/logs/{name}';
 };
 
 export type GetCharacterLogsMyLogsNameGetErrors = {
@@ -5547,7 +5547,7 @@ export type GetMyCharactersMyCharactersGetData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/my/characters";
+  url: '/my/characters';
 };
 
 export type GetMyCharactersMyCharactersGetResponses = {
@@ -5564,7 +5564,7 @@ export type CreateAccountAccountsCreatePostData = {
   body: AddAccountSchema;
   path?: never;
   query?: never;
-  url: "/accounts/create";
+  url: '/accounts/create';
 };
 
 export type CreateAccountAccountsCreatePostErrors = {
@@ -5592,7 +5592,7 @@ export type ForgotPasswordAccountsForgotPasswordPostData = {
   body: PasswordResetRequestSchema;
   path?: never;
   query?: never;
-  url: "/accounts/forgot_password";
+  url: '/accounts/forgot_password';
 };
 
 export type ForgotPasswordAccountsForgotPasswordPostResponses = {
@@ -5609,7 +5609,7 @@ export type ResetPasswordAccountsResetPasswordPostData = {
   body: PasswordResetConfirmSchema;
   path?: never;
   query?: never;
-  url: "/accounts/reset_password";
+  url: '/accounts/reset_password';
 };
 
 export type ResetPasswordAccountsResetPasswordPostErrors = {
@@ -5668,7 +5668,7 @@ export type GetAccountAchievementsAccountsAccountAchievementsGetData = {
      */
     size?: number;
   };
-  url: "/accounts/{account}/achievements";
+  url: '/accounts/{account}/achievements';
 };
 
 export type GetAccountAchievementsAccountsAccountAchievementsGetErrors = {
@@ -5698,7 +5698,7 @@ export type GetAccountCharactersAccountsAccountCharactersGetData = {
     account: string;
   };
   query?: never;
-  url: "/accounts/{account}/characters";
+  url: '/accounts/{account}/characters';
 };
 
 export type GetAccountCharactersAccountsAccountCharactersGetResponses = {
@@ -5721,7 +5721,7 @@ export type GetAccountAccountsAccountGetData = {
     account: string;
   };
   query?: never;
-  url: "/accounts/{account}";
+  url: '/accounts/{account}';
 };
 
 export type GetAccountAccountsAccountGetErrors = {
@@ -5761,7 +5761,7 @@ export type GetAllAchievementsAchievementsGetData = {
      */
     size?: number;
   };
-  url: "/achievements";
+  url: '/achievements';
 };
 
 export type GetAllAchievementsAchievementsGetResponses = {
@@ -5784,7 +5784,7 @@ export type GetAchievementAchievementsCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/achievements/{code}";
+  url: '/achievements/{code}';
 };
 
 export type GetAchievementAchievementsCodeGetErrors = {
@@ -5819,7 +5819,7 @@ export type GetAllBadgesBadgesGetData = {
      */
     size?: number;
   };
-  url: "/badges";
+  url: '/badges';
 };
 
 export type GetAllBadgesBadgesGetResponses = {
@@ -5842,7 +5842,7 @@ export type GetBadgeBadgesCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/badges/{code}";
+  url: '/badges/{code}';
 };
 
 export type GetBadgeBadgesCodeGetErrors = {
@@ -5866,7 +5866,7 @@ export type CreateCharacterCharactersCreatePostData = {
   body: AddCharacterSchema;
   path?: never;
   query?: never;
-  url: "/characters/create";
+  url: '/characters/create';
 };
 
 export type CreateCharacterCharactersCreatePostErrors = {
@@ -5898,7 +5898,7 @@ export type DeleteCharacterCharactersDeletePostData = {
   body: DeleteCharacterSchema;
   path?: never;
   query?: never;
-  url: "/characters/delete";
+  url: '/characters/delete';
 };
 
 export type DeleteCharacterCharactersDeletePostErrors = {
@@ -5928,7 +5928,7 @@ export type GetCharacterCharactersNameGetData = {
     name: string;
   };
   query?: never;
-  url: "/characters/{name}";
+  url: '/characters/{name}';
 };
 
 export type GetCharacterCharactersNameGetErrors = {
@@ -5963,7 +5963,7 @@ export type GetAllEffectsEffectsGetData = {
      */
     size?: number;
   };
-  url: "/effects";
+  url: '/effects';
 };
 
 export type GetAllEffectsEffectsGetResponses = {
@@ -5986,7 +5986,7 @@ export type GetEffectEffectsCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/effects/{code}";
+  url: '/effects/{code}';
 };
 
 export type GetEffectEffectsCodeGetErrors = {
@@ -6021,7 +6021,7 @@ export type GetAllActiveEventsEventsActiveGetData = {
      */
     size?: number;
   };
-  url: "/events/active";
+  url: '/events/active';
 };
 
 export type GetAllActiveEventsEventsActiveGetResponses = {
@@ -6054,7 +6054,7 @@ export type GetAllEventsEventsGetData = {
      */
     size?: number;
   };
-  url: "/events";
+  url: '/events';
 };
 
 export type GetAllEventsEventsGetResponses = {
@@ -6098,7 +6098,7 @@ export type GetGeSellHistoryGrandexchangeHistoryCodeGetData = {
      */
     size?: number;
   };
-  url: "/grandexchange/history/{code}";
+  url: '/grandexchange/history/{code}';
 };
 
 export type GetGeSellHistoryGrandexchangeHistoryCodeGetErrors = {
@@ -6143,7 +6143,7 @@ export type GetGeSellOrdersGrandexchangeOrdersGetData = {
      */
     size?: number;
   };
-  url: "/grandexchange/orders";
+  url: '/grandexchange/orders';
 };
 
 export type GetGeSellOrdersGrandexchangeOrdersGetResponses = {
@@ -6166,7 +6166,7 @@ export type GetGeSellOrderGrandexchangeOrdersIdGetData = {
     id: string;
   };
   query?: never;
-  url: "/grandexchange/orders/{id}";
+  url: '/grandexchange/orders/{id}';
 };
 
 export type GetGeSellOrderGrandexchangeOrdersIdGetErrors = {
@@ -6231,7 +6231,7 @@ export type GetAllItemsItemsGetData = {
      */
     size?: number;
   };
-  url: "/items";
+  url: '/items';
 };
 
 export type GetAllItemsItemsGetResponses = {
@@ -6254,7 +6254,7 @@ export type GetItemItemsCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/items/{code}";
+  url: '/items/{code}';
 };
 
 export type GetItemItemsCodeGetErrors = {
@@ -6299,7 +6299,7 @@ export type GetCharactersLeaderboardLeaderboardCharactersGetData = {
      */
     size?: number;
   };
-  url: "/leaderboard/characters";
+  url: '/leaderboard/characters';
 };
 
 export type GetCharactersLeaderboardLeaderboardCharactersGetResponses = {
@@ -6337,7 +6337,7 @@ export type GetAccountsLeaderboardLeaderboardAccountsGetData = {
      */
     size?: number;
   };
-  url: "/leaderboard/accounts";
+  url: '/leaderboard/accounts';
 };
 
 export type GetAccountsLeaderboardLeaderboardAccountsGetResponses = {
@@ -6375,7 +6375,7 @@ export type GetAllMapsMapsGetData = {
      */
     size?: number;
   };
-  url: "/maps";
+  url: '/maps';
 };
 
 export type GetAllMapsMapsGetResponses = {
@@ -6403,7 +6403,7 @@ export type GetMapMapsXyGetData = {
     y: number;
   };
   query?: never;
-  url: "/maps/{x}/{y}";
+  url: '/maps/{x}/{y}';
 };
 
 export type GetMapMapsXyGetErrors = {
@@ -6458,7 +6458,7 @@ export type GetAllMonstersMonstersGetData = {
      */
     size?: number;
   };
-  url: "/monsters";
+  url: '/monsters';
 };
 
 export type GetAllMonstersMonstersGetResponses = {
@@ -6481,7 +6481,7 @@ export type GetMonsterMonstersCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/monsters/{code}";
+  url: '/monsters/{code}';
 };
 
 export type GetMonsterMonstersCodeGetErrors = {
@@ -6526,7 +6526,7 @@ export type GetAllNpcsNpcsDetailsGetData = {
      */
     size?: number;
   };
-  url: "/npcs/details";
+  url: '/npcs/details';
 };
 
 export type GetAllNpcsNpcsDetailsGetResponses = {
@@ -6549,7 +6549,7 @@ export type GetNpcNpcsDetailsCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/npcs/details/{code}";
+  url: '/npcs/details/{code}';
 };
 
 export type GetNpcNpcsDetailsCodeGetErrors = {
@@ -6590,7 +6590,7 @@ export type GetNpcItemsNpcsItemsCodeGetData = {
      */
     size?: number;
   };
-  url: "/npcs/items/{code}";
+  url: '/npcs/items/{code}';
 };
 
 export type GetNpcItemsNpcsItemsCodeGetErrors = {
@@ -6640,7 +6640,7 @@ export type GetAllNpcsItemsNpcsItemsGetData = {
      */
     size?: number;
   };
-  url: "/npcs/items";
+  url: '/npcs/items';
 };
 
 export type GetAllNpcsItemsNpcsItemsGetResponses = {
@@ -6688,7 +6688,7 @@ export type GetAllResourcesResourcesGetData = {
      */
     size?: number;
   };
-  url: "/resources";
+  url: '/resources';
 };
 
 export type GetAllResourcesResourcesGetResponses = {
@@ -6711,7 +6711,7 @@ export type GetResourceResourcesCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/resources/{code}";
+  url: '/resources/{code}';
 };
 
 export type GetResourceResourcesCodeGetErrors = {
@@ -6766,7 +6766,7 @@ export type GetAllTasksTasksListGetData = {
      */
     size?: number;
   };
-  url: "/tasks/list";
+  url: '/tasks/list';
 };
 
 export type GetAllTasksTasksListGetResponses = {
@@ -6789,7 +6789,7 @@ export type GetTaskTasksListCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/tasks/list/{code}";
+  url: '/tasks/list/{code}';
 };
 
 export type GetTaskTasksListCodeGetErrors = {
@@ -6824,7 +6824,7 @@ export type GetAllTasksRewardsTasksRewardsGetData = {
      */
     size?: number;
   };
-  url: "/tasks/rewards";
+  url: '/tasks/rewards';
 };
 
 export type GetAllTasksRewardsTasksRewardsGetResponses = {
@@ -6847,7 +6847,7 @@ export type GetTasksRewardTasksRewardsCodeGetData = {
     code: string;
   };
   query?: never;
-  url: "/tasks/rewards/{code}";
+  url: '/tasks/rewards/{code}';
 };
 
 export type GetTasksRewardTasksRewardsCodeGetErrors = {
@@ -6871,7 +6871,7 @@ export type GenerateTokenTokenPostData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/token";
+  url: '/token';
 };
 
 export type GenerateTokenTokenPostErrors = {
@@ -6892,5 +6892,5 @@ export type GenerateTokenTokenPostResponse =
   GenerateTokenTokenPostResponses[keyof GenerateTokenTokenPostResponses];
 
 export type ClientOptions = {
-  baseUrl: "https://api.artifactsmmo.com" | (string & {});
+  baseUrl: 'https://api.artifactsmmo.com' | (string & {});
 };

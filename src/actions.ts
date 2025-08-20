@@ -1,9 +1,9 @@
-import { depositItems } from "./api_calls/Bank";
-import { actionMove } from "./api_calls/Character";
-import { getAllItemInformation } from "./api_calls/Items";
-import { MaxInventorySlots } from "./constants";
-import { logger, sleep } from "./utils";
-import { HealthStatus } from "./types/CharacterData";
+import { depositItems } from './api_calls/Bank';
+import { actionMove } from './api_calls/Character';
+import { getAllItemInformation } from './api_calls/Items';
+import { MaxInventorySlots } from './constants';
+import { logger, sleep } from './utils';
+import { HealthStatus } from './types/CharacterData';
 import {
   BankItemTransactionSchema,
   CharacterSchema,
@@ -12,8 +12,8 @@ import {
   GetAllItemsItemsGetData,
   MapSchema,
   SimpleItemSchema,
-} from "./types/types";
-import { getMaps } from "./api_calls/Maps";
+} from './types/types';
+import { getMaps } from './api_calls/Maps';
 
 /**
  * Returns the percentage of health we have and what is needed to get to 100%
@@ -61,7 +61,7 @@ export async function findBankAndDepositItems(
 ): Promise<BankItemTransactionSchema> {
   // ToDo: Implement a function to find the closest map.
   // Currently we just go to the first one
-  const bankLocations = (await getMaps("bank")).data;
+  const bankLocations = (await getMaps('bank')).data;
   logger.info(
     `Found bank at x: ${bankLocations[0].x}, y: ${bankLocations[0].y}`,
   );
@@ -88,7 +88,7 @@ export async function findBankAndDepositItems(
     // logger.info(
     //   `${character.inventory[i].code}: ${character.inventory[i].quantity}`,
     // );
-    if (character.inventory[i].code !== "") {
+    if (character.inventory[i].code !== '') {
       itemsToDeposit.push({
         code: character.inventory[i].code,
         quantity: character.inventory[i].quantity,
@@ -146,12 +146,12 @@ export async function evaluateCraftingWithCurrentInventory(
       craft_skill: craftingSkill,
       max_level: characterLevel,
     },
-    url: "/items",
+    url: '/items',
   };
 
   const response = await getAllItemInformation(getAllItemsParams);
   if (response.data.length === 0) {
-    logger.warn("Not able to craft anything");
+    logger.warn('Not able to craft anything');
     return [];
   }
 
@@ -208,7 +208,6 @@ export async function evaluateCraftingWithCurrentInventory(
   }
 
   return itemsNeeded;
-  //itemsNeeded.forEach(function (craftingSchema) {
 }
 
 /**

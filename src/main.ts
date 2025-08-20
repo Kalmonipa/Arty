@@ -1,69 +1,32 @@
-import { getEnv, logger } from "./utils";
-import { beAlchemist } from "./roles/alchemist";
-import { beFisherman } from "./roles/fisherman";
-import { beFighter } from "./roles/fighter";
-import { beLumberjack } from "./roles/lumberjack";
-import { beMiner } from "./roles/miner";
-import { beTaskmaster } from "./roles/taskmaster";
-import { Character } from "./classes/CharacterClass";
-import { CharName } from "./constants";
-import { getCharacter } from "./api_calls/Character";
+import { getEnv, logger } from './utils';
+import { beAlchemist } from './roles/alchemist';
+import { beFisherman } from './roles/fisherman';
+import { beFighter } from './roles/fighter';
+import { beLumberjack } from './roles/lumberjack';
+import { beMiner } from './roles/miner';
+import { beTaskmaster } from './roles/taskmaster';
+import { Character } from './classes/CharacterClass';
+import { CharName } from './constants';
+import { getCharacter } from './api_calls/Character';
 
-let role = getEnv("ROLE"); // ToDo: Pick a random role if none supplied
 let shouldStopActions = false;
-let validRoles = [
-  "alchemist",
-  "fisherman",
-  "fighter",
-  "lumberjack",
-  "miner",
-  "taskmaster",
-  "test",
-];
 
 async function main() {
-  if (!validRoles.includes(role)) {
-    logger.error(`Invalid role: ${role}. Exiting`);
-    shouldStopActions = true;
-  }
-
   while (!shouldStopActions) {
-    switch (role) {
-      case "alchemist": {
-        await beAlchemist();
-        break;
-      }
-      case "fisherman": {
-        await beFisherman();
-        break;
-      }
-      case "fighter": {
-        await beFighter();
-        break;
-      }
-      case "lumberjack": {
-        await beLumberjack();
-        break;
-      }
-      case "miner": {
-        await beMiner();
-        break;
-      }
-      case "taskmaster": {
-        shouldStopActions = await beTaskmaster(); // Returns true when task is complete
-        break;
-      }
-      case "test": {
-        const charData = await getCharacter(CharName);
-        const char = new Character(charData);
-        //await char.move({ x: 5, y: 2 });
-        shouldStopActions = await char.gather(10, "shrimp");
-      }
-    }
-  }
+    const charData = await getCharacter(CharName);
+    const char = new Character(charData);
 
-  // logger.error("Reached end of activities. Exiting");
-  // process.exit();
+    char.gather(60, 'copper_ore');
+    char.craft(6, 'copper_bar');
+    char.craft(2, 'copper_dagger');
+
+    //await char.move({ x: 5, y: 2 });
+    //shouldStopActions = await char.fight(3, "chicken");
+    // shouldStopActions = await char.deposit(2, "golden_egg");
+    // shouldStopActions = await char.deposit(29, "feather");
+    // shouldStopActions = await char.deposit(3, "tasks_coin");
+    shouldStopActions = await char.executeJobList();
+  }
 }
 
 main();

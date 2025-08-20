@@ -1,4 +1,4 @@
-import pino from "pino";
+import pino from 'pino';
 
 // ToDo: Show log level (info, error) in logs output instead of integer value
 export const logger = pino({
@@ -6,15 +6,15 @@ export const logger = pino({
   transport: {
     targets: [
       {
-        level: "trace",
-        target: "pino/file",
+        level: 'trace',
+        target: 'pino/file',
         options: {
-          destination: "./logs/arty.log",
+          destination: './logs/arty.log',
         },
       },
       {
-        level: "trace",
-        target: "pino-pretty",
+        level: 'trace',
+        target: 'pino-pretty',
         options: {},
       },
     ],
@@ -33,7 +33,7 @@ export const logger = pino({
  * @returns the env var value
  */
 export function getEnv(name: string): string {
-  if (typeof process.env[name] === "undefined") {
+  if (typeof process.env[name] === 'undefined') {
     throw new Error(`Variable ${name} undefined.`);
   }
 

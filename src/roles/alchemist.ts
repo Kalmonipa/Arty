@@ -1,17 +1,10 @@
-import { CharName } from "../constants";
-import {
-  getCharacter,
-  getCharacterLocation,
-  actionMove,
-} from "../api_calls/Character";
-import { getMaps } from "../api_calls/Maps";
-import {
-  getResourceInformation,
-  gatherResources,
-} from "../api_calls/Resources";
-import { logger, sleep } from "../utils";
-import { cooldownStatus, evaluateDepositItemsInBank } from "../actions";
-import { CharacterSchema } from "../types/types";
+import { CharName } from '../constants';
+import { getCharacter, getCharacterLocation } from '../api_calls/Character';
+import { getMaps } from '../api_calls/Maps';
+import { getResourceInformation } from '../api_calls/Resources';
+import { logger, sleep } from '../utils';
+import { cooldownStatus, evaluateDepositItemsInBank } from '../actions';
+import { CharacterSchema } from '../types/types';
 
 export async function beAlchemist() {
   let character: CharacterSchema = await getCharacter(CharName);
@@ -21,15 +14,15 @@ export async function beAlchemist() {
   // ToDo: Gathering roles can all use the same flow and have logic to choose which resource to find
   const alchemicalTypes = await getResourceInformation({
     query: {
-      skill: "alchemy",
+      skill: 'alchemy',
       max_level: character.alchemy_level,
     },
-    url: "/resources",
+    url: '/resources',
   });
 
   const alchemicalLocations = await getMaps(
     alchemicalTypes.data[alchemicalTypes.data.length - 1].code,
-    "resource",
+    'resource',
   );
 
   const latestLocation = await getCharacterLocation(character.name);

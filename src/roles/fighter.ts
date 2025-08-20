@@ -2,19 +2,19 @@ import {
   checkHealth,
   cooldownStatus,
   evaluateDepositItemsInBank,
-} from "../actions";
-import { CharName } from "../constants";
-import { logger, sleep } from "../utils";
+} from '../actions';
+import { CharName } from '../constants';
+import { logger, sleep } from '../utils';
 import {
   getCharacter,
   getCharacterLocation,
   actionMove,
   restCharacter,
-} from "../api_calls/Character";
-import { getMaps } from "../api_calls/Maps";
-import { fightMonster, getMonsterInformation } from "../api_calls/Monsters";
-import { HealthStatus } from "../types/CharacterData";
-import { CharacterSchema } from "../types/types";
+} from '../api_calls/Character';
+import { getMaps } from '../api_calls/Maps';
+import { fightMonster, getMonsterInformation } from '../api_calls/Monsters';
+import { HealthStatus } from '../types/CharacterData';
+import { CharacterSchema } from '../types/types';
 
 export async function beFighter() {
   let character: CharacterSchema = await getCharacter(CharName);
@@ -46,7 +46,7 @@ export async function beFighter() {
     query: {
       max_level: character.level,
     },
-    url: "/monsters",
+    url: '/monsters',
   });
 
   // ToDo: Evaluate which monster to fight from the list based on resistances, health, etc
@@ -57,7 +57,7 @@ export async function beFighter() {
 
   const monsterLocations = await getMaps(
     monsterInfo.data[monsterInfo.data.length - 1].code,
-    "monster",
+    'monster',
   );
 
   const latestLocation = await getCharacterLocation(character.name);
