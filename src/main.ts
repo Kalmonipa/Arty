@@ -18,7 +18,7 @@ async function main() {
 
     char.gather(60, 'copper_ore');
     char.craft(6, 'copper_bar');
-    char.craft(2, 'copper_dagger');
+    char.craft(1, 'copper_dagger');
 
     //await char.move({ x: 5, y: 2 });
     //shouldStopActions = await char.fight(3, "chicken");

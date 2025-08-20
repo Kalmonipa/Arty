@@ -15,47 +15,8 @@ import {
 } from './types/types';
 import { getMaps } from './api_calls/Maps';
 
-/**
- * Returns the percentage of health we have and what is needed to get to 100%
- * @param character
- */
-export function checkHealth(character: CharacterSchema): HealthStatus {
-  return {
-    percentage: (character.hp / character.max_hp) * 100,
-    difference: character.max_hp - character.hp,
-  };
-}
 
-/**
- * Checks if the character is in cooldown. Sleep until if finishes if yes
- * @param character
- * @returns {boolean}
- */
-export function cooldownStatus(character: CharacterSchema): {
-  inCooldown: boolean;
-  timeRemaining: number;
-} {
-  const timestamp = character.cooldown_expiration;
-
-  const targetDate = new Date(timestamp);
-
-  const now = new Date();
-
-  if (now > targetDate) {
-    return { inCooldown: false, timeRemaining: 0 };
-  } else {
-    const timeToWait =
-      Math.floor((targetDate.getTime() - now.getTime()) / 1000) + 2;
-    logger.info(
-      `Cooldown is still ongoing. Waiting for ${timeToWait} seconds until ${timestamp}`,
-    );
-    return {
-      inCooldown: true,
-      timeRemaining: timeToWait,
-    };
-  }
-}
-
+// ToDo: add something like this to Character class
 export async function findBankAndDepositItems(
   character: CharacterSchema,
 ): Promise<BankItemTransactionSchema> {
@@ -104,28 +65,6 @@ export async function findBankAndDepositItems(
   }
 }
 
-/**
- * @description Finds the closest map based on manhattan distance from current location
- */
-export function evaluateClosestMap(
-  character: CharacterSchema,
-  maps: MapSchema[],
-): MapSchema {
-  var closestDistance = 1000000;
-  var closestMap: MapSchema;
-
-  maps.forEach((map) => {
-    var dist = character.x - map.x + (character.y - map.y);
-    if (dist < closestDistance) {
-      closestDistance = dist;
-      closestMap = map;
-    }
-  });
-
-  logger.info(`Closest map is at x: ${closestMap.x}, y: ${closestMap.y}`);
-
-  return closestMap;
-}
 
 /**
  * @description Evaluates whether character has the ingredients to craft something
@@ -213,6 +152,7 @@ export async function evaluateCraftingWithCurrentInventory(
 /**
  * @description Check if char needs to visit the bank and deposit items
  */
+// ToDo: Add something like this to the Character class
 export async function evaluateDepositItemsInBank(
   character: CharacterSchema,
 ): Promise<CharacterSchema> {
@@ -230,15 +170,3 @@ export async function evaluateDepositItemsInBank(
   return character;
 }
 
-/**
- * Returns what percentage of the backpack is full
- * @param char Character info to parse
- */
-export function getInventoryFullness(char: CharacterSchema): number {
-  var usedSpace = 0;
-  char.inventory.forEach((invSlot) => {
-    usedSpace += invSlot.quantity;
-  });
-
-  return Math.round((usedSpace / char.inventory_max_items) * 100);
-}
