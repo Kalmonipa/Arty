@@ -48,8 +48,9 @@ export class GatherObjective extends Objective {
 
     for (var count = 0; count < remainderToGather; count++) {
       if (count % 5 === 0) {
+        numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
         logger.info(
-          `Gathered ${count}/${this.target.quantity} ${this.target.code}`,
+          `Gathered ${numHeld}/${this.target.quantity} ${this.target.code}`,
         );
       }
       const gatherResponse = await actionGather(this.character.data);
@@ -69,6 +70,9 @@ export class GatherObjective extends Objective {
 
     numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
     if (numHeld >= this.target.quantity) {
+      logger.info(
+        `Successfully gathered ${this.target.quantity} ${this.target.code}s`,
+      );
       return true;
     }
     return false;

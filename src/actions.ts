@@ -15,7 +15,6 @@ import {
 } from './types/types';
 import { getMaps } from './api_calls/Maps';
 
-
 // ToDo: add something like this to Character class
 export async function findBankAndDepositItems(
   character: CharacterSchema,
@@ -64,7 +63,6 @@ export async function findBankAndDepositItems(
     logger.error(`Deposit failed: ${error}`);
   }
 }
-
 
 /**
  * @description Evaluates whether character has the ingredients to craft something
@@ -169,4 +167,3 @@ export async function evaluateDepositItemsInBank(
   }
   return character;
 }
-
