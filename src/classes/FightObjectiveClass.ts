@@ -34,6 +34,10 @@ export class FightObjective extends Objective {
 
     for (var count = 0; count < target.quantity; count++) {
       logger.info(`Fought ${count}/${target.quantity} ${target.code}s`);
+
+      // Check inventory space to make sure we are less than 90% full
+      this.character.evaluateDepositItemsInBank();
+
       const healthStatus: HealthStatus = character.checkHealth();
 
       if (healthStatus.percentage !== 100) {

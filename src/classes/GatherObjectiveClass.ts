@@ -84,7 +84,10 @@ export class GatherObjective extends Objective {
         logger.info(
           `Gathered ${numHeld}/${this.target.quantity} ${this.target.code}`,
         );
+        // Check inventory space to make sure we are less than 90% full
+        this.character.evaluateDepositItemsInBank();
       }
+
       const gatherResponse = await actionGather(this.character.data);
 
       if (gatherResponse instanceof ApiError) {

@@ -1,3 +1,4 @@
+import { it } from 'node:test';
 import {
   actionCraft,
   actionDepositItems,
@@ -23,6 +24,7 @@ import {
   ItemSchema,
   ItemSlot,
   MapSchema,
+  SimpleItemSchema,
   UnequipSchema,
 } from '../types/types';
 import { logger, sleep } from '../utils';
@@ -337,6 +339,36 @@ export class Character {
   checkInventoryForItemType() {
     for (const item of this.data.inventory) {
       if (item) {
+      }
+    }
+  }
+
+  async evaluateDepositItemsInBank() {
+    let usedInventorySpace = this.getInventoryFullness();
+    if (usedInventorySpace >= 90) {
+      logger.warn(`Inventory is almost full. Depositing items`);
+      const maps = (await getMaps(undefined, 'bank')).data;
+
+      const contentLocation = this.evaluateClosestMap(maps);
+
+      await this.move({ x: contentLocation.x, y: contentLocation.y });
+
+      var itemsToDepost: SimpleItemSchema[];
+      for (const item of this.data.inventory) {
+        itemsToDepost.push({ code: item.code, quantity: item.quantity });
+      }
+
+      const response = await actionDepositItems(this.data, itemsToDepost);
+
+      if (response instanceof ApiError) {
+        if (response.error.code === 499) {
+          logger.warn(
+            `Character is in cooldown. [Code: ${response.error.code}]`,
+          );
+          await sleep(5);
+        }
+      } else {
+        this.data = response.data.character;
       }
     }
   }
