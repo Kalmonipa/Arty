@@ -10,11 +10,13 @@ export abstract class Objective {
     // appending a random string to the objectiveId to ensure uniqueness
     this.objectiveId =
       objectiveId + `_${crypto.randomBytes(2).toString('hex')}`;
-    this.status = status;
+    this.status = status; // ToDo: Do something with the statuses
   }
 
   abstract execute(
     character: Character,
     target?: ObjectiveTargets,
   ): Promise<boolean>;
+
+  // ToDo: Add equip method
 }

@@ -1,13 +1,5 @@
 import { ApiUrl, MyHeaders } from '../constants';
-import { ApiError } from '../classes/ErrorClass';
-import {
-  ActionCraftingMyNameActionCraftingPostData,
-  ActionCraftingMyNameActionCraftingPostResponse,
-  CharacterMovementResponseSchema,
-  CharacterRestResponseSchema,
-  CharacterSchema,
-  SkillDataSchema,
-} from '../types/types';
+import { CharacterSchema } from '../types/types';
 import { logger } from '../utils';
 
 /**

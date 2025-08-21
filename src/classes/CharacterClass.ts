@@ -7,6 +7,7 @@ import {
   actionRest,
   actionWithdrawItem,
 } from '../api_calls/Actions';
+import { actionEquipItem, actionUnequipItem } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
 import { ObjectiveTargets } from '../types/ObjectiveData';
@@ -14,7 +15,10 @@ import {
   CharacterSchema,
   CraftingSchema,
   DestinationSchema,
+  EquipSchema,
+  ItemSlot,
   MapSchema,
+  UnequipSchema,
 } from '../types/types';
 import { logger, sleep } from '../utils';
 import { CraftObjective } from './CraftObjectiveClass';
@@ -145,9 +149,6 @@ export class Character {
         await sleep(5);
       }
     } else {
-      response.data.items.forEach((item) => {
-        logger.info(`Deposited ${item.quantity} ${item.code} into the bank`);
-      });
       this.data = response.data.character;
     }
     return true;
@@ -177,6 +178,81 @@ export class Character {
     }
 
     return closestMap;
+  }
+
+  /**
+   * @description equip the item
+   */
+  async equip(
+    itemName: string,
+    itemSlot: ItemSlot,
+    quantity?: number,
+  ) {
+    if (!quantity) quantity = 1;
+
+    // validations
+    if (
+      (itemSlot === 'utility1' || itemSlot === 'utility2') &&
+      quantity > 100
+    ) {
+      logger.warn(
+        `Quantity can only be provided for utility slots and must be less than 100`,
+      );
+      return;
+    }
+
+    logger.info(`Equipping ${quantity} ${itemName} into ${itemSlot}`)
+
+    const equipSchema: EquipSchema = {
+      code: itemName,
+      slot: itemSlot,
+      quantity: quantity,
+    };
+
+    const response = await actionEquipItem(this.data, equipSchema);
+    if (response instanceof ApiError) {
+      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+      if (response.error.code === 499) {
+        await sleep(5);
+      }
+    } else {
+      this.data = response.data.character;
+    }
+  }
+
+  /**
+   * @description equip the item
+   */
+  async unequip(itemSlot: ItemSlot, quantity?: number) {
+    if (!quantity) quantity = 1;
+
+    // validations
+    if (
+      (itemSlot === 'utility1' || itemSlot === 'utility2') &&
+      quantity > 100
+    ) {
+      logger.warn(
+        `Quantity can only be provided for utility slots and must be less than 100`,
+      );
+      return;
+    }
+
+    logger.info(`Unequipping ${itemSlot} slot`);
+
+    const unequipSchema: UnequipSchema = {
+      slot: itemSlot,
+      quantity: quantity,
+    };
+
+    const response = await actionUnequipItem(this.data, unequipSchema);
+    if (response instanceof ApiError) {
+      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+      if (response.error.code === 499) {
+        await sleep(5);
+      }
+    } else {
+      this.data = response.data.character;
+    }
   }
 
   /**

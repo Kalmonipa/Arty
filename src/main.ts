@@ -16,9 +16,11 @@ async function main() {
     const charData = await getCharacter(CharName);
     const char = new Character(charData);
 
-    char.gather(60, 'copper_ore');
-    char.craft(6, 'copper_bar');
-    char.craft(1, 'copper_dagger');
+    // char.gather(60, 'copper_ore');
+    // char.craft(6, 'copper_bar');
+    // char.craft(1, 'copper_dagger');
+    await char.unequip('weapon');
+    await char.equip('copper_dagger', 'weapon');
 
     //await char.move({ x: 5, y: 2 });
     //shouldStopActions = await char.fight(3, "chicken");
