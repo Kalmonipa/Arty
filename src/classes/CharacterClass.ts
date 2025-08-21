@@ -7,7 +7,11 @@ import {
   actionRest,
   actionWithdrawItem,
 } from '../api_calls/Actions';
-import { actionEquipItem, actionUnequipItem } from '../api_calls/Items';
+import {
+  actionEquipItem,
+  actionUnequipItem,
+  getItemInformation,
+} from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
 import { ObjectiveTargets } from '../types/ObjectiveData';
@@ -16,12 +20,14 @@ import {
   CraftingSchema,
   DestinationSchema,
   EquipSchema,
+  ItemSchema,
   ItemSlot,
   MapSchema,
   UnequipSchema,
 } from '../types/types';
 import { logger, sleep } from '../utils';
 import { CraftObjective } from './CraftObjectiveClass';
+import { DepositObjective } from './DepositObjectiveClass';
 import { ApiError } from './ErrorClass';
 import { GatherObjective } from './GatherObjectiveClass';
 import { Objective } from './ObjectiveClass';
@@ -125,33 +131,13 @@ export class Character {
   /**
    * @description withdraw the specified items from the bank
    */
-  async deposit(quantity: number, itemCode: string): Promise<boolean> {
-    logger.info(`Finding location of the bank`);
-
-    const maps = (await getMaps(undefined, 'bank')).data;
-
-    if (maps.length === 0) {
-      logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return true;
-    }
-
-    const contentLocation = this.evaluateClosestMap(maps);
-
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
-
-    const response = await actionDepositItems(this.data, [
-      { quantity: quantity, code: itemCode },
-    ]);
-
-    if (response instanceof ApiError) {
-      if (response.error.code === 499) {
-        logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-        await sleep(5);
-      }
-    } else {
-      this.data = response.data.character;
-    }
-    return true;
+  async deposit(quantity: number, itemCode: string) {
+    this.addJob(
+      new DepositObjective(this, {
+        code: itemCode,
+        quantity: quantity,
+      }),
+    );
   }
 
   /**
@@ -180,17 +166,44 @@ export class Character {
     return closestMap;
   }
 
+  /********
+   * Item functions
+   ********/
+
+  /**
+   * Check currently equipped weapon
+   * @returns {boolean}
+   *  - true means the currently equipped weapon is beneficial for the activity
+   *  - false means it is not beneficial
+   */
+  async checkWeaponForEffects(typeOfActivity: string): Promise<boolean> {
+    var isEffective: boolean = false;
+    var weaponDetails = await getItemInformation(this.data.weapon_slot);
+    if (weaponDetails instanceof ApiError) {
+      logger.info(weaponDetails.message);
+      return false;
+    } else {
+      for (const effect of weaponDetails.effects) {
+        if (effect.code === typeOfActivity) {
+          isEffective = true;
+        }
+      }
+      if (isEffective) {
+        logger.info(`Current weapon is suitable for ${typeOfActivity}`);
+        return true;
+      } else {
+        logger.info(`Current weapon is NOT suitable for ${typeOfActivity}`);
+        return false;
+      }
+    }
+  }
+
   /**
    * @description equip the item
    */
-  async equip(
-    itemName: string,
-    itemSlot: ItemSlot,
-    quantity?: number,
-  ) {
+  async equip(itemName: string, itemSlot: ItemSlot, quantity?: number) {
     if (!quantity) quantity = 1;
 
-    // validations
     if (
       (itemSlot === 'utility1' || itemSlot === 'utility2') &&
       quantity > 100
@@ -201,7 +214,7 @@ export class Character {
       return;
     }
 
-    logger.info(`Equipping ${quantity} ${itemName} into ${itemSlot}`)
+    logger.info(`Equipping ${quantity} ${itemName} into ${itemSlot}`);
 
     const equipSchema: EquipSchema = {
       code: itemName,
@@ -312,6 +325,20 @@ export class Character {
         quantity: quantity,
       }),
     );
+  }
+
+  /********
+   * Inventory functions
+   ********/
+
+  /**
+   * @description Check inventory for specific item
+   */
+  checkInventoryForItemType() {
+    for (const item of this.data.inventory) {
+      if (item) {
+      }
+    }
   }
 
   /**

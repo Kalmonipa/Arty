@@ -1,4 +1,5 @@
 import { actionGather } from '../api_calls/Actions';
+import { getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { getResourceInformation } from '../api_calls/Resources';
 import { ObjectiveTargets } from '../types/ObjectiveData';
@@ -26,6 +27,36 @@ export class GatherObjective extends Objective {
     }
     const remainderToGather = this.target.quantity - numHeld;
 
+    // Check our equipment to see if we can equip something useful
+    var resourceDetails = await getItemInformation(this.target.code);
+    if (resourceDetails instanceof ApiError) {
+      logger.info(resourceDetails.message);
+      return false;
+    } else {
+      if (!this.character.checkWeaponForEffects(resourceDetails.subtype)) {
+        for (const item of this.character.data.inventory) {
+          const itemInfo = await getItemInformation(item.code);
+          if (itemInfo instanceof ApiError) {
+            logger.warn(
+              `${itemInfo.error.message} [Code: ${itemInfo.error.code}]`,
+            );
+          } else if (itemInfo.code === '') {
+            logger.info(`No more items to check in inventory`);
+          } else {
+            for (const effect of itemInfo.effects) {
+              if (effect.code === resourceDetails.subtype) {
+                await this.character.equip(item.code, 'weapon');
+              }
+            }
+          }
+        }
+        // ToDo:
+        // - Search bank for suitable weapon
+        // - If no suitable weapon, maybe we just continue? or should we stop?
+        // - Extract this into it's own function?
+      }
+    }
+
     logger.info(`Finding resource map type for ${this.target.code}`);
 
     const resources = await getResourceInformation({
@@ -46,6 +77,7 @@ export class GatherObjective extends Objective {
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
+    // Loop that does the gather requests
     for (var count = 0; count < remainderToGather; count++) {
       if (count % 5 === 0) {
         numHeld = this.character.checkQuantityOfItemInInv(this.target.code);

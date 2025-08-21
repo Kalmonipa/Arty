@@ -1,10 +1,3 @@
-import { getEnv, logger } from './utils';
-import { beAlchemist } from './roles/alchemist';
-import { beFisherman } from './roles/fisherman';
-import { beFighter } from './roles/fighter';
-import { beLumberjack } from './roles/lumberjack';
-import { beMiner } from './roles/miner';
-import { beTaskmaster } from './roles/taskmaster';
 import { Character } from './classes/CharacterClass';
 import { CharName } from './constants';
 import { getCharacter } from './api_calls/Character';
@@ -16,17 +9,55 @@ async function main() {
     const charData = await getCharacter(CharName);
     const char = new Character(charData);
 
-    // char.gather(60, 'copper_ore');
-    // char.craft(6, 'copper_bar');
-    // char.craft(1, 'copper_dagger');
-    await char.unequip('weapon');
-    await char.equip('copper_dagger', 'weapon');
+    switch (CharName) {
+      case 'LongLegLarry':
+        // Copper pisckaxe
+        char.gather(60, 'copper_ore');
+        char.craft(6, 'copper_bar');
+        char.craft(1, 'copper_pickaxe');
+        char.deposit(1, 'copper_pickaxe');
+        char.gather(60, 'copper_ore');
+        char.craft(6, 'copper_bar');
+        char.craft(1, 'copper_pickaxe');
+        char.deposit(1, 'copper_pickaxe');
+        // Copper axe x2
+        char.gather(60, 'copper_ore');
+        char.craft(6, 'copper_bar');
+        char.craft(1, 'copper_axe');
+        char.deposit(1, 'copper_axe');
+        char.gather(60, 'copper_ore');
+        char.craft(6, 'copper_bar');
+        char.craft(1, 'copper_axe');
+        char.deposit(1, 'copper_axe');
+        // Copper armor x2
+        char.gather(50, 'copper_ore');
+        char.craft(5, 'copper_bar');
+        char.gather(50, 'copper_ore');
+        char.craft(5, 'copper_bar');
+        char.deposit(10, 'copper_bar');
+        break;
+      case 'JumpyJimmy':
+        // Fishing net x2
+        char.gather(60, 'ash_wood');
+        char.craft(6, 'ash_plank');
+        char.craft(1, 'fishing_net');
+        char.deposit(1, 'fishing_net');
+        char.gather(60, 'ash_wood');
+        char.craft(6, 'ash_plank');
+        char.craft(1, 'fishing_net');
+        char.deposit(1, 'fishing_net');
+        // Copper helmet x2
+        char.gather(60, 'copper_ore');
+        char.craft(6, 'copper_bar');
+        char.craft(1, 'copper_helmet');
+        char.deposit(1, 'copper_helmet');
+        char.gather(60, 'copper_ore');
+        char.craft(6, 'copper_bar');
+        char.craft(1, 'copper_helmet');
+        char.deposit(1, 'copper_helmet');
+        break;
+    }
 
-    //await char.move({ x: 5, y: 2 });
-    //shouldStopActions = await char.fight(3, "chicken");
-    // shouldStopActions = await char.deposit(2, "golden_egg");
-    // shouldStopActions = await char.deposit(29, "feather");
-    // shouldStopActions = await char.deposit(3, "tasks_coin");
     shouldStopActions = await char.executeJobList();
   }
 }

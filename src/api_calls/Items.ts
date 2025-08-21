@@ -201,6 +201,4 @@ export async function getItemInformation(
   } catch (error) {
     return error;
   }
-
-  return;
 }
