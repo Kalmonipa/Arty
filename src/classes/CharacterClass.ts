@@ -33,6 +33,7 @@ import { DepositObjective } from './DepositObjectiveClass';
 import { ApiError } from './ErrorClass';
 import { GatherObjective } from './GatherObjectiveClass';
 import { Objective } from './ObjectiveClass';
+import { FightObjective } from './FightObjectiveClass';
 
 export class Character {
   data: CharacterSchema;
@@ -273,48 +274,8 @@ export class Character {
   /**
    * @description Fight the requested amount of mobs
    */
-  async fight(targetNumber: number, contentCode: string): Promise<boolean> {
-    logger.info(`Finding location of ${contentCode}`);
-
-    const maps = (await getMaps(contentCode)).data;
-
-    if (maps.length === 0) {
-      logger.error(`Cannot find any maps for ${contentCode}`);
-      return true;
-    }
-
-    const contentLocation = this.evaluateClosestMap(maps);
-
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
-
-    for (var count = 0; count < targetNumber; count++) {
-      logger.info(`Fought ${count}/${targetNumber} ${contentCode}s`);
-      const healthStatus: HealthStatus = this.checkHealth();
-
-      if (healthStatus.percentage !== 100) {
-        if (healthStatus.difference < 300) {
-          await this.rest();
-        } //else {
-        // Eat food
-        //}
-      }
-
-      const response = await actionFight(this.data);
-
-      if (response instanceof ApiError) {
-        logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-        if (response.error.code === 499) {
-          await sleep(5);
-        }
-        return true;
-      }
-
-      this.data = response.data.character;
-    }
-
-    logger.info(`Successfully fought ${targetNumber} ${contentCode}s`);
-
-    return true;
+  async fight(quantity: number, code: string) {
+    this.addJob(new FightObjective(this, { code: code, quantity: quantity }));
   }
 
   /**
@@ -343,6 +304,12 @@ export class Character {
     }
   }
 
+  /**
+   * @description if inventory if 90% full, we empty everything into the bank
+   * ToDo:
+   *  - Keep important items. Only deposit 'junk' that isn't part of our objective
+   *     or useful items like potions, food, etc
+   */
   async evaluateDepositItemsInBank() {
     let usedInventorySpace = this.getInventoryFullness();
     if (usedInventorySpace >= 90) {

@@ -18,37 +18,39 @@ export class FightObjective extends Objective {
     this.target = target;
   }
 
-  async execute(character: Character, target: ObjectiveTargets) {
-    logger.info(`Finding location of ${target.code}`);
+  async execute() {
+    logger.info(`Finding location of ${this.target.code}`);
 
-    const maps = (await getMaps(target.code)).data;
+    const maps = (await getMaps(this.target.code)).data;
 
     if (maps.length === 0) {
-      logger.error(`Cannot find any maps for ${target.code}`);
+      logger.error(`Cannot find any maps for ${this.target.code}`);
       return true;
     }
 
-    const contentLocation = character.evaluateClosestMap(maps);
+    const contentLocation = this.character.evaluateClosestMap(maps);
 
-    await character.move({ x: contentLocation.x, y: contentLocation.y });
+    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-    for (var count = 0; count < target.quantity; count++) {
-      logger.info(`Fought ${count}/${target.quantity} ${target.code}s`);
+    for (var count = 0; count < this.target.quantity; count++) {
+      logger.info(
+        `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
+      );
 
       // Check inventory space to make sure we are less than 90% full
       this.character.evaluateDepositItemsInBank();
 
-      const healthStatus: HealthStatus = character.checkHealth();
+      const healthStatus: HealthStatus = this.character.checkHealth();
 
       if (healthStatus.percentage !== 100) {
         if (healthStatus.difference < 300) {
-          await character.rest();
+          await this.character.rest();
         } //else {
         // Eat food
         //}
       }
 
-      const response = await actionFight(character.data);
+      const response = await actionFight(this.character.data);
 
       if (response instanceof ApiError) {
         logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
@@ -58,10 +60,12 @@ export class FightObjective extends Objective {
         return true;
       }
 
-      character.data = response.data.character;
+      this.character.data = response.data.character;
     }
 
-    logger.info(`Successfully fought ${target.quantity} ${target.code}s`);
+    logger.info(
+      `Successfully fought ${this.target.quantity} ${this.target.code}s`,
+    );
 
     return true;
   }
