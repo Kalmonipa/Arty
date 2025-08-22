@@ -522,6 +522,12 @@ export async function actionWithdrawItem(
     items.forEach(function (item) {
       logger.info(`Withdrew ${item.quantity} ${item.code} from the bank`);
     });
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
     return result;
   } catch (error) {
     return error;

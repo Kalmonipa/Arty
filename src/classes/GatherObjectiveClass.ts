@@ -38,23 +38,25 @@ export class GatherObjective extends Objective {
     var resourceDetails = await getItemInformation(this.target.code);
     if (resourceDetails instanceof ApiError) {
       logger.info(resourceDetails.message);
-      return false;
+      await sleep(this.character.data.cooldown, 'cooldown');
     } else {
       if (
         !(await this.character.checkWeaponForEffects(resourceDetails.subtype))
       ) {
-        for (const item of this.character.data.inventory) {
-          const itemInfo = await getItemInformation(item.code);
-          if (itemInfo instanceof ApiError) {
-            logger.warn(
-              `${itemInfo.error.message} [Code: ${itemInfo.error.code}]`,
-            );
-          } else if (itemInfo.code === '') {
-            logger.info(`No more items to check in inventory`);
-          } else {
-            for (const effect of itemInfo.effects) {
-              if (effect.code === resourceDetails.subtype) {
-                await this.character.equip(item.code, 'weapon'); // ToDo: apparently this doesn't work
+        if (this.character.data.inventory) {
+          for (const item of this.character.data.inventory) {
+            const itemInfo = await getItemInformation(item.code);
+            if (itemInfo instanceof ApiError) {
+              logger.warn(
+                `${itemInfo.error.message} [Code: ${itemInfo.error.code}]`,
+              );
+            } else if (itemInfo.code === '') {
+              logger.info(`No more items to check in inventory`);
+            } else {
+              for (const effect of itemInfo.effects) {
+                if (effect.code === resourceDetails.subtype) {
+                  await this.character.equip(item.code, 'weapon'); // ToDo: apparently this doesn't work
+                }
               }
             }
           }
@@ -130,10 +132,9 @@ export class GatherObjective extends Objective {
         if (gatherResponse.error.code === 499) {
           await sleep(this.character.data.cooldown, 'cooldown');
         }
-        return true;
+      } else {
+        this.character.data = gatherResponse.data.character;
       }
-
-      this.character.data = gatherResponse.data.character;
     }
   }
 }

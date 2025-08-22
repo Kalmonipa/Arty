@@ -144,7 +144,7 @@ export class Character {
     }
 
     maps.forEach((map) => {
-      var dist = this.data.x - map.x + (this.data.y - map.y);
+      var dist = Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
       if (dist < closestDistance) {
         closestDistance = dist;
         closestMap = map;
