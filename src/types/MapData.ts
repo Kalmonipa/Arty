@@ -11,6 +11,11 @@ export type MapSchema = {
   content: MapContentSchema; // ToDo: This seems to be undefined in the response
 };
 
+export type SimpleMapSchema = {
+  x: number;
+  y: number;
+}
+
 export type AllMaps = {
   data: MapSchema[];
   total: number;

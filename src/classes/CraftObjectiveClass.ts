@@ -1,13 +1,11 @@
 import { actionCraft, actionFight } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
-import { HealthStatus } from '../types/CharacterData';
 import { logger, sleep } from '../utils';
 import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import { getItemInformation } from '../api_calls/Items';
-import { ItemSchema } from '../types/types';
 
 export class CraftObjective extends Objective {
   character: Character;
@@ -28,7 +26,7 @@ export class CraftObjective extends Objective {
         `${targetItem.error.message} [Code: ${targetItem.error.code}]`,
       );
       if (targetItem.error.code === 499) {
-        await sleep(5);
+        await sleep(this.character.data.cooldown, 'cooldown');
       }
       return true;
     }
@@ -60,10 +58,10 @@ export class CraftObjective extends Objective {
     if (response instanceof ApiError) {
       logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
       if (response.error.code === 499) {
-        await sleep(5);
+        await sleep(this.character.data.cooldown, 'cooldown');
       }
-      return true;
-    }
+      
+    } else {
 
     this.character.data = response.data.character;
 
@@ -71,6 +69,6 @@ export class CraftObjective extends Objective {
       `Successfully crafted ${this.target.quantity} ${this.target.code}s`,
     );
 
-    return true;
-  }
+      }
+    }
 }

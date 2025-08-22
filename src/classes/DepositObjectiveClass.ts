@@ -39,7 +39,7 @@ export class DepositObjective extends Objective {
     if (response instanceof ApiError) {
       if (response.error.code === 499) {
         logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-        await sleep(5);
+        await sleep(this.character.data.cooldown, 'cooldown');
       }
     } else {
       this.character.data = response.data.character;

@@ -122,7 +122,7 @@ export class Character {
   /**
    * @description Craft the item. Character must be on the correct crafting map
    */
-  craft(quantity: number, code: string) {
+  async craft(quantity: number, code: string) {
     this.addJob(
       new CraftObjective(this, {
         code: code,
@@ -182,6 +182,7 @@ export class Character {
   async checkWeaponForEffects(typeOfActivity: string): Promise<boolean> {
     var isEffective: boolean = false;
     var weaponDetails = await getItemInformation(this.data.weapon_slot);
+
     if (weaponDetails instanceof ApiError) {
       logger.info(weaponDetails.message);
       return false;
@@ -229,7 +230,7 @@ export class Character {
     if (response instanceof ApiError) {
       logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
       if (response.error.code === 499) {
-        await sleep(5);
+        await sleep(this.data.cooldown, 'cooldown');
       }
     } else {
       this.data = response.data.character;
@@ -264,7 +265,7 @@ export class Character {
     if (response instanceof ApiError) {
       logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
       if (response.error.code === 499) {
-        await sleep(5);
+        await sleep(this.data.cooldown, 'cooldown');
       }
     } else {
       this.data = response.data.character;
@@ -309,8 +310,11 @@ export class Character {
    * ToDo:
    *  - Keep important items. Only deposit 'junk' that isn't part of our objective
    *     or useful items like potions, food, etc
+   * @returns {boolean} 
+   *  - true means bank was visited and items deposited
+   *  - false means nothing happened 
    */
-  async evaluateDepositItemsInBank() {
+  async evaluateDepositItemsInBank(exception?: string): Promise<boolean> {
     let usedInventorySpace = this.getInventoryFullness();
     if (usedInventorySpace >= 90) {
       logger.warn(`Inventory is almost full. Depositing items`);
@@ -320,24 +324,33 @@ export class Character {
 
       await this.move({ x: contentLocation.x, y: contentLocation.y });
 
-      var itemsToDepost: SimpleItemSchema[];
+      var itemsToDeposit: SimpleItemSchema[] = [];
       for (const item of this.data.inventory) {
-        itemsToDepost.push({ code: item.code, quantity: item.quantity });
+        if (item.quantity === 0) { // If the item slot is empty we can ignore
+          break;
+        } else if (item.code === exception) {
+          logger.info(`Not depositing ${exception} because we need it`)
+        } else {
+        logger.info(`Adding ${item.quantity} ${item.code} to deposit list`)
+        itemsToDeposit.push({ code: item.code, quantity: item.quantity });
+        }
       }
 
-      const response = await actionDepositItems(this.data, itemsToDepost);
+      const response = await actionDepositItems(this.data, itemsToDeposit);
 
       if (response instanceof ApiError) {
         if (response.error.code === 499) {
           logger.warn(
             `Character is in cooldown. [Code: ${response.error.code}]`,
           );
-          await sleep(5);
+          await sleep(this.data.cooldown, 'cooldown');
         }
       } else {
         this.data = response.data.character;
       }
+    return true;
     }
+    return false;
   }
 
   /**
@@ -373,11 +386,11 @@ export class Character {
         `${moveResponse.error.message} [Code: ${moveResponse.error.code}]`,
       );
       if (moveResponse.error.code === 499) {
-        await sleep(5);
+        await sleep(this.data.cooldown, 'cooldown');
       }
-      return true;
+    } else {
+      this.data = moveResponse.data.character;
     }
-    this.data = moveResponse.data.character;
   }
 
   /**
@@ -391,7 +404,7 @@ export class Character {
         `${restResponse.error.message} [Code: ${restResponse.error.code}]`,
       );
       if (restResponse.error.code === 499) {
-        await sleep(5);
+        await sleep(this.data.cooldown, 'cooldown');
       }
     } else {
       logger.info(
@@ -425,7 +438,7 @@ export class Character {
     if (response instanceof ApiError) {
       logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
       if (response.error.code === 499) {
-        await sleep(5);
+        await sleep(this.data.cooldown, 'cooldown');
       }
     } else {
       this.data = response.data.character;

@@ -1,12 +1,8 @@
-import { Character } from '../classes/CharacterClass';
 import { ApiError } from '../classes/ErrorClass';
 import { ApiUrl, MyHeaders } from '../constants';
 import {
-  ActionCraftingMyNameActionCraftingPostResponse,
   BankGoldTransactionResponseSchema,
-  BankGoldTransactionSchema,
   BankItemTransactionResponseSchema,
-  BankItemTransactionSchema,
   CharacterFightResponseSchema,
   CharacterMovementResponseSchema,
   CharacterRestResponseSchema,
@@ -117,7 +113,10 @@ export async function actionCraft(
 
     const result: SkillResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {
@@ -236,7 +235,10 @@ export async function actionDepositItems(
       logger.info(`Deposited ${item.quantity} ${item.code} into the bank`);
     });
 
-    await sleep(result.data.cooldown.remaining_seconds);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {
@@ -295,7 +297,10 @@ export async function actionFight(
 
     const result: CharacterFightResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {
@@ -348,7 +353,10 @@ export async function actionGather(
 
     const result: SkillResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {
@@ -405,7 +413,10 @@ export async function actionMove(
 
     const result: CharacterMovementResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {
@@ -448,7 +459,10 @@ export async function actionRest(
 
     const result: CharacterRestResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {

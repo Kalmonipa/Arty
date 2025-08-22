@@ -2,7 +2,9 @@ import { actionGather } from '../api_calls/Actions';
 import { getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { getResourceInformation } from '../api_calls/Resources';
+import { SimpleMapSchema } from '../types/MapData';
 import { ObjectiveTargets } from '../types/ObjectiveData';
+import { DestinationSchema } from '../types/types';
 import { logger, sleep } from '../utils';
 import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
@@ -11,6 +13,7 @@ import { Objective } from './ObjectiveClass';
 export class GatherObjective extends Objective {
   character: Character;
   target: ObjectiveTargets;
+  numHeld = 0
 
   constructor(character: Character, target: ObjectiveTargets) {
     super(`gather_${target.quantity}_${target.code}`, 'not_started');
@@ -33,7 +36,7 @@ export class GatherObjective extends Objective {
       logger.info(resourceDetails.message);
       return false;
     } else {
-      if (!this.character.checkWeaponForEffects(resourceDetails.subtype)) {
+      if (!await this.character.checkWeaponForEffects(resourceDetails.subtype)) {
         for (const item of this.character.data.inventory) {
           const itemInfo = await getItemInformation(item.code);
           if (itemInfo instanceof ApiError) {
@@ -45,7 +48,7 @@ export class GatherObjective extends Objective {
           } else {
             for (const effect of itemInfo.effects) {
               if (effect.code === resourceDetails.subtype) {
-                await this.character.equip(item.code, 'weapon');
+                await this.character.equip(item.code, 'weapon'); // ToDo: apparently this doesn't work
               }
             }
           }
@@ -56,6 +59,9 @@ export class GatherObjective extends Objective {
         // - Extract this into it's own function?
       }
     }
+
+    // Evaluate our inventory space before we start collecting items
+    await this.character.evaluateDepositItemsInBank(this.target.code)
 
     logger.info(`Finding resource map type for ${this.target.code}`);
 
@@ -77,31 +83,7 @@ export class GatherObjective extends Objective {
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-    // Loop that does the gather requests
-    for (var count = 0; count < remainderToGather; count++) {
-      if (count % 5 === 0) {
-        numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
-        logger.info(
-          `Gathered ${numHeld}/${this.target.quantity} ${this.target.code}`,
-        );
-        // Check inventory space to make sure we are less than 90% full
-        this.character.evaluateDepositItemsInBank();
-      }
-
-      const gatherResponse = await actionGather(this.character.data);
-
-      if (gatherResponse instanceof ApiError) {
-        logger.warn(
-          `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
-        );
-        if (gatherResponse.error.code === 499) {
-          await sleep(5);
-        }
-        return true;
-      }
-
-      this.character.data = gatherResponse.data.character;
-    }
+    await this.gatherItem(remainderToGather, {x: contentLocation.x, y: contentLocation.y})
 
     numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
     if (numHeld >= this.target.quantity) {
@@ -112,4 +94,35 @@ export class GatherObjective extends Objective {
     }
     return false;
   }
+
+  async gatherItem(remainderToGather: number, location: DestinationSchema) {
+        // Loop that does the gather requests
+    for (var count = 0; count < remainderToGather; count++) {
+      if (count % 5 === 0) {
+        this.numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
+        logger.info(
+          `Gathered ${this.numHeld}/${this.target.quantity} ${this.target.code}`,
+        );
+        // Check inventory space to make sure we are less than 90% full
+        if (await this.character.evaluateDepositItemsInBank(this.target.code)) {
+          // If items were deposited, we need to move back to the gathering location
+          await this.character.move(location) 
+        }
+      }
+
+      const gatherResponse = await actionGather(this.character.data);
+
+      if (gatherResponse instanceof ApiError) {
+        logger.warn(
+          `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
+        );
+        if (gatherResponse.error.code === 499) {
+          await sleep(this.character.data.cooldown, 'cooldown');
+        }
+        return true;
+      }
+
+      this.character.data = gatherResponse.data.character;
+  }
+}
 }

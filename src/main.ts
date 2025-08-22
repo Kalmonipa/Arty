@@ -11,21 +11,12 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        // Copper axe x2
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_axe');
-        char.deposit(1, 'copper_axe');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_axe');
-        char.deposit(1, 'copper_axe');
-        // Copper armor x2
-        char.gather(50, 'copper_ore');
-        char.craft(5, 'copper_bar');
-        char.gather(50, 'copper_ore');
-        char.craft(5, 'copper_bar');
-        char.deposit(10, 'copper_bar');
+        // // Train mining
+        // char.gather(50, 'copper_ore');
+        // char.craft(5, 'copper_bar');
+        // char.gather(50, 'copper_ore');
+        // char.craft(5, 'copper_bar');
+        // char.deposit(10, 'copper_bar');
         // Iron sword x2
         char.gather(60, 'iron_ore');
         char.craft(6, 'iron_bar');
@@ -56,25 +47,34 @@ async function main() {
         char.gather(80, 'iron_ore');
         char.craft(8, 'iron_bar');
         char.deposit(8, 'iron_bar');
+        char.gather(80, 'iron_ore');
+        char.craft(8, 'iron_bar');
+        char.deposit(8, 'iron_bar');
+        char.gather(80, 'iron_ore');
+        char.craft(8, 'iron_bar');
+        char.deposit(8, 'iron_bar');
+        char.gather(80, 'iron_ore');
+        char.craft(8, 'iron_bar');
+        char.deposit(8, 'iron_bar');
+        char.gather(80, 'iron_ore');
+        char.craft(8, 'iron_bar');
+        char.deposit(8, 'iron_bar');
+        char.gather(80, 'iron_ore');
+        char.craft(8, 'iron_bar');
+        char.deposit(8, 'iron_bar');
+        char.gather(80, 'iron_ore');
+        char.craft(8, 'iron_bar');
+        char.deposit(8, 'iron_bar');
         break;
       case 'JumpyJimmy':
+        char.gather(80, 'shrimp');
+        char.craft(80, 'cooked_shrimp');
+        char.deposit(80, 'cooked_shrimp');
         // Fishing net x2
         char.gather(60, 'ash_wood');
         char.craft(6, 'ash_plank');
         char.craft(1, 'wooden_shield');
         char.deposit(1, 'wooden_shield');
-        char.gather(60, 'ash_wood');
-        char.craft(6, 'ash_plank');
-        char.craft(1, 'wooden_shield');
-        // Copper helmet x2
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_helmet');
-        char.deposit(1, 'copper_helmet');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_helmet');
-        char.deposit(1, 'copper_helmet');
         // Level up fishing
         char.gather(80, 'shrimp');
         char.craft(80, 'cooked_shrimp');

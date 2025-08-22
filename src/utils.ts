@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { CooldownSchema } from './types/types';
 
 // ToDo: Show log level (info, error) in logs output instead of integer value
 export const logger = pino({
@@ -44,7 +45,7 @@ export function getEnv(name: string): string {
  * @description Used after every action to wait for the cooldown period to finish
  * @param cooldown Number of seconds to sleep for
  */
-export const sleep = (cooldown: number) => {
-  logger.info(`Sleeping for ${cooldown} seconds`);
+export const sleep = (cooldown: number, reason: string) => {
+  logger.info(`Sleeping for ${cooldown} seconds because of ${reason}`);
   return new Promise((r) => setTimeout(r, cooldown * 1000));
 };

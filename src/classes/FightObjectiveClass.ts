@@ -55,7 +55,7 @@ export class FightObjective extends Objective {
       if (response instanceof ApiError) {
         logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
         if (response.error.code === 499) {
-          await sleep(5);
+          await sleep(this.character.data.cooldown, 'cooldown');
         }
         return true;
       }
