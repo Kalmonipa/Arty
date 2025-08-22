@@ -14,7 +14,7 @@ export type MapSchema = {
 export type SimpleMapSchema = {
   x: number;
   y: number;
-}
+};
 
 export type AllMaps = {
   data: MapSchema[];

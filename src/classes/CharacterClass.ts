@@ -1,31 +1,17 @@
-import { it } from 'node:test';
 import {
-  actionCraft,
   actionDepositItems,
-  actionFight,
-  actionGather,
   actionMove,
   actionRest,
-  actionWithdrawItem,
 } from '../api_calls/Actions';
-import {
-  actionEquipItem,
-  actionUnequipItem,
-  getItemInformation,
-} from '../api_calls/Items';
+import { getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
-import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   CharacterSchema,
-  CraftingSchema,
   DestinationSchema,
-  EquipSchema,
-  ItemSchema,
   ItemSlot,
   MapSchema,
   SimpleItemSchema,
-  UnequipSchema,
 } from '../types/types';
 import { logger, sleep } from '../utils';
 import { CraftObjective } from './CraftObjectiveClass';
@@ -34,6 +20,9 @@ import { ApiError } from './ErrorClass';
 import { GatherObjective } from './GatherObjectiveClass';
 import { Objective } from './ObjectiveClass';
 import { FightObjective } from './FightObjectiveClass';
+import { EquipObjective } from './EquipObjectiveClass';
+import { UnequipObjective } from './UnequipObjectiveClass';
+import { WithdrawObjective } from './WithdrawObjectiveClass';
 
 export class Character {
   data: CharacterSchema;
@@ -206,70 +195,14 @@ export class Character {
    * @description equip the item
    */
   async equip(itemName: string, itemSlot: ItemSlot, quantity?: number) {
-    if (!quantity) quantity = 1;
-
-    if (
-      (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-      quantity > 100
-    ) {
-      logger.warn(
-        `Quantity can only be provided for utility slots and must be less than 100`,
-      );
-      return;
-    }
-
-    logger.info(`Equipping ${quantity} ${itemName} into ${itemSlot}`);
-
-    const equipSchema: EquipSchema = {
-      code: itemName,
-      slot: itemSlot,
-      quantity: quantity,
-    };
-
-    const response = await actionEquipItem(this.data, equipSchema);
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-    }
+    this.addJob(new EquipObjective(this, itemName, itemSlot, quantity));
   }
 
   /**
    * @description equip the item
    */
   async unequip(itemSlot: ItemSlot, quantity?: number) {
-    if (!quantity) quantity = 1;
-
-    // validations
-    if (
-      (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-      quantity > 100
-    ) {
-      logger.warn(
-        `Quantity can only be provided for utility slots and must be less than 100`,
-      );
-      return;
-    }
-
-    logger.info(`Unequipping ${itemSlot} slot`);
-
-    const unequipSchema: UnequipSchema = {
-      slot: itemSlot,
-      quantity: quantity,
-    };
-
-    const response = await actionUnequipItem(this.data, unequipSchema);
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-    }
+    this.addJob(new UnequipObjective(this, itemSlot, quantity));
   }
 
   /**
@@ -310,9 +243,9 @@ export class Character {
    * ToDo:
    *  - Keep important items. Only deposit 'junk' that isn't part of our objective
    *     or useful items like potions, food, etc
-   * @returns {boolean} 
+   * @returns {boolean}
    *  - true means bank was visited and items deposited
-   *  - false means nothing happened 
+   *  - false means nothing happened
    */
   async evaluateDepositItemsInBank(exception?: string): Promise<boolean> {
     let usedInventorySpace = this.getInventoryFullness();
@@ -326,13 +259,14 @@ export class Character {
 
       var itemsToDeposit: SimpleItemSchema[] = [];
       for (const item of this.data.inventory) {
-        if (item.quantity === 0) { // If the item slot is empty we can ignore
+        if (item.quantity === 0) {
+          // If the item slot is empty we can ignore
           break;
         } else if (item.code === exception) {
-          logger.info(`Not depositing ${exception} because we need it`)
+          logger.info(`Not depositing ${exception} because we need it`);
         } else {
-        logger.info(`Adding ${item.quantity} ${item.code} to deposit list`)
-        itemsToDeposit.push({ code: item.code, quantity: item.quantity });
+          logger.info(`Adding ${item.quantity} ${item.code} to deposit list`);
+          itemsToDeposit.push({ code: item.code, quantity: item.quantity });
         }
       }
 
@@ -348,7 +282,7 @@ export class Character {
       } else {
         this.data = response.data.character;
       }
-    return true;
+      return true;
     }
     return false;
   }
@@ -417,32 +351,7 @@ export class Character {
   /**
    * @description withdraw the specified items from the bank
    */
-  async withdraw(quantity: number, itemCode: string): Promise<boolean> {
-    logger.info(`Finding location of the bank`);
-
-    const maps = (await getMaps(undefined, 'bank')).data;
-
-    if (maps.length === 0) {
-      logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return true;
-    }
-
-    const contentLocation = this.evaluateClosestMap(maps);
-
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
-
-    const response = await actionWithdrawItem(this.data, [
-      { quantity: quantity, code: itemCode },
-    ]);
-
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-    }
-    return true;
+  async withdraw(quantity: number, itemCode: string) {
+    this.addJob(new WithdrawObjective(this, itemCode, quantity));
   }
 }

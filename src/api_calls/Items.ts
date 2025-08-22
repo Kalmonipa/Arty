@@ -63,7 +63,10 @@ export async function actionEquipItem(
 
     const result: EquipmentResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds, result.data.cooldown.reason);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {
@@ -120,7 +123,10 @@ export async function actionUnequipItem(
 
     const result: EquipmentResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds, result.data.cooldown.reason);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {

@@ -60,15 +60,12 @@ export class CraftObjective extends Objective {
       if (response.error.code === 499) {
         await sleep(this.character.data.cooldown, 'cooldown');
       }
-      
     } else {
+      this.character.data = response.data.character;
 
-    this.character.data = response.data.character;
-
-    logger.info(
-      `Successfully crafted ${this.target.quantity} ${this.target.code}s`,
-    );
-
-      }
+      logger.info(
+        `Successfully crafted ${this.target.quantity} ${this.target.code}s`,
+      );
     }
+  }
 }
