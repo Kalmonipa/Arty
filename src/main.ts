@@ -11,87 +11,15 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_ring');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_ring');
-        char.equip('copper_ring', 'ring1');
-        char.equip('copper_ring', 'ring2');
-        // Train weaponcrafting
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
-        char.gather(60, 'copper_ore');
-        char.craft(6, 'copper_bar');
-        char.craft(1, 'copper_dagger');
+        var count = 0;
+        while (count < 100) {
+          // Train weaponcrafting
+          char.gather(60, 'copper_ore');
+          char.craft(6, 'copper_bar');
+          char.craft(1, 'copper_dagger');
+          char.deposit(1, 'copper_dagger');
+          count++;
+        }
         // Iron sword x2
         // char.gather(60, 'iron_ore');
         // char.craft(6, 'iron_bar');
@@ -103,43 +31,6 @@ async function main() {
         // char.fight(20, 'chicken');
         // char.craft(1, 'iron_sword');
         // char.deposit(1, 'iron_sword');
-        // Train mining
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
-        // char.gather(80, 'iron_ore');
-        // char.craft(8, 'iron_bar');
-        // char.deposit(8, 'iron_bar');
         break;
       case 'JumpyJimmy':
         var count = 0;
@@ -163,10 +54,30 @@ async function main() {
       case 'ZippyZoe':
         var count = 0;
         while (count < 100) {
-          char.gather(80, 'sunflower');
-          char.deposit(80, 'sunflower');
+          char.gather(84, 'sunflower');
+          char.craft(28, 'small_health_potion');
+          char.deposit(28, 'small_health_potion');
           count++;
         }
+        break;
+      case 'TimidTom':
+        var count = 0;
+        while (count < 200) {
+          char.gather(80, 'coppy_ore');
+          char.craft(8, 'copper_bar');
+          char.deposit(8, 'copper_bar');
+          count++;
+        }
+        break;
+      case 'BouncyBella':
+        var count = 0;
+        while (count < 200) {
+          char.gather(80, 'coppy_ore');
+          char.craft(8, 'copper_bar');
+          char.deposit(8, 'copper_bar');
+          count++;
+        }
+        break;
     }
 
     shouldStopActions = await char.executeJobList();
