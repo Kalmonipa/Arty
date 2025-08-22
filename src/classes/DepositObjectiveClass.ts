@@ -18,32 +18,43 @@ export class DepositObjective extends Objective {
     this.target = target;
   }
 
-  async execute() {
-    logger.info(`Finding location of the bank`);
+  async execute(): Promise<boolean> {
+    this.status = 'in_progress';
+    const result = await this.character.deposit(
+      this.target.quantity,
+      this.target.code,
+    );
+    this.status = 'complete';
 
-    const maps = (await getMaps(undefined, 'bank')).data;
-
-    if (maps.length === 0) {
-      logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return true;
-    }
-
-    const contentLocation = this.character.evaluateClosestMap(maps);
-
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
-
-    const response = await actionDepositItems(this.character.data, [
-      { quantity: this.target.quantity, code: this.target.code },
-    ]);
-
-    if (response instanceof ApiError) {
-      if (response.error.code === 499) {
-        logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-        await sleep(this.character.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.character.data = response.data.character;
-    }
-    return true;
+    return result;
   }
+
+  //async deposit() {
+  // logger.info(`Finding location of the bank`);
+
+  // const maps = (await getMaps(undefined, 'bank')).data;
+
+  // if (maps.length === 0) {
+  //   logger.error(`Cannot find the bank. This shouldn't happen ??`);
+  //   return true;
+  // }
+
+  // const contentLocation = this.character.evaluateClosestMap(maps);
+
+  // await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+
+  // const response = await actionDepositItems(this.character.data, [
+  //   { quantity: this.target.quantity, code: this.target.code },
+  // ]);
+
+  // if (response instanceof ApiError) {
+  //   if (response.error.code === 499) {
+  //     logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
+  //     await sleep(this.character.data.cooldown, 'cooldown');
+  //   }
+  // } else {
+  //   this.character.data = response.data.character;
+  // }
+  // return true;
+  //}
 }

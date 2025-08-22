@@ -20,35 +20,39 @@ export class WithdrawObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
-    return await this.withdraw(this.quantity, this.itemCode);
+    this.status = 'in_progress';
+    const result = await this.character.withdraw(this.quantity, this.itemCode);
+    this.status = 'complete';
+    return result;
   }
 
-  async withdraw(quantity: number, itemCode: string): Promise<boolean> {
-    logger.info(`Finding location of the bank`);
+  // This function has been moved to the Character class
+  // async withdraw(quantity: number, itemCode: string): Promise<boolean> {
+  //   logger.info(`Finding location of the bank`);
 
-    const maps = (await getMaps(undefined, 'bank')).data;
+  //   const maps = (await getMaps(undefined, 'bank')).data;
 
-    if (maps.length === 0) {
-      logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return true;
-    }
+  //   if (maps.length === 0) {
+  //     logger.error(`Cannot find the bank. This shouldn't happen ??`);
+  //     return true;
+  //   }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+  //   const contentLocation = this.character.evaluateClosestMap(maps);
 
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+  //   await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-    const response = await actionWithdrawItem(this.character.data, [
-      { quantity: quantity, code: itemCode },
-    ]);
+  //   const response = await actionWithdrawItem(this.character.data, [
+  //     { quantity: quantity, code: itemCode },
+  //   ]);
 
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.character.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.character.data = response.data.character;
-    }
-    return true;
-  }
+  //   if (response instanceof ApiError) {
+  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+  //     if (response.error.code === 499) {
+  //       await sleep(this.character.data.cooldown, 'cooldown');
+  //     }
+  //   } else {
+  //     this.character.data = response.data.character;
+  //   }
+  //   return true;
+  // }
 }
