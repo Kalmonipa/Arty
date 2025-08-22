@@ -1,0 +1,135 @@
+import { ApiError } from '../classes/ErrorClass';
+import { ApiUrl, MyHeaders } from '../constants';
+import {
+  CharacterSchema,
+  RewardDataResponseSchema,
+  RewardDataSchema,
+  TaskResponseSchema,
+} from '../types/types';
+import { logger, sleep } from '../utils';
+
+export async function actionAcceptNewTask(
+  character: CharacterSchema,
+): Promise<TaskResponseSchema | ApiError> {
+  var requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+  };
+
+  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/new`);
+
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+
+    if (!response.ok) {
+      var message: string;
+      switch (response.status) {
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 497:
+          message = "The character's inventory is full.";
+          break;
+        case 489:
+          message = 'The character already has an assigned task.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 499:
+          message = 'The character is in cooldown.';
+          break;
+        case 598:
+          message = 'Tasks Master not found on this map.';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: TaskResponseSchema = await response.json();
+
+    logger.info(
+      `Accepted task to fight ${result.data.task.total} ${result.data.task.code}`,
+    );
+    var rewards: string = '';
+    for (const reward of result.data.task.rewards.items) {
+      rewards += `${reward.quantity} ${reward.code}, `;
+    }
+    logger.info(
+      `Rewards are ${rewards} and ${result.data.task.rewards.gold} gold`,
+    );
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
+    return result;
+  } catch (error) {
+    return error;
+  }
+}
+
+export async function actionCompleteTask(
+  character: CharacterSchema,
+): Promise<RewardDataResponseSchema | ApiError> {
+  var requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+  };
+
+  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/complete`);
+
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+
+    if (!response.ok) {
+      var message: string;
+      switch (response.status) {
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 487:
+          message = 'The character has no task assigned.';
+          break;
+        case 488:
+          message = 'The character has not completed the task.';
+          break;
+        case 497:
+          message = 'The characters inventory is full.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 598:
+          message = 'Tasks Master not found on this map.';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: RewardDataResponseSchema = await response.json();
+
+    logger.info(`Completed task successfully`);
+    var rewards: string = '';
+    for (const reward of result.data.rewards.items) {
+      rewards += `${reward.quantity} ${reward.code}, `;
+    }
+    logger.info(`Received ${rewards} and ${result.data.rewards.gold} gold`);
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
+    return result;
+  } catch (error) {
+    return error;
+  }
+}

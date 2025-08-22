@@ -11,13 +11,13 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        // Complete task
-        char.fightJob(81, 'yellow_slime');
-        //char.withdrawJob(1, 'copper_pickaxe');
-        char.equipJob('copper_pickaxe', 'weapon');
+        // // Complete task
+        // char.fightJob(81, 'yellow_slime');
+        // //char.withdrawJob(1, 'copper_pickaxe');
+        // char.equipJob('copper_pickaxe', 'weapon');
 
         var count = 0;
-        while (count < 100) {
+        while (count < 200) {
           // Train weaponcrafting
           char.gatherJob(60, 'copper_ore');
           char.craftJob(6, 'copper_bar');

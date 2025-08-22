@@ -15,6 +15,7 @@ import {
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
 import {
+  CharacterFightResponseSchema,
   CharacterSchema,
   DestinationSchema,
   EquipSchema,
@@ -340,6 +341,7 @@ export class Character {
 
   /**
    * @description Fight the requested amount of mobs
+   * @todo Does this function need to return anything?
    */
   async fight(quantity: number, code: string) {
     logger.info(`Finding location of ${code}`);
@@ -348,7 +350,7 @@ export class Character {
 
     if (maps.length === 0) {
       logger.error(`Cannot find any maps for ${code}`);
-      return true;
+      return true; // ToDo: Not sure if I want to return true, false or anything at all here
     }
 
     const contentLocation = this.evaluateClosestMap(maps);
@@ -379,9 +381,13 @@ export class Character {
           await sleep(this.data.cooldown, 'cooldown');
         }
         return true;
-      }
+      } else {
+        logger.info(
+          `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp`,
+        );
 
-      this.data = response.data.character;
+        this.data = response.data.character;
+      }
     }
 
     logger.info(`Successfully fought ${quantity} ${code}`);
