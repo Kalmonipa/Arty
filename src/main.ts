@@ -142,121 +142,31 @@ async function main() {
         // char.deposit(8, 'iron_bar');
         break;
       case 'JumpyJimmy':
-        // Train gearcrafting
-        // await char.withdraw(80, 'copper_bar');
-        // await char.withdraw(32, 'feather');
-        // char.craft(10, 'copper_boots');
-        // char.deposit(10, 'copper_boots');
-        // Level mining
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        char.gather(80, 'copper_ore');
-        char.craft(8, 'copper_bar');
-        char.craft(1, 'copper_boots');
-        char.deposit(1, 'copper_boots');
-        // Level up fishing
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
-        char.gather(80, 'shrimp');
-        char.craft(80, 'cooked_shrimp');
-        char.deposit(80, 'cooked_shrimp');
+        var count = 0;
+        while (count < 30) {
+          // Train gearcrafting
+          char.gather(80, 'copper_ore');
+          char.craft(8, 'copper_bar');
+          char.craft(1, 'copper_boots');
+          char.deposit(1, 'copper_boots');
+          count++;
+        }
+        var count = 0;
+        while (count < 100) {
+          // Level up fishing
+          char.gather(80, 'shrimp');
+          char.craft(80, 'cooked_shrimp');
+          char.deposit(80, 'cooked_shrimp');
+          count++;
+        }
         break;
+      case 'ZippyZoe':
+        var count = 0;
+        while (count < 100) {
+          char.gather(80, 'sunflower');
+          char.deposit(80, 'sunflower');
+          count++;
+        }
     }
 
     shouldStopActions = await char.executeJobList();

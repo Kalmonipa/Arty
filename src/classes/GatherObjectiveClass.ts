@@ -43,8 +43,8 @@ export class GatherObjective extends Objective {
       if (
         !(await this.character.checkWeaponForEffects(resourceDetails.subtype))
       ) {
-        if (this.character.data.inventory) {
-          for (const item of this.character.data.inventory) {
+        for (const item of this.character.data.inventory) {
+          if (item.quantity > 0) {
             const itemInfo = await getItemInformation(item.code);
             if (itemInfo instanceof ApiError) {
               logger.warn(

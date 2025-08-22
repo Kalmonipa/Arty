@@ -176,17 +176,19 @@ export class Character {
       logger.info(weaponDetails.message);
       return false;
     } else {
-      for (const effect of weaponDetails.effects) {
-        if (effect.code === typeOfActivity) {
-          isEffective = true;
+      if (weaponDetails.effects) {
+        for (const effect of weaponDetails.effects) {
+          if (effect.code === typeOfActivity) {
+            isEffective = true;
+          }
         }
-      }
-      if (isEffective) {
-        logger.info(`Current weapon is suitable for ${typeOfActivity}`);
-        return true;
-      } else {
-        logger.info(`Current weapon is NOT suitable for ${typeOfActivity}`);
-        return false;
+        if (isEffective) {
+          logger.info(`Current weapon is suitable for ${typeOfActivity}`);
+          return true;
+        } else {
+          logger.info(`Current weapon is NOT suitable for ${typeOfActivity}`);
+          return false;
+        }
       }
     }
   }
