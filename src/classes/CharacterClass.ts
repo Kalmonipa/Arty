@@ -83,12 +83,14 @@ export class Character {
     if (!index) {
       index = this.jobList.indexOf(obj);
     }
-    logger.info(`Removing ${obj.objectiveId} from position ${index}`)
+    logger.info(`Removing ${obj.objectiveId} from position ${index}`);
     const deletedObj = this.jobList.splice(index, 1);
-    logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`)
-    logger.info(`Current jobs in job queue`)
-    for (const obj of this.jobList) {
-      logger.info(`   - ${obj.objectiveId} - ${obj.status}`)
+    logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`);
+    if (this.jobList.length > 0) {
+      logger.info(`Current jobs in job queue`);
+      for (const obj of this.jobList) {
+        logger.info(`   - ${obj.objectiveId} - ${obj.status}`);
+      }
     }
   }
 
@@ -100,11 +102,11 @@ export class Character {
       logger.info(`Executing job ${this.jobList[0].objectiveId}`);
       await this.jobList[0].execute(this);
     }
-    
-    logger.info(`No more jobs to execute`)
+
+    logger.info(`No more jobs to execute`);
     // ToDo: Get character to do some idle tasks if nothing else to do
     return true;
-    
+
     // for (const obj of this.jobList) {
     //   logger.info(`Executing job ${obj.objectiveId}`);
     //   await obj.execute(this);
@@ -165,7 +167,7 @@ export class Character {
   }
 
   /**
-   * @description Craft the item. Character must be on the correct crafting map
+   * @description Craft the item. Character will move to the correct workshop map
    */
   async craft(quantity: number, code: string) {
     const targetItem = await getItemInformation(code);
@@ -296,19 +298,21 @@ export class Character {
       logger.info(weaponDetails.message);
       return false;
     } else {
-      if (weaponDetails.effects) {
+      if (weaponDetails.type === 'weapon' && typeOfActivity === 'mob') {
+        isEffective = true;
+      } else if (weaponDetails.effects) {
         for (const effect of weaponDetails.effects) {
           if (effect.code === typeOfActivity) {
             isEffective = true;
           }
         }
-        if (isEffective) {
-          logger.info(`Current weapon is suitable for ${typeOfActivity}`);
-          return true;
-        } else {
-          logger.info(`Current weapon is NOT suitable for ${typeOfActivity}`);
-          return false;
-        }
+      }
+      if (isEffective) {
+        logger.info(`Current weapon is suitable for ${typeOfActivity}`);
+        return true;
+      } else {
+        logger.info(`Current weapon is NOT suitable for ${typeOfActivity}`);
+        return false;
       }
     }
   }
@@ -433,15 +437,21 @@ export class Character {
         }
         return true;
       } else {
-        logger.info(
-          `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp`,
-        );
+        if (response.data.fight.result === 'loss') {
+          logger.warn(
+            `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
+          );
+        } else if (response.data.fight.result === 'win') {
+          logger.info(
+            `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp and ${response.data.fight.gold} gold`,
+          );
+        }
 
         this.data = response.data.character;
       }
     }
 
-    logger.info(`Successfully fought ${quantity} ${code}`);
+    logger.debug(`Successfully fought ${quantity} ${code}`);
 
     return true;
   }
@@ -498,6 +508,13 @@ export class Character {
       await this.gatherMobDrop(
         { code: resourceDetails.code, quantity: quantity },
         numHeld,
+      );
+    } else if (resourceDetails.craft) {
+      this.prependJob(
+        new CraftObjective(this, {
+          code: resourceDetails.code,
+          quantity: quantity,
+        }),
       );
     } else {
       await this.gatherResource(code, quantity, numHeld, remainderToGather);

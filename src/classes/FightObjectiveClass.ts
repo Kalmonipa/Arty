@@ -20,6 +20,9 @@ export class FightObjective extends Objective {
 
   async execute(): Promise<boolean> {
     this.startJob();
+
+    await this.runPrerequisiteChecks();
+
     const result = await this.character.fight(
       this.target.quantity,
       this.target.code,
@@ -29,6 +32,8 @@ export class FightObjective extends Objective {
     this.character.removeJob(this);
     return result;
   }
+
+  async runPrerequisiteChecks() {}
 
   //   logger.info(`Finding location of ${this.target.code}`);
 

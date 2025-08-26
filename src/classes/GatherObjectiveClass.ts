@@ -1,4 +1,5 @@
 import { ObjectiveTargets } from '../types/ObjectiveData';
+import { logger } from '../utils';
 import { Character } from './CharacterClass';
 import { Objective } from './ObjectiveClass';
 
@@ -13,17 +14,39 @@ export class GatherObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
+    var result = true;
     this.startJob();
 
-    const result = await this.character.gather(
-      this.target.quantity,
-      this.target.code,
-    );
+    await this.runPrerequisiteChecks();
+
+    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+
+    // ToDo: check bank
+    if (numInInv >= this.target.quantity) {
+      logger.info(
+        `${numInInv} ${this.target.code} in inventory already. No need to collect more`,
+      );
+      return true;
+    } else {
+      if (this.character.jobList.indexOf(this) !== 0) {
+        logger.info(
+          `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+        );
+        await this.character.jobList[0].execute(this.character);
+      }
+
+      result = await this.character.gather(
+        this.target.quantity,
+        this.target.code,
+      );
+    }
 
     this.completeJob();
     this.character.removeJob(this);
     return result;
   }
+
+  async runPrerequisiteChecks() {}
 
   // async gather(): Promise<boolean> {
   //   var numHeld = this.character.checkQuantityOfItemInInv(this.target.code);

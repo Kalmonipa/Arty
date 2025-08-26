@@ -1,5 +1,4 @@
 import pino from 'pino';
-import { CooldownSchema } from './types/types';
 
 // ToDo: Show log level (info, error) in logs output instead of integer value
 export const logger = pino({
@@ -7,14 +6,14 @@ export const logger = pino({
   transport: {
     targets: [
       {
-        level: 'trace',
+        level: process.env['LOG_LEVEL'] || 'info',
         target: 'pino/file',
         options: {
           destination: './logs/arty.log',
         },
       },
       {
-        level: 'trace',
+        level: process.env['LOG_LEVEL'] || 'info',
         target: 'pino-pretty',
         options: {},
       },

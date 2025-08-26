@@ -11,34 +11,49 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        char.fightJob(133, 'blue_slime')
-        // var count = 0;
-        // while (count < 30) {
-        //   // Train weaponcrafting
-        //   char.gatherJob(2, 'feather');
-        //   char.withdrawJob(6, 'iron_bar');
-        //   char.craftJob(1, 'iron_sword');
-        //   char.depositJob(1, 'iron_sword');
-        //   count++;
-        // }
+        var count = 0;
+        while (count < 30) {
+          char.gatherJob(10, 'red_slimeball');
+          char.depositJob(10, 'red_slimeball');
+          //   // Train weaponcrafting
+          //   char.gatherJob(2, 'feather');
+          //   char.withdrawJob(6, 'iron_bar');
+          //   char.craftJob(1, 'iron_sword');
+          //   char.depositJob(1, 'iron_sword');
+          count++;
+        }
         break;
       case 'JumpyJimmy':
+        char.craftJob(1, 'copper_armor');
+        char.craftJob(1, 'copper_armor');
+        char.craftJob(1, 'copper_armor');
+        char.craftJob(1, 'copper_armor');
+        char.craftJob(1, 'copper_armor');
+        char.craftJob(1, 'copper_armor');
         var count = 0;
-        while (count < 20) {
+        while (count < 5) {
           // Train gearcrafting
-          char.gatherJob(2, 'feather');
-          char.withdrawJob(5, 'copper_bar');
-          char.craftJob(1, 'copper_legs_armor');
-          char.depositJob(1, 'copper_legs_armor');
+          char.gatherJob(80, 'shrimp');
+          char.craftJob(80, 'cooked_shrimp');
+          char.depositJob(80, 'cooked_shrimp');
+          count++;
+        }
+        var count = 0;
+        while (count < 10) {
+          // Train gearcrafting
+          char.gatherJob(80, 'trout');
+          char.craftJob(80, 'cooked_trout');
+          char.depositJob(80, 'cooked_trout');
           count++;
         }
         break;
       case 'ZippyZoe':
         var count = 0;
-        while (count < 100) {
-          char.gatherJob(84, 'sunflower');
-          char.craftJob(28, 'small_health_potion');
-          char.depositJob(28, 'small_health_potion');
+        while (count < 4) {
+          char.withdrawJob(10, 'red_slimeball');
+          char.withdrawJob(10, 'sunflower');
+          char.withdrawJob(10, 'algae');
+          char.craftJob(10, 'fire_boost_potion');
           count++;
         }
         break;
