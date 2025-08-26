@@ -20,9 +20,10 @@ export class WithdrawObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
-    this.status = 'in_progress';
+    this.startJob();
     const result = await this.character.withdraw(this.quantity, this.itemCode);
-    this.status = 'complete';
+    this.completeJob();
+    this.character.removeJob(this);
     return result;
   }
 

@@ -6,6 +6,8 @@ import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import { getItemInformation } from '../api_calls/Items';
+import { GatherObjective } from './GatherObjectiveClass';
+import { FightObjective } from './FightObjectiveClass';
 
 export class CraftObjective extends Objective {
   character: Character;
@@ -19,14 +21,61 @@ export class CraftObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
-    this.status = 'in_progress';
+    this.startJob();
+
+    await this.checkPrerequisiteJobs();
+
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to them`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+
     const result = await this.character.craft(
       this.target.quantity,
       this.target.code,
     );
-    this.status = 'complete';
 
+    this.completeJob();
+    this.character.removeJob(this);
     return result;
+  }
+
+  async checkPrerequisiteJobs() {
+    // Get item crafting info
+    // iterate through those items and create jobs for necessary gathering
+
+    const response = await getItemInformation(this.target.code);
+
+    if (response instanceof ApiError) {
+      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+      if (response.error.code === 499) {
+        await sleep(this.character.data.cooldown, 'cooldown');
+      }
+    } else {
+      for (const craftingItem of response.craft.items) {
+        // check inventory
+        const numInInv = this.character.checkQuantityOfItemInInv(
+          craftingItem.code,
+        );
+        if (numInInv >= craftingItem.quantity) {
+          logger.info(
+            `${numInInv} ${craftingItem.code} in inventory already. No need to gather`,
+          );
+          continue;
+        } else {
+          this.character.prependJob(
+            new GatherObjective(this.character, {
+              code: craftingItem.code,
+              quantity: craftingItem.quantity - numInInv,
+            }),
+          );
+        }
+
+        // ToDo: check bank
+      }
+    }
   }
 
   // This function has been moved to the Character class

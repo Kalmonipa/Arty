@@ -1,13 +1,5 @@
-import { actionGather } from '../api_calls/Actions';
-import { getItemInformation } from '../api_calls/Items';
-import { getMaps } from '../api_calls/Maps';
-import { getResourceInformation } from '../api_calls/Resources';
-import { SimpleMapSchema } from '../types/MapData';
 import { ObjectiveTargets } from '../types/ObjectiveData';
-import { DestinationSchema } from '../types/types';
-import { logger, sleep } from '../utils';
 import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class GatherObjective extends Objective {
@@ -21,13 +13,15 @@ export class GatherObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
-    this.status = 'in_progress';
+    this.startJob();
+
     const result = await this.character.gather(
       this.target.quantity,
       this.target.code,
     );
-    this.status = 'complete';
 
+    this.completeJob();
+    this.character.removeJob(this);
     return result;
   }
 

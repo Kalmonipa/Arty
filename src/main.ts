@@ -11,48 +11,25 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        // // Complete task
-        // char.fightJob(81, 'yellow_slime');
-        // //char.withdrawJob(1, 'copper_pickaxe');
-        // char.equipJob('copper_pickaxe', 'weapon');
-
-        var count = 0;
-        while (count < 200) {
-          // Train weaponcrafting
-          char.gatherJob(60, 'copper_ore');
-          char.craftJob(6, 'copper_bar');
-          char.craftJob(1, 'copper_dagger');
-          char.depositJob(1, 'copper_dagger');
-          count++;
-        }
-        // Iron sword x2
-        // char.gather(60, 'iron_ore');
-        // char.craft(6, 'iron_bar');
-        // char.fight(20, 'chicken');
-        // char.craft(1, 'iron_sword');
-        // char.deposit(1, 'iron_sword');
-        // char.gather(60, 'iron_ore');
-        // char.craft(6, 'iron_bar');
-        // char.fight(20, 'chicken');
-        // char.craft(1, 'iron_sword');
-        // char.deposit(1, 'iron_sword');
+        char.fightJob(133, 'blue_slime')
+        // var count = 0;
+        // while (count < 30) {
+        //   // Train weaponcrafting
+        //   char.gatherJob(2, 'feather');
+        //   char.withdrawJob(6, 'iron_bar');
+        //   char.craftJob(1, 'iron_sword');
+        //   char.depositJob(1, 'iron_sword');
+        //   count++;
+        // }
         break;
       case 'JumpyJimmy':
         var count = 0;
-        while (count < 30) {
+        while (count < 20) {
           // Train gearcrafting
-          char.gatherJob(80, 'copper_ore');
-          char.craftJob(8, 'copper_bar');
-          char.craftJob(1, 'copper_boots');
-          char.depositJob(1, 'copper_boots');
-          count++;
-        }
-        var count = 0;
-        while (count < 100) {
-          // Level up fishing
-          char.gatherJob(80, 'shrimp');
-          char.craftJob(80, 'cooked_shrimp');
-          char.depositJob(80, 'cooked_shrimp');
+          char.gatherJob(2, 'feather');
+          char.withdrawJob(5, 'copper_bar');
+          char.craftJob(1, 'copper_legs_armor');
+          char.depositJob(1, 'copper_legs_armor');
           count++;
         }
         break;
@@ -68,18 +45,18 @@ async function main() {
       case 'TimidTom':
         var count = 0;
         while (count < 200) {
-          char.gatherJob(80, 'copper_ore');
-          char.craftJob(8, 'copper_bar');
-          char.depositJob(8, 'copper_bar');
+          char.gatherJob(80, 'coal');
+          //char.craftJob(8, 'iron_bar');
+          char.depositJob(80, 'coal');
           count++;
         }
         break;
       case 'BouncyBella':
         var count = 0;
         while (count < 200) {
-          char.gatherJob(80, 'copper_ore');
-          char.craftJob(8, 'copper_bar');
-          char.depositJob(8, 'copper_bar');
+          char.gatherJob(80, 'iron_ore');
+          //char.craftJob(8, 'iron_bar');
+          char.depositJob(80, 'iron_ore');
           count++;
         }
         break;

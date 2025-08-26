@@ -19,13 +19,13 @@ export class DepositObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
-    this.status = 'in_progress';
+    this.startJob();
     const result = await this.character.deposit(
       this.target.quantity,
       this.target.code,
     );
-    this.status = 'complete';
-
+    this.completeJob();
+    this.character.removeJob(this);
     return result;
   }
 

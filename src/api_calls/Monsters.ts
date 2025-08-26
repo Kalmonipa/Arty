@@ -9,7 +9,7 @@ import { logger } from '../utils';
 
 export async function getMonsterInformation(
   data: GetAllMonstersMonstersGetData,
-): Promise<GetAllMonstersMonstersGetResponse> {
+): Promise<GetAllMonstersMonstersGetResponse | ApiError> {
   var requestOptions = {
     method: 'GET',
     headers: MyHeaders,

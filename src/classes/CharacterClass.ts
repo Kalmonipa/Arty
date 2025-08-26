@@ -19,6 +19,8 @@ import {
   CharacterSchema,
   DestinationSchema,
   EquipSchema,
+  GetAllMonstersMonstersGetResponse,
+  ItemSchema,
   ItemSlot,
   MapSchema,
   SimpleItemSchema,
@@ -35,6 +37,8 @@ import { EquipObjective } from './EquipObjectiveClass';
 import { UnequipObjective } from './UnequipObjectiveClass';
 import { WithdrawObjective } from './WithdrawObjectiveClass';
 import { getResourceInformation } from '../api_calls/Resources';
+import { getMonsterInformation } from '../api_calls/Monsters';
+import { url } from 'inspector';
 
 export class Character {
   data: CharacterSchema;
@@ -51,20 +55,60 @@ export class Character {
    * Adds an objective to the end of the job list
    * @param obj
    */
-  addJob(obj: Objective) {
+  appendJob(obj: Objective) {
     this.jobList.push(obj);
     logger.info(`Added to job list: ${obj.objectiveId}`);
+  }
+
+  /**
+   * Adds an objective to the beginning of the job list
+   */
+  prependJob(obj: Objective) {
+    this.jobList.unshift(obj);
+    logger.info(`Added to beginning of job list: ${obj.objectiveId}`);
+  }
+
+  /**
+   * Inserts an objective into the specified position in the array
+   */
+  insertJob(obj: Objective, index: number) {
+    this.jobList.splice(index, 0, obj);
+    logger.info(`Inserted ${obj.objectiveId} into position ${index}`);
+  }
+
+  /**
+   * Remove job from jobList
+   */
+  removeJob(obj: Objective, index?: number) {
+    if (!index) {
+      index = this.jobList.indexOf(obj);
+    }
+    logger.info(`Removing ${obj.objectiveId} from position ${index}`)
+    const deletedObj = this.jobList.splice(index, 1);
+    logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`)
+    logger.info(`Current jobs in job queue`)
+    for (const obj of this.jobList) {
+      logger.info(`   - ${obj.objectiveId} - ${obj.status}`)
+    }
   }
 
   /**
    * Executes all jobs in the job list
    */
   async executeJobList() {
-    for (const obj of this.jobList) {
-      logger.info(`Executing job ${obj.objectiveId}`);
-      await obj.execute(this);
+    while (this.jobList.length > 0) {
+      logger.info(`Executing job ${this.jobList[0].objectiveId}`);
+      await this.jobList[0].execute(this);
     }
+    
+    logger.info(`No more jobs to execute`)
+    // ToDo: Get character to do some idle tasks if nothing else to do
     return true;
+    
+    // for (const obj of this.jobList) {
+    //   logger.info(`Executing job ${obj.objectiveId}`);
+    //   await obj.execute(this);
+    // }
   }
 
   /**
@@ -174,6 +218,7 @@ export class Character {
 
   /**
    * @description deposit the specified items into the bank
+   * @todo If 0 is entered, deposit all of that item
    */
   async deposit(quantity: number, itemCode: string) {
     logger.info(`Finding location of the bank`);
@@ -189,6 +234,9 @@ export class Character {
 
     await this.move({ x: contentLocation.x, y: contentLocation.y });
 
+    // ToDo:
+    // - If quantity is 0, deposit all of that item
+    // - If code is 'all', deposit all items in inv into the bank
     const response = await actionDepositItems(this.data, [
       { quantity: quantity, code: itemCode },
     ]);
@@ -361,7 +409,10 @@ export class Character {
       logger.info(`Fought ${count}/${quantity} ${code}s`);
 
       // Check inventory space to make sure we are less than 90% full
-      await this.evaluateDepositItemsInBank();
+      if (await this.evaluateDepositItemsInBank(code)) {
+        // If items were deposited, we need to move back to the gathering location
+        await this.move(contentLocation);
+      }
 
       const healthStatus: HealthStatus = this.checkHealth();
 
@@ -396,7 +447,7 @@ export class Character {
   }
 
   /**
-   * @description calls the gather endpoint on the current map
+   * @description Performs a number of steps that result in the character gathering the specified resource
    */
   async gather(quantity: number, code: string): Promise<boolean> {
     var numHeld = this.checkQuantityOfItemInInv(code);
@@ -408,10 +459,11 @@ export class Character {
     const remainderToGather = quantity - numHeld;
 
     // Check our equipment to see if we can equip something useful
-    var resourceDetails = await getItemInformation(code);
+    var resourceDetails: ItemSchema | ApiError = await getItemInformation(code);
     if (resourceDetails instanceof ApiError) {
       logger.info(resourceDetails.message);
       await sleep(this.data.cooldown, 'cooldown');
+      return false;
     } else {
       if (!(await this.checkWeaponForEffects(resourceDetails.subtype))) {
         for (const item of this.data.inventory) {
@@ -442,48 +494,20 @@ export class Character {
     // Evaluate our inventory space before we start collecting items
     await this.evaluateDepositItemsInBank(code);
 
-    logger.info(`Finding resource map type for ${code}`);
-
-    const resources = await getResourceInformation({
-      query: { drop: code },
-      url: '/resources',
-    });
-
-    logger.info(`Finding location of ${resources.data[0].code}`);
-
-    const maps = (await getMaps(resources.data[0].code)).data;
-
-    if (maps.length === 0) {
-      logger.error(`Cannot find any maps for ${resources.data[0].code}`);
-      return true;
+    if (resourceDetails.subtype === 'mob') {
+      await this.gatherMobDrop(
+        { code: resourceDetails.code, quantity: quantity },
+        numHeld,
+      );
+    } else {
+      await this.gatherResource(code, quantity, numHeld, remainderToGather);
     }
-
-    const contentLocation = this.evaluateClosestMap(maps);
-
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
-
-    await this.gatherItemLoop(
-      { code: code, quantity: quantity },
-      numHeld,
-      remainderToGather,
-      {
-        x: contentLocation.x,
-        y: contentLocation.y,
-      },
-    );
-
-    numHeld = this.checkQuantityOfItemInInv(code);
-    if (numHeld >= quantity) {
-      logger.info(`Successfully gathered ${quantity} ${code}`);
-      return true;
-    }
-    return false;
   }
 
   async gatherItemLoop(
     target: SimpleItemSchema,
     numHeld: number,
-    remainderToGather: number,
+    remainderToGather: number, // ToDo: This value is just target.quantity - numHeld. I don't need this??
     location: DestinationSchema,
   ) {
     // Loop that does the gather requests
@@ -511,6 +535,93 @@ export class Character {
         this.data = gatherResponse.data.character;
       }
     }
+  }
+
+  async gatherMobDrop(target: SimpleItemSchema, numHeld: number) {
+    const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
+      await getMonsterInformation({
+        query: { drop: target.code, max_level: this.data.level },
+        url: '/monsters',
+      });
+    if (mobInfo instanceof ApiError) {
+      logger.error(`Failed to find the mob that drops ${target.code}`);
+    } else {
+      const remainderToGather = target.quantity - numHeld;
+
+      while (numHeld < remainderToGather) {
+        logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+
+        // ToDo: make this check all mobs in case multiple drop the item
+        const gatherResponse = await this.fight(1, mobInfo.data[0].code);
+
+        numHeld = this.checkQuantityOfItemInInv(target.code);
+      }
+    }
+  }
+
+  /**
+   * gathers the requested resource
+   * @param code
+   * @param quantity
+   * @param numHeld
+   * @param remainderToGather
+   * @returns true if
+   */
+  async gatherResource(
+    code: string,
+    quantity: number,
+    numHeld: number,
+    remainderToGather: number,
+  ): Promise<boolean> {
+    logger.info(`Finding resource map type for ${code}`);
+
+    const resources = await getResourceInformation({
+      query: { drop: code },
+      url: '/resources',
+    });
+
+    logger.info(`Finding location of ${resources.data[0].code}`);
+
+    const maps = (await getMaps(resources.data[0].code)).data;
+
+    if (maps.length === 0) {
+      logger.error(`Cannot find any maps for ${resources.data[0].code}`);
+      return false;
+    }
+
+    const contentLocation = this.evaluateClosestMap(maps);
+
+    await this.move({ x: contentLocation.x, y: contentLocation.y });
+
+    await this.gatherItemLoop(
+      { code: code, quantity: quantity },
+      numHeld,
+      remainderToGather,
+      {
+        x: contentLocation.x,
+        y: contentLocation.y,
+      },
+    );
+
+    numHeld = this.checkQuantityOfItemInInv(code);
+    if (numHeld >= quantity) {
+      logger.info(`Successfully gathered ${quantity} ${code}`);
+      return true;
+    } else {
+      logger.info(
+        `Only holding ${numHeld} ${code}. Collecting ${quantity - numHeld} more`,
+      );
+      await this.gatherItemLoop(
+        { code: code, quantity: quantity - numHeld },
+        numHeld,
+        remainderToGather,
+        {
+          x: contentLocation.x,
+          y: contentLocation.y,
+        },
+      );
+    }
+    return false;
   }
 
   /********
@@ -676,7 +787,7 @@ export class Character {
    * @description Craft the item. Character must be on the correct crafting map
    */
   async craftJob(quantity: number, code: string) {
-    this.addJob(
+    this.appendJob(
       new CraftObjective(this, {
         code: code,
         quantity: quantity,
@@ -688,7 +799,7 @@ export class Character {
    * @description deposit the specified items into the bank
    */
   async depositJob(quantity: number, itemCode: string) {
-    this.addJob(
+    this.appendJob(
       new DepositObjective(this, {
         code: itemCode,
         quantity: quantity,
@@ -700,28 +811,30 @@ export class Character {
    * @description equip the item
    */
   async equipJob(itemName: string, itemSlot: ItemSlot, quantity?: number) {
-    this.addJob(new EquipObjective(this, itemName, itemSlot, quantity));
+    this.appendJob(new EquipObjective(this, itemName, itemSlot, quantity));
   }
 
   /**
    * @description equip the item from the slot specified
    */
   async unequipJob(itemSlot: ItemSlot, quantity?: number) {
-    this.addJob(new UnequipObjective(this, itemSlot, quantity));
+    this.appendJob(new UnequipObjective(this, itemSlot, quantity));
   }
 
   /**
    * @description Fight the requested amount of mobs
    */
   async fightJob(quantity: number, code: string) {
-    this.addJob(new FightObjective(this, { code: code, quantity: quantity }));
+    this.appendJob(
+      new FightObjective(this, { code: code, quantity: quantity }),
+    );
   }
 
   /**
    * @description calls the gather endpoint on the current map
    */
   async gatherJob(quantity: number, code: string) {
-    this.addJob(
+    this.appendJob(
       new GatherObjective(this, {
         code: code,
         quantity: quantity,
@@ -733,6 +846,6 @@ export class Character {
    * @description withdraw the specified items from the bank
    */
   async withdrawJob(quantity: number, itemCode: string) {
-    this.addJob(new WithdrawObjective(this, itemCode, quantity));
+    this.appendJob(new WithdrawObjective(this, itemCode, quantity));
   }
 }

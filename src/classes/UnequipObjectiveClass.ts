@@ -18,10 +18,10 @@ export class UnequipObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
-    this.status = 'in_progress';
+    this.startJob();
     const result = await this.character.unequip(this.itemSlot, this.quantity);
-    this.status = 'complete';
-
+    this.completeJob();
+    this.character.removeJob(this);
     return result;
   }
 
