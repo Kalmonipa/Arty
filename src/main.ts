@@ -11,8 +11,8 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        char.deposit(12, 'apple')
-        char.fight(1, 'sheep')
+        char.equip('fire_bow', 'weapon')
+        char.fulfillMonsterTask()
         // var count = 0;
         // while (count < 30) {
         //   char.gatherJob(10, 'red_slimeball');
