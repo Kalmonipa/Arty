@@ -60,7 +60,7 @@ export class EquipObjective extends Objective {
     maxRetries: number = 3,
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.info(`Equip attempt ${attempt}/${maxRetries}`);
+      logger.debug(`Equip attempt ${attempt}/${maxRetries}`);
 
       if (!quantity) quantity = 1;
 
@@ -75,9 +75,9 @@ export class EquipObjective extends Objective {
       }
 
       if (this.character.checkQuantityOfItemInInv(itemCode) === 0) {
-        logger.info(`Character not carrying item. Checking bank`)
+        logger.info(`Character not carrying ${itemCode}. Checking bank`)
         if (await this.character.checkQuantityOfItemInBank(itemCode) > 0) {
-          this.character.withdrawNow(quantity | 1, itemCode)
+          await this.character.withdrawNow(quantity | 1, itemCode)
         }
       }
 
@@ -100,6 +100,7 @@ export class EquipObjective extends Objective {
         continue;
       } else {
         this.character.data = response.data.character;
+        return true;
       }
     }
   }

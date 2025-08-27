@@ -45,7 +45,7 @@ export class UnequipObjective extends Objective {
     maxRetries: number = 3,
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.info(`Unequip attempt ${attempt}/${maxRetries}`);
+      logger.debug(`Unequip attempt ${attempt}/${maxRetries}`);
 
       if (!quantity) quantity = 1;
 

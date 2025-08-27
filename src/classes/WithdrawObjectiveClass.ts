@@ -45,7 +45,7 @@ export class WithdrawObjective extends Objective {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.debug(`Withdraw attempt ${attempt}/${maxRetries}`);
 
-      logger.info(`Finding location of the bank`);
+      logger.debug(`Finding location of the bank`);
 
       const maps = (await getMaps(undefined, 'bank')).data;
 
@@ -72,6 +72,7 @@ export class WithdrawObjective extends Objective {
         continue;
       } else {
         this.character.data = response.data.character;
+        return true;
       }
     }
   }

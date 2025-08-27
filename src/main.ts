@@ -11,14 +11,15 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        // char.depositJob(12, 'cowhide')
+        char.deposit(12, 'apple')
+        char.fight(1, 'sheep')
         // var count = 0;
         // while (count < 30) {
         //   char.gatherJob(10, 'red_slimeball');
         //   char.depositJob(10, 'red_slimeball');
         //   count++;
         // }
-        char.fight(1, 'chicken');
+        //char.equip('iron_sword', 'weapon');
         break;
       case 'JumpyJimmy':
         var count = 0;

@@ -426,7 +426,7 @@ export class Character {
    */
   async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number) {
     this.prependJob(new EquipObjective(this, itemName, itemSlot, quantity));
-    this.jobList[0].execute(this)
+    await this.jobList[0].execute(this)
   }
 
   /**
@@ -453,7 +453,7 @@ export class Character {
     this.prependJob(
       new FightObjective(this, { code: code, quantity: quantity }),
     );
-    this.jobList[0].execute(this)
+    await this.jobList[0].execute(this)
   }
 
   /**
@@ -480,7 +480,7 @@ export class Character {
    */
   async withdrawNow(quantity: number, itemCode: string) {
     this.prependJob(new WithdrawObjective(this, itemCode, quantity));
-    this.jobList[0].execute(this)
+    await this.jobList[0].execute(this)
   }
 
   /**

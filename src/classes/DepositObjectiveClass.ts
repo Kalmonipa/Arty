@@ -46,9 +46,9 @@ export class DepositObjective extends Objective {
    */
   async deposit(quantity: number, itemCode: string, maxRetries: number = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.info(`Deposit attempt ${attempt}/${maxRetries}`);
+      logger.debug(`Deposit attempt ${attempt}/${maxRetries}`);
 
-      logger.info(`Finding location of the bank`);
+      logger.debug(`Finding location of the bank`);
 
       const maps = (await getMaps(undefined, 'bank')).data;
 

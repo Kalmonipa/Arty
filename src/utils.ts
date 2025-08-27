@@ -1,29 +1,25 @@
 import pino from 'pino';
 
-// ToDo: Show log level (info, error) in logs output instead of integer value
+const logLevel = process.env.LOG_LEVEL || 'info';
+
 export const logger = pino({
   base: undefined,
   transport: {
     targets: [
       {
-        level: process.env['LOG_LEVEL'] || 'info',
+        level: logLevel,
         target: 'pino/file',
         options: {
           destination: './logs/arty.log',
         },
       },
       {
-        level: process.env['LOG_LEVEL'] || 'info',
+        level: logLevel,
         target: 'pino-pretty',
         options: {},
       },
     ],
   },
-  // formatters: {
-  //   level: (label) => {
-  //     return { level: label };
-  //   },
-  // },
   timestamp: pino.stdTimeFunctions.isoTime, //'DD-MM-YYYY HH:mm:ss.SSS'
 });
 
