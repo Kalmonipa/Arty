@@ -28,7 +28,7 @@ export class EquipObjective extends Objective {
   async execute(): Promise<boolean> {
     this.startJob();
 
-    const result = await this.character.equip(
+    const result = await this.equip(
       this.itemName,
       this.itemSlot,
       this.quantity,
@@ -39,39 +39,68 @@ export class EquipObjective extends Objective {
     return result;
   }
 
-  // async equip(
-  //   itemName: string,
-  //   itemSlot: ItemSlot,
-  //   quantity?: number,
-  // ): Promise<boolean> {
-  //   if (!quantity) quantity = 1;
+  async runPrerequisiteChecks() {
+    await this.character.cooldownStatus();
 
-  //   if (
-  //     (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-  //     quantity > 100
-  //   ) {
-  //     logger.warn(
-  //       `Quantity can only be provided for utility slots and must be less than 100`,
-  //     );
-  //     return;
-  //   }
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+  }
 
-  //   logger.info(`Equipping ${quantity} ${itemName} into ${itemSlot}`);
+  /**
+   * @description equip the item
+   */
+  async equip(
+    itemCode: string,
+    itemSlot: ItemSlot,
+    quantity?: number,
+    maxRetries: number = 3,
+  ): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      logger.info(`Equip attempt ${attempt}/${maxRetries}`);
 
-  //   const equipSchema: EquipSchema = {
-  //     code: itemName,
-  //     slot: itemSlot,
-  //     quantity: quantity,
-  //   };
+      if (!quantity) quantity = 1;
 
-  //   const response = await actionEquipItem(this.character.data, equipSchema);
-  //   if (response instanceof ApiError) {
-  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-  //     if (response.error.code === 499) {
-  //       await sleep(this.character.data.cooldown, 'cooldown');
-  //     }
-  //   } else {
-  //     this.character.data = response.data.character;
-  //   }
-  // }
+      if (
+        (itemSlot === 'utility1' || itemSlot === 'utility2') &&
+        quantity > 100
+      ) {
+        logger.warn(
+          `Quantity can only be provided for utility slots and must be less than 100`,
+        );
+        return;
+      }
+
+      if (this.character.checkQuantityOfItemInInv(itemCode) === 0) {
+        logger.info(`Character not carrying item. Checking bank`)
+        if (await this.character.checkQuantityOfItemInBank(itemCode) > 0) {
+          this.character.withdrawNow(quantity | 1, itemCode)
+        }
+      }
+
+      logger.info(`Equipping ${quantity} ${itemCode} into ${itemSlot}`);
+
+      const equipSchema: EquipSchema = {
+        code: itemCode,
+        slot: itemSlot,
+        quantity: quantity,
+      };
+
+      const response = await actionEquipItem(this.character.data, equipSchema);
+      if (response instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(response);
+
+        if (!shouldRetry || attempt === maxRetries) {
+          logger.error(`Equip failed after ${attempt} attempts`);
+          return false;
+        }
+        continue;
+      } else {
+        this.character.data = response.data.character;
+      }
+    }
+  }
 }

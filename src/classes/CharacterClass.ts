@@ -1,30 +1,18 @@
 import {
-  actionCraft,
   actionDepositItems,
-  actionFight,
-  actionGather,
   actionMove,
   actionRest,
-  actionWithdrawItem,
 } from '../api_calls/Actions';
-import {
-  actionEquipItem,
-  actionUnequipItem,
-  getItemInformation,
-} from '../api_calls/Items';
+import { getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
 import {
-  CharacterFightResponseSchema,
+  BankItemTransactionResponseSchema,
   CharacterSchema,
   DestinationSchema,
-  EquipSchema,
-  GetAllMonstersMonstersGetResponse,
-  ItemSchema,
   ItemSlot,
   MapSchema,
   SimpleItemSchema,
-  UnequipSchema,
 } from '../types/types';
 import { logger, sleep } from '../utils';
 import { CraftObjective } from './CraftObjectiveClass';
@@ -36,9 +24,8 @@ import { FightObjective } from './FightObjectiveClass';
 import { EquipObjective } from './EquipObjectiveClass';
 import { UnequipObjective } from './UnequipObjectiveClass';
 import { WithdrawObjective } from './WithdrawObjectiveClass';
-import { getResourceInformation } from '../api_calls/Resources';
-import { getMonsterInformation } from '../api_calls/Monsters';
-import { url } from 'inspector';
+import { MonsterTaskObjective } from './MonsterTaskObjectiveClass';
+import { getBankItems } from '../api_calls/Bank';
 
 export class Character {
   data: CharacterSchema;
@@ -83,13 +70,13 @@ export class Character {
     if (!index) {
       index = this.jobList.indexOf(obj);
     }
-    logger.info(`Removing ${obj.objectiveId} from position ${index}`);
+    logger.debug(`Removing ${obj.objectiveId} from position ${index}`);
     const deletedObj = this.jobList.splice(index, 1);
     logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
-      logger.info(`Current jobs in job queue`);
+      logger.debug(`Current jobs in job queue`);
       for (const obj of this.jobList) {
-        logger.info(`   - ${obj.objectiveId} - ${obj.status}`);
+        logger.debug(`   - ${obj.objectiveId} - ${obj.status}`);
       }
     }
   }
@@ -139,14 +126,30 @@ export class Character {
   }
 
   /**
+   * @description Check inventory for a specific item
+   */
+  async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
+    const bankItem = await getBankItems(contentCode)
+
+    if (bankItem.total === 0) {
+      return 0
+    } else if (bankItem.total === 1) {
+      return bankItem.data[0].quantity
+    } else {
+      var total = 0
+      for (const item of bankItem.data) {
+      total += item.quantity
+      }
+      return total
+    }
+  }
+
+  /**
    * Checks if the character is in cooldown. Sleep until if finishes if yes
    * @param character
    * @returns {boolean}
    */
-  cooldownStatus(): {
-    inCooldown: boolean;
-    timeRemaining: number;
-  } {
+  async cooldownStatus() {
     const targetDate = new Date(this.data.cooldown_expiration);
 
     const now = new Date();
@@ -159,99 +162,115 @@ export class Character {
       logger.info(
         `Cooldown is still ongoing. Waiting for ${timeToWait} seconds until ${this.data.cooldown_expiration}`,
       );
-      return {
-        inCooldown: true,
-        timeRemaining: timeToWait,
-      };
+      await sleep(timeToWait, 'cooldown');
     }
   }
 
+  // /**
+  //  * @description Craft the item. Character will move to the correct workshop map
+  //  */
+  // async craft(quantity: number, code: string): Promise<boolean> {
+  //   const targetItem = await getItemInformation(code);
+
+  //   if (targetItem instanceof ApiError) {
+  //     this.handleErrors(targetItem);
+  //     return true;
+  //   }
+  //   if (!targetItem.craft) {
+  //     logger.warn(`Item has no craft information`);
+  //     return true;
+  //   }
+
+  //   const maps = (await getMaps(targetItem.craft.skill, 'workshop')).data;
+
+  //   if (maps.length === 0) {
+  //     logger.error(`Cannot find any maps to craft ${code}`);
+  //     return true;
+  //   }
+
+  //   const contentLocation = this.evaluateClosestMap(maps);
+
+  //   await this.move({ x: contentLocation.x, y: contentLocation.y });
+
+  //   logger.info(
+  //     `Crafting ${quantity} ${code} at x: ${this.data.x}, y: ${this.data.y}`,
+  //   );
+
+  //   const response = await actionCraft(this.data, {
+  //     code: code,
+  //     quantity: quantity,
+  //   });
+
+  //   if (response instanceof ApiError) {
+  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+  //     if (response.error.code === 499) {
+  //       await sleep(this.data.cooldown, 'cooldown');
+  //     }
+  //   } else {
+  //     this.data = response.data.character;
+
+  //     logger.info(`Successfully crafted ${quantity} ${code}`);
+  //   }
+  // }
+
+  // /**
+  //  * @description deposit the specified items into the bank
+  //  * @todo If 0 is entered, deposit all of that item
+  //  */
+  // async deposit(quantity: number, itemCode: string) {
+  //   logger.info(`Finding location of the bank`);
+
+  //   const maps = (await getMaps(undefined, 'bank')).data;
+
+  //   if (maps.length === 0) {
+  //     logger.error(`Cannot find the bank. This shouldn't happen ??`);
+  //     return false;
+  //   }
+
+  //   const contentLocation = this.evaluateClosestMap(maps);
+
+  //   await this.move({ x: contentLocation.x, y: contentLocation.y });
+
+  //   // ToDo:
+  //   // - If quantity is 0, deposit all of that item
+  //   // - If code is 'all', deposit all items in inv into the bank
+  //   const response = await actionDepositItems(this.data, [
+  //     { quantity: quantity, code: itemCode },
+  //   ]);
+
+  //   if (response instanceof ApiError) {
+  //     this.handleErrors(response);
+  //   } else {
+  //     this.data = response.data.character;
+  //   }
+  //   return true;
+  // }
+
   /**
-   * @description Craft the item. Character will move to the correct workshop map
+   * @description Deposit all inventory items into bank
    */
-  async craft(quantity: number, code: string) {
-    const targetItem = await getItemInformation(code);
+  async depositAllItems() {
+    var itemsToDeposit: SimpleItemSchema[] = [];
 
-    if (targetItem instanceof ApiError) {
-      logger.warn(
-        `${targetItem.error.message} [Code: ${targetItem.error.code}]`,
-      );
-      if (targetItem.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
+    for (var i = 0; i < this.data.inventory.length; i++) {
+      // logger.info(
+      //   `${character.inventory[i].code}: ${character.inventory[i].quantity}`,
+      // );
+      if (this.data.inventory[i].code !== '') {
+        itemsToDeposit.push({
+          code: this.data.inventory[i].code,
+          quantity: this.data.inventory[i].quantity,
+        });
       }
-      return true;
-    }
-    if (!targetItem.craft) {
-      logger.warn(`Item has no craft information`);
-      return true;
     }
 
-    const maps = (await getMaps(targetItem.craft.skill, 'workshop')).data;
-
-    if (maps.length === 0) {
-      logger.error(`Cannot find any maps to craft ${code}`);
-      return true;
+    try {
+      const response: BankItemTransactionResponseSchema | ApiError =
+        await actionDepositItems(this.data, itemsToDeposit);
+      return response;
+    } catch (error) {
+      logger.error(`Deposit failed: ${error}`);
     }
-
-    const contentLocation = this.evaluateClosestMap(maps);
-
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
-
-    logger.info(
-      `Crafting ${quantity} ${code} at x: ${this.data.x}, y: ${this.data.y}`,
-    );
-
-    const response = await actionCraft(this.data, {
-      code: code,
-      quantity: quantity,
-    });
-
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-
-      logger.info(`Successfully crafted ${quantity} ${code}`);
-    }
-  }
-
-  /**
-   * @description deposit the specified items into the bank
-   * @todo If 0 is entered, deposit all of that item
-   */
-  async deposit(quantity: number, itemCode: string) {
-    logger.info(`Finding location of the bank`);
-
-    const maps = (await getMaps(undefined, 'bank')).data;
-
-    if (maps.length === 0) {
-      logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return false;
-    }
-
-    const contentLocation = this.evaluateClosestMap(maps);
-
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
-
-    // ToDo:
-    // - If quantity is 0, deposit all of that item
-    // - If code is 'all', deposit all items in inv into the bank
-    const response = await actionDepositItems(this.data, [
-      { quantity: quantity, code: itemCode },
-    ]);
-
-    if (response instanceof ApiError) {
-      if (response.error.code === 499) {
-        logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-    }
-    return true;
   }
 
   /**
@@ -317,329 +336,329 @@ export class Character {
     }
   }
 
-  /**
-   * @description equip the item
-   */
-  async equip(
-    itemName: string,
-    itemSlot: ItemSlot,
-    quantity?: number,
-  ): Promise<boolean> {
-    if (!quantity) quantity = 1;
+  // /**
+  //  * @description equip the item
+  //  */
+  // async equip(
+  //   itemName: string,
+  //   itemSlot: ItemSlot,
+  //   quantity?: number,
+  // ): Promise<boolean> {
+  //   if (!quantity) quantity = 1;
 
-    if (
-      (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-      quantity > 100
-    ) {
-      logger.warn(
-        `Quantity can only be provided for utility slots and must be less than 100`,
-      );
-      return;
-    }
+  //   if (
+  //     (itemSlot === 'utility1' || itemSlot === 'utility2') &&
+  //     quantity > 100
+  //   ) {
+  //     logger.warn(
+  //       `Quantity can only be provided for utility slots and must be less than 100`,
+  //     );
+  //     return;
+  //   }
 
-    logger.info(`Equipping ${quantity} ${itemName} into ${itemSlot}`);
+  //   logger.info(`Equipping ${quantity} ${itemName} into ${itemSlot}`);
 
-    const equipSchema: EquipSchema = {
-      code: itemName,
-      slot: itemSlot,
-      quantity: quantity,
-    };
+  //   const equipSchema: EquipSchema = {
+  //     code: itemName,
+  //     slot: itemSlot,
+  //     quantity: quantity,
+  //   };
 
-    const response = await actionEquipItem(this.data, equipSchema);
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-    }
-  }
+  //   const response = await actionEquipItem(this.data, equipSchema);
+  //   if (response instanceof ApiError) {
+  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+  //     if (response.error.code === 499) {
+  //       await sleep(this.data.cooldown, 'cooldown');
+  //     }
+  //   } else {
+  //     this.data = response.data.character;
+  //   }
+  // }
 
-  /**
-   * @description equip the item
-   */
-  async unequip(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
-    if (!quantity) quantity = 1;
+  // /**
+  //  * @description equip the item
+  //  */
+  // async unequip(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
+  //   if (!quantity) quantity = 1;
 
-    // validations
-    if (
-      (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-      quantity > 100
-    ) {
-      logger.warn(
-        `Quantity can only be provided for utility slots and must be less than 100`,
-      );
-      return;
-    }
+  //   // validations
+  //   if (
+  //     (itemSlot === 'utility1' || itemSlot === 'utility2') &&
+  //     quantity > 100
+  //   ) {
+  //     logger.warn(
+  //       `Quantity can only be provided for utility slots and must be less than 100`,
+  //     );
+  //     return;
+  //   }
 
-    logger.info(`Unequipping ${itemSlot} slot`);
+  //   logger.info(`Unequipping ${itemSlot} slot`);
 
-    const unequipSchema: UnequipSchema = {
-      slot: itemSlot,
-      quantity: quantity,
-    };
+  //   const unequipSchema: UnequipSchema = {
+  //     slot: itemSlot,
+  //     quantity: quantity,
+  //   };
 
-    const response = await actionUnequipItem(this.data, unequipSchema);
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-    }
-  }
+  //   const response = await actionUnequipItem(this.data, unequipSchema);
+  //   if (response instanceof ApiError) {
+  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+  //     if (response.error.code === 499) {
+  //       await sleep(this.data.cooldown, 'cooldown');
+  //     }
+  //   } else {
+  //     this.data = response.data.character;
+  //   }
+  // }
 
-  /**
-   * @description Fight the requested amount of mobs
-   * @todo Does this function need to return anything?
-   */
-  async fight(quantity: number, code: string) {
-    logger.info(`Finding location of ${code}`);
+  // /**
+  //  * @description Fight the requested amount of mobs
+  //  * @todo Does this function need to return anything?
+  //  */
+  // async fight(quantity: number, code: string) {
+  //   logger.info(`Finding location of ${code}`);
 
-    const maps = (await getMaps(code)).data;
+  //   const maps = (await getMaps(code)).data;
 
-    if (maps.length === 0) {
-      logger.error(`Cannot find any maps for ${code}`);
-      return true; // ToDo: Not sure if I want to return true, false or anything at all here
-    }
+  //   if (maps.length === 0) {
+  //     logger.error(`Cannot find any maps for ${code}`);
+  //     return true; // ToDo: Not sure if I want to return true, false or anything at all here
+  //   }
 
-    const contentLocation = this.evaluateClosestMap(maps);
+  //   const contentLocation = this.evaluateClosestMap(maps);
 
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
+  //   await this.move({ x: contentLocation.x, y: contentLocation.y });
 
-    for (var count = 0; count < quantity; count++) {
-      logger.info(`Fought ${count}/${quantity} ${code}s`);
+  //   for (var count = 0; count < quantity; count++) {
+  //     logger.info(`Fought ${count}/${quantity} ${code}s`);
 
-      // Check inventory space to make sure we are less than 90% full
-      if (await this.evaluateDepositItemsInBank(code)) {
-        // If items were deposited, we need to move back to the gathering location
-        await this.move(contentLocation);
-      }
+  //     // Check inventory space to make sure we are less than 90% full
+  //     if (await this.evaluateDepositItemsInBank(code)) {
+  //       // If items were deposited, we need to move back to the gathering location
+  //       await this.move(contentLocation);
+  //     }
 
-      const healthStatus: HealthStatus = this.checkHealth();
+  //     const healthStatus: HealthStatus = this.checkHealth();
 
-      if (healthStatus.percentage !== 100) {
-        if (healthStatus.difference < 300) {
-          await this.rest();
-        } //else {
-        // Eat food
-        //}
-      }
+  //     if (healthStatus.percentage !== 100) {
+  //       if (healthStatus.difference < 300) {
+  //         await this.rest();
+  //       } //else {
+  //       // Eat food
+  //       //}
+  //     }
 
-      const response = await actionFight(this.data);
+  //     const response = await actionFight(this.data);
 
-      if (response instanceof ApiError) {
-        logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-        if (response.error.code === 499) {
-          await sleep(this.data.cooldown, 'cooldown');
-        }
-        return true;
-      } else {
-        if (response.data.fight.result === 'loss') {
-          logger.warn(
-            `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
-          );
-        } else if (response.data.fight.result === 'win') {
-          logger.info(
-            `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp and ${response.data.fight.gold} gold`,
-          );
-        }
+  //     if (response instanceof ApiError) {
+  //       logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+  //       if (response.error.code === 499) {
+  //         await sleep(this.data.cooldown, 'cooldown');
+  //       }
+  //       return true;
+  //     } else {
+  //       if (response.data.fight.result === 'loss') {
+  //         logger.warn(
+  //           `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
+  //         );
+  //       } else if (response.data.fight.result === 'win') {
+  //         logger.info(
+  //           `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp and ${response.data.fight.gold} gold`,
+  //         );
+  //       }
 
-        this.data = response.data.character;
-      }
-    }
+  //       this.data = response.data.character;
+  //     }
+  //   }
 
-    logger.debug(`Successfully fought ${quantity} ${code}`);
+  //   logger.debug(`Successfully fought ${quantity} ${code}`);
 
-    return true;
-  }
+  //   return true;
+  // }
 
   /**
    * @description Performs a number of steps that result in the character gathering the specified resource
    */
-  async gather(quantity: number, code: string): Promise<boolean> {
-    var numHeld = this.checkQuantityOfItemInInv(code);
-    logger.info(`${numHeld} ${code} in inventory`);
-    if (numHeld >= quantity) {
-      logger.info(`There are already ${numHeld} in the inventory. Exiting`);
-      return true;
-    }
-    const remainderToGather = quantity - numHeld;
+  // async gather(quantity: number, code: string): Promise<boolean> {
+  //   var numHeld = this.checkQuantityOfItemInInv(code);
+  //   logger.info(`${numHeld} ${code} in inventory`);
+  //   if (numHeld >= quantity) {
+  //     logger.info(`There are already ${numHeld} in the inventory. Exiting`);
+  //     return true;
+  //   }
+  //   const remainderToGather = quantity - numHeld;
 
-    // Check our equipment to see if we can equip something useful
-    var resourceDetails: ItemSchema | ApiError = await getItemInformation(code);
-    if (resourceDetails instanceof ApiError) {
-      logger.info(resourceDetails.message);
-      await sleep(this.data.cooldown, 'cooldown');
-      return false;
-    } else {
-      if (!(await this.checkWeaponForEffects(resourceDetails.subtype))) {
-        for (const item of this.data.inventory) {
-          if (item.quantity > 0) {
-            const itemInfo = await getItemInformation(item.code);
-            if (itemInfo instanceof ApiError) {
-              logger.warn(
-                `${itemInfo.error.message} [Code: ${itemInfo.error.code}]`,
-              );
-            } else if (itemInfo.code === '') {
-              logger.info(`No more items to check in inventory`);
-            } else {
-              for (const effect of itemInfo.effects) {
-                if (effect.code === resourceDetails.subtype) {
-                  await this.equip(item.code, 'weapon'); // ToDo: apparently this doesn't work
-                }
-              }
-            }
-          }
-        }
-        // ToDo:
-        // - Search bank for suitable weapon. Can use /my/bank/items for this
-        // - If no suitable weapon, maybe we just continue
-        // - Extract this into it's own function?
-      }
-    }
+  //   // Check our equipment to see if we can equip something useful
+  //   var resourceDetails: ItemSchema | ApiError = await getItemInformation(code);
+  //   if (resourceDetails instanceof ApiError) {
+  //     logger.info(resourceDetails.message);
+  //     await sleep(this.data.cooldown, 'cooldown');
+  //     return false;
+  //   } else {
+  //     if (!(await this.checkWeaponForEffects(resourceDetails.subtype))) {
+  //       for (const item of this.data.inventory) {
+  //         if (item.quantity > 0) {
+  //           const itemInfo = await getItemInformation(item.code);
+  //           if (itemInfo instanceof ApiError) {
+  //             logger.warn(
+  //               `${itemInfo.error.message} [Code: ${itemInfo.error.code}]`,
+  //             );
+  //           } else if (itemInfo.code === '') {
+  //             logger.info(`No more items to check in inventory`);
+  //           } else {
+  //             for (const effect of itemInfo.effects) {
+  //               if (effect.code === resourceDetails.subtype) {
+  //                 await this.equip(item.code, 'weapon'); // ToDo: apparently this doesn't work
+  //               }
+  //             }
+  //           }
+  //         }
+  //       }
+  //       // ToDo:
+  //       // - Search bank for suitable weapon. Can use /my/bank/items for this
+  //       // - If no suitable weapon, maybe we just continue
+  //       // - Extract this into it's own function?
+  //     }
+  //   }
 
-    // Evaluate our inventory space before we start collecting items
-    await this.evaluateDepositItemsInBank(code);
+  //   // Evaluate our inventory space before we start collecting items
+  //   await this.evaluateDepositItemsInBank(code);
 
-    if (resourceDetails.subtype === 'mob') {
-      await this.gatherMobDrop(
-        { code: resourceDetails.code, quantity: quantity },
-        numHeld,
-      );
-    } else if (resourceDetails.craft) {
-      this.prependJob(
-        new CraftObjective(this, {
-          code: resourceDetails.code,
-          quantity: quantity,
-        }),
-      );
-    } else {
-      await this.gatherResource(code, quantity, numHeld, remainderToGather);
-    }
-  }
+  //   if (resourceDetails.subtype === 'mob') {
+  //     await this.gatherMobDrop(
+  //       { code: resourceDetails.code, quantity: quantity },
+  //       numHeld,
+  //     );
+  //   } else if (resourceDetails.craft) {
+  //     this.prependJob(
+  //       new CraftObjective(this, {
+  //         code: resourceDetails.code,
+  //         quantity: quantity,
+  //       }),
+  //     );
+  //   } else {
+  //     await this.gatherResource(code, quantity, numHeld, remainderToGather);
+  //   }
+  // }
 
-  async gatherItemLoop(
-    target: SimpleItemSchema,
-    numHeld: number,
-    remainderToGather: number, // ToDo: This value is just target.quantity - numHeld. I don't need this??
-    location: DestinationSchema,
-  ) {
-    // Loop that does the gather requests
-    for (var count = 0; count < remainderToGather; count++) {
-      if (count % 5 === 0) {
-        numHeld = this.checkQuantityOfItemInInv(target.code);
-        logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
-        // Check inventory space to make sure we are less than 90% full
-        if (await this.evaluateDepositItemsInBank(target.code)) {
-          // If items were deposited, we need to move back to the gathering location
-          await this.move(location);
-        }
-      }
+  // async gatherItemLoop(
+  //   target: SimpleItemSchema,
+  //   numHeld: number,
+  //   remainderToGather: number, // ToDo: This value is just target.quantity - numHeld. I don't need this??
+  //   location: DestinationSchema,
+  // ) {
+  //   // Loop that does the gather requests
+  //   for (var count = 0; count < remainderToGather; count++) {
+  //     if (count % 5 === 0) {
+  //       numHeld = this.checkQuantityOfItemInInv(target.code);
+  //       logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+  //       // Check inventory space to make sure we are less than 90% full
+  //       if (await this.evaluateDepositItemsInBank(target.code)) {
+  //         // If items were deposited, we need to move back to the gathering location
+  //         await this.move(location);
+  //       }
+  //     }
 
-      const gatherResponse = await actionGather(this.data);
+  //     const gatherResponse = await actionGather(this.data);
 
-      if (gatherResponse instanceof ApiError) {
-        logger.warn(
-          `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
-        );
-        if (gatherResponse.error.code === 499) {
-          await sleep(this.data.cooldown, 'cooldown');
-        }
-      } else {
-        this.data = gatherResponse.data.character;
-      }
-    }
-  }
+  //     if (gatherResponse instanceof ApiError) {
+  //       logger.warn(
+  //         `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
+  //       );
+  //       if (gatherResponse.error.code === 499) {
+  //         await sleep(this.data.cooldown, 'cooldown');
+  //       }
+  //     } else {
+  //       this.data = gatherResponse.data.character;
+  //     }
+  //   }
+  // }
 
-  async gatherMobDrop(target: SimpleItemSchema, numHeld: number) {
-    const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
-      await getMonsterInformation({
-        query: { drop: target.code, max_level: this.data.level },
-        url: '/monsters',
-      });
-    if (mobInfo instanceof ApiError) {
-      logger.error(`Failed to find the mob that drops ${target.code}`);
-    } else {
-      const remainderToGather = target.quantity - numHeld;
+  // async gatherMobDrop(target: SimpleItemSchema, numHeld: number) {
+  //   const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
+  //     await getMonsterInformation({
+  //       query: { drop: target.code, max_level: this.data.level },
+  //       url: '/monsters',
+  //     });
+  //   if (mobInfo instanceof ApiError) {
+  //     logger.error(`Failed to find the mob that drops ${target.code}`);
+  //   } else {
+  //     const remainderToGather = target.quantity - numHeld;
 
-      while (numHeld < remainderToGather) {
-        logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+  //     while (numHeld < remainderToGather) {
+  //       logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
 
-        // ToDo: make this check all mobs in case multiple drop the item
-        const gatherResponse = await this.fight(1, mobInfo.data[0].code);
+  //       // ToDo: make this check all mobs in case multiple drop the item
+  //       const gatherResponse = await this.fight(1, mobInfo.data[0].code);
 
-        numHeld = this.checkQuantityOfItemInInv(target.code);
-      }
-    }
-  }
+  //       numHeld = this.checkQuantityOfItemInInv(target.code);
+  //     }
+  //   }
+  // }
 
-  /**
-   * gathers the requested resource
-   * @param code
-   * @param quantity
-   * @param numHeld
-   * @param remainderToGather
-   * @returns true if
-   */
-  async gatherResource(
-    code: string,
-    quantity: number,
-    numHeld: number,
-    remainderToGather: number,
-  ): Promise<boolean> {
-    logger.info(`Finding resource map type for ${code}`);
+  // /**
+  //  * gathers the requested resource
+  //  * @param code
+  //  * @param quantity
+  //  * @param numHeld
+  //  * @param remainderToGather
+  //  * @returns true if
+  //  */
+  // async gatherResource(
+  //   code: string,
+  //   quantity: number,
+  //   numHeld: number,
+  //   remainderToGather: number,
+  // ): Promise<boolean> {
+  //   logger.info(`Finding resource map type for ${code}`);
 
-    const resources = await getResourceInformation({
-      query: { drop: code },
-      url: '/resources',
-    });
+  //   const resources = await getResourceInformation({
+  //     query: { drop: code },
+  //     url: '/resources',
+  //   });
 
-    logger.info(`Finding location of ${resources.data[0].code}`);
+  //   logger.info(`Finding location of ${resources.data[0].code}`);
 
-    const maps = (await getMaps(resources.data[0].code)).data;
+  //   const maps = (await getMaps(resources.data[0].code)).data;
 
-    if (maps.length === 0) {
-      logger.error(`Cannot find any maps for ${resources.data[0].code}`);
-      return false;
-    }
+  //   if (maps.length === 0) {
+  //     logger.error(`Cannot find any maps for ${resources.data[0].code}`);
+  //     return false;
+  //   }
 
-    const contentLocation = this.evaluateClosestMap(maps);
+  //   const contentLocation = this.evaluateClosestMap(maps);
 
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
+  //   await this.move({ x: contentLocation.x, y: contentLocation.y });
 
-    await this.gatherItemLoop(
-      { code: code, quantity: quantity },
-      numHeld,
-      remainderToGather,
-      {
-        x: contentLocation.x,
-        y: contentLocation.y,
-      },
-    );
+  //   await this.gatherItemLoop(
+  //     { code: code, quantity: quantity },
+  //     numHeld,
+  //     remainderToGather,
+  //     {
+  //       x: contentLocation.x,
+  //       y: contentLocation.y,
+  //     },
+  //   );
 
-    numHeld = this.checkQuantityOfItemInInv(code);
-    if (numHeld >= quantity) {
-      logger.info(`Successfully gathered ${quantity} ${code}`);
-      return true;
-    } else {
-      logger.info(
-        `Only holding ${numHeld} ${code}. Collecting ${quantity - numHeld} more`,
-      );
-      await this.gatherItemLoop(
-        { code: code, quantity: quantity - numHeld },
-        numHeld,
-        remainderToGather,
-        {
-          x: contentLocation.x,
-          y: contentLocation.y,
-        },
-      );
-    }
-    return false;
-  }
+  //   numHeld = this.checkQuantityOfItemInInv(code);
+  //   if (numHeld >= quantity) {
+  //     logger.info(`Successfully gathered ${quantity} ${code}`);
+  //     return true;
+  //   } else {
+  //     logger.info(
+  //       `Only holding ${numHeld} ${code}. Collecting ${quantity - numHeld} more`,
+  //     );
+  //     await this.gatherItemLoop(
+  //       { code: code, quantity: quantity - numHeld },
+  //       numHeld,
+  //       remainderToGather,
+  //       {
+  //         x: contentLocation.x,
+  //         y: contentLocation.y,
+  //       },
+  //     );
+  //   }
+  //   return false;
+  // }
 
   /********
    * Inventory functions
@@ -690,12 +709,8 @@ export class Character {
       const response = await actionDepositItems(this.data, itemsToDeposit);
 
       if (response instanceof ApiError) {
-        if (response.error.code === 499) {
-          logger.warn(
-            `Character is in cooldown. [Code: ${response.error.code}]`,
-          );
-          await sleep(this.data.cooldown, 'cooldown');
-        }
+        this.handleErrors(response);
+        await this.evaluateDepositItemsInBank(exception);
       } else {
         this.data = response.data.character;
       }
@@ -765,36 +780,36 @@ export class Character {
     }
   }
 
-  /**
-   * @description withdraw the specified items from the bank
-   */
-  async withdraw(quantity: number, itemCode: string) {
-    logger.info(`Finding location of the bank`);
+  // /**
+  //  * @description withdraw the specified items from the bank
+  //  */
+  // async withdraw(quantity: number, itemCode: string) {
+  //   logger.info(`Finding location of the bank`);
 
-    const maps = (await getMaps(undefined, 'bank')).data;
+  //   const maps = (await getMaps(undefined, 'bank')).data;
 
-    if (maps.length === 0) {
-      logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return true;
-    }
+  //   if (maps.length === 0) {
+  //     logger.error(`Cannot find the bank. This shouldn't happen ??`);
+  //     return true;
+  //   }
 
-    const contentLocation = this.evaluateClosestMap(maps);
+  //   const contentLocation = this.evaluateClosestMap(maps);
 
-    await this.move({ x: contentLocation.x, y: contentLocation.y });
+  //   await this.move({ x: contentLocation.x, y: contentLocation.y });
 
-    const response = await actionWithdrawItem(this.data, [
-      { quantity: quantity, code: itemCode },
-    ]);
+  //   const response = await actionWithdrawItem(this.data, [
+  //     { quantity: quantity, code: itemCode },
+  //   ]);
 
-    if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-      if (response.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
-    } else {
-      this.data = response.data.character;
-    }
-  }
+  //   if (response instanceof ApiError) {
+  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+  //     if (response.error.code === 499) {
+  //       await sleep(this.data.cooldown, 'cooldown');
+  //     }
+  //   } else {
+  //     this.data = response.data.character;
+  //   }
+  // }
 
   /********
    * Functions to add jobs to the job queue
@@ -803,7 +818,7 @@ export class Character {
   /**
    * @description Craft the item. Character must be on the correct crafting map
    */
-  async craftJob(quantity: number, code: string) {
+  async craft(quantity: number, code: string) {
     this.appendJob(
       new CraftObjective(this, {
         code: code,
@@ -813,9 +828,18 @@ export class Character {
   }
 
   /**
+   * @description Starts a monster task and fulfills it.
+   * If a task is already in progress, it will continue with the current task
+   * Turns it in the task master when complete
+   */
+  async fulfillMonsterTask() {
+    this.appendJob(new MonsterTaskObjective(this));
+  }
+
+  /**
    * @description deposit the specified items into the bank
    */
-  async depositJob(quantity: number, itemCode: string) {
+  async deposit(quantity: number, itemCode: string) {
     this.appendJob(
       new DepositObjective(this, {
         code: itemCode,
@@ -827,30 +851,50 @@ export class Character {
   /**
    * @description equip the item
    */
-  async equipJob(itemName: string, itemSlot: ItemSlot, quantity?: number) {
+  async equip(itemName: string, itemSlot: ItemSlot, quantity?: number) {
     this.appendJob(new EquipObjective(this, itemName, itemSlot, quantity));
+  }
+
+  /**
+   * @description equip the item now. Creates a new equip job at the 
+   * beginning of the job list and executes it
+   */
+  async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number) {
+    this.prependJob(new EquipObjective(this, itemName, itemSlot, quantity));
+    this.jobList[0].execute(this)
   }
 
   /**
    * @description equip the item from the slot specified
    */
-  async unequipJob(itemSlot: ItemSlot, quantity?: number) {
+  async unequip(itemSlot: ItemSlot, quantity?: number) {
     this.appendJob(new UnequipObjective(this, itemSlot, quantity));
   }
 
   /**
    * @description Fight the requested amount of mobs
    */
-  async fightJob(quantity: number, code: string) {
+  async fight(quantity: number, code: string) {
     this.appendJob(
       new FightObjective(this, { code: code, quantity: quantity }),
     );
   }
 
+    /**
+   * @description Creates a new fight objective at the beginning of the queue
+   * and executes it
+   */
+  async fightNow(quantity: number, code: string) {
+    this.prependJob(
+      new FightObjective(this, { code: code, quantity: quantity }),
+    );
+    this.jobList[0].execute(this)
+  }
+
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gatherJob(quantity: number, code: string) {
+  async gather(quantity: number, code: string) {
     this.appendJob(
       new GatherObjective(this, {
         code: code,
@@ -862,7 +906,35 @@ export class Character {
   /**
    * @description withdraw the specified items from the bank
    */
-  async withdrawJob(quantity: number, itemCode: string) {
+  async withdraw(quantity: number, itemCode: string) {
     this.appendJob(new WithdrawObjective(this, itemCode, quantity));
+  }
+
+    /**
+   * @description withdraw the specified items from the bank
+   */
+  async withdrawNow(quantity: number, itemCode: string) {
+    this.prependJob(new WithdrawObjective(this, itemCode, quantity));
+    this.jobList[0].execute(this)
+  }
+
+  /**
+   * @description handles the various errors that we may get back from API calls
+   */
+  async handleErrors(response: ApiError): Promise<boolean> {
+    logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+    switch (response.error.code) {
+      case 486:
+        await sleep(this.data.cooldown, 'cooldown');
+        return true;
+      case 497:
+        await this.depositAllItems();
+        return true;
+      case 499:
+        await sleep(this.data.cooldown, 'cooldown');
+        return true;
+      default:
+        return false;
+    }
   }
 }

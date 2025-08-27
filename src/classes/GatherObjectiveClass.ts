@@ -1,6 +1,20 @@
+import { actionGather } from '../api_calls/Actions';
+import { getItemInformation } from '../api_calls/Items';
+import { getMaps } from '../api_calls/Maps';
+import { getMonsterInformation } from '../api_calls/Monsters';
+import { getResourceInformation } from '../api_calls/Resources';
 import { ObjectiveTargets } from '../types/ObjectiveData';
-import { logger } from '../utils';
+import {
+  DestinationSchema,
+  GetAllMonstersMonstersGetResponse,
+  ItemSchema,
+  SimpleItemSchema,
+} from '../types/types';
+import { logger, sleep } from '../utils';
 import { Character } from './CharacterClass';
+import { CraftObjective } from './CraftObjectiveClass';
+import { EquipObjective } from './EquipObjectiveClass';
+import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class GatherObjective extends Objective {
@@ -28,17 +42,7 @@ export class GatherObjective extends Objective {
       );
       return true;
     } else {
-      if (this.character.jobList.indexOf(this) !== 0) {
-        logger.info(
-          `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-        );
-        await this.character.jobList[0].execute(this.character);
-      }
-
-      result = await this.character.gather(
-        this.target.quantity,
-        this.target.code,
-      );
+      result = await this.gather(this.target.quantity, this.target.code);
     }
 
     this.completeJob();
@@ -46,118 +50,221 @@ export class GatherObjective extends Objective {
     return result;
   }
 
-  async runPrerequisiteChecks() {}
+  async runPrerequisiteChecks() {
+    await this.character.cooldownStatus();
 
-  // async gather(): Promise<boolean> {
-  //   var numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
-  //   logger.info(`${numHeld} ${this.target.code} in inventory`);
-  //   if (numHeld >= this.target.quantity) {
-  //     logger.info(`There are already ${numHeld} in the inventory. Exiting`);
-  //     return true;
-  //   }
-  //   const remainderToGather = this.target.quantity - numHeld;
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+  }
 
-  //   // Check our equipment to see if we can equip something useful
-  //   var resourceDetails = await getItemInformation(this.target.code);
-  //   if (resourceDetails instanceof ApiError) {
-  //     logger.info(resourceDetails.message);
-  //     await sleep(this.character.data.cooldown, 'cooldown');
-  //   } else {
-  //     if (
-  //       !(await this.character.checkWeaponForEffects(resourceDetails.subtype))
-  //     ) {
-  //       for (const item of this.character.data.inventory) {
-  //         if (item.quantity > 0) {
-  //           const itemInfo = await getItemInformation(item.code);
-  //           if (itemInfo instanceof ApiError) {
-  //             logger.warn(
-  //               `${itemInfo.error.message} [Code: ${itemInfo.error.code}]`,
-  //             );
-  //           } else if (itemInfo.code === '') {
-  //             logger.info(`No more items to check in inventory`);
-  //           } else {
-  //             for (const effect of itemInfo.effects) {
-  //               if (effect.code === resourceDetails.subtype) {
-  //                 await this.character.equip(item.code, 'weapon'); // ToDo: apparently this doesn't work
-  //               }
-  //             }
-  //           }
-  //         }
-  //       }
-  //       // ToDo:
-  //       // - Search bank for suitable weapon. Can use /my/bank/items for this
-  //       // - If no suitable weapon, maybe we just continue
-  //       // - Extract this into it's own function?
-  //     }
-  //   }
+  async gather(
+    quantity: number,
+    code: string,
+    maxRetries: number = 3,
+  ): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
-  //   // Evaluate our inventory space before we start collecting items
-  //   await this.character.evaluateDepositItemsInBank(this.target.code);
+      var numHeld = this.character.checkQuantityOfItemInInv(code);
+      logger.info(`${numHeld} ${code} in inventory`);
+      if (numHeld >= quantity) {
+        logger.info(`There are already ${numHeld} in the inventory. Exiting`);
+        return true;
+      }
+      const remainderToGather = quantity - numHeld;
 
-  //   logger.info(`Finding resource map type for ${this.target.code}`);
+      // Check our equipment to see if we can equip something useful
+      var resourceDetails: ItemSchema | ApiError =
+        await getItemInformation(code);
+      if (resourceDetails instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(resourceDetails);
 
-  //   const resources = await getResourceInformation({
-  //     query: { drop: this.target.code },
-  //     url: '/resources',
-  //   });
+        if (!shouldRetry || attempt === maxRetries) {
+          logger.error(`Gather failed after ${attempt} attempts`);
+          return false;
+        }
+        continue;
+      } else {
+        if (
+          !(await this.character.checkWeaponForEffects(resourceDetails.subtype))
+        ) {
+          for (const item of this.character.data.inventory) {
+            if (item.quantity > 0) {
+              const itemInfo = await getItemInformation(item.code);
+              if (itemInfo instanceof ApiError) {
+                const shouldRetry = await this.character.handleErrors(itemInfo);
 
-  //   logger.info(`Finding location of ${resources.data[0].code}`);
+                if (!shouldRetry || attempt === maxRetries) {
+                  logger.error(`Gather failed after ${attempt} attempts`);
+                  return false;
+                }
+                continue;
+              } else if (itemInfo.code === '') {
+                logger.info(`No more items to check in inventory`);
+              } else {
+                for (const effect of itemInfo.effects) {
+                  if (effect.code === resourceDetails.subtype) {
+                    this.character.equipNow(item.code, 'weapon'); // ToDo: apparently this doesn't work
+                  }
+                }
+              }
+            }
+          }
+          // ToDo:
+          // - Search bank for suitable weapon. Can use /my/bank/items for this
+          // - If no suitable weapon, maybe we just continue
+          // - Extract this into it's own function?
+        }
+      }
 
-  //   const maps = (await getMaps(resources.data[0].code)).data;
+      // Evaluate our inventory space before we start collecting items
+      await this.character.evaluateDepositItemsInBank(code);
 
-  //   if (maps.length === 0) {
-  //     logger.error(`Cannot find any maps for ${resources.data[0].code}`);
-  //     return true;
-  //   }
+      if (resourceDetails.subtype === 'mob') {
+        await this.gatherMobDrop(
+          { code: resourceDetails.code, quantity: quantity },
+          numHeld,
+        );
+      } else if (resourceDetails.craft) {
+        this.character.prependJob(
+          new CraftObjective(this.character, {
+            code: resourceDetails.code,
+            quantity: quantity,
+          }),
+        );
+      } else {
+        await this.gatherResource(code, quantity, numHeld, remainderToGather);
+      }
+    }
+  }
 
-  //   const contentLocation = this.character.evaluateClosestMap(maps);
+  async gatherItemLoop(
+    target: SimpleItemSchema,
+    numHeld: number,
+    remainderToGather: number, // ToDo: This value is just target.quantity - numHeld. I don't need this??
+    location: DestinationSchema,
+    maxRetries: number = 3,
+  ) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
-  //   await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      // Loop that does the gather requests
+      for (var count = 0; count < remainderToGather; count++) {
+        if (count % 5 === 0) {
+          numHeld = this.character.checkQuantityOfItemInInv(target.code);
+          logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+          // Check inventory space to make sure we are less than 90% full
+          if (await this.character.evaluateDepositItemsInBank(target.code)) {
+            // If items were deposited, we need to move back to the gathering location
+            await this.character.move(location);
+          }
+        }
 
-  //   await this.gatherItem(remainderToGather, {
-  //     x: contentLocation.x,
-  //     y: contentLocation.y,
-  //   });
+        const response = await actionGather(this.character.data);
 
-  //   numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
-  //   if (numHeld >= this.target.quantity) {
-  //     logger.info(
-  //       `Successfully gathered ${this.target.quantity} ${this.target.code}s`,
-  //     );
-  //     return true;
-  //   }
-  //   return false;
-  // }
+        if (response instanceof ApiError) {
+          const shouldRetry = await this.character.handleErrors(response);
 
-  // async gatherItem(remainderToGather: number, location: DestinationSchema) {
-  //   // Loop that does the gather requests
-  //   for (var count = 0; count < remainderToGather; count++) {
-  //     if (count % 5 === 0) {
-  //       this.numHeld = this.character.checkQuantityOfItemInInv(
-  //         this.target.code,
-  //       );
-  //       logger.info(
-  //         `Gathered ${this.numHeld}/${this.target.quantity} ${this.target.code}`,
-  //       );
-  //       // Check inventory space to make sure we are less than 90% full
-  //       if (await this.character.evaluateDepositItemsInBank(this.target.code)) {
-  //         // If items were deposited, we need to move back to the gathering location
-  //         await this.character.move(location);
-  //       }
-  //     }
+          if (!shouldRetry || attempt === maxRetries) {
+            logger.error(`Gather failed after ${attempt} attempts`);
+            return false;
+          }
+          continue;
+        } else {
+          this.character.data = response.data.character;
+        }
+      }
+    }
+  }
 
-  //     const gatherResponse = await actionGather(this.character.data);
+  async gatherMobDrop(target: SimpleItemSchema, numHeld: number) {
+    const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
+      await getMonsterInformation({
+        query: { drop: target.code, max_level: this.character.data.level },
+        url: '/monsters',
+      });
+    if (mobInfo instanceof ApiError) {
+      logger.error(`Failed to find the mob that drops ${target.code}`);
+    } else {
+      const remainderToGather = target.quantity - numHeld;
 
-  //     if (gatherResponse instanceof ApiError) {
-  //       logger.warn(
-  //         `${gatherResponse.error.message} [Code: ${gatherResponse.error.code}]`,
-  //       );
-  //       if (gatherResponse.error.code === 499) {
-  //         await sleep(this.character.data.cooldown, 'cooldown');
-  //       }
-  //     } else {
-  //       this.character.data = gatherResponse.data.character;
-  //     }
-  //   }
-  // }
+      while (numHeld < remainderToGather) {
+        logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+
+        // ToDo: make this check all mobs in case multiple drop the item
+        await this.character.fightNow(1, mobInfo.data[0].code);
+
+        numHeld = this.character.checkQuantityOfItemInInv(target.code);
+      }
+    }
+  }
+
+  /**
+   * gathers the requested resource
+   * @param code
+   * @param quantity
+   * @param numHeld
+   * @param remainderToGather
+   * @returns true if
+   */
+  async gatherResource(
+    code: string,
+    quantity: number,
+    numHeld: number,
+    remainderToGather: number,
+  ): Promise<boolean> {
+    logger.info(`Finding resource map type for ${code}`);
+
+    const resources = await getResourceInformation({
+      query: { drop: code },
+      url: '/resources',
+    });
+
+    logger.info(`Finding location of ${resources.data[0].code}`);
+
+    const maps = (await getMaps(resources.data[0].code)).data;
+
+    if (maps.length === 0) {
+      logger.error(`Cannot find any maps for ${resources.data[0].code}`);
+      return false;
+    }
+
+    const contentLocation = this.character.evaluateClosestMap(maps);
+
+    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+
+    await this.gatherItemLoop(
+      { code: code, quantity: quantity },
+      numHeld,
+      remainderToGather,
+      {
+        x: contentLocation.x,
+        y: contentLocation.y,
+      },
+    );
+
+    numHeld = this.character.checkQuantityOfItemInInv(code);
+    if (numHeld >= quantity) {
+      logger.info(`Successfully gathered ${quantity} ${code}`);
+      return true;
+    } else {
+      logger.info(
+        `Only holding ${numHeld} ${code}. Collecting ${quantity - numHeld} more`,
+      );
+      await this.gatherItemLoop(
+        { code: code, quantity: quantity - numHeld },
+        numHeld,
+        remainderToGather,
+        {
+          x: contentLocation.x,
+          y: contentLocation.y,
+        },
+      );
+    }
+    return false;
+  }
 }

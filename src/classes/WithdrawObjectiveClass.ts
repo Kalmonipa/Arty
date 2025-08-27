@@ -21,39 +21,58 @@ export class WithdrawObjective extends Objective {
 
   async execute(): Promise<boolean> {
     this.startJob();
-    const result = await this.character.withdraw(this.quantity, this.itemCode);
+    const result = await this.withdraw(this.quantity, this.itemCode);
     this.completeJob();
     this.character.removeJob(this);
     return result;
   }
 
-  // This function has been moved to the Character class
-  // async withdraw(quantity: number, itemCode: string): Promise<boolean> {
-  //   logger.info(`Finding location of the bank`);
+  async runPrerequisiteChecks() {
+    await this.character.cooldownStatus();
 
-  //   const maps = (await getMaps(undefined, 'bank')).data;
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+  }
 
-  //   if (maps.length === 0) {
-  //     logger.error(`Cannot find the bank. This shouldn't happen ??`);
-  //     return true;
-  //   }
+  /**
+   * @description withdraw the specified items from the bank
+   */
+  async withdraw(quantity: number, itemCode: string, maxRetries: number = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      logger.debug(`Withdraw attempt ${attempt}/${maxRetries}`);
 
-  //   const contentLocation = this.character.evaluateClosestMap(maps);
+      logger.info(`Finding location of the bank`);
 
-  //   await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      const maps = (await getMaps(undefined, 'bank')).data;
 
-  //   const response = await actionWithdrawItem(this.character.data, [
-  //     { quantity: quantity, code: itemCode },
-  //   ]);
+      if (maps.length === 0) {
+        logger.error(`Cannot find the bank. This shouldn't happen ??`);
+        return true;
+      }
 
-  //   if (response instanceof ApiError) {
-  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-  //     if (response.error.code === 499) {
-  //       await sleep(this.character.data.cooldown, 'cooldown');
-  //     }
-  //   } else {
-  //     this.character.data = response.data.character;
-  //   }
-  //   return true;
-  // }
+      const contentLocation = this.character.evaluateClosestMap(maps);
+
+      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+
+      const response = await actionWithdrawItem(this.character.data, [
+        { quantity: quantity, code: itemCode },
+      ]);
+
+      if (response instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(response);
+
+        if (!shouldRetry || attempt === maxRetries) {
+          logger.error(`Withdraw failed after ${attempt} attempts`);
+          return false;
+        }
+        continue;
+      } else {
+        this.character.data = response.data.character;
+      }
+    }
+  }
 }

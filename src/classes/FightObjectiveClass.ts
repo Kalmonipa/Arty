@@ -23,66 +23,92 @@ export class FightObjective extends Objective {
 
     await this.runPrerequisiteChecks();
 
-    const result = await this.character.fight(
-      this.target.quantity,
-      this.target.code,
-    );
+    const result = await this.fight(this.target.quantity, this.target.code);
 
     this.completeJob();
     this.character.removeJob(this);
     return result;
   }
 
-  async runPrerequisiteChecks() {}
+  async runPrerequisiteChecks() {
+    await this.character.cooldownStatus();
 
-  //   logger.info(`Finding location of ${this.target.code}`);
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+  }
 
-  //   const maps = (await getMaps(this.target.code)).data;
+  /**
+   * @description Fight the requested amount of mobs
+   * @todo Does this function need to return anything?
+   */
+  async fight(quantity: number, code: string, maxRetries: number = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      logger.debug(`Fight attempt ${attempt}/${maxRetries}`);
 
-  //   if (maps.length === 0) {
-  //     logger.error(`Cannot find any maps for ${this.target.code}`);
-  //     return true;
-  //   }
+      logger.info(`Finding location of ${code}`);
 
-  //   const contentLocation = this.character.evaluateClosestMap(maps);
+      const maps = (await getMaps(code)).data;
 
-  //   await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      if (maps.length === 0) {
+        logger.error(`Cannot find any maps for ${code}`);
+        return true; // ToDo: Not sure if I want to return true, false or anything at all here
+      }
 
-  //   for (var count = 0; count < this.target.quantity; count++) {
-  //     logger.info(
-  //       `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
-  //     );
+      const contentLocation = this.character.evaluateClosestMap(maps);
 
-  //     // Check inventory space to make sure we are less than 90% full
-  //     await this.character.evaluateDepositItemsInBank();
+      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-  //     const healthStatus: HealthStatus = this.character.checkHealth();
+      for (var count = 0; count < quantity; count++) {
+        logger.info(`Fought ${count}/${quantity} ${code}s`);
 
-  //     if (healthStatus.percentage !== 100) {
-  //       if (healthStatus.difference < 300) {
-  //         await this.character.rest();
-  //       } //else {
-  //       // Eat food
-  //       //}
-  //     }
+        // Check inventory space to make sure we are less than 90% full
+        if (await this.character.evaluateDepositItemsInBank(code)) {
+          // If items were deposited, we need to move back to the gathering location
+          await this.character.move(contentLocation);
+        }
 
-  //     const response = await actionFight(this.character.data);
+        const healthStatus: HealthStatus = this.character.checkHealth();
 
-  //     if (response instanceof ApiError) {
-  //       logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-  //       if (response.error.code === 499) {
-  //         await sleep(this.character.data.cooldown, 'cooldown');
-  //       }
-  //       return true;
-  //     }
+        if (healthStatus.percentage !== 100) {
+          if (healthStatus.difference < 300) {
+            await this.character.rest();
+          } //else {
+          // Eat food
+          //}
+        }
 
-  //     this.character.data = response.data.character;
-  //   }
+        const response = await actionFight(this.character.data);
 
-  //   logger.info(
-  //     `Successfully fought ${this.target.quantity} ${this.target.code}s`,
-  //   );
+        if (response instanceof ApiError) {
+          const shouldRetry = await this.character.handleErrors(response);
 
-  //   return true;
-  // }
+          if (!shouldRetry || attempt === maxRetries) {
+            logger.error(`Fight failed after ${attempt} attempts`);
+            return false;
+          }
+          continue;
+        } else {
+          if (response.data.fight.result === 'loss') {
+            logger.warn(
+              `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
+            );
+          } else if (response.data.fight.result === 'win') {
+            logger.info(
+              `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp and ${response.data.fight.gold} gold`,
+            );
+          }
+
+          this.character.data = response.data.character;
+        }
+      }
+
+      logger.debug(`Successfully fought ${quantity} ${code}`);
+
+      return true;
+    }
+  }
 }

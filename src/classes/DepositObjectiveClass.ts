@@ -20,41 +20,66 @@ export class DepositObjective extends Objective {
 
   async execute(): Promise<boolean> {
     this.startJob();
-    const result = await this.character.deposit(
-      this.target.quantity,
-      this.target.code,
-    );
+
+    this.runPrerequisiteChecks();
+
+    const result = await this.deposit(this.target.quantity, this.target.code);
     this.completeJob();
     this.character.removeJob(this);
     return result;
   }
 
-  //async deposit() {
-  // logger.info(`Finding location of the bank`);
+  async runPrerequisiteChecks() {
+    await this.character.cooldownStatus();
 
-  // const maps = (await getMaps(undefined, 'bank')).data;
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+  }
 
-  // if (maps.length === 0) {
-  //   logger.error(`Cannot find the bank. This shouldn't happen ??`);
-  //   return true;
-  // }
+  /**
+   * @description deposit the specified items into the bank
+   * @todo If 0 is entered, deposit all of that item
+   */
+  async deposit(quantity: number, itemCode: string, maxRetries: number = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      logger.info(`Deposit attempt ${attempt}/${maxRetries}`);
 
-  // const contentLocation = this.character.evaluateClosestMap(maps);
+      logger.info(`Finding location of the bank`);
 
-  // await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      const maps = (await getMaps(undefined, 'bank')).data;
 
-  // const response = await actionDepositItems(this.character.data, [
-  //   { quantity: this.target.quantity, code: this.target.code },
-  // ]);
+      if (maps.length === 0) {
+        logger.error(`Cannot find the bank. This shouldn't happen ??`);
+        return false;
+      }
 
-  // if (response instanceof ApiError) {
-  //   if (response.error.code === 499) {
-  //     logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-  //     await sleep(this.character.data.cooldown, 'cooldown');
-  //   }
-  // } else {
-  //   this.character.data = response.data.character;
-  // }
-  // return true;
-  //}
+      const contentLocation = this.character.evaluateClosestMap(maps);
+
+      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+
+      // ToDo:
+      // - If quantity is 0, deposit all of that item
+      // - If code is 'all', deposit all items in inv into the bank
+      const response = await actionDepositItems(this.character.data, [
+        { quantity: quantity, code: itemCode },
+      ]);
+
+      if (response instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(response);
+
+        if (!shouldRetry || attempt === maxRetries) {
+          logger.error(`Deposit failed after ${attempt} attempts`);
+          return false;
+        }
+        continue;
+      } else {
+        this.character.data = response.data.character;
+      }
+      return true;
+    }
+  }
 }

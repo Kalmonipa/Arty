@@ -1,7 +1,5 @@
 import { getMaps } from '../api_calls/Maps';
 import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
-import { ObjectiveTargets } from '../types/ObjectiveData';
-import { DestinationSchema } from '../types/types';
 import { logger, sleep } from '../utils';
 import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
@@ -18,11 +16,6 @@ export class MonsterTaskObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
-    // "task": "yellow_slime",
-    // "task_type": "monsters",
-    // "task_progress": 94,
-    // "task_total": 157,
-
     if (this.character.data.task === '') {
       this.startNewTask();
     }
@@ -102,6 +95,17 @@ export class MonsterTaskObjective extends Objective {
       // ToDo: Handle this somehow
     } else {
       this.character.data = response.data.character;
+    }
+  }
+
+  async runPrerequisiteChecks() {
+    await this.character.cooldownStatus();
+
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
     }
   }
 }

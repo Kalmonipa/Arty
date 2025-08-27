@@ -19,44 +19,69 @@ export class UnequipObjective extends Objective {
 
   async execute(): Promise<boolean> {
     this.startJob();
-    const result = await this.character.unequip(this.itemSlot, this.quantity);
+    const result = await this.unequip(this.itemSlot, this.quantity);
     this.completeJob();
     this.character.removeJob(this);
     return result;
   }
 
-  // async unequip(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
-  //   if (!quantity) quantity = 1;
+  async runPrerequisiteChecks() {
+    await this.character.cooldownStatus();
 
-  //   // validations
-  //   if (
-  //     (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-  //     quantity > 100
-  //   ) {
-  //     logger.warn(
-  //       `Quantity can only be provided for utility slots and must be less than 100`,
-  //     );
-  //     return;
-  //   }
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+  }
 
-  //   logger.info(`Unequipping ${itemSlot} slot`);
+  /**
+   * @description equip the item
+   */
+  async unequip(
+    itemSlot: ItemSlot,
+    quantity?: number,
+    maxRetries: number = 3,
+  ): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      logger.info(`Unequip attempt ${attempt}/${maxRetries}`);
 
-  //   const unequipSchema: UnequipSchema = {
-  //     slot: itemSlot,
-  //     quantity: quantity,
-  //   };
+      if (!quantity) quantity = 1;
 
-  //   const response = await actionUnequipItem(
-  //     this.character.data,
-  //     unequipSchema,
-  //   );
-  //   if (response instanceof ApiError) {
-  //     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
-  //     if (response.error.code === 499) {
-  //       await sleep(this.character.data.cooldown, 'cooldown');
-  //     }
-  //   } else {
-  //     this.character.data = response.data.character;
-  //   }
-  // }
+      // validations
+      if (
+        (itemSlot === 'utility1' || itemSlot === 'utility2') &&
+        quantity > 100
+      ) {
+        logger.warn(
+          `Quantity can only be provided for utility slots and must be less than 100`,
+        );
+        return;
+      }
+
+      logger.info(`Unequipping ${itemSlot} slot`);
+
+      const unequipSchema: UnequipSchema = {
+        slot: itemSlot,
+        quantity: quantity,
+      };
+
+      const response = await actionUnequipItem(
+        this.character.data,
+        unequipSchema,
+      );
+      if (response instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(response);
+
+        if (!shouldRetry || attempt === maxRetries) {
+          logger.error(`Unequip failed after ${attempt} attempts`);
+          return false;
+        }
+        continue;
+      } else {
+        this.character.data = response.data.character;
+      }
+    }
+  }
 }

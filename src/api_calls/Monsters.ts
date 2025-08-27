@@ -1,7 +1,6 @@
 import { ApiError } from '../classes/ErrorClass';
 import { ApiUrl, MyHeaders } from '../constants';
 import {
-  CharacterFightResponseSchema,
   GetAllMonstersMonstersGetResponse,
   GetAllMonstersMonstersGetData,
 } from '../types/types';
