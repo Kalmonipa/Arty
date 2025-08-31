@@ -153,7 +153,7 @@ export class GatherObjective extends Objective {
   async gatherItemLoop(
     target: SimpleItemSchema,
     numHeld: number,
-    remainderToGather: number, // ToDo: This value is just target.quantity - numHeld. I don't need this??
+    remainderToGather: number,
     location: DestinationSchema,
     maxRetries: number = 3,
   ) {

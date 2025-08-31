@@ -182,13 +182,13 @@ export class CraftObjective extends Objective {
         });
 
         if (response instanceof ApiError) {
-        const shouldRetry = await this.character.handleErrors(response);
+          const shouldRetry = await this.character.handleErrors(response);
 
-        if (!shouldRetry || attempt === maxRetries) {
-          logger.error(`Gather failed after ${attempt} attempts`);
-          return false;
-        }
-        continue;
+          if (!shouldRetry || attempt === maxRetries) {
+            logger.error(`Gather failed after ${attempt} attempts`);
+            return false;
+          }
+          continue;
         } else {
           this.character.data = response.data.character;
 

@@ -8,7 +8,7 @@ export type MapSchema = {
   skin: string;
   x: number;
   y: number;
-  content: MapContentSchema; // ToDo: This seems to be undefined in the response
+  content: MapContentSchema;
 };
 
 export type SimpleMapSchema = {

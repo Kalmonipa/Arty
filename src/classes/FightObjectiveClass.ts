@@ -43,9 +43,8 @@ export class FightObjective extends Objective {
 
   /**
    * @description Fight the requested amount of mobs
-   * @todo Does this function need to return anything?
    */
-  async fight(quantity: number, code: string, maxRetries: number = 3) {
+  async fight(quantity: number, code: string, maxRetries: number = 3): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.debug(`Fight attempt ${attempt}/${maxRetries}`);
 
@@ -55,7 +54,7 @@ export class FightObjective extends Objective {
 
       if (maps.length === 0) {
         logger.error(`Cannot find any maps for ${code}`);
-        return true; // ToDo: Not sure if I want to return true, false or anything at all here
+        return false;
       }
 
       const contentLocation = this.character.evaluateClosestMap(maps);
@@ -107,7 +106,6 @@ export class FightObjective extends Objective {
       }
 
       logger.debug(`Successfully fought ${quantity} ${code}`);
-
       return true;
     }
   }

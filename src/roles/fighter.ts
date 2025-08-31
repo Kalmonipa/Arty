@@ -49,7 +49,7 @@
 //     url: '/monsters',
 //   });
 
-//   // ToDo: Evaluate which monster to fight from the list based on resistances, health, etc
+//   // Evaluate which monster to fight from the list based on resistances, health, etc
 
 //   logger.info(
 //     `Intending to fight ${monsterInfo.data[monsterInfo.data.length - 1].name}`,

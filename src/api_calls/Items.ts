@@ -55,7 +55,7 @@ export async function actionEquipItem(
           message = 'This item is already equipped.';
           break;
         case 496:
-          message = 'Character does not meet the required condition'
+          message = 'Character does not meet the required condition';
           break;
       }
       throw new ApiError({

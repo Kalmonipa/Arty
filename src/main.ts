@@ -32,7 +32,6 @@ async function main() {
         //   char.withdrawJob(30, 'ash_wood');
         //   char.craftJob(3, 'ash_plank');
         //   char.depositJob(3, 'ash_plank');
-        // // ToDo when his woodcutting is high enough
         // char.withdrawJob(60, 'spruce_wood')
         // char.craftJob(6, 'spruce_plank');
         // char.withdrawJob(3, 'red_slimeball');

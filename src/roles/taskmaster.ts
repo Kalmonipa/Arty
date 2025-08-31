@@ -20,7 +20,7 @@
 
 // /**
 //  * Currently only supports Monster tasks
-//  * ToDo: Implement gathering tasks
+//  * Implement gathering tasks
 //  */
 // export async function beTaskmaster(): Promise<boolean> {
 //   let character: CharacterSchema = await getCharacter(CharName);

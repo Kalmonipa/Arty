@@ -6,6 +6,11 @@ import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 import { ObjectiveTargets } from '../types/ObjectiveData';
+import { BankItemTransaction } from '../types/BankData';
+import {
+  BankItemTransactionResponseSchema,
+  SimpleItemSchema,
+} from '../types/types';
 
 export class DepositObjective extends Objective {
   character: Character;
@@ -42,9 +47,10 @@ export class DepositObjective extends Objective {
 
   /**
    * @description deposit the specified items into the bank
-   * @todo If 0 is entered, deposit all of that item
+   * If itemCode is 'all', the inventory is emptied into the bank
+   * If 0 is entered, all of the specified item is deposited
    */
-  async deposit(quantity: number, itemCode: string, maxRetries: number = 3) {
+  async deposit(quantity: number, itemCode: string, maxRetries: number = 3): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.debug(`Deposit attempt ${attempt}/${maxRetries}`);
 
@@ -61,12 +67,34 @@ export class DepositObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      // ToDo:
-      // - If quantity is 0, deposit all of that item
-      // - If code is 'all', deposit all items in inv into the bank
-      const response = await actionDepositItems(this.character.data, [
-        { quantity: quantity, code: itemCode },
-      ]);
+      var response: ApiError | BankItemTransactionResponseSchema;
+      if (itemCode === 'all') {
+        var itemsToDeposit: SimpleItemSchema[] = [];
+
+        for (var i = 0; i < this.character.data.inventory.length; i++) {
+          if (this.character.data.inventory[i].code !== '') {
+            itemsToDeposit.push({
+              code: this.character.data.inventory[i].code,
+              quantity: this.character.data.inventory[i].quantity,
+            });
+          }
+        }
+        response = await actionDepositItems(
+          this.character.data,
+          itemsToDeposit,
+        );
+      } else if (quantity === 0) {
+        response = await actionDepositItems(this.character.data, [
+          {
+            quantity: this.character.checkQuantityOfItemInInv(itemCode),
+            code: itemCode,
+          },
+        ]);
+      } else {
+        response = await actionDepositItems(this.character.data, [
+          { quantity: quantity, code: itemCode },
+        ]);
+      }
 
       if (response instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(response);

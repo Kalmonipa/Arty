@@ -15,7 +15,7 @@ export class MonsterTaskObjective extends Objective {
     this.character = character;
   }
 
-  // ToDo: 
+  // ToDo:
   //  - If 3 fights lost, cancel job. We don't want to keep losing fights
   async execute(): Promise<boolean> {
     if (this.character.data.task === '') {
@@ -47,7 +47,6 @@ export class MonsterTaskObjective extends Objective {
       );
       const maps = (await getMaps('monsters', 'tasks_master')).data;
 
-      // ToDo: I have this if a few times. I could put it into the getMaps() function
       if (maps.length === 0) {
         logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
         return;
@@ -66,7 +65,6 @@ export class MonsterTaskObjective extends Objective {
           );
           await sleep(this.character.data.cooldown, 'cooldown');
         }
-        // ToDo: Handle this somehow
       } else {
         this.character.data = response.data.character;
       }

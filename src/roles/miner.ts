@@ -17,11 +17,11 @@
 // export async function beMiner() {
 //   let character: CharacterSchema = await getCharacter(CharName);
 
-//   // ToDo: Check the cooldown timer to see if we're currently in a cooldown period. If yes, wait it out
+//   // Check the cooldown timer to see if we're currently in a cooldown period. If yes, wait it out
 
 //   character = await evaluateDepositItemsInBank(character);
 
-//   // ToDo: Gathering roles can all use the same flow and have logic to choose which resource to find
+//   // Gathering roles can all use the same flow and have logic to choose which resource to find
 //   const miningTypes = await getResourceInformation({
 //     query: {
 //       skill: 'mining',

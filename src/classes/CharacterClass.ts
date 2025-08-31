@@ -171,27 +171,13 @@ export class Character {
    * @description Deposit all inventory items into bank
    */
   async depositAllItems() {
-    var itemsToDeposit: SimpleItemSchema[] = [];
-
-    for (var i = 0; i < this.data.inventory.length; i++) {
-      // logger.info(
-      //   `${character.inventory[i].code}: ${character.inventory[i].quantity}`,
-      // );
-      if (this.data.inventory[i].code !== '') {
-        itemsToDeposit.push({
-          code: this.data.inventory[i].code,
-          quantity: this.data.inventory[i].quantity,
-        });
-      }
-    }
-
-    try {
-      const response: BankItemTransactionResponseSchema | ApiError =
-        await actionDepositItems(this.data, itemsToDeposit);
-      return response;
-    } catch (error) {
-      logger.error(`Deposit failed: ${error}`);
-    }
+        this.prependJob(
+      new DepositObjective(this, {
+        code: 'all',
+        quantity: 0,
+      }),
+    );
+    await this.jobList[0].execute(this);
   }
 
   /**
