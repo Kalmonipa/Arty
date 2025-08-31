@@ -35,12 +35,20 @@ export class GatherObjective extends Objective {
 
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 
-    // ToDo: check bank
+    const numInBank = await this.character.checkQuantityOfItemInBank(
+      this.target.code,
+    );
+
     if (numInInv >= this.target.quantity) {
       logger.info(
         `${numInInv} ${this.target.code} in inventory already. No need to collect more`,
       );
       return true;
+    } else if (numInBank >= this.target.quantity) {
+      logger.info(
+        `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${this.target.quantity}`,
+      );
+      await this.character.withdrawNow(this.target.quantity, this.target.code);
     } else {
       result = await this.gather(this.target.quantity, this.target.code);
     }

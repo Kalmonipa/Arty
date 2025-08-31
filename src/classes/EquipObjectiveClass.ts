@@ -75,9 +75,9 @@ export class EquipObjective extends Objective {
       }
 
       if (this.character.checkQuantityOfItemInInv(itemCode) === 0) {
-        logger.info(`Character not carrying ${itemCode}. Checking bank`)
-        if (await this.character.checkQuantityOfItemInBank(itemCode) > 0) {
-          await this.character.withdrawNow(quantity | 1, itemCode)
+        logger.info(`Character not carrying ${itemCode}. Checking bank`);
+        if ((await this.character.checkQuantityOfItemInBank(itemCode)) > 0) {
+          await this.character.withdrawNow(quantity | 1, itemCode);
         }
       }
 

@@ -15,6 +15,8 @@ export class MonsterTaskObjective extends Objective {
     this.character = character;
   }
 
+  // ToDo: 
+  //  - If 3 fights lost, cancel job. We don't want to keep losing fights
   async execute(): Promise<boolean> {
     if (this.character.data.task === '') {
       this.startNewTask();

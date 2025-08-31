@@ -126,21 +126,22 @@ export class Character {
   }
 
   /**
-   * @description Check inventory for a specific item
+   * @description Check bank for a specific item
+   * @returns the amount found in the bank
    */
   async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
-    const bankItem = await getBankItems(contentCode)
+    const bankItem = await getBankItems(contentCode);
 
     if (bankItem.total === 0) {
-      return 0
+      return 0;
     } else if (bankItem.total === 1) {
-      return bankItem.data[0].quantity
+      return bankItem.data[0].quantity;
     } else {
-      var total = 0
+      var total = 0;
       for (const item of bankItem.data) {
-      total += item.quantity
+        total += item.quantity;
       }
-      return total
+      return total;
     }
   }
 
@@ -393,6 +394,19 @@ export class Character {
   }
 
   /**
+   * @description Craft the item. Character must be on the correct crafting map
+   */
+  async craftNow(quantity: number, code: string) {
+    this.prependJob(
+      new CraftObjective(this, {
+        code: code,
+        quantity: quantity,
+      }),
+    );
+    await this.jobList[0].execute(this);
+  }
+
+  /**
    * @description Starts a monster task and fulfills it.
    * If a task is already in progress, it will continue with the current task
    * Turns it in the task master when complete
@@ -414,6 +428,19 @@ export class Character {
   }
 
   /**
+   * @description deposit the specified items into the bank
+   */
+  async depositNow(quantity: number, itemCode: string) {
+    this.prependJob(
+      new DepositObjective(this, {
+        code: itemCode,
+        quantity: quantity,
+      }),
+    );
+    await this.jobList[0].execute(this);
+  }
+
+  /**
    * @description equip the item
    */
   async equip(itemName: string, itemSlot: ItemSlot, quantity?: number) {
@@ -421,12 +448,12 @@ export class Character {
   }
 
   /**
-   * @description equip the item now. Creates a new equip job at the 
+   * @description equip the item now. Creates a new equip job at the
    * beginning of the job list and executes it
    */
   async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number) {
     this.prependJob(new EquipObjective(this, itemName, itemSlot, quantity));
-    await this.jobList[0].execute(this)
+    await this.jobList[0].execute(this);
   }
 
   /**
@@ -434,6 +461,14 @@ export class Character {
    */
   async unequip(itemSlot: ItemSlot, quantity?: number) {
     this.appendJob(new UnequipObjective(this, itemSlot, quantity));
+  }
+
+  /**
+   * @description equip the item from the slot specified
+   */
+  async unequipNow(itemSlot: ItemSlot, quantity?: number) {
+    this.prependJob(new UnequipObjective(this, itemSlot, quantity));
+    await this.jobList[0].execute(this);
   }
 
   /**
@@ -445,7 +480,7 @@ export class Character {
     );
   }
 
-    /**
+  /**
    * @description Creates a new fight objective at the beginning of the queue
    * and executes it
    */
@@ -453,7 +488,7 @@ export class Character {
     this.prependJob(
       new FightObjective(this, { code: code, quantity: quantity }),
     );
-    await this.jobList[0].execute(this)
+    await this.jobList[0].execute(this);
   }
 
   /**
@@ -469,18 +504,31 @@ export class Character {
   }
 
   /**
+   * @description calls the gather endpoint on the current map
+   */
+  async gatherNow(quantity: number, code: string) {
+    this.prependJob(
+      new GatherObjective(this, {
+        code: code,
+        quantity: quantity,
+      }),
+    );
+    await this.jobList[0].execute(this);
+  }
+
+  /**
    * @description withdraw the specified items from the bank
    */
   async withdraw(quantity: number, itemCode: string) {
     this.appendJob(new WithdrawObjective(this, itemCode, quantity));
   }
 
-    /**
+  /**
    * @description withdraw the specified items from the bank
    */
   async withdrawNow(quantity: number, itemCode: string) {
     this.prependJob(new WithdrawObjective(this, itemCode, quantity));
-    await this.jobList[0].execute(this)
+    await this.jobList[0].execute(this);
   }
 
   /**

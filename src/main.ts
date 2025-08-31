@@ -11,8 +11,8 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        char.equip('fire_bow', 'weapon')
-        char.fulfillMonsterTask()
+        char.equip('life_amulet', 'amulet');
+        //char.fulfillMonsterTask();
         // var count = 0;
         // while (count < 30) {
         //   char.gatherJob(10, 'red_slimeball');
@@ -50,16 +50,19 @@ async function main() {
         }
         break;
       case 'ZippyZoe':
-        var count = 0;
-        while (count < 5) {
-          char.withdraw(60, 'copper_bar');
-          char.craft(10, 'copper_ring');
-          char.deposit(10, 'copper_ring');
-          // char.gatherJob(50, 'ash_wood');
-          // char.craftJob(5, 'ash_plank');
-          // char.depositJob(5, 'ash_plank');
-          count++;
-        }
+        char.craft(5, 'life_amulet');
+        char.equip('life_amulet', 'amulet');
+        char.deposit(4, 'life_amulet');
+        // var count = 0;
+        // while (count < 5) {
+        //   char.withdraw(60, 'copper_bar');
+        //   char.craft(10, 'copper_ring');
+        //   char.deposit(10, 'copper_ring');
+        //   // char.gatherJob(50, 'ash_wood');
+        //   // char.craftJob(5, 'ash_plank');
+        //   // char.depositJob(5, 'ash_plank');
+        //   count++;
+        // }
         break;
       case 'TimidTom':
         var count = 0;

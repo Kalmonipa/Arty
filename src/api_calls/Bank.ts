@@ -1,12 +1,16 @@
 import { ApiError } from '../classes/ErrorClass';
 import { ApiUrl, MyHeaders } from '../constants';
-import { DataPageSimpleItemSchema, GetAllMapsMapsGetResponse, SimpleItemSchema } from '../types/types';
+import {
+  DataPageSimpleItemSchema,
+  GetAllMapsMapsGetResponse,
+  SimpleItemSchema,
+} from '../types/types';
 import { logger } from '../utils';
 
 export async function getBankItems(
   item_code?: string,
   page?: number,
-  size?: number
+  size?: number,
 ): Promise<DataPageSimpleItemSchema> {
   var requestOptions = {
     method: 'GET',
