@@ -3,4 +3,8 @@ export type ObjectiveTargets = {
   quantity: number;
 };
 
-export type ObjectiveStatus = 'not_started' | 'in_progress' | 'complete' | 'failed';
+export type ObjectiveStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'complete'
+  | 'failed';

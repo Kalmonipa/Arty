@@ -18,11 +18,10 @@ import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class GatherObjective extends Objective {
-  character: Character;
   target: ObjectiveTargets;
 
   constructor(character: Character, target: ObjectiveTargets) {
-    super(`gather_${target.quantity}_${target.code}`, 'not_started');
+    super(character, `gather_${target.quantity}_${target.code}`, 'not_started');
     this.character = character;
     this.target = target;
   }

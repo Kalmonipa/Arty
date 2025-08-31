@@ -171,7 +171,7 @@ export class Character {
    * @description Deposit all inventory items into bank
    */
   async depositAllItems() {
-        this.prependJob(
+    this.prependJob(
       new DepositObjective(this, {
         code: 'all',
         quantity: 0,

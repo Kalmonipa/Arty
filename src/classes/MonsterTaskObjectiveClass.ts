@@ -6,11 +6,10 @@ import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class MonsterTaskObjective extends Objective {
-  character: Character;
   type: 'monster';
 
   constructor(character: Character) {
-    super(`task_1_monstertask`, 'not_started');
+    super(character, `task_1_monstertask`, 'not_started');
 
     this.character = character;
   }
@@ -18,8 +17,10 @@ export class MonsterTaskObjective extends Objective {
   // ToDo:
   //  - If 3 fights lost, cancel job. We don't want to keep losing fights
   async execute(): Promise<boolean> {
+    await this.runPrerequisiteChecks();
+
     if (this.character.data.task === '') {
-      this.startNewTask();
+      this.startNewTask('monsters');
     }
 
     const maps = (await getMaps(this.character.data.task, 'monster')).data;
@@ -73,30 +74,30 @@ export class MonsterTaskObjective extends Objective {
     return true;
   }
 
-  async startNewTask() {
-    const maps = (await getMaps('monsters', 'tasks_master')).data;
+  // async startNewTask() {
+  //   const maps = (await getMaps('monsters', 'tasks_master')).data;
 
-    if (maps.length === 0) {
-      logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
-      return;
-    }
+  //   if (maps.length === 0) {
+  //     logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
+  //     return;
+  //   }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+  //   const contentLocation = this.character.evaluateClosestMap(maps);
 
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+  //   await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-    const response = await actionAcceptNewTask(this.character.data);
+  //   const response = await actionAcceptNewTask(this.character.data);
 
-    if (response instanceof ApiError) {
-      if (response.error.code === 499) {
-        logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-        await sleep(this.character.data.cooldown, 'cooldown');
-      }
-      // ToDo: Handle this somehow
-    } else {
-      this.character.data = response.data.character;
-    }
-  }
+  //   if (response instanceof ApiError) {
+  //     if (response.error.code === 499) {
+  //       logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
+  //       await sleep(this.character.data.cooldown, 'cooldown');
+  //     }
+  //     // ToDo: Handle this somehow
+  //   } else {
+  //     this.character.data = response.data.character;
+  //   }
+  // }
 
   async runPrerequisiteChecks() {
     await this.character.cooldownStatus();

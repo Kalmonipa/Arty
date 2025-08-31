@@ -8,12 +8,11 @@ import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class WithdrawObjective extends Objective {
-  character: Character;
   itemCode: string;
   quantity: number;
 
   constructor(character: Character, itemCode: string, quantity: number) {
-    super(`withdraw_${quantity}_${itemCode}`, 'not_started');
+    super(character, `withdraw_${quantity}_${itemCode}`, 'not_started');
     this.character = character;
     this.itemCode = itemCode;
     this.quantity = quantity;

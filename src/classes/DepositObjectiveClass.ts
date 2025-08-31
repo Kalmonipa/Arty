@@ -13,11 +13,14 @@ import {
 } from '../types/types';
 
 export class DepositObjective extends Objective {
-  character: Character;
   target: ObjectiveTargets;
 
   constructor(character: Character, target: ObjectiveTargets) {
-    super(`deposit_${target.quantity}_${target.code}`, 'not_started');
+    super(
+      character,
+      `deposit_${target.quantity}_${target.code}`,
+      'not_started',
+    );
 
     this.character = character;
     this.target = target;
@@ -50,7 +53,11 @@ export class DepositObjective extends Objective {
    * If itemCode is 'all', the inventory is emptied into the bank
    * If 0 is entered, all of the specified item is deposited
    */
-  async deposit(quantity: number, itemCode: string, maxRetries: number = 3): Promise<boolean> {
+  async deposit(
+    quantity: number,
+    itemCode: string,
+    maxRetries: number = 3,
+  ): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.debug(`Deposit attempt ${attempt}/${maxRetries}`);
 

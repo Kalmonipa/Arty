@@ -7,7 +7,6 @@ import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class EquipObjective extends Objective {
-  character: Character;
   itemName: string;
   itemSlot: ItemSlot;
   quantity?: number;
@@ -18,7 +17,7 @@ export class EquipObjective extends Objective {
     itemSlot: ItemSlot,
     quantity?: number,
   ) {
-    super(`equip_${itemName}_${itemSlot}`, 'not_started');
+    super(character, `equip_${itemName}_${itemSlot}`, 'not_started');
     this.character = character;
     this.itemName = itemName;
     this.itemSlot = itemSlot;

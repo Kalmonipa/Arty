@@ -10,11 +10,10 @@ import { GatherObjective } from './GatherObjectiveClass';
 import { ItemSchema } from '../types/types';
 
 export class CraftObjective extends Objective {
-  character: Character;
   target: ObjectiveTargets;
 
   constructor(character: Character, target: ObjectiveTargets) {
-    super(`craft_${target.quantity}_${target.code}`, 'not_started');
+    super(character, `craft_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
     this.target = target;

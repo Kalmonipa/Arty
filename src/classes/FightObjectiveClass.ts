@@ -8,11 +8,10 @@ import { Objective } from './ObjectiveClass';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 
 export class FightObjective extends Objective {
-  character: Character;
   target: ObjectiveTargets;
 
   constructor(character: Character, target: ObjectiveTargets) {
-    super(`fight_${target.quantity}_${target.code}`, 'not_started');
+    super(character, `fight_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
     this.target = target;
@@ -44,7 +43,11 @@ export class FightObjective extends Objective {
   /**
    * @description Fight the requested amount of mobs
    */
-  async fight(quantity: number, code: string, maxRetries: number = 3): Promise<boolean> {
+  async fight(
+    quantity: number,
+    code: string,
+    maxRetries: number = 3,
+  ): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.debug(`Fight attempt ${attempt}/${maxRetries}`);
 
