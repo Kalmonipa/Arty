@@ -99,6 +99,7 @@ export class GatherObjective extends Objective {
         if (
           !(await this.character.checkWeaponForEffects(resourceDetails.subtype))
         ) {
+          //
           for (const item of this.character.data.inventory) {
             if (item.quantity > 0) {
               const itemInfo = await getItemInformation(item.code);
@@ -106,10 +107,11 @@ export class GatherObjective extends Objective {
                 const shouldRetry = await this.character.handleErrors(itemInfo);
 
                 if (!shouldRetry || attempt === maxRetries) {
-                  logger.error(`Gather failed after ${attempt} attempts`);
+                  logger.error(`Item info failed after ${attempt} attempts`);
                   return false;
                 }
                 continue;
+              
               } else if (itemInfo.code === '') {
                 logger.info(`No more items to check in inventory`);
               } else {
@@ -122,6 +124,9 @@ export class GatherObjective extends Objective {
             }
           }
           // ToDo:
+          // - Build a cache of all items that are useful for each type of gathering
+          //    - Use /items with type=weapon and find weapons that help with
+          //    - fishing, woodcutting, alchemy, mining. Adding them into a map
           // - Search bank for suitable weapon. Can use /my/bank/items for this
           // - If no suitable weapon, maybe we just continue
           // - Extract this into it's own function?
@@ -154,36 +159,27 @@ export class GatherObjective extends Objective {
     numHeld: number,
     remainderToGather: number,
     location: DestinationSchema,
-    maxRetries: number = 3,
-  ) {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.info(`Gather attempt ${attempt}/${maxRetries}`);
-
-      // Loop that does the gather requests
-      for (var count = 0; count < remainderToGather; count++) {
-        if (count % 5 === 0) {
-          numHeld = this.character.checkQuantityOfItemInInv(target.code);
-          logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
-          // Check inventory space to make sure we are less than 90% full
-          if (await this.character.evaluateDepositItemsInBank(target.code)) {
-            // If items were deposited, we need to move back to the gathering location
-            await this.character.move(location);
-          }
+  ): Promise<boolean> {
+    // Loop that does the gather requests
+    for (var count = 0; count < remainderToGather; count++) {
+      if (count % 5 === 0) {
+        numHeld = this.character.checkQuantityOfItemInInv(target.code);
+        logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+        // Check inventory space to make sure we are less than 90% full
+        if (await this.character.evaluateDepositItemsInBank(target.code)) {
+          // If items were deposited, we need to move back to the gathering location
+          await this.character.move(location);
         }
+      }
 
-        const response = await actionGather(this.character.data);
+      const response = await actionGather(this.character.data);
 
-        if (response instanceof ApiError) {
-          const shouldRetry = await this.character.handleErrors(response);
+      if (response instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(response);
 
-          if (!shouldRetry || attempt === maxRetries) {
-            logger.error(`Gather failed after ${attempt} attempts`);
-            return false;
-          }
-          continue;
-        } else {
-          this.character.data = response.data.character;
-        }
+        return false;
+      } else {
+        this.character.data = response.data.character;
       }
     }
   }

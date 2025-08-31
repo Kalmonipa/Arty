@@ -186,6 +186,11 @@ export async function getAllItemInformation(
   }
 }
 
+/**
+ * @description returns information about the specified item
+ * @param code 
+ * @returns {ItemResponseSchema}
+ */
 export async function getItemInformation(
   code: string,
 ): Promise<ItemSchema | ApiError> {

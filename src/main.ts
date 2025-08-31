@@ -12,7 +12,7 @@ async function main() {
     switch (CharName) {
       case 'LongLegLarry':
         char.equip('life_amulet', 'amulet');
-        //char.fulfillMonsterTask();
+        //char.doMonsterTask();
         // var count = 0;
         // while (count < 30) {
         //   char.gatherJob(10, 'red_slimeball');
@@ -64,13 +64,14 @@ async function main() {
         // }
         break;
       case 'TimidTom':
-        var count = 0;
-        while (count < 200) {
-          char.gather(80, 'coal');
-          //char.craftJob(8, 'iron_bar');
-          char.deposit(80, 'coal');
-          count++;
-        }
+        char.doItemsTask();
+        // var count = 0;
+        // while (count < 200) {
+        //   char.gather(80, 'coal');
+        //   //char.craftJob(8, 'iron_bar');
+        //   char.deposit(80, 'coal');
+        //   count++;
+        // }
         break;
       case 'BouncyBella':
         var count = 0;

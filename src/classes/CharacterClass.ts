@@ -26,6 +26,7 @@ import { UnequipObjective } from './UnequipObjectiveClass';
 import { WithdrawObjective } from './WithdrawObjectiveClass';
 import { MonsterTaskObjective } from './MonsterTaskObjectiveClass';
 import { getBankItems } from '../api_calls/Bank';
+import { ItemTaskObjective } from './ItemTaskObjectiveClass';
 
 export class Character {
   data: CharacterSchema;
@@ -259,9 +260,6 @@ export class Character {
 
   /**
    * @description if inventory if 90% full, we empty everything into the bank
-   * ToDo:
-   *  - Keep important items. Only deposit 'junk' that isn't part of our objective
-   *     or useful items like potions, food, etc
    * @returns {boolean}
    *  - true means bank was visited and items deposited
    *  - false means nothing happened
@@ -393,11 +391,20 @@ export class Character {
   }
 
   /**
+   * @description Starts an items task and fulfills it.
+   * If a task is not in progress, will start a new one
+   * Hands in items as they are gathered
+   */
+  async doItemsTask() {
+    this.appendJob(new ItemTaskObjective(this));
+  }
+
+  /**
    * @description Starts a monster task and fulfills it.
    * If a task is already in progress, it will continue with the current task
    * Turns it in the task master when complete
    */
-  async fulfillMonsterTask() {
+  async doMonsterTask() {
     this.appendJob(new MonsterTaskObjective(this));
   }
 
@@ -523,10 +530,12 @@ export class Character {
   async handleErrors(response: ApiError): Promise<boolean> {
     logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
     switch (response.error.code) {
-      case 486:
+      case 486: // An action is already in progress for this character.
         await sleep(this.data.cooldown, 'cooldown');
         return true;
-      case 497:
+      case 488: // Character has not completed the task. Should not retry completing task
+        return false;
+      case 497: // The character's inventory is full.
         await this.depositAllItems();
         return true;
       case 499:

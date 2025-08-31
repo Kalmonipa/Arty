@@ -3,8 +3,9 @@ import { ObjectiveStatus, ObjectiveTargets } from '../types/ObjectiveData';
 import { Character } from './CharacterClass';
 import { logger, sleep } from '../utils';
 import { getMaps } from '../api_calls/Maps';
-import { actionAcceptNewTask } from '../api_calls/Tasks';
+import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
 import { ApiError } from './ErrorClass';
+import { TaskType } from '../types/types';
 
 export abstract class Objective {
   character: Character;
@@ -48,7 +49,7 @@ export abstract class Objective {
    * @description Gets a new task from the specified task master
    * @returns
    */
-  async startNewTask(taskType: string) {
+  async startNewTask(taskType: TaskType) {
     const maps = (await getMaps(taskType, 'tasks_master')).data;
 
     if (maps.length === 0) {
@@ -71,5 +72,41 @@ export abstract class Objective {
     } else {
       this.character.data = response.data.character;
     }
+  }
+
+  /**
+   * @description Finds the relevant task master and hands in the task
+   */
+  async handInTask(taskType: TaskType) {
+    if (taskType === 'monsters') {
+      logger.info(
+        `Completed ${this.character.data.task_total} fights. Handing in task`,
+      );
+    } else if (taskType === 'items') {
+      logger.info(
+        `Collected ${this.character.data.task_total} items. Handing in task`,
+      );
+    }
+    const maps = (await getMaps(taskType, 'tasks_master')).data;
+
+    if (maps.length === 0) {
+      logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
+      return;
+    }
+
+    const contentLocation = this.character.evaluateClosestMap(maps);
+
+    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+
+    const response = await actionCompleteTask(this.character.data);
+
+    if (response instanceof ApiError) {
+      await this.character.handleErrors(response);
+      // ToDo: handle complete task errors
+    } else {
+      this.character.data = response.data.character;
+    }
+
+    return true;
   }
 }

@@ -6,12 +6,11 @@ import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class UnequipObjective extends Objective {
-  character: Character;
   itemSlot: ItemSlot;
   quantity?: number;
 
   constructor(character: Character, itemSlot: ItemSlot, quantity?: number) {
-    super(`unequip_${itemSlot}`, 'not_started');
+    super(character, `unequip_${itemSlot}`, 'not_started');
     this.character = character;
     this.itemSlot = itemSlot;
     this.quantity = quantity;

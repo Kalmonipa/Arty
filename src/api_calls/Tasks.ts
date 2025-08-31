@@ -5,6 +5,7 @@ import {
   RewardDataResponseSchema,
   RewardDataSchema,
   TaskResponseSchema,
+  TaskTradeResponseSchema,
 } from '../types/types';
 import { logger, sleep } from '../utils';
 
@@ -129,6 +130,68 @@ export async function actionCompleteTask(
     );
 
     return result;
+  } catch (error) {
+    return error;
+  }
+}
+
+export async function actionTasksTrade(
+  character: CharacterSchema,
+  itemCode: string,
+  quantity: number,
+): Promise<ApiError | TaskTradeResponseSchema> {
+  var requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+    body: JSON.stringify({
+      item: itemCode,
+      quantity: quantity,
+    }),
+  };
+
+  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/tasks/trade`);
+
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+
+    if (!response.ok) {
+      var message: string;
+      switch (response.status) {
+        case 474:
+          message = 'The character does not have this task.';
+          break;
+        case 475:
+          message = 'Task already completed or too many items submitted.';
+          break;
+        case 478:
+          message = 'Missing item or insufficient quantity.';
+          break;
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 598:
+          message = 'Tasks Master not found on this map.';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: TaskTradeResponseSchema = await response.json();
+
+    logger.info(
+      `Successfully traded ${result.data.trade.quantity} ${result.data.trade.code} to the task master`,
+    );
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
   } catch (error) {
     return error;
   }

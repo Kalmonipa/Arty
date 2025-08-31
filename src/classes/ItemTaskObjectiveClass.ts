@@ -1,5 +1,9 @@
 import { getMaps } from '../api_calls/Maps';
-import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
+import {
+  actionAcceptNewTask,
+  actionCompleteTask,
+  actionTasksTrade,
+} from '../api_calls/Tasks';
 import { logger, sleep } from '../utils';
 import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
@@ -24,16 +28,30 @@ export class ItemTaskObjective extends Objective {
       this.startNewTask('items');
     }
 
-    const maps = (await getMaps(this.character.data.task, 'monster')).data;
+    while (this.character.data.task_progress < this.character.data.task_total) {
+      // If we need to collect less than 80, gather that amount, otherwise gather 80
+      var numToGather = Math.min(
+        this.character.data.task_total - this.character.data.task_progress,
+        80,
+      );
 
-    if (maps.length === 0) {
-      logger.error(`Cannot find the task target. This shouldn't happen ??`);
-      return;
+      if (
+        numToGather ===
+        this.character.checkQuantityOfItemInInv(this.character.data.task)
+      ) {
+        await actionTasksTrade(
+          this.character.data,
+          this.character.data.task,
+          numToGather,
+        );
+      }
+
+      await this.character.gatherNow(numToGather, this.character.data.task);
+
+      return true;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
-
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+    await this.handInTask('items');
 
     return true;
   }

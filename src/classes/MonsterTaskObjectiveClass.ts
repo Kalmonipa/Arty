@@ -43,61 +43,10 @@ export class MonsterTaskObjective extends Objective {
       this.character.data.task_total - this.character.data.task_progress ===
       0
     ) {
-      logger.info(
-        `Completed ${this.character.data.task_total} fights. Handing in task`,
-      );
-      const maps = (await getMaps('monsters', 'tasks_master')).data;
-
-      if (maps.length === 0) {
-        logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
-        return;
-      }
-
-      const contentLocation = this.character.evaluateClosestMap(maps);
-
-      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
-
-      const response = await actionCompleteTask(this.character.data);
-
-      if (response instanceof ApiError) {
-        if (response.error.code === 499) {
-          logger.warn(
-            `Character is in cooldown. [Code: ${response.error.code}]`,
-          );
-          await sleep(this.character.data.cooldown, 'cooldown');
-        }
-      } else {
-        this.character.data = response.data.character;
-      }
+      await this.handInTask('monsters');
     }
-
     return true;
   }
-
-  // async startNewTask() {
-  //   const maps = (await getMaps('monsters', 'tasks_master')).data;
-
-  //   if (maps.length === 0) {
-  //     logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
-  //     return;
-  //   }
-
-  //   const contentLocation = this.character.evaluateClosestMap(maps);
-
-  //   await this.character.move({ x: contentLocation.x, y: contentLocation.y });
-
-  //   const response = await actionAcceptNewTask(this.character.data);
-
-  //   if (response instanceof ApiError) {
-  //     if (response.error.code === 499) {
-  //       logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-  //       await sleep(this.character.data.cooldown, 'cooldown');
-  //     }
-  //     // ToDo: Handle this somehow
-  //   } else {
-  //     this.character.data = response.data.character;
-  //   }
-  // }
 
   async runPrerequisiteChecks() {
     await this.character.cooldownStatus();
