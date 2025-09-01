@@ -16,55 +16,6 @@ import {
 import { logger, sleep } from '../utils';
 
 /**
- * Hands in a task if all requirements are fulfilled
- * @param characterName
- * @returns {RewardDataResponseSchema}
- */
-export async function completeTask(
-  characterName: string,
-): Promise<RewardDataResponseSchema> {
-  var requestOptions = {
-    method: 'POST',
-    headers: MyHeaders,
-  };
-
-  var apiUrl = new URL(`${ApiUrl}/my/${characterName}/action/task/complete`);
-
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      var message: string;
-      switch (response.status) {
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 487:
-          message = 'The character has no task assigned.';
-          break;
-        case 488: // ToDo: if this gets returned, the char should automatically resume the task objectives
-          message = 'The character has not completed the task.';
-          break;
-        case 497:
-          message = 'The characters inventory is full.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-/**
  * @description craft the specified item
  * @param character
  * @param craftData

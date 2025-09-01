@@ -10,8 +10,8 @@ COPY src/ ./src/
 COPY tsconfig.json ./
 
 RUN npm run build &&\
- addgroup -g 1001 -S arty &&\
- adduser -S arty -u 1001 &&\
+ addgroup -g 1000 -S arty &&\
+ adduser -S arty -u 1000 &&\
  mkdir -p /app/logs &&\
  touch /app/logs/arty.log &&\
  chown -R arty:arty /app

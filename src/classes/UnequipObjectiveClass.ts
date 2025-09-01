@@ -19,7 +19,7 @@ export class UnequipObjective extends Objective {
   async execute(): Promise<boolean> {
     this.startJob();
     const result = await this.unequip(this.itemSlot, this.quantity);
-    this.completeJob();
+    this.completeJob(result);
     this.character.removeJob(this);
     return result;
   }

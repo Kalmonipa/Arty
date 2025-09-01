@@ -52,7 +52,7 @@ export class GatherObjective extends Objective {
       result = await this.gather(this.target.quantity, this.target.code);
     }
 
-    this.completeJob();
+    this.completeJob(result);
     this.character.removeJob(this);
     return result;
   }
@@ -111,7 +111,6 @@ export class GatherObjective extends Objective {
                   return false;
                 }
                 continue;
-              
               } else if (itemInfo.code === '') {
                 logger.info(`No more items to check in inventory`);
               } else {
@@ -137,7 +136,7 @@ export class GatherObjective extends Objective {
       await this.character.evaluateDepositItemsInBank(code);
 
       if (resourceDetails.subtype === 'mob') {
-        await this.gatherMobDrop(
+        return await this.gatherMobDrop(
           { code: resourceDetails.code, quantity: quantity },
           numHeld,
         );
@@ -149,7 +148,12 @@ export class GatherObjective extends Objective {
           }),
         );
       } else {
-        await this.gatherResource(code, quantity, numHeld, remainderToGather);
+        return await this.gatherResource(
+          code,
+          quantity,
+          numHeld,
+          remainderToGather,
+        );
       }
     }
   }
@@ -175,13 +179,14 @@ export class GatherObjective extends Objective {
       const response = await actionGather(this.character.data);
 
       if (response instanceof ApiError) {
-        const shouldRetry = await this.character.handleErrors(response);
+        await this.character.handleErrors(response);
 
         return false;
       } else {
         this.character.data = response.data.character;
       }
     }
+    return true;
   }
 
   async gatherMobDrop(target: SimpleItemSchema, numHeld: number) {
@@ -191,7 +196,8 @@ export class GatherObjective extends Objective {
         url: '/monsters',
       });
     if (mobInfo instanceof ApiError) {
-      logger.error(`Failed to find the mob that drops ${target.code}`);
+      await this.character.handleErrors(mobInfo);
+      return false;
     } else {
       const remainderToGather = target.quantity - numHeld;
 
@@ -203,6 +209,7 @@ export class GatherObjective extends Objective {
 
         numHeld = this.character.checkQuantityOfItemInInv(target.code);
       }
+      return true;
     }
   }
 
@@ -220,7 +227,7 @@ export class GatherObjective extends Objective {
     numHeld: number,
     remainderToGather: number,
   ): Promise<boolean> {
-    logger.info(`Finding resource map type for ${code}`);
+    logger.debug(`Finding resource map type for ${code}`);
 
     const resources = await getResourceInformation({
       query: { drop: code },

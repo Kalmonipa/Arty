@@ -329,12 +329,7 @@ export class Character {
     });
 
     if (moveResponse instanceof ApiError) {
-      logger.warn(
-        `${moveResponse.error.message} [Code: ${moveResponse.error.code}]`,
-      );
-      if (moveResponse.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
+      this.handleErrors(moveResponse);
     } else {
       this.data = moveResponse.data.character;
     }
@@ -526,10 +521,18 @@ export class Character {
 
   /**
    * @description handles the various errors that we may get back from API calls
+   * @returns a boolean stating whether we should retry or not
    */
   async handleErrors(response: ApiError): Promise<boolean> {
-    logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+    if (response.error.message) {
+      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+    }
     switch (response.error.code) {
+      case 404: // Code not found
+        return false;
+      case 422: // Invalid payload
+        logger.error(`Invalid payload [Code: ${response.error.code}]`)
+        return false;
       case 486: // An action is already in progress for this character.
         await sleep(this.data.cooldown, 'cooldown');
         return true;

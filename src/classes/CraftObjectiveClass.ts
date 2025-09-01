@@ -26,7 +26,7 @@ export class CraftObjective extends Objective {
 
     const result = await this.craft(this.target.quantity, this.target.code);
 
-    this.completeJob();
+    this.completeJob(result);
     this.character.removeJob(this);
     return result;
   }

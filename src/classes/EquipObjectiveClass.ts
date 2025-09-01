@@ -33,7 +33,7 @@ export class EquipObjective extends Objective {
       this.quantity,
     );
 
-    this.completeJob();
+    this.completeJob(result);
     this.character.removeJob(this);
     return result;
   }

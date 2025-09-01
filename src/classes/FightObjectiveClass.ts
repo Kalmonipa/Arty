@@ -24,7 +24,7 @@ export class FightObjective extends Objective {
 
     const result = await this.fight(this.target.quantity, this.target.code);
 
-    this.completeJob();
+    this.completeJob(result);
     this.character.removeJob(this);
     return result;
   }

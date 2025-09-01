@@ -40,16 +40,20 @@ export abstract class Objective {
   /**
    * @description Sets the status of the job to 'complete'
    */
-  completeJob() {
+  completeJob(wasSuccess: boolean) {
+    if (wasSuccess) {
     logger.info(`Setting status of ${this.objectiveId} to 'complete'`);
     this.status = 'complete';
+    } else {
+      logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
+      this.status = 'failed';
+    }
   }
 
   /**
-   * @description Gets a new task from the specified task master
-   * @returns
+   * @description Moves to the nearest task master
    */
-  async startNewTask(taskType: TaskType) {
+  async moveToTaskMaster(taskType: TaskType) {
     const maps = (await getMaps(taskType, 'tasks_master')).data;
 
     if (maps.length === 0) {
@@ -60,6 +64,14 @@ export abstract class Objective {
     const contentLocation = this.character.evaluateClosestMap(maps);
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+  }
+
+  /**
+   * @description Gets a new task from the specified task master
+   * @returns
+   */
+  async startNewTask(taskType: TaskType) {
+    await this.moveToTaskMaster(taskType);
 
     const response = await actionAcceptNewTask(this.character.data);
 

@@ -32,7 +32,7 @@ export class DepositObjective extends Objective {
     this.runPrerequisiteChecks();
 
     const result = await this.deposit(this.target.quantity, this.target.code);
-    this.completeJob();
+    this.completeJob(result);
     this.character.removeJob(this);
     return result;
   }

@@ -188,7 +188,7 @@ export async function getAllItemInformation(
 
 /**
  * @description returns information about the specified item
- * @param code 
+ * @param code
  * @returns {ItemResponseSchema}
  */
 export async function getItemInformation(

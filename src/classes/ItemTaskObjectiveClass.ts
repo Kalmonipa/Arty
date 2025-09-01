@@ -4,6 +4,7 @@ import {
   actionCompleteTask,
   actionTasksTrade,
 } from '../api_calls/Tasks';
+import { TaskTradeResponseSchema } from '../types/types';
 import { logger, sleep } from '../utils';
 import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
@@ -19,6 +20,7 @@ export class ItemTaskObjective extends Objective {
   }
 
   async execute(): Promise<boolean> {
+    var result = true;
     await this.runPrerequisiteChecks();
 
     // Check if we have the item alread in inv and bank
@@ -26,6 +28,10 @@ export class ItemTaskObjective extends Objective {
 
     if (this.character.data.task === '') {
       this.startNewTask('items');
+    } else {
+      logger.debug(
+        `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}`,
+      );
     }
 
     while (this.character.data.task_progress < this.character.data.task_total) {
@@ -35,25 +41,44 @@ export class ItemTaskObjective extends Objective {
         80,
       );
 
-      if (
-        numToGather ===
-        this.character.checkQuantityOfItemInInv(this.character.data.task)
-      ) {
-        await actionTasksTrade(
-          this.character.data,
-          this.character.data.task,
-          numToGather,
-        );
+      var numGathered = this.character.checkQuantityOfItemInInv(
+        this.character.data.task,
+      );
+
+      logger.debug(`Num to gather: ${numToGather}`);
+      logger.debug(`Num gathered: ${numGathered}`);
+
+      if (numToGather === numGathered) {
+        logger.debug(`Handing in ${numGathered} ${this.character.data.task}`);
+        await this.moveToTaskMaster('items');
+
+        const taskTradeResponse: ApiError | TaskTradeResponseSchema =
+          await actionTasksTrade(this.character.data, {
+            code: this.character.data.task,
+            quantity: numToGather,
+          });
+        if (taskTradeResponse instanceof ApiError) {
+          logger.warn(taskTradeResponse.message);
+          await this.character.handleErrors(taskTradeResponse);
+
+          result = false;
+          break;
+        } else {
+          this.character.data = taskTradeResponse.data.character;
+        }
       }
 
       await this.character.gatherNow(numToGather, this.character.data.task);
-
-      return true;
     }
 
-    await this.handInTask('items');
+    if (this.character.data.task_total === this.character.data.task_progress) {
+      await this.handInTask('items');
 
-    return true;
+      result = true
+    }
+    this.completeJob(result);
+    this.character.removeJob(this);
+    return result;
   }
 
   async runPrerequisiteChecks() {

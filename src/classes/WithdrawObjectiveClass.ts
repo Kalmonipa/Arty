@@ -21,7 +21,7 @@ export class WithdrawObjective extends Objective {
   async execute(): Promise<boolean> {
     this.startJob();
     const result = await this.withdraw(this.quantity, this.itemCode);
-    this.completeJob();
+    this.completeJob(result);
     this.character.removeJob(this);
     return result;
   }

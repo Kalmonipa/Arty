@@ -4,6 +4,7 @@ import {
   CharacterSchema,
   RewardDataResponseSchema,
   RewardDataSchema,
+  SimpleItemSchema,
   TaskResponseSchema,
   TaskTradeResponseSchema,
 } from '../types/types';
@@ -137,19 +138,18 @@ export async function actionCompleteTask(
 
 export async function actionTasksTrade(
   character: CharacterSchema,
-  itemCode: string,
-  quantity: number,
+  items: SimpleItemSchema,
 ): Promise<ApiError | TaskTradeResponseSchema> {
   var requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify({
-      item: itemCode,
-      quantity: quantity,
+      code: items.code,
+      quantity: items.quantity,
     }),
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/tasks/trade`);
+  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/trade`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
@@ -192,6 +192,7 @@ export async function actionTasksTrade(
       result.data.cooldown.remaining_seconds,
       result.data.cooldown.reason,
     );
+    return result;
   } catch (error) {
     return error;
   }
