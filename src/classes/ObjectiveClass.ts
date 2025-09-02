@@ -76,11 +76,7 @@ export abstract class Objective {
     const response = await actionAcceptNewTask(this.character.data);
 
     if (response instanceof ApiError) {
-      if (response.error.code === 499) {
-        logger.warn(`Character is in cooldown. [Code: ${response.error.code}]`);
-        await sleep(this.character.data.cooldown, 'cooldown');
-      }
-      // ToDo: Handle this somehow
+      await this.character.handleErrors(response)
     } else {
       this.character.data = response.data.character;
     }

@@ -11,67 +11,41 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        char.equip('life_amulet', 'amulet');
-        //char.doMonsterTask();
-        // var count = 0;
-        // while (count < 30) {
-        //   char.gatherJob(10, 'red_slimeball');
-        //   char.depositJob(10, 'red_slimeball');
-        //   count++;
-        // }
-        //char.equip('iron_sword', 'weapon');
+        var count = 0;
+        while (count < 30) {
+          char.gather(100, 'red_slimeball');
+          count++;
+        }
+        var count = 0;
+        while (count < 40) {
+          char.gather(80, 'blue_slimeball');
+          count++;
+        }
         break;
       case 'JumpyJimmy':
         var count = 0;
-        while (count < 3) {
-          char.withdraw(70, 'spruce_wood');
-          char.craft(7, 'spruce_plank');
-          char.deposit(7, 'spruce_plank');
-          count++;
-        }
-        //   char.withdrawJob(30, 'ash_wood');
-        //   char.craftJob(3, 'ash_plank');
-        //   char.depositJob(3, 'ash_plank');
-        // char.withdrawJob(60, 'spruce_wood')
-        // char.craftJob(6, 'spruce_plank');
-        // char.withdrawJob(3, 'red_slimeball');
-        // char.withdrawJob(3, 'yellow_slimeball');
-        // char.withdrawJob(3, 'green_slimeball');
-        // char.withdrawJob(3, 'blue_slimeball');
-        // char.craftJob(1, 'slime_shield');
-        // char.depositJob(1, 'slime_shield');
-
-        var count = 0;
-        while (count < 30) {
-          char.craft(80, 'cooked_trout');
-          char.deposit(80, 'cooked_trout');
+        while (count < 100) {
+          char.gather(90, 'sunflower')
+          //char.craft(30, 'small_health_potions')
+          char.deposit(90, 'sunflower')
           count++;
         }
         break;
       case 'ZippyZoe':
-        char.craft(5, 'life_amulet');
-        char.equip('life_amulet', 'amulet');
-        char.deposit(4, 'life_amulet');
-        // var count = 0;
-        // while (count < 5) {
-        //   char.withdraw(60, 'copper_bar');
-        //   char.craft(10, 'copper_ring');
-        //   char.deposit(10, 'copper_ring');
-        //   // char.gatherJob(50, 'ash_wood');
-        //   // char.craftJob(5, 'ash_plank');
-        //   // char.depositJob(5, 'ash_plank');
-        //   count++;
-        // }
+        var count = 0;
+        while (count < 100) {
+          char.gather(90, 'sunflower')
+          char.craft(30, 'small_health_potions')
+          char.deposit(30, 'small_health_potions')
+          count++;
+        }
         break;
       case 'TimidTom':
-        char.doItemsTask();
-        // var count = 0;
-        // while (count < 200) {
-        //   char.gather(80, 'coal');
-        //   //char.craftJob(8, 'iron_bar');
-        //   char.deposit(80, 'coal');
-        //   count++;
-        // }
+        var count = 0;
+        while (count < 20) {
+          char.doItemsTask();
+          count++;
+        }
         break;
       case 'BouncyBella':
         var count = 0;

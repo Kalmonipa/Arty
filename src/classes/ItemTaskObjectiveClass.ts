@@ -27,7 +27,7 @@ export class ItemTaskObjective extends Objective {
     // Gather the required items
 
     if (this.character.data.task === '') {
-      this.startNewTask('items');
+      await this.startNewTask('items');
     } else {
       logger.debug(
         `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}`,
@@ -48,8 +48,8 @@ export class ItemTaskObjective extends Objective {
       logger.debug(`Num to gather: ${numToGather}`);
       logger.debug(`Num gathered: ${numGathered}`);
 
-      if (numToGather === numGathered) {
-        logger.debug(`Handing in ${numGathered} ${this.character.data.task}`);
+      if (numToGather <= numGathered) {
+        logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
         await this.moveToTaskMaster('items');
 
         const taskTradeResponse: ApiError | TaskTradeResponseSchema =
@@ -66,9 +66,9 @@ export class ItemTaskObjective extends Objective {
         } else {
           this.character.data = taskTradeResponse.data.character;
         }
+      } else {
+        await this.character.gatherNow(numToGather, this.character.data.task);
       }
-
-      await this.character.gatherNow(numToGather, this.character.data.task);
     }
 
     if (this.character.data.task_total === this.character.data.task_progress) {

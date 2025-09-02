@@ -54,7 +54,7 @@ export async function actionAcceptNewTask(
     const result: TaskResponseSchema = await response.json();
 
     logger.info(
-      `Accepted task to fight ${result.data.task.total} ${result.data.task.code}`,
+      `Accepted task for ${result.data.task.total} ${result.data.task.code}`,
     );
     var rewards: string = '';
     for (const reward of result.data.task.rewards.items) {
