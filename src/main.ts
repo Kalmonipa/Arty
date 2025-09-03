@@ -1,10 +1,14 @@
 import { Character } from './classes/CharacterClass';
 import { CharName } from './constants';
 import { getCharacter } from './api_calls/Character';
+import { buildListOfUsefulWeapons } from './utils';
 
 let shouldStopActions = false;
 
+export const weaponMap = buildListOfUsefulWeapons()
+
 async function main() {
+
   while (!shouldStopActions) {
     const charData = await getCharacter(CharName);
     const char = new Character(charData);

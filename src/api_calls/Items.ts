@@ -137,9 +137,14 @@ export async function actionUnequipItem(
   }
 }
 
+/**
+ * @description Uses /items to get all the items that match the input parameters
+ * @param data 
+ * @returns 
+ */
 export async function getAllItemInformation(
   data: GetAllItemsItemsGetData,
-): Promise<GetAllItemsItemsGetResponse> {
+): Promise<GetAllItemsItemsGetResponse | ApiError> {
   var requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -169,7 +174,7 @@ export async function getAllItemInformation(
     apiUrl.searchParams.set('size', data.query.size.toString());
   }
   if (data.query.type) {
-    apiUrl.searchParams.set('skill', data.query.type);
+    apiUrl.searchParams.set('type', data.query.type);
   }
 
   try {
