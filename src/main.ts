@@ -12,55 +12,65 @@ async function main() {
     switch (CharName) {
       case 'LongLegLarry':
         var count = 0;
-        while (count < 30) {
-          char.gather(100, 'red_slimeball');
+        while (count < 4) {
+          char.gather(80, 'cowhide');
           count++;
         }
         var count = 0;
-        while (count < 40) {
+        while (count < 4) {
           char.gather(80, 'blue_slimeball');
+          count++;
+        }
+        var count = 0;
+        while (count < 4) {
+          char.gather(80, 'wool');
           count++;
         }
         break;
       case 'JumpyJimmy':
-        var count = 0;
-        while (count < 100) {
-          char.gather(90, 'sunflower')
-          //char.craft(30, 'small_health_potions')
-          char.deposit(90, 'sunflower')
-          count++;
-        }
+        // var count = 0;
+        // while (count < 50) {
+        char.gather(90, 'sunflower', true);
+        // char.craft(22, 'air_boost_potion');
+        // char.deposit(22, 'air_boost_potion');
+        // char.craft(25, 'fire_boost_potion');
+        // char.deposit(25, 'fire_boost_potion');
+        //   count++;
+        // }
         break;
       case 'ZippyZoe':
-        var count = 0;
-        while (count < 100) {
-          char.gather(90, 'sunflower')
-          char.craft(30, 'small_health_potions')
-          char.deposit(30, 'small_health_potions')
-          count++;
-        }
+        // var count = 0;
+        // while (count < 50) {
+        //  char.gather(90, 'sunflower');
+        // char.craft(10, 'earth_boost_potion');
+        // char.deposit(10, 'earth_boost_potion');
+        // char.craft(10, 'water_boost_potion');
+        // char.deposit(10, 'water_boost_potion');
+        char.craft(48, 'fire_boost_potion');
+        char.deposit(48, 'fire_boost_potion');
+        //  count++;
+        //}
         break;
       case 'TimidTom':
         var count = 0;
-        while (count < 20) {
+        while (count < 5) {
           char.doItemsTask();
           count++;
         }
         break;
       case 'BouncyBella':
         var count = 0;
-        while (count < 10) {
-          char.withdraw(60, 'copper_bar');
-          char.craft(10, 'copper_ring');
-          char.deposit(10, 'copper_ring');
+        while (count < 5) {
+          char.gather(80, 'gudgeon');
+          char.craft(80, 'cooked_gudgeon');
+          char.deposit(80, 'cooked_gudgeon');
           count++;
         }
-        // Level mining
         var count = 0;
-        while (count < 200) {
-          char.gather(80, 'iron_ore');
-          //char.craftJob(8, 'iron_bar');
-          char.deposit(80, 'iron_ore');
+        while (count < 100) {
+          char.gather(80, 'shrimp');
+          char.craft(80, 'cooked_shrimp');
+          char.deposit(80, 'cooked_shrimp');
           count++;
         }
         break;

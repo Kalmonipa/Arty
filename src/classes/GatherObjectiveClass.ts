@@ -19,11 +19,13 @@ import { Objective } from './ObjectiveClass';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
+  excludeBankCheck?: boolean;
 
-  constructor(character: Character, target: ObjectiveTargets) {
+  constructor(character: Character, target: ObjectiveTargets, excludeBankCheck?: boolean) {
     super(character, `gather_${target.quantity}_${target.code}`, 'not_started');
     this.character = character;
     this.target = target;
+    this.excludeBankCheck = excludeBankCheck;
   }
 
   async execute(): Promise<boolean> {
@@ -33,16 +35,19 @@ export class GatherObjective extends Objective {
     await this.runPrerequisiteChecks();
 
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+    var numInBank = 0
 
-    const numInBank = await this.character.checkQuantityOfItemInBank(
-      this.target.code,
-    );
+    if (!this.excludeBankCheck) {
+      numInBank = await this.character.checkQuantityOfItemInBank(
+        this.target.code,
+      );
+    }
 
     if (numInInv >= this.target.quantity) {
       logger.info(
         `${numInInv} ${this.target.code} in inventory already. No need to collect more`,
       );
-      return true;
+      result = true;
     } else if (numInBank >= this.target.quantity) {
       logger.info(
         `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${this.target.quantity}`,

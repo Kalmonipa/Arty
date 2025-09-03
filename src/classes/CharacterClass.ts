@@ -482,12 +482,14 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gather(quantity: number, code: string) {
+  async gather(quantity: number, code: string, excludeBankCheck?: boolean) {
     this.appendJob(
       new GatherObjective(this, {
         code: code,
         quantity: quantity,
-      }),
+      },
+      excludeBankCheck
+    ),
     );
   }
 
@@ -531,7 +533,7 @@ export class Character {
       case 404: // Code not found
         return false;
       case 422: // Invalid payload
-        logger.error(`Invalid payload [Code: ${response.error.code}]`)
+        logger.error(`Invalid payload [Code: ${response.error.code}]`);
         return false;
       case 486: // An action is already in progress for this character.
         await sleep(this.data.cooldown, 'cooldown');

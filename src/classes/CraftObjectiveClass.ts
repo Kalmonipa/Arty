@@ -47,7 +47,7 @@ export class CraftObjective extends Objective {
     );
 
     if (response instanceof ApiError) {
-      logger.warn(`${response.error.message} [Code: ${response.error.code}]`);
+      this.character.handleErrors(response);
     } else if (response.craft) {
       for (const craftingItem of response.craft.items) {
         logger.debug(`Checking ${craftingItem.code}`);
@@ -55,9 +55,7 @@ export class CraftObjective extends Objective {
           await getItemInformation(craftingItem.code);
 
         if (craftingItemInfo instanceof ApiError) {
-          logger.warn(
-            `${craftingItemInfo.error.message} [Code: ${craftingItemInfo.error.code}]`,
-          );
+          await this.character.handleErrors(craftingItemInfo);
         } else {
           var numInInv = this.character.checkQuantityOfItemInInv(
             craftingItem.code,

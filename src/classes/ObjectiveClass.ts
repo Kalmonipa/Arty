@@ -42,8 +42,8 @@ export abstract class Objective {
    */
   completeJob(wasSuccess: boolean) {
     if (wasSuccess) {
-    logger.info(`Setting status of ${this.objectiveId} to 'complete'`);
-    this.status = 'complete';
+      logger.info(`Setting status of ${this.objectiveId} to 'complete'`);
+      this.status = 'complete';
     } else {
       logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
       this.status = 'failed';
@@ -76,7 +76,7 @@ export abstract class Objective {
     const response = await actionAcceptNewTask(this.character.data);
 
     if (response instanceof ApiError) {
-      await this.character.handleErrors(response)
+      await this.character.handleErrors(response);
     } else {
       this.character.data = response.data.character;
     }

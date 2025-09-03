@@ -17,7 +17,7 @@ export class MonsterTaskObjective extends Objective {
   // ToDo:
   //  - If 3 fights lost, cancel job. We don't want to keep losing fights
   async execute(): Promise<boolean> {
-    var result: boolean = false
+    var result: boolean = false;
     await this.runPrerequisiteChecks();
 
     if (this.character.data.task === '') {
@@ -40,9 +40,7 @@ export class MonsterTaskObjective extends Objective {
       this.character.data.task,
     );
 
-    if (
-      this.character.data.task_total === this.character.data.task_progress
-    ) {
+    if (this.character.data.task_total === this.character.data.task_progress) {
       result = await this.handInTask('monsters');
     }
     this.completeJob(result);
