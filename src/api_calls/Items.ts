@@ -139,8 +139,8 @@ export async function actionUnequipItem(
 
 /**
  * @description Uses /items to get all the items that match the input parameters
- * @param data 
- * @returns 
+ * @param data
+ * @returns
  */
 export async function getAllItemInformation(
   data: GetAllItemsItemsGetData,

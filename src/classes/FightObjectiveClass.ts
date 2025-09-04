@@ -76,9 +76,9 @@ export class FightObjective extends Objective {
         const healthStatus: HealthStatus = this.character.checkHealth();
 
         if (healthStatus.percentage !== 100) {
-          if (healthStatus.difference < 300) {
+          //if (healthStatus.difference < 300) {
             await this.character.rest();
-          } //else {
+          //} //else {
           // Eat food
           //}
         }

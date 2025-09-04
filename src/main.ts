@@ -5,55 +5,55 @@ import { buildListOfUsefulWeapons } from './utils';
 
 let shouldStopActions = false;
 
-export const weaponMap = buildListOfUsefulWeapons()
-
 async function main() {
+  const weaponMap = await buildListOfUsefulWeapons();
 
   while (!shouldStopActions) {
     const charData = await getCharacter(CharName);
-    const char = new Character(charData);
+    const char = new Character(charData, weaponMap);
 
     switch (CharName) {
       case 'LongLegLarry':
-        var count = 0;
-        while (count < 4) {
-          char.gather(80, 'cowhide');
-          count++;
-        }
-        var count = 0;
-        while (count < 4) {
-          char.gather(80, 'blue_slimeball');
-          count++;
-        }
-        var count = 0;
-        while (count < 4) {
-          char.gather(80, 'wool');
-          count++;
-        }
+        char.gather(200, 'red_slimeball');
+        char.deposit(0, 'red_slimeball')
+        //char.deposit(17000, 'gold')
+        //var count = 0;
+        //while (count < 4) {
+        //char.fight(100, 'flying_snake');
+        //  count++;
+        //}
+        //char.doMonsterTask();
         break;
       case 'JumpyJimmy':
-        // var count = 0;
-        // while (count < 50) {
-        char.gather(90, 'sunflower', true);
+        //char.gather(10, 'copper_ore')
+        var count = 0;
+        while (count < 15) {
+        char.gather(80, 'sunflower', true);
+        char.deposit(80, 'sunflower')
         // char.craft(22, 'air_boost_potion');
         // char.deposit(22, 'air_boost_potion');
         // char.craft(25, 'fire_boost_potion');
         // char.deposit(25, 'fire_boost_potion');
-        //   count++;
-        // }
+          count++;
+        }
         break;
       case 'ZippyZoe':
-        // var count = 0;
-        // while (count < 50) {
-        //  char.gather(90, 'sunflower');
-        // char.craft(10, 'earth_boost_potion');
+        var count = 0;
+        while (count < 15) {
+        // char.craft(25, 'fire_boost_potion');
+        // char.deposit(25, 'fire_boost_potion');
+        // char.craft(25, 'fire_boost_potion');
+        // char.deposit(25, 'fire_boost_potion');
+        char.gather(80, 'sunflower', true);
+        char.deposit(80, 'sunflower')
+        //char.deposit(90, 'sunflower');
         // char.deposit(10, 'earth_boost_potion');
         // char.craft(10, 'water_boost_potion');
         // char.deposit(10, 'water_boost_potion');
-        char.craft(48, 'fire_boost_potion');
-        char.deposit(48, 'fire_boost_potion');
-        //  count++;
-        //}
+        //char.craft(48, 'fire_boost_potion');
+        //char.deposit(48, 'fire_boost_potion');
+         count++;
+        }
         break;
       case 'TimidTom':
         var count = 0;

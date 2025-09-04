@@ -6,14 +6,14 @@ import { getResourceInformation } from '../api_calls/Resources';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   DestinationSchema,
+  GatheringSkill,
   GetAllMonstersMonstersGetResponse,
   ItemSchema,
   SimpleItemSchema,
 } from '../types/types';
-import { logger, sleep } from '../utils';
+import { isGatheringSkill, logger } from '../utils';
 import { Character } from './CharacterClass';
 import { CraftObjective } from './CraftObjectiveClass';
-import { EquipObjective } from './EquipObjectiveClass';
 import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
@@ -21,7 +21,11 @@ export class GatherObjective extends Objective {
   target: ObjectiveTargets;
   excludeBankCheck?: boolean;
 
-  constructor(character: Character, target: ObjectiveTargets, excludeBankCheck?: boolean) {
+  constructor(
+    character: Character,
+    target: ObjectiveTargets,
+    excludeBankCheck?: boolean,
+  ) {
     super(character, `gather_${target.quantity}_${target.code}`, 'not_started');
     this.character = character;
     this.target = target;
@@ -35,7 +39,7 @@ export class GatherObjective extends Objective {
     await this.runPrerequisiteChecks();
 
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
-    var numInBank = 0
+    var numInBank = 0;
 
     if (!this.excludeBankCheck) {
       numInBank = await this.character.checkQuantityOfItemInBank(
@@ -102,31 +106,14 @@ export class GatherObjective extends Objective {
         continue;
       } else {
         if (
-          !(await this.character.checkWeaponForEffects(resourceDetails.subtype))
+          !(await this.character.checkWeaponForEffects(
+            resourceDetails.subtype,
+          )) &&
+          isGatheringSkill(resourceDetails.subtype)
         ) {
-          //
-          for (const item of this.character.data.inventory) {
-            if (item.quantity > 0) {
-              const itemInfo = await getItemInformation(item.code);
-              if (itemInfo instanceof ApiError) {
-                const shouldRetry = await this.character.handleErrors(itemInfo);
-
-                if (!shouldRetry || attempt === maxRetries) {
-                  logger.error(`Item info failed after ${attempt} attempts`);
-                  return false;
-                }
-                continue;
-              } else if (itemInfo.code === '') {
-                logger.info(`No more items to check in inventory`);
-              } else {
-                for (const effect of itemInfo.effects) {
-                  if (effect.code === resourceDetails.subtype) {
-                    this.character.equipNow(item.code, 'weapon'); // ToDo: apparently this doesn't work
-                  }
-                }
-              }
-            }
-          }
+          await this.equipBestWeapon(
+            resourceDetails.subtype as GatheringSkill,
+          );
           // ToDo:
           // - Build a cache of all items that are useful for each type of gathering
           //    - Use /items with type=weapon and find weapons that help with
@@ -282,4 +269,41 @@ export class GatherObjective extends Objective {
     }
     return false;
   }
+
+  async findBestWeaponForJob(typeOfActivity: GatheringSkill): Promise<string> {
+    logger.debug(`Type of activity is ${typeOfActivity}`);
+    const weapons = this.character.weaponMap[typeOfActivity];
+    logger.debug(`Found ${weapons?.length || 0} weapons for ${typeOfActivity}`);
+
+    if (!weapons || weapons.length === 0) {
+      logger.debug(`No weapons found for ${typeOfActivity}`);
+      return;
+    }
+
+    this.character.weaponMap[typeOfActivity].forEach((weapon) => {
+      logger.debug(`${weapon.code}`);
+    });
+  }
+
+    /**
+   * @description Equips the best available item for the gathering task
+   */
+  async equipBestWeapon(gatheringType: GatheringSkill) {
+    const weapons = this.character.weaponMap[gatheringType]
+    for(var ind = weapons.length-1; ind >= 0; ind--) {
+      if (weapons[ind].level <= this.character.getCharacterLevel(gatheringType)) {
+        logger.debug(`Attempting to equip ${weapons[ind].name}`)
+        if (this.character.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
+          await this.character.equipNow(weapons[ind].code, 'weapon')
+          return
+        } else if (await this.character.checkQuantityOfItemInBank(weapons[ind].code) > 0) {
+          await this.character.withdrawNow(1, weapons[ind].code)
+          await this.character.equipNow(weapons[ind].code, 'weapon')
+          return
+        } else {
+          logger.debug(`Can't find any ${weapons[ind].name}`)
+        }
+      }
+    }
+  } 
 }

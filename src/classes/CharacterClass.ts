@@ -9,10 +9,14 @@ import { HealthStatus } from '../types/CharacterData';
 import {
   BankItemTransactionResponseSchema,
   CharacterSchema,
+  CraftSkill,
   DestinationSchema,
+  GatheringSkill,
+  ItemSchema,
   ItemSlot,
   MapSchema,
   SimpleItemSchema,
+  Skill,
 } from '../types/types';
 import { logger, sleep } from '../utils';
 import { CraftObjective } from './CraftObjectiveClass';
@@ -31,13 +35,22 @@ import { ItemTaskObjective } from './ItemTaskObjectiveClass';
 export class Character {
   data: CharacterSchema;
   jobList: Objective[] = [];
+  weaponMap: Record<GatheringSkill, ItemSchema[]>;
 
   // Max default number of slots. Can be increased with a backpack
   maxInventorySlots = 20;
 
-  constructor(data: CharacterSchema) {
+  constructor(
+    data: CharacterSchema,
+    weaponMap: Record<GatheringSkill, ItemSchema[]>,
+  ) {
     this.data = data;
+    this.weaponMap = weaponMap;
   }
+
+  /********
+   * Job functions
+   ********/
 
   /**
    * Adds an objective to the end of the job list
@@ -101,6 +114,10 @@ export class Character {
     // }
   }
 
+    /********
+   * Character detail functions
+   ********/
+
   /**
    * Returns the percentage of health we have and what is needed to get to 100%
    * @param character
@@ -123,6 +140,33 @@ export class Character {
       return foundItem.quantity;
     } else {
       return 0;
+    }
+  }
+
+  /**
+   * @description gets the level of a specific skill. Returns the character level if no parameter passed in
+   * @returns {number}
+   */
+  getCharacterLevel(skillName?: Skill): number {
+    switch (skillName) {
+      case 'alchemy':
+        return this.data.alchemy_level
+      case 'cooking':
+        return this.data.cooking_level
+      case 'fishing':
+        return this.data.fishing_level
+      case 'gearcrafting':
+        return this.data.gearcrafting_level
+      case 'jewelrycrafting':
+        return this.data.jewelrycrafting_level
+      case 'mining':
+        return this.data.mining_level
+      case 'weaponcrafting':
+        return this.data.weaponcrafting_level
+      case 'woodcutting':
+        return this.data.woodcutting_level
+      default:
+        return this.data.level
     }
   }
 
@@ -150,6 +194,7 @@ export class Character {
    * Checks if the character is in cooldown. Sleep until if finishes if yes
    * @param character
    * @returns {boolean}
+   * @todo I don't think this needs to return anything?
    */
   async cooldownStatus() {
     const targetDate = new Date(this.data.cooldown_expiration);
@@ -225,7 +270,11 @@ export class Character {
       logger.info(weaponDetails.message);
       return false;
     } else {
-      if (weaponDetails.type === 'weapon' && typeOfActivity === 'mob') {
+      if (
+        weaponDetails.type === 'weapon' &&
+        weaponDetails.subtype === '' &&
+        typeOfActivity === 'mob'
+      ) {
         isEffective = true;
       } else if (weaponDetails.effects) {
         for (const effect of weaponDetails.effects) {
@@ -342,12 +391,7 @@ export class Character {
     const restResponse = await actionRest(this.data);
 
     if (restResponse instanceof ApiError) {
-      logger.warn(
-        `${restResponse.error.message} [Code: ${restResponse.error.code}]`,
-      );
-      if (restResponse.error.code === 499) {
-        await sleep(this.data.cooldown, 'cooldown');
-      }
+      this.handleErrors(restResponse);
     } else {
       logger.info(
         `Recovered ${restResponse.data.hp_restored} health from resting`,
@@ -484,12 +528,14 @@ export class Character {
    */
   async gather(quantity: number, code: string, excludeBankCheck?: boolean) {
     this.appendJob(
-      new GatherObjective(this, {
-        code: code,
-        quantity: quantity,
-      },
-      excludeBankCheck
-    ),
+      new GatherObjective(
+        this,
+        {
+          code: code,
+          quantity: quantity,
+        },
+        excludeBankCheck,
+      ),
     );
   }
 

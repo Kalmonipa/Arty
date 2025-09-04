@@ -1,5 +1,11 @@
 import pino from 'pino';
-import { CharacterLeaderboardType, CraftSkill, GetAllItemsItemsGetResponse, ItemSchema } from './types/types';
+import {
+  CharacterLeaderboardType,
+  CraftSkill,
+  GatheringSkill,
+  GetAllItemsItemsGetResponse,
+  ItemSchema,
+} from './types/types';
 import { getAllItemInformation } from './api_calls/Items';
 import { ApiError } from './classes/ErrorClass';
 
@@ -53,42 +59,51 @@ export const sleep = (cooldown: number, reason: string) => {
  * @description Builds a map of all the tools that help specific skills
  * @returns {Record<CraftSkill, ItemSchema[]>}
  */
-export async function buildListOfUsefulWeapons(): Promise<Record<CraftSkill, ItemSchema[]>[]> {
+export async function buildListOfUsefulWeapons(): Promise<
+  Record<GatheringSkill, ItemSchema[]>
+> {
+  logger.debug(`Building map of weapons`);
 
-  const craftSkills: CraftSkill[] = [
-    'weaponcrafting',
-    'gearcrafting', 
-    'jewelrycrafting',
-    'cooking',
+  const craftSkills: GatheringSkill[] = [
+    'fishing',
     'woodcutting',
     'mining',
-    'alchemy'
+    'alchemy',
   ];
 
-  var weaponMap: Record<CraftSkill, ItemSchema[]> = {} as Record<CraftSkill, ItemSchema[]>
+  var weaponMap: Record<GatheringSkill, ItemSchema[]> = {} as Record<
+    GatheringSkill,
+    ItemSchema[]
+  >;
 
-  craftSkills.forEach(skill => {
+  craftSkills.forEach((skill) => {
     weaponMap[skill] = [];
   });
 
-  const allWeapons: ApiError | GetAllItemsItemsGetResponse = await getAllItemInformation({query: { type: 'weapon'}, url: '/items'})
+  const allWeapons: ApiError | GetAllItemsItemsGetResponse =
+    await getAllItemInformation({ query: { type: 'weapon' }, url: '/items' });
   if (allWeapons instanceof ApiError) {
-    logger.error(`Failed to build list of useful weapons: ${allWeapons}`)
+    logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
   }
 
-  allWeapons.data.forEach(weapon => {
+  allWeapons.data.forEach((weapon) => {
     if (weapon.effects) {
-      weapon.effects.forEach(effect => {
-        if (craftSkills.includes(effect.code as CraftSkill)) {
-          const skillArray = weaponMap[effect.code as CraftSkill];
+      weapon.effects.forEach((effect) => {
+        if (craftSkills.includes(effect.code as GatheringSkill)) {
+          const skillArray = weaponMap[effect.code as GatheringSkill];
           if (skillArray && !skillArray.includes(weapon)) {
+            logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
             skillArray.push(weapon);
           }
         }
-      })
+      });
     }
   });
 
-  return []
+  return weaponMap;
+}
+
+export function isGatheringSkill(value: string): value is GatheringSkill {
+  return ['fishing', 'woodcutting', 'mining', 'alchemy'].includes(value);
 }
