@@ -111,7 +111,7 @@ export class GatherObjective extends Objective {
           )) &&
           isGatheringSkill(resourceDetails.subtype)
         ) {
-          await this.equipBestWeapon(
+          await this.character.equipBestWeapon(
             resourceDetails.subtype as GatheringSkill,
           );
           // ToDo:
@@ -269,41 +269,4 @@ export class GatherObjective extends Objective {
     }
     return false;
   }
-
-  async findBestWeaponForJob(typeOfActivity: GatheringSkill): Promise<string> {
-    logger.debug(`Type of activity is ${typeOfActivity}`);
-    const weapons = this.character.weaponMap[typeOfActivity];
-    logger.debug(`Found ${weapons?.length || 0} weapons for ${typeOfActivity}`);
-
-    if (!weapons || weapons.length === 0) {
-      logger.debug(`No weapons found for ${typeOfActivity}`);
-      return;
-    }
-
-    this.character.weaponMap[typeOfActivity].forEach((weapon) => {
-      logger.debug(`${weapon.code}`);
-    });
-  }
-
-    /**
-   * @description Equips the best available item for the gathering task
-   */
-  async equipBestWeapon(gatheringType: GatheringSkill) {
-    const weapons = this.character.weaponMap[gatheringType]
-    for(var ind = weapons.length-1; ind >= 0; ind--) {
-      if (weapons[ind].level <= this.character.getCharacterLevel(gatheringType)) {
-        logger.debug(`Attempting to equip ${weapons[ind].name}`)
-        if (this.character.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
-          await this.character.equipNow(weapons[ind].code, 'weapon')
-          return
-        } else if (await this.character.checkQuantityOfItemInBank(weapons[ind].code) > 0) {
-          await this.character.withdrawNow(1, weapons[ind].code)
-          await this.character.equipNow(weapons[ind].code, 'weapon')
-          return
-        } else {
-          logger.debug(`Can't find any ${weapons[ind].name}`)
-        }
-      }
-    }
-  } 
 }

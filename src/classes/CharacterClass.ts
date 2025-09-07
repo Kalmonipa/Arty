@@ -31,6 +31,7 @@ import { WithdrawObjective } from './WithdrawObjectiveClass';
 import { MonsterTaskObjective } from './MonsterTaskObjectiveClass';
 import { getBankItems } from '../api_calls/Bank';
 import { ItemTaskObjective } from './ItemTaskObjectiveClass';
+import { TrainFishingObjective } from './TrainFishingObjectiveClass';
 
 export class Character {
   data: CharacterSchema;
@@ -114,7 +115,7 @@ export class Character {
     // }
   }
 
-    /********
+  /********
    * Character detail functions
    ********/
 
@@ -150,23 +151,23 @@ export class Character {
   getCharacterLevel(skillName?: Skill): number {
     switch (skillName) {
       case 'alchemy':
-        return this.data.alchemy_level
+        return this.data.alchemy_level;
       case 'cooking':
-        return this.data.cooking_level
+        return this.data.cooking_level;
       case 'fishing':
-        return this.data.fishing_level
+        return this.data.fishing_level;
       case 'gearcrafting':
-        return this.data.gearcrafting_level
+        return this.data.gearcrafting_level;
       case 'jewelrycrafting':
-        return this.data.jewelrycrafting_level
+        return this.data.jewelrycrafting_level;
       case 'mining':
-        return this.data.mining_level
+        return this.data.mining_level;
       case 'weaponcrafting':
-        return this.data.weaponcrafting_level
+        return this.data.weaponcrafting_level;
       case 'woodcutting':
-        return this.data.woodcutting_level
+        return this.data.woodcutting_level;
       default:
-        return this.data.level
+        return this.data.level;
     }
   }
 
@@ -293,6 +294,45 @@ export class Character {
     }
   }
 
+  async findBestWeaponForJob(typeOfActivity: GatheringSkill): Promise<string> {
+    logger.debug(`Type of activity is ${typeOfActivity}`);
+    const weapons = this.weaponMap[typeOfActivity];
+    logger.debug(`Found ${weapons?.length || 0} weapons for ${typeOfActivity}`);
+
+    if (!weapons || weapons.length === 0) {
+      logger.debug(`No weapons found for ${typeOfActivity}`);
+      return;
+    }
+
+    this.weaponMap[typeOfActivity].forEach((weapon) => {
+      logger.debug(`${weapon.code}`);
+    });
+  }
+
+  /**
+   * @description Equips the best available item for the gathering task
+   */
+  async equipBestWeapon(gatheringType: GatheringSkill) {
+    const weapons = this.weaponMap[gatheringType];
+    for (var ind = weapons.length - 1; ind >= 0; ind--) {
+      if (weapons[ind].level <= this.getCharacterLevel(gatheringType)) {
+        logger.debug(`Attempting to equip ${weapons[ind].name}`);
+        if (this.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
+          await this.equipNow(weapons[ind].code, 'weapon');
+          return;
+        } else if (
+          (await this.checkQuantityOfItemInBank(weapons[ind].code)) > 0
+        ) {
+          await this.withdrawNow(1, weapons[ind].code);
+          await this.equipNow(weapons[ind].code, 'weapon');
+          return;
+        } else {
+          logger.debug(`Can't find any ${weapons[ind].name}`);
+        }
+      }
+    }
+  }
+
   /********
    * Inventory functions
    ********/
@@ -312,6 +352,7 @@ export class Character {
    * @returns {boolean}
    *  - true means bank was visited and items deposited
    *  - false means nothing happened
+   * @todo This should move back to the original location after depositing
    */
   async evaluateDepositItemsInBank(exception?: string): Promise<boolean> {
     let usedInventorySpace = this.getInventoryFullness();
@@ -550,6 +591,13 @@ export class Character {
       }),
     );
     await this.jobList[0].execute(this);
+  }
+
+  /**
+   * @description levels the fishing skill to the target level
+   */
+  async levelFishingTo(targetLevel: number) {
+    this.appendJob(new TrainFishingObjective(this, 'fishing', targetLevel));
   }
 
   /**

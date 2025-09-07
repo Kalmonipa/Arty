@@ -67,7 +67,7 @@ export class FightObjective extends Objective {
       for (var count = 0; count < quantity; count++) {
         logger.info(`Fought ${count}/${quantity} ${code}s`);
 
-        // Check inventory space to make sure we are less than 90% full
+        // ToDo: the evaluate function should move back to the original location if depositing
         if (await this.character.evaluateDepositItemsInBank(code)) {
           // If items were deposited, we need to move back to the gathering location
           await this.character.move(contentLocation);
@@ -77,7 +77,7 @@ export class FightObjective extends Objective {
 
         if (healthStatus.percentage !== 100) {
           //if (healthStatus.difference < 300) {
-            await this.character.rest();
+          await this.character.rest();
           //} //else {
           // Eat food
           //}
