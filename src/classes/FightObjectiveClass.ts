@@ -1,11 +1,20 @@
 import { actionFight } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
-import { logger, sleep } from '../utils';
+import { logger } from '../utils';
 import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 import { ObjectiveTargets } from '../types/ObjectiveData';
+
+/**
+ * @todo
+ * - Eat food instead of resting to save time. Should go into a fight with ~50 food. Restock when less than 10(?)
+ * - Check health potions in utility slot 1, equip more if we have <30
+ * - Check boost potions in utility slot 2, compare to monster we're fighting, equip better ones if we have any
+ * - Check weapon to see if we can equip a better one
+ * - Check each armor slot to see if we can equip better stuff
+ */
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
@@ -37,6 +46,11 @@ export class FightObjective extends Objective {
         `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
       );
       await this.character.jobList[0].execute(this.character);
+    }
+
+    // Check health potions in utility slot 1 before we start
+    if (this.character.data.utility1_slot_quantity <= this.character.minEquippedUtilities) {
+      await this.character.equipUtility('restore', 'utility1')
     }
   }
 
@@ -81,6 +95,15 @@ export class FightObjective extends Objective {
           //} //else {
           // Eat food
           //}
+        }
+
+        // Check these after each fight in case we need to top up
+        if (this.character.data.utility1_slot_quantity <= this.character.minEquippedUtilities) {
+          await this.character.equipUtility('restore', 'utility1')
+          // Character may have moved to the bank so need to move back to the monster location
+          if (this.character.data.x !== contentLocation.x && this.character.data.y !== contentLocation.y) {
+            await this.character.move(contentLocation);
+          }
         }
 
         const response = await actionFight(this.character.data);

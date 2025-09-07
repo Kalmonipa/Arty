@@ -18,7 +18,12 @@ import {
   SimpleItemSchema,
   Skill,
 } from '../types/types';
-import { logger, sleep } from '../utils';
+import {
+  buildListOfUsefulWeapons,
+  buildListOfUtilities,
+  logger,
+  sleep,
+} from '../utils';
 import { CraftObjective } from './CraftObjectiveClass';
 import { DepositObjective } from './DepositObjectiveClass';
 import { ApiError } from './ErrorClass';
@@ -32,21 +37,31 @@ import { MonsterTaskObjective } from './MonsterTaskObjectiveClass';
 import { getBankItems } from '../api_calls/Bank';
 import { ItemTaskObjective } from './ItemTaskObjectiveClass';
 import { TrainFishingObjective } from './TrainFishingObjectiveClass';
+import { UtilityEffects } from '../types/ItemData';
 
 export class Character {
   data: CharacterSchema;
   jobList: Objective[] = [];
   weaponMap: Record<GatheringSkill, ItemSchema[]>;
+  utilitiesMap: Record<string, ItemSchema[]>;
 
   // Max default number of slots. Can be increased with a backpack
   maxInventorySlots = 20;
+  // Maximum number of potions that can be equipped
+  maxEquippedUtilities = 100;
+  // Minimum number of potions to equip
+  minEquippedUtilities = 20;
 
-  constructor(
-    data: CharacterSchema,
-    weaponMap: Record<GatheringSkill, ItemSchema[]>,
-  ) {
+  constructor(data: CharacterSchema) {
     this.data = data;
-    this.weaponMap = weaponMap;
+  }
+
+  /**
+   * @description function that builds some data sets to use later on
+   */
+  async init() {
+    this.weaponMap = await buildListOfUsefulWeapons();
+    this.utilitiesMap = await buildListOfUtilities();
   }
 
   /********
@@ -307,6 +322,55 @@ export class Character {
     this.weaponMap[typeOfActivity].forEach((weapon) => {
       logger.debug(`${weapon.code}`);
     });
+  }
+
+  /**
+   * @description Equips a utility into the specified slot
+   * Calculates how many potions we need to reach max number
+   * Checks inventory and bank for the amount we need
+   */
+  async equipUtility(utilityType: UtilityEffects, slot: ItemSlot) {
+    const utility = this.utilitiesMap[utilityType];
+    for (var ind = utility.length - 1; ind >= 0; ind--) {
+      if (utility[ind].level <= this.getCharacterLevel()) {
+        if (slot === 'utility1') {
+          var numNeeded =
+            this.maxEquippedUtilities - this.data.utility1_slot_quantity;
+        } else
+          var numNeeded =
+            this.maxEquippedUtilities - this.data.utility2_slot_quantity;
+
+        const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
+        logger.debug(`Attempting to equip ${utility[ind].name}`);
+        if (numInInv >= numNeeded) {
+          logger.debug(`Carrying ${numInInv} in inv. Equipping them`)
+          await this.equipNow(utility[ind].code, slot, numInInv);
+          return;
+        } else if (numInInv > 0 && numInInv < numNeeded) {
+          logger.debug(`Carrying ${numInInv} in inv. Equipping them and checking bank`)
+          await this.equipNow(utility[ind].code, slot, numInInv);
+          numNeeded = numNeeded - numInInv;
+          logger.debug(`${numNeeded} needed from the bank`)
+        }
+        const numInBank = await this.checkQuantityOfItemInBank(
+          utility[ind].code,
+        );
+        if (numInBank > 0) {
+          await this.withdrawNow(
+            Math.min(numInBank, numNeeded),
+            utility[ind].code,
+          );
+          await this.equipNow(
+            utility[ind].code,
+            slot,
+            Math.min(numInBank, numNeeded),
+          );
+          return;
+        } else {
+          logger.debug(`Can't find any ${utility[ind].name}`);
+        }
+      }
+    }
   }
 
   /**
@@ -629,6 +693,9 @@ export class Character {
       case 422: // Invalid payload
         logger.error(`Invalid payload [Code: ${response.error.code}]`);
         return false;
+      case 484: // The character cannot equip more than 100 utilities in the same slot.
+        // ToDo: maybe do something here? Only equip enough to reach 100?
+        return false
       case 486: // An action is already in progress for this character.
         await sleep(this.data.cooldown, 'cooldown');
         return true;

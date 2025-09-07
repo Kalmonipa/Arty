@@ -62,7 +62,7 @@ export const sleep = (cooldown: number, reason: string) => {
 export async function buildListOfUsefulWeapons(): Promise<
   Record<GatheringSkill, ItemSchema[]>
 > {
-  logger.debug(`Building map of weapons`);
+  logger.info(`Building map of weapons`);
 
   const craftSkills: GatheringSkill[] = [
     'fishing',
@@ -106,4 +106,37 @@ export async function buildListOfUsefulWeapons(): Promise<
 
 export function isGatheringSkill(value: string): value is GatheringSkill {
   return ['fishing', 'woodcutting', 'mining', 'alchemy'].includes(value);
+}
+
+/**
+ * @description Builds a map of all the utilities
+ */
+export async function buildListOfUtilities(): Promise<
+  Record<string, ItemSchema[]>
+> {
+  logger.info(`Building map of utilities`);
+
+  var utilitiesMap: Record<string, ItemSchema[]> = {};
+
+  const allUtilities: ApiError | GetAllItemsItemsGetResponse =
+    await getAllItemInformation({ query: { type: 'utility' }, url: '/items' });
+  if (allUtilities instanceof ApiError) {
+    logger.error(`Failed to build list of useful utility: ${allUtilities}`);
+    return;
+  }
+
+  allUtilities.data.forEach((utility) => {
+    utility.effects.forEach((effect) => {
+      // ToDo: Make this iterate through all the effects. A utility can be in multiple effect branches
+      if (utilitiesMap[effect.code]) {
+        logger.debug(`Adding ${utility.code} to ${effect.code} map`);
+        utilitiesMap[effect.code].push(utility);
+      } else {
+        logger.debug(`Adding ${effect.code} to utilities map`);
+        utilitiesMap[effect.code] = [utility];
+      }
+    });
+  });
+
+  return utilitiesMap;
 }
