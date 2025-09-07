@@ -9,8 +9,6 @@ import { ObjectiveTargets } from '../types/ObjectiveData';
 
 /**
  * @todo
- * - Eat food instead of resting to save time. Should go into a fight with ~50 food. Restock when less than 10(?)
- * - Check health potions in utility slot 1, equip more if we have <30
  * - Check boost potions in utility slot 2, compare to monster we're fighting, equip better ones if we have any
  * - Check weapon to see if we can equip a better one
  * - Check each armor slot to see if we can equip better stuff
@@ -52,6 +50,11 @@ export class FightObjective extends Objective {
     if (this.character.data.utility1_slot_quantity <= this.character.minEquippedUtilities) {
       await this.character.equipUtility('restore', 'utility1')
     }
+
+    // Check amount of food in inventory to use after battles
+    if (!await this.character.checkFoodLevels()) {
+      await this.character.topUpFood()
+    }
   }
 
   /**
@@ -81,20 +84,16 @@ export class FightObjective extends Objective {
       for (var count = 0; count < quantity; count++) {
         logger.info(`Fought ${count}/${quantity} ${code}s`);
 
-        // ToDo: the evaluate function should move back to the original location if depositing
-        if (await this.character.evaluateDepositItemsInBank(code)) {
-          // If items were deposited, we need to move back to the gathering location
-          await this.character.move(contentLocation);
-        }
+        await this.character.evaluateDepositItemsInBank([code, this.character.preferredFood], contentLocation)
 
         const healthStatus: HealthStatus = this.character.checkHealth();
 
         if (healthStatus.percentage !== 100) {
-          //if (healthStatus.difference < 300) {
+          if (healthStatus.difference < 150) {
           await this.character.rest();
-          //} //else {
-          // Eat food
-          //}
+          } else {
+            await this.character.eatFood()
+          }
         }
 
         // Check these after each fight in case we need to top up
@@ -104,6 +103,11 @@ export class FightObjective extends Objective {
           if (this.character.data.x !== contentLocation.x && this.character.data.y !== contentLocation.y) {
             await this.character.move(contentLocation);
           }
+        }
+
+        // Check amount of food in inventory to use after battles
+        if (!await this.character.checkFoodLevels()) {
+          await this.character.topUpFood()
         }
 
         const response = await actionFight(this.character.data);

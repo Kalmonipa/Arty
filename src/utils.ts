@@ -5,6 +5,7 @@ import {
   GatheringSkill,
   GetAllItemsItemsGetResponse,
   ItemSchema,
+  ItemType,
 } from './types/types';
 import { getAllItemInformation } from './api_calls/Items';
 import { ApiError } from './classes/ErrorClass';
@@ -59,7 +60,7 @@ export const sleep = (cooldown: number, reason: string) => {
  * @description Builds a map of all the tools that help specific skills
  * @returns {Record<CraftSkill, ItemSchema[]>}
  */
-export async function buildListOfUsefulWeapons(): Promise<
+export async function buildListOfGatheringWeapons(): Promise<
   Record<GatheringSkill, ItemSchema[]>
 > {
   logger.info(`Building map of weapons`);
@@ -127,7 +128,6 @@ export async function buildListOfUtilities(): Promise<
 
   allUtilities.data.forEach((utility) => {
     utility.effects.forEach((effect) => {
-      // ToDo: Make this iterate through all the effects. A utility can be in multiple effect branches
       if (utilitiesMap[effect.code]) {
         logger.debug(`Adding ${utility.code} to ${effect.code} map`);
         utilitiesMap[effect.code].push(utility);
@@ -139,4 +139,36 @@ export async function buildListOfUtilities(): Promise<
   });
 
   return utilitiesMap;
+}
+
+/**
+ * @description Builds a map of all the utilities
+ */
+export async function buildListOf(itemType: ItemType): Promise<
+  Record<string, ItemSchema[]>
+> {
+  logger.info(`Building map of ${itemType}`);
+
+  var itemMap: Record<string, ItemSchema[]> = {};
+
+  const allItems: ApiError | GetAllItemsItemsGetResponse =
+    await getAllItemInformation({ query: { type: itemType }, url: '/items' });
+  if (allItems instanceof ApiError) {
+    logger.error(`Failed to build list of useful ${itemType}: ${allItems}`);
+    return;
+  }
+
+  allItems.data.forEach((utility) => {
+    utility.effects.forEach((effect) => {
+      if (itemMap[effect.code]) {
+        logger.debug(`Adding ${utility.code} to ${effect.code} map`);
+        itemMap[effect.code].push(utility);
+      } else {
+        logger.debug(`Adding ${effect.code} to ${itemType} map`);
+        itemMap[effect.code] = [utility];
+      }
+    });
+  });
+
+  return itemMap;
 }

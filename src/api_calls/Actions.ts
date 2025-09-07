@@ -255,9 +255,6 @@ export async function actionFight(
 
     return result;
   } catch (error) {
-    logger.error(
-      `${error.code} - Fight request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    );
     return error;
   }
 }

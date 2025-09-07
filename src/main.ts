@@ -1,6 +1,7 @@
 import { Character } from './classes/CharacterClass';
 import { CharName } from './constants';
 import { getCharacter } from './api_calls/Character';
+import { logger } from './utils';
 
 let shouldStopActions = false;
 
@@ -12,7 +13,7 @@ async function main() {
 
     switch (CharName) {
       case 'LongLegLarry':
-        char.fight(1, 'chicken');
+        char.fight(1, 'flying_snake');
         // char.deposit(0, 'red_slimeball')
         //char.deposit(17000, 'gold')
         //var count = 0;

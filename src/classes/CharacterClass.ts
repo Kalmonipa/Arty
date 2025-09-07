@@ -3,13 +3,11 @@ import {
   actionMove,
   actionRest,
 } from '../api_calls/Actions';
-import { getItemInformation } from '../api_calls/Items';
+import { actionUse, getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
 import {
-  BankItemTransactionResponseSchema,
   CharacterSchema,
-  CraftSkill,
   DestinationSchema,
   GatheringSkill,
   ItemSchema,
@@ -19,8 +17,8 @@ import {
   Skill,
 } from '../types/types';
 import {
-  buildListOfUsefulWeapons,
-  buildListOfUtilities,
+  buildListOf,
+  buildListOfGatheringWeapons,
   logger,
   sleep,
 } from '../utils';
@@ -38,19 +36,42 @@ import { getBankItems } from '../api_calls/Bank';
 import { ItemTaskObjective } from './ItemTaskObjectiveClass';
 import { TrainFishingObjective } from './TrainFishingObjectiveClass';
 import { UtilityEffects } from '../types/ItemData';
+import { SimpleMapSchema } from '../types/MapData';
 
 export class Character {
   data: CharacterSchema;
   jobList: Objective[] = [];
-  weaponMap: Record<GatheringSkill, ItemSchema[]>;
+  gatheringWeaponMap: Record<GatheringSkill, ItemSchema[]>;
   utilitiesMap: Record<string, ItemSchema[]>;
+  consumablesMap: Record<string, ItemSchema[]>;
 
-  // Max default number of slots. Can be increased with a backpack
+  /**
+   * Max default number of slots. Can be increased with a backpack
+   */
   maxInventorySlots = 20;
-  // Maximum number of potions that can be equipped
+
+  /**
+   * Maximum number of potions that can be equipped
+   */
   maxEquippedUtilities = 100;
-  // Minimum number of potions to equip
+  /**
+   * Minimum number of potions to equip
+   */
   minEquippedUtilities = 20;
+
+  /**
+   * The code of the food we're currently using. Saving it as a var so
+   * I don't have to search my inv to figure out what to use
+   */
+  preferredFood: string
+  /**
+   * Desired number of food in inventory
+   */ 
+  desiredFoodCount = 50;
+  /**
+   *  Minimum food in inventory when going into a fight
+   */
+  minFood = 10;
 
   constructor(data: CharacterSchema) {
     this.data = data;
@@ -60,8 +81,10 @@ export class Character {
    * @description function that builds some data sets to use later on
    */
   async init() {
-    this.weaponMap = await buildListOfUsefulWeapons();
-    this.utilitiesMap = await buildListOfUtilities();
+    this.gatheringWeaponMap = await buildListOfGatheringWeapons()
+    this.consumablesMap = await buildListOf('consumable');
+    this.utilitiesMap = await buildListOf('utility');
+    
   }
 
   /********
@@ -147,6 +170,7 @@ export class Character {
 
   /**
    * @description Check inventory for a specific item
+   * @returns the amount found in inventory
    */
   checkQuantityOfItemInInv(contentCode: string): number {
     const foundItem = this.data.inventory.find(
@@ -192,6 +216,9 @@ export class Character {
    */
   async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
     const bankItem = await getBankItems(contentCode);
+    if (bankItem instanceof ApiError) {
+      this.handleErrors(bankItem)
+    } else {
 
     if (bankItem.total === 0) {
       return 0;
@@ -204,6 +231,7 @@ export class Character {
       }
       return total;
     }
+  }
   }
 
   /**
@@ -311,7 +339,7 @@ export class Character {
 
   async findBestWeaponForJob(typeOfActivity: GatheringSkill): Promise<string> {
     logger.debug(`Type of activity is ${typeOfActivity}`);
-    const weapons = this.weaponMap[typeOfActivity];
+    const weapons = this.gatheringWeaponMap[typeOfActivity];
     logger.debug(`Found ${weapons?.length || 0} weapons for ${typeOfActivity}`);
 
     if (!weapons || weapons.length === 0) {
@@ -319,9 +347,31 @@ export class Character {
       return;
     }
 
-    this.weaponMap[typeOfActivity].forEach((weapon) => {
+    this.gatheringWeaponMap[typeOfActivity].forEach((weapon) => {
       logger.debug(`${weapon.code}`);
     });
+  }
+
+  /**
+   * @description Eat the required amount of preferred food to recover fully
+   */
+  async eatFood() {
+    const healthStatus: HealthStatus = this.checkHealth();
+
+    const preferredFoodInfo = this.consumablesMap.heal
+      .find(food => food.code === this.preferredFood).effects
+      .find(effect => effect.code === 'heal').value
+
+    const amountNeededToEat = Math.ceil(healthStatus.difference / preferredFoodInfo)
+
+    logger.info(`Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`)
+
+    const useResponse = await actionUse(this.data, {code: this.preferredFood, quantity: amountNeededToEat})
+    if (useResponse instanceof ApiError) {
+      this.handleErrors(useResponse)
+    } else {
+      this.data = useResponse.data.character
+    }
   }
 
   /**
@@ -377,7 +427,7 @@ export class Character {
    * @description Equips the best available item for the gathering task
    */
   async equipBestWeapon(gatheringType: GatheringSkill) {
-    const weapons = this.weaponMap[gatheringType];
+    const weapons = this.gatheringWeaponMap[gatheringType];
     for (var ind = weapons.length - 1; ind >= 0; ind--) {
       if (weapons[ind].level <= this.getCharacterLevel(gatheringType)) {
         logger.debug(`Attempting to equip ${weapons[ind].name}`);
@@ -397,19 +447,18 @@ export class Character {
     }
   }
 
+  /**
+   * @description top up the preferred food from the bank until we have the amount we want
+   */
+  async topUpFood() {
+    const numNeeded = this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood)
+
+    await this.withdrawNow(numNeeded, this.preferredFood)
+  }
+
   /********
    * Inventory functions
    ********/
-
-  /**
-   * @description Check inventory for specific item
-   */
-  checkInventoryForItemType() {
-    for (const item of this.data.inventory) {
-      if (item) {
-      }
-    }
-  }
 
   /**
    * @description if inventory if 90% full, we empty everything into the bank
@@ -418,7 +467,7 @@ export class Character {
    *  - false means nothing happened
    * @todo This should move back to the original location after depositing
    */
-  async evaluateDepositItemsInBank(exception?: string): Promise<boolean> {
+  async evaluateDepositItemsInBank(exceptions?: string[], priorLocation?: SimpleMapSchema): Promise<boolean> {
     let usedInventorySpace = this.getInventoryFullness();
     if (usedInventorySpace >= 90) {
       logger.warn(`Inventory is almost full. Depositing items`);
@@ -433,8 +482,8 @@ export class Character {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
           break;
-        } else if (item.code === exception) {
-          logger.info(`Not depositing ${exception} because we need it`);
+        } else if (exceptions.includes(item.code)) {
+          logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.info(`Adding ${item.quantity} ${item.code} to deposit list`);
           itemsToDeposit.push({ code: item.code, quantity: item.quantity });
@@ -445,9 +494,10 @@ export class Character {
 
       if (response instanceof ApiError) {
         this.handleErrors(response);
-        await this.evaluateDepositItemsInBank(exception);
+        await this.evaluateDepositItemsInBank(exceptions, priorLocation);
       } else {
         this.data = response.data.character;
+        this.move(priorLocation)
       }
       return true;
     }
@@ -455,8 +505,7 @@ export class Character {
   }
 
   /**
-   * Returns what percentage of the backpack is full
-   * @param char Character info to parse
+   * @returns what percentage of the backpack is full
    */
   getInventoryFullness(): number {
     var usedSpace = 0;
@@ -466,6 +515,56 @@ export class Character {
 
     return Math.round((usedSpace / this.data.inventory_max_items) * 100);
   }
+
+  /**
+   * @description Checks inventory for the desired food and tops it up if we need too
+   * Sets the preferred food if there isn't one already set
+   * @todo Need to set a new preferredFood if we don't have any in inv or bank
+   * @returns {boolean} stating whether we have a good amount of food or not
+   */
+  async checkFoodLevels(): Promise<boolean> {
+    if (this.preferredFood) { 
+      logger.debug(`Preferred food is ${this.preferredFood}`) 
+      const amountCurrFood = this.checkQuantityOfItemInInv(this.preferredFood)
+      if (amountCurrFood > this.minFood) {
+        return true
+      } else {
+        return false
+      }
+    } else {
+      logger.debug(`No preferred food. Finding one`)
+      
+      const foundItem = this.data.inventory.find(invItem => {
+        return this.consumablesMap.heal.find(item => invItem.code === item.code);
+      });
+
+      if (foundItem) {
+        logger.debug(`Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`);
+        this.preferredFood = foundItem.code;
+        
+        if (foundItem.quantity <= this.minFood) {
+          return false;
+        } else {
+          return true;
+        }
+      }
+      logger.debug(`No food in inventory. Checking bank to find some`)
+      const bankItems = await getBankItems()
+      if (bankItems instanceof ApiError) {
+        this.handleErrors(bankItems)
+      } else {
+        const foundItem = bankItems.data.find(bankItem => {
+          return this.consumablesMap.heal.find(item => bankItem.code === item.code);
+        });
+
+        if (foundItem) {
+          logger.debug(`Found ${foundItem.code} in the bank. Setting it as the preferred food`);
+          this.preferredFood = foundItem.code;
+        }
+      }
+    }
+  }
+
 
   /**
    * @description moves the character to the destination if they are not already there

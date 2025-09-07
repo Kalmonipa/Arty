@@ -125,7 +125,7 @@ export class GatherObjective extends Objective {
       }
 
       // Evaluate our inventory space before we start collecting items
-      await this.character.evaluateDepositItemsInBank(code);
+      await this.character.evaluateDepositItemsInBank([code], {x: this.character.data.x, y: this.character.data.y});
 
       if (resourceDetails.subtype === 'mob') {
         return await this.gatherMobDrop(
@@ -162,10 +162,7 @@ export class GatherObjective extends Objective {
         numHeld = this.character.checkQuantityOfItemInInv(target.code);
         logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
         // Check inventory space to make sure we are less than 90% full
-        if (await this.character.evaluateDepositItemsInBank(target.code)) {
-          // If items were deposited, we need to move back to the gathering location
-          await this.character.move(location);
-        }
+        await this.character.evaluateDepositItemsInBank([target.code], location)
       }
 
       const response = await actionGather(this.character.data);

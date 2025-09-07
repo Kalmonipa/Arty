@@ -11,7 +11,7 @@ export async function getBankItems(
   item_code?: string,
   page?: number,
   size?: number,
-): Promise<DataPageSimpleItemSchema> {
+): Promise<DataPageSimpleItemSchema | ApiError> {
   var requestOptions = {
     method: 'GET',
     headers: MyHeaders,

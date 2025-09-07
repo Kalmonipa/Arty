@@ -9,7 +9,9 @@ import {
   GetAllItemsItemsGetResponse,
   ItemResponseSchema,
   ItemSchema,
+  SimpleItemSchema,
   UnequipSchema,
+  UseItemResponseSchema,
 } from '../types/types';
 import { sleep } from '../utils';
 
@@ -132,6 +134,38 @@ export async function actionUnequipItem(
     );
 
     return result;
+  } catch (error) {
+    return error;
+  }
+}
+
+/**
+ * @description Use the specified item
+ */
+export async function actionUse(character: CharacterSchema, data: SimpleItemSchema): Promise<UseItemResponseSchema | ApiError> {
+    var requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+    body: JSON.stringify(data),
+  };
+
+    try {
+    const response = await fetch(`${ApiUrl}/my/${character.name}/action/use`, requestOptions);
+    if (!response.ok) {
+      throw new ApiError({
+        code: response.status,
+        message: `Unknown error from /action/use: ${response}`,
+      });
+    }
+
+    const result: UseItemResponseSchema = await response.json();
+    
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
+    return result
   } catch (error) {
     return error;
   }
