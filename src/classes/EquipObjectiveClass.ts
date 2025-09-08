@@ -27,6 +27,8 @@ export class EquipObjective extends Objective {
   async execute(): Promise<boolean> {
     this.startJob();
 
+    await this.runSharedPrereqChecks();
+
     const result = await this.equip(
       this.itemName,
       this.itemSlot,
@@ -38,16 +40,7 @@ export class EquipObjective extends Objective {
     return result;
   }
 
-  async runPrerequisiteChecks() {
-    await this.character.cooldownStatus();
-
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute(this.character);
-    }
-  }
+  async runPrerequisiteChecks() {}
 
   /**
    * @description equip the item

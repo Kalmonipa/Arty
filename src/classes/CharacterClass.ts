@@ -8,6 +8,7 @@ import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
 import {
   CharacterSchema,
+  CraftSkill,
   DestinationSchema,
   GatheringSkill,
   ItemSchema,
@@ -34,9 +35,9 @@ import { WithdrawObjective } from './WithdrawObjectiveClass';
 import { MonsterTaskObjective } from './MonsterTaskObjectiveClass';
 import { getBankItems } from '../api_calls/Bank';
 import { ItemTaskObjective } from './ItemTaskObjectiveClass';
-import { TrainFishingObjective } from './TrainFishingObjectiveClass';
 import { UtilityEffects } from '../types/ItemData';
 import { SimpleMapSchema } from '../types/MapData';
+import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjectiveClass';
 
 export class Character {
   data: CharacterSchema;
@@ -63,10 +64,10 @@ export class Character {
    * The code of the food we're currently using. Saving it as a var so
    * I don't have to search my inv to figure out what to use
    */
-  preferredFood: string
+  preferredFood: string;
   /**
    * Desired number of food in inventory
-   */ 
+   */
   desiredFoodCount = 50;
   /**
    *  Minimum food in inventory when going into a fight
@@ -81,10 +82,9 @@ export class Character {
    * @description function that builds some data sets to use later on
    */
   async init() {
-    this.gatheringWeaponMap = await buildListOfGatheringWeapons()
+    this.gatheringWeaponMap = await buildListOfGatheringWeapons();
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
-    
   }
 
   /********
@@ -217,21 +217,20 @@ export class Character {
   async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
     const bankItem = await getBankItems(contentCode);
     if (bankItem instanceof ApiError) {
-      this.handleErrors(bankItem)
+      this.handleErrors(bankItem);
     } else {
-
-    if (bankItem.total === 0) {
-      return 0;
-    } else if (bankItem.total === 1) {
-      return bankItem.data[0].quantity;
-    } else {
-      var total = 0;
-      for (const item of bankItem.data) {
-        total += item.quantity;
+      if (bankItem.total === 0) {
+        return 0;
+      } else if (bankItem.total === 1) {
+        return bankItem.data[0].quantity;
+      } else {
+        var total = 0;
+        for (const item of bankItem.data) {
+          total += item.quantity;
+        }
+        return total;
       }
-      return total;
     }
-  }
   }
 
   /**
@@ -359,18 +358,25 @@ export class Character {
     const healthStatus: HealthStatus = this.checkHealth();
 
     const preferredFoodInfo = this.consumablesMap.heal
-      .find(food => food.code === this.preferredFood).effects
-      .find(effect => effect.code === 'heal').value
+      .find((food) => food.code === this.preferredFood)
+      .effects.find((effect) => effect.code === 'heal').value;
 
-    const amountNeededToEat = Math.ceil(healthStatus.difference / preferredFoodInfo)
+    const amountNeededToEat = Math.ceil(
+      healthStatus.difference / preferredFoodInfo,
+    );
 
-    logger.info(`Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`)
+    logger.info(
+      `Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`,
+    );
 
-    const useResponse = await actionUse(this.data, {code: this.preferredFood, quantity: amountNeededToEat})
+    const useResponse = await actionUse(this.data, {
+      code: this.preferredFood,
+      quantity: amountNeededToEat,
+    });
     if (useResponse instanceof ApiError) {
-      this.handleErrors(useResponse)
+      this.handleErrors(useResponse);
     } else {
-      this.data = useResponse.data.character
+      this.data = useResponse.data.character;
     }
   }
 
@@ -393,14 +399,16 @@ export class Character {
         const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
         logger.debug(`Attempting to equip ${utility[ind].name}`);
         if (numInInv >= numNeeded) {
-          logger.debug(`Carrying ${numInInv} in inv. Equipping them`)
+          logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
           await this.equipNow(utility[ind].code, slot, numInInv);
           return;
         } else if (numInInv > 0 && numInInv < numNeeded) {
-          logger.debug(`Carrying ${numInInv} in inv. Equipping them and checking bank`)
+          logger.debug(
+            `Carrying ${numInInv} in inv. Equipping them and checking bank`,
+          );
           await this.equipNow(utility[ind].code, slot, numInInv);
           numNeeded = numNeeded - numInInv;
-          logger.debug(`${numNeeded} needed from the bank`)
+          logger.debug(`${numNeeded} needed from the bank`);
         }
         const numInBank = await this.checkQuantityOfItemInBank(
           utility[ind].code,
@@ -451,9 +459,10 @@ export class Character {
    * @description top up the preferred food from the bank until we have the amount we want
    */
   async topUpFood() {
-    const numNeeded = this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood)
+    const numNeeded =
+      this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood);
 
-    await this.withdrawNow(numNeeded, this.preferredFood)
+    await this.withdrawNow(numNeeded, this.preferredFood);
   }
 
   /********
@@ -467,7 +476,10 @@ export class Character {
    *  - false means nothing happened
    * @todo This should move back to the original location after depositing
    */
-  async evaluateDepositItemsInBank(exceptions?: string[], priorLocation?: SimpleMapSchema): Promise<boolean> {
+  async evaluateDepositItemsInBank(
+    exceptions?: string[],
+    priorLocation?: SimpleMapSchema,
+  ): Promise<boolean> {
     let usedInventorySpace = this.getInventoryFullness();
     if (usedInventorySpace >= 90) {
       logger.warn(`Inventory is almost full. Depositing items`);
@@ -497,7 +509,7 @@ export class Character {
         await this.evaluateDepositItemsInBank(exceptions, priorLocation);
       } else {
         this.data = response.data.character;
-        this.move(priorLocation)
+        this.move(priorLocation);
       }
       return true;
     }
@@ -523,48 +535,55 @@ export class Character {
    * @returns {boolean} stating whether we have a good amount of food or not
    */
   async checkFoodLevels(): Promise<boolean> {
-    if (this.preferredFood) { 
-      logger.debug(`Preferred food is ${this.preferredFood}`) 
-      const amountCurrFood = this.checkQuantityOfItemInInv(this.preferredFood)
+    if (this.preferredFood) {
+      logger.debug(`Preferred food is ${this.preferredFood}`);
+      const amountCurrFood = this.checkQuantityOfItemInInv(this.preferredFood);
       if (amountCurrFood > this.minFood) {
-        return true
+        return true;
       } else {
-        return false
+        return false;
       }
     } else {
-      logger.debug(`No preferred food. Finding one`)
-      
-      const foundItem = this.data.inventory.find(invItem => {
-        return this.consumablesMap.heal.find(item => invItem.code === item.code);
+      logger.debug(`No preferred food. Finding one`);
+
+      const foundItem = this.data.inventory.find((invItem) => {
+        return this.consumablesMap.heal.find(
+          (item) => invItem.code === item.code,
+        );
       });
 
       if (foundItem) {
-        logger.debug(`Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`);
+        logger.debug(
+          `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
+        );
         this.preferredFood = foundItem.code;
-        
+
         if (foundItem.quantity <= this.minFood) {
           return false;
         } else {
           return true;
         }
       }
-      logger.debug(`No food in inventory. Checking bank to find some`)
-      const bankItems = await getBankItems()
+      logger.debug(`No food in inventory. Checking bank to find some`);
+      const bankItems = await getBankItems();
       if (bankItems instanceof ApiError) {
-        this.handleErrors(bankItems)
+        this.handleErrors(bankItems);
       } else {
-        const foundItem = bankItems.data.find(bankItem => {
-          return this.consumablesMap.heal.find(item => bankItem.code === item.code);
+        const foundItem = bankItems.data.find((bankItem) => {
+          return this.consumablesMap.heal.find(
+            (item) => bankItem.code === item.code,
+          );
         });
 
         if (foundItem) {
-          logger.debug(`Found ${foundItem.code} in the bank. Setting it as the preferred food`);
+          logger.debug(
+            `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
+          );
           this.preferredFood = foundItem.code;
         }
       }
     }
   }
-
 
   /**
    * @description moves the character to the destination if they are not already there
@@ -730,7 +749,7 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gather(quantity: number, code: string, excludeBankCheck?: boolean) {
+  async gather(quantity: number, code: string, checkBank?: boolean) {
     this.appendJob(
       new GatherObjective(
         this,
@@ -738,7 +757,7 @@ export class Character {
           code: code,
           quantity: quantity,
         },
-        excludeBankCheck,
+        checkBank,
       ),
     );
   }
@@ -746,21 +765,34 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gatherNow(quantity: number, code: string) {
+  async gatherNow(quantity: number, code: string, checkBank?: boolean) {
     this.prependJob(
       new GatherObjective(this, {
         code: code,
         quantity: quantity,
-      }),
+      },
+    checkBank
+  ),
     );
     await this.jobList[0].execute(this);
   }
 
   /**
-   * @description levels the fishing skill to the target level
+   * @description levels the specified craft skill to the target level
+   * @param targetSkill skill to train
+   * @param targetLevel level to train too. Must be less than the max level 45
    */
-  async levelFishingTo(targetLevel: number) {
-    this.appendJob(new TrainFishingObjective(this, 'fishing', targetLevel));
+  async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
+    logger.warn(`Levelling craft skills isn't implemented yet`)
+  }
+
+  /**
+   * @description levels the specified gathering skill to the target level
+   * @param targetSkill skill to train
+   * @param targetLevel level to train too. Must be less than the max level 45
+   */
+  async levelGatheringSkill(targetSkill: GatheringSkill, targetLevel: number) {
+    this.appendJob(new TrainGatheringSkillObjective(this, targetSkill, targetLevel));
   }
 
   /**
@@ -794,7 +826,7 @@ export class Character {
         return false;
       case 484: // The character cannot equip more than 100 utilities in the same slot.
         // ToDo: maybe do something here? Only equip enough to reach 100?
-        return false
+        return false;
       case 486: // An action is already in progress for this character.
         await sleep(this.data.cooldown, 'cooldown');
         return true;

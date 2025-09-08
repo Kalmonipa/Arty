@@ -29,7 +29,7 @@ export class DepositObjective extends Objective {
   async execute(): Promise<boolean> {
     this.startJob();
 
-    this.runPrerequisiteChecks();
+    this.runSharedPrereqChecks();
 
     const result = await this.deposit(this.target.quantity, this.target.code);
     this.completeJob(result);
@@ -37,16 +37,7 @@ export class DepositObjective extends Objective {
     return result;
   }
 
-  async runPrerequisiteChecks() {
-    await this.character.cooldownStatus();
-
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute(this.character);
-    }
-  }
+  async runPrerequisiteChecks() {}
 
   /**
    * @description deposit the specified items into the bank

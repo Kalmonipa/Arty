@@ -142,15 +142,21 @@ export async function actionUnequipItem(
 /**
  * @description Use the specified item
  */
-export async function actionUse(character: CharacterSchema, data: SimpleItemSchema): Promise<UseItemResponseSchema | ApiError> {
-    var requestOptions = {
+export async function actionUse(
+  character: CharacterSchema,
+  data: SimpleItemSchema,
+): Promise<UseItemResponseSchema | ApiError> {
+  var requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(data),
   };
 
-    try {
-    const response = await fetch(`${ApiUrl}/my/${character.name}/action/use`, requestOptions);
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/use`,
+      requestOptions,
+    );
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
@@ -159,13 +165,13 @@ export async function actionUse(character: CharacterSchema, data: SimpleItemSche
     }
 
     const result: UseItemResponseSchema = await response.json();
-    
+
     await sleep(
       result.data.cooldown.remaining_seconds,
       result.data.cooldown.reason,
     );
 
-    return result
+    return result;
   } catch (error) {
     return error;
   }

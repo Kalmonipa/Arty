@@ -19,29 +19,31 @@ import { Objective } from './ObjectiveClass';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
-  excludeBankCheck?: boolean;
+  checkBank?: boolean;
 
   constructor(
     character: Character,
     target: ObjectiveTargets,
-    excludeBankCheck?: boolean,
+    checkBank?: boolean,
   ) {
     super(character, `gather_${target.quantity}_${target.code}`, 'not_started');
     this.character = character;
     this.target = target;
-    this.excludeBankCheck = excludeBankCheck;
+    this.checkBank = checkBank;
   }
 
   async execute(): Promise<boolean> {
     var result = true;
     this.startJob();
 
-    await this.runPrerequisiteChecks();
+    await this.runSharedPrereqChecks();
 
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
     var numInBank = 0;
 
-    if (!this.excludeBankCheck) {
+    // Sometimes we want to collect a bunch of the resource so we should skip checking the bank
+    // Other times we want to gather stuff to then craft so taking from the bank is OK
+    if (this.checkBank) {
       numInBank = await this.character.checkQuantityOfItemInBank(
         this.target.code,
       );
@@ -66,16 +68,7 @@ export class GatherObjective extends Objective {
     return result;
   }
 
-  async runPrerequisiteChecks() {
-    await this.character.cooldownStatus();
-
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute(this.character);
-    }
-  }
+  async runPrerequisiteChecks() {}
 
   async gather(
     quantity: number,
@@ -114,18 +107,14 @@ export class GatherObjective extends Objective {
           await this.character.equipBestWeapon(
             resourceDetails.subtype as GatheringSkill,
           );
-          // ToDo:
-          // - Build a cache of all items that are useful for each type of gathering
-          //    - Use /items with type=weapon and find weapons that help with
-          //    - fishing, woodcutting, alchemy, mining. Adding them into a map
-          // - Search bank for suitable weapon. Can use /my/bank/items for this
-          // - If no suitable weapon, maybe we just continue
-          // - Extract this into it's own function?
         }
       }
 
       // Evaluate our inventory space before we start collecting items
-      await this.character.evaluateDepositItemsInBank([code], {x: this.character.data.x, y: this.character.data.y});
+      await this.character.evaluateDepositItemsInBank([code], {
+        x: this.character.data.x,
+        y: this.character.data.y,
+      });
 
       if (resourceDetails.subtype === 'mob') {
         return await this.gatherMobDrop(
@@ -162,7 +151,10 @@ export class GatherObjective extends Objective {
         numHeld = this.character.checkQuantityOfItemInInv(target.code);
         logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
         // Check inventory space to make sure we are less than 90% full
-        await this.character.evaluateDepositItemsInBank([target.code], location)
+        await this.character.evaluateDepositItemsInBank(
+          [target.code],
+          location,
+        );
       }
 
       const response = await actionGather(this.character.data);

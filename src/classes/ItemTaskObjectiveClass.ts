@@ -22,7 +22,7 @@ export class ItemTaskObjective extends Objective {
 
   async execute(): Promise<boolean> {
     var result = true;
-    await this.runPrerequisiteChecks();
+    await this.runSharedPrereqChecks();
 
     // Check if we have the item alread in inv and bank
     // Gather the required items
@@ -106,14 +106,5 @@ export class ItemTaskObjective extends Objective {
     return result;
   }
 
-  async runPrerequisiteChecks() {
-    await this.character.cooldownStatus();
-
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute(this.character);
-    }
-  }
+  async runPrerequisiteChecks() {}
 }

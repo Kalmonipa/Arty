@@ -22,6 +22,7 @@ export class CraftObjective extends Objective {
   async execute(): Promise<boolean> {
     this.startJob();
 
+    await this.runSharedPrereqChecks();
     await this.runPrerequisiteChecks();
 
     const result = await this.craft(this.target.quantity, this.target.code);
@@ -32,15 +33,6 @@ export class CraftObjective extends Objective {
   }
 
   async runPrerequisiteChecks() {
-    await this.character.cooldownStatus();
-
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute(this.character);
-    }
-
     logger.debug(`Checking item schema of ${this.target.code}`);
     const response: ItemSchema | ApiError = await getItemInformation(
       this.target.code,
@@ -75,7 +67,7 @@ export class CraftObjective extends Objective {
             continue;
           } else if (numInInv > 0) {
             logger.info(
-              `${numInInv} ${craftingItem.code} in inventory already`,
+              `${numInInv} ${craftingItem.code} in inventory already. Finding more`,
             );
           }
           if (numInBank >= totalNumNeededToCraft - numInInv) {

@@ -18,7 +18,7 @@ export class MonsterTaskObjective extends Objective {
   //  - If 3 fights lost, cancel job. We don't want to keep losing fights
   async execute(): Promise<boolean> {
     var result: boolean = false;
-    await this.runPrerequisiteChecks();
+    await this.runSharedPrereqChecks();
 
     if (this.character.data.task === '') {
       this.startNewTask('monsters');
@@ -48,14 +48,5 @@ export class MonsterTaskObjective extends Objective {
     return result;
   }
 
-  async runPrerequisiteChecks() {
-    await this.character.cooldownStatus();
-
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute(this.character);
-    }
-  }
+  async runPrerequisiteChecks() {}
 }

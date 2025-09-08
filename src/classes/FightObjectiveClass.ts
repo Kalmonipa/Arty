@@ -27,6 +27,7 @@ export class FightObjective extends Objective {
   async execute(): Promise<boolean> {
     this.startJob();
 
+    await this.runSharedPrereqChecks();
     await this.runPrerequisiteChecks();
 
     const result = await this.fight(this.target.quantity, this.target.code);
@@ -37,23 +38,17 @@ export class FightObjective extends Objective {
   }
 
   async runPrerequisiteChecks() {
-    await this.character.cooldownStatus();
-
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute(this.character);
-    }
-
     // Check health potions in utility slot 1 before we start
-    if (this.character.data.utility1_slot_quantity <= this.character.minEquippedUtilities) {
-      await this.character.equipUtility('restore', 'utility1')
+    if (
+      this.character.data.utility1_slot_quantity <=
+      this.character.minEquippedUtilities
+    ) {
+      await this.character.equipUtility('restore', 'utility1');
     }
 
     // Check amount of food in inventory to use after battles
-    if (!await this.character.checkFoodLevels()) {
-      await this.character.topUpFood()
+    if (!(await this.character.checkFoodLevels())) {
+      await this.character.topUpFood();
     }
   }
 
@@ -84,30 +79,39 @@ export class FightObjective extends Objective {
       for (var count = 0; count < quantity; count++) {
         logger.info(`Fought ${count}/${quantity} ${code}s`);
 
-        await this.character.evaluateDepositItemsInBank([code, this.character.preferredFood], contentLocation)
+        await this.character.evaluateDepositItemsInBank(
+          [code, this.character.preferredFood],
+          contentLocation,
+        );
 
         const healthStatus: HealthStatus = this.character.checkHealth();
 
         if (healthStatus.percentage !== 100) {
           if (healthStatus.difference < 150) {
-          await this.character.rest();
+            await this.character.rest();
           } else {
-            await this.character.eatFood()
+            await this.character.eatFood();
           }
         }
 
         // Check these after each fight in case we need to top up
-        if (this.character.data.utility1_slot_quantity <= this.character.minEquippedUtilities) {
-          await this.character.equipUtility('restore', 'utility1')
+        if (
+          this.character.data.utility1_slot_quantity <=
+          this.character.minEquippedUtilities
+        ) {
+          await this.character.equipUtility('restore', 'utility1');
           // Character may have moved to the bank so need to move back to the monster location
-          if (this.character.data.x !== contentLocation.x && this.character.data.y !== contentLocation.y) {
+          if (
+            this.character.data.x !== contentLocation.x &&
+            this.character.data.y !== contentLocation.y
+          ) {
             await this.character.move(contentLocation);
           }
         }
 
         // Check amount of food in inventory to use after battles
-        if (!await this.character.checkFoodLevels()) {
-          await this.character.topUpFood()
+        if (!(await this.character.checkFoodLevels())) {
+          await this.character.topUpFood();
         }
 
         const response = await actionFight(this.character.data);

@@ -30,6 +30,20 @@ export abstract class Objective {
   ): Promise<boolean>;
 
   /**
+   * @description Runs some validations that all jobs run before they start
+   */
+  async runSharedPrereqChecks() {
+    await this.character.cooldownStatus();
+
+    if (this.character.jobList.indexOf(this) !== 0) {
+      logger.info(
+        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+      );
+      await this.character.jobList[0].execute(this.character);
+    }
+  }
+
+  /**
    * @description Sets the status of the job to 'in_progress'
    */
   startJob() {

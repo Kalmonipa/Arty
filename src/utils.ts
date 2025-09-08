@@ -144,9 +144,9 @@ export async function buildListOfUtilities(): Promise<
 /**
  * @description Builds a map of all the utilities
  */
-export async function buildListOf(itemType: ItemType): Promise<
-  Record<string, ItemSchema[]>
-> {
+export async function buildListOf(
+  itemType: ItemType,
+): Promise<Record<string, ItemSchema[]>> {
   logger.info(`Building map of ${itemType}`);
 
   var itemMap: Record<string, ItemSchema[]> = {};
