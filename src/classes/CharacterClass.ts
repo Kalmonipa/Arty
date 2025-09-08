@@ -146,11 +146,6 @@ export class Character {
     logger.info(`No more jobs to execute`);
     // ToDo: Get character to do some idle tasks if nothing else to do
     return true;
-
-    // for (const obj of this.jobList) {
-    //   logger.info(`Executing job ${obj.objectiveId}`);
-    //   await obj.execute(this);
-    // }
   }
 
   /********
@@ -767,12 +762,14 @@ export class Character {
    */
   async gatherNow(quantity: number, code: string, checkBank?: boolean) {
     this.prependJob(
-      new GatherObjective(this, {
-        code: code,
-        quantity: quantity,
-      },
-    checkBank
-  ),
+      new GatherObjective(
+        this,
+        {
+          code: code,
+          quantity: quantity,
+        },
+        checkBank,
+      ),
     );
     await this.jobList[0].execute(this);
   }
@@ -783,7 +780,7 @@ export class Character {
    * @param targetLevel level to train too. Must be less than the max level 45
    */
   async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
-    logger.warn(`Levelling craft skills isn't implemented yet`)
+    logger.warn(`Levelling craft skills isn't implemented yet`);
   }
 
   /**
@@ -792,7 +789,9 @@ export class Character {
    * @param targetLevel level to train too. Must be less than the max level 45
    */
   async levelGatheringSkill(targetSkill: GatheringSkill, targetLevel: number) {
-    this.appendJob(new TrainGatheringSkillObjective(this, targetSkill, targetLevel));
+    this.appendJob(
+      new TrainGatheringSkillObjective(this, targetSkill, targetLevel),
+    );
   }
 
   /**

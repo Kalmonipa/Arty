@@ -49,7 +49,7 @@ export class TrainGatheringSkillObjective extends Objective {
       await this.character.gatherNow(
         this.character.data.inventory_max_items * 0.8,
         resourceToGather,
-        false
+        false,
       );
 
       const numGathered =
