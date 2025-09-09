@@ -138,12 +138,17 @@ export class Character {
    * Executes all jobs in the job list
    */
   async executeJobList() {
-    while (this.jobList.length > 0) {
-      logger.info(`Executing job ${this.jobList[0].objectiveId}`);
-      await this.jobList[0].execute();
+    // Run indefinitely, checking for new jobs every 10 seconds
+    while (true) {
+      if (this.jobList.length > 0) {
+        logger.info(`Executing job ${this.jobList[0].objectiveId}`);
+        await this.jobList[0].execute();
+      } else {
+        await sleep(10, 'no more jobs', false);
+      }
     }
 
-    logger.info(`No more jobs to execute`);
+    //logger.info(`No more jobs to execute`);
     // ToDo: Get character to do some idle tasks if nothing else to do
     return true;
   }

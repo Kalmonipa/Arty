@@ -1,42 +1,39 @@
 import { Character } from './classes/CharacterClass';
 import { CharName } from './constants';
 import { getCharacter } from './api_calls/Character';
-import { logger } from './utils';
-
-let shouldStopActions = false;
+import express, { Request, Response } from "express";
+import gatherRouter from './routes/GatherRoutes';
+import depositRouter from './routes/DepositRoutes';
+import craftRouter from './routes/CraftRoutes';
+import equipRouter from './routes/EquipRoutes';
+import fightRouter from './routes/FightRoutes';
+import TaskRouter from './routes/TaskRoutes';
+import TrainSkillRouter from './routes/TrainSkillRoutes';
 
 async function main() {
-  while (!shouldStopActions) {
-    const charData = await getCharacter(CharName);
-    const char = new Character(charData);
-    await char.init();
+  const charData = await getCharacter(CharName);
+  const char = new Character(charData);
+  await char.init();
 
-    switch (CharName) {
-      case 'LongLegLarry':
-        char.levelGatheringSkill('fishing', 25);
-        char.levelGatheringSkill('alchemy', 25);
-        char.levelGatheringSkill('woodcutting', 25);
-        break;
-      case 'JumpyJimmy':
-        char.levelGatheringSkill('fishing', 25);
-        char.levelGatheringSkill('woodcutting', 25);
-        break;
-      case 'ZippyZoe':
-        char.levelGatheringSkill('fishing', 25);
-        char.levelGatheringSkill('woodcutting', 25);
-        break;
-      case 'TimidTom':
-        char.levelGatheringSkill('woodcutting', 25);
-        char.levelGatheringSkill('alchemy', 25);
-        break;
-      case 'BouncyBella':
-        char.levelGatheringSkill('mining', 25);
-        char.levelGatheringSkill('woodcutting', 25);
-        break;
-    }
+  const app = express();
+  const PORT = process.env.PORT || 3000;
 
-    shouldStopActions = await char.executeJobList();
-  }
+  app.use(express.json());
+  app.use('/craft', craftRouter(char))
+  app.use('/deposit', depositRouter(char))
+  app.use('/equip', equipRouter(char))
+  app.use('/fight', fightRouter(char))
+  app.use('/gather', gatherRouter(char))
+  app.use('/task', TaskRouter(char))
+  app.use('/train', TrainSkillRouter(char))
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+
+    await char.executeJobList();
+  
+  
 }
 
 main();
