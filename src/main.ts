@@ -14,19 +14,24 @@ async function main() {
     switch (CharName) {
       case 'LongLegLarry':
         char.levelGatheringSkill('fishing', 25);
+        char.levelGatheringSkill('alchemy', 25);
+        char.levelGatheringSkill('woodcutting', 25);
         break;
       case 'JumpyJimmy':
         char.levelGatheringSkill('fishing', 25);
+        char.levelGatheringSkill('woodcutting', 25);
         break;
       case 'ZippyZoe':
         char.levelGatheringSkill('fishing', 25);
+        char.levelGatheringSkill('woodcutting', 25);
         break;
       case 'TimidTom':
-        char.doItemsTask();
-        char.levelGatheringSkill('woodcutting', 25)
+        char.levelGatheringSkill('woodcutting', 25);
+        char.levelGatheringSkill('alchemy', 25);
         break;
       case 'BouncyBella':
         char.levelGatheringSkill('mining', 25);
+        char.levelGatheringSkill('woodcutting', 25);
         break;
     }
 

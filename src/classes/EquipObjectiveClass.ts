@@ -7,58 +7,39 @@ import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class EquipObjective extends Objective {
-  itemName: string;
+  itemCode: string;
   itemSlot: ItemSlot;
   quantity?: number;
 
   constructor(
     character: Character,
-    itemName: string,
+    itemCode: string,
     itemSlot: ItemSlot,
     quantity?: number,
   ) {
-    super(character, `equip_${itemName}_${itemSlot}`, 'not_started');
+    super(character, `equip_${itemCode}_${itemSlot}`, 'not_started');
     this.character = character;
-    this.itemName = itemName;
+    this.itemCode = itemCode;
     this.itemSlot = itemSlot;
     this.quantity = quantity;
   }
 
-  async execute(): Promise<boolean> {
-    this.startJob();
-
-    await this.runSharedPrereqChecks();
-
-    const result = await this.equip(
-      this.itemName,
-      this.itemSlot,
-      this.quantity,
-    );
-
-    this.completeJob(result);
-    this.character.removeJob(this);
-    return result;
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
   }
-
-  async runPrerequisiteChecks() {}
 
   /**
    * @description equip the item
    */
-  async equip(
-    itemCode: string,
-    itemSlot: ItemSlot,
-    quantity?: number,
-    maxRetries: number = 3,
-  ): Promise<boolean> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.debug(`Equip attempt ${attempt}/${maxRetries}`);
+  async run(): Promise<boolean> {
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.debug(`Equip attempt ${attempt}/${this.maxRetries}`);
 
-      if (!quantity) quantity = 1;
+      if (!this.quantity) this.quantity = 1;
 
       if (
-        (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-        quantity > 100
+        (this.itemSlot === 'utility1' || this.itemSlot === 'utility2') &&
+        this.quantity > 100
       ) {
         logger.warn(
           `Quantity can only be provided for utility slots and must be less than 100`,
@@ -66,26 +47,30 @@ export class EquipObjective extends Objective {
         return;
       }
 
-      if (this.character.checkQuantityOfItemInInv(itemCode) === 0) {
-        logger.info(`Character not carrying ${itemCode}. Checking bank`);
-        if ((await this.character.checkQuantityOfItemInBank(itemCode)) > 0) {
-          await this.character.withdrawNow(quantity | 1, itemCode);
+      if (this.character.checkQuantityOfItemInInv(this.itemCode) === 0) {
+        logger.info(`Character not carrying ${this.itemCode}. Checking bank`);
+        if (
+          (await this.character.checkQuantityOfItemInBank(this.itemCode)) > 0
+        ) {
+          await this.character.withdrawNow(this.quantity | 1, this.itemCode);
         }
       }
 
-      logger.info(`Equipping ${quantity} ${itemCode} into ${itemSlot}`);
+      logger.info(
+        `Equipping ${this.quantity} ${this.itemCode} into ${this.itemSlot}`,
+      );
 
       const equipSchema: EquipSchema = {
-        code: itemCode,
-        slot: itemSlot,
-        quantity: quantity,
+        code: this.itemCode,
+        slot: this.itemSlot,
+        quantity: this.quantity,
       };
 
       const response = await actionEquipItem(this.character.data, equipSchema);
       if (response instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(response);
 
-        if (!shouldRetry || attempt === maxRetries) {
+        if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Equip failed after ${attempt} attempts`);
           return false;
         }

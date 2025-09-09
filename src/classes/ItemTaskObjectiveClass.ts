@@ -20,10 +20,12 @@ export class ItemTaskObjective extends Objective {
     this.character = character;
   }
 
-  async execute(): Promise<boolean> {
-    var result = true;
-    await this.runSharedPrereqChecks();
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
+  }
 
+  async run(): Promise<boolean> {
+    var result = false;
     // Check if we have the item alread in inv and bank
     // Gather the required items
 
@@ -101,10 +103,7 @@ export class ItemTaskObjective extends Objective {
 
       result = true;
     }
-    this.completeJob(result);
-    this.character.removeJob(this);
+
     return result;
   }
-
-  async runPrerequisiteChecks() {}
 }

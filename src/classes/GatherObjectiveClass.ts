@@ -32,12 +32,12 @@ export class GatherObjective extends Objective {
     this.checkBank = checkBank;
   }
 
-  async execute(): Promise<boolean> {
-    var result = true;
-    this.startJob();
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
+  }
 
-    await this.runSharedPrereqChecks();
-
+  async run(): Promise<boolean> {
+    var result = false;
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
     var numInBank = 0;
 
@@ -63,12 +63,8 @@ export class GatherObjective extends Objective {
       result = await this.gather(this.target.quantity, this.target.code);
     }
 
-    this.completeJob(result);
-    this.character.removeJob(this);
     return result;
   }
-
-  async runPrerequisiteChecks() {}
 
   async gather(
     quantity: number,

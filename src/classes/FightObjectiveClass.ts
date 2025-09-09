@@ -24,20 +24,7 @@ export class FightObjective extends Objective {
     this.target = target;
   }
 
-  async execute(): Promise<boolean> {
-    this.startJob();
-
-    await this.runSharedPrereqChecks();
-    await this.runPrerequisiteChecks();
-
-    const result = await this.fight(this.target.quantity, this.target.code);
-
-    this.completeJob(result);
-    this.character.removeJob(this);
-    return result;
-  }
-
-  async runPrerequisiteChecks() {
+  async runPrerequisiteChecks(): Promise<boolean> {
     // Check health potions in utility slot 1 before we start
     if (
       this.character.data.utility1_slot_quantity <=
@@ -50,25 +37,23 @@ export class FightObjective extends Objective {
     if (!(await this.character.checkFoodLevels())) {
       await this.character.topUpFood();
     }
+
+    return true;
   }
 
   /**
    * @description Fight the requested amount of mobs
    */
-  async fight(
-    quantity: number,
-    code: string,
-    maxRetries: number = 3,
-  ): Promise<boolean> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.debug(`Fight attempt ${attempt}/${maxRetries}`);
+  async run(): Promise<boolean> {
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
 
-      logger.info(`Finding location of ${code}`);
+      logger.info(`Finding location of ${this.target.code}`);
 
-      const maps = (await getMaps(code)).data;
+      const maps = (await getMaps(this.target.code)).data;
 
       if (maps.length === 0) {
-        logger.error(`Cannot find any maps for ${code}`);
+        logger.error(`Cannot find any maps for ${this.target.code}`);
         return false;
       }
 
@@ -76,11 +61,13 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (var count = 0; count < quantity; count++) {
-        logger.info(`Fought ${count}/${quantity} ${code}s`);
+      for (var count = 0; count < this.target.quantity; count++) {
+        logger.info(
+          `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
+        );
 
         await this.character.evaluateDepositItemsInBank(
-          [code, this.character.preferredFood],
+          [this.target.code, this.character.preferredFood],
           contentLocation,
         );
 
@@ -119,7 +106,7 @@ export class FightObjective extends Objective {
         if (response instanceof ApiError) {
           const shouldRetry = await this.character.handleErrors(response);
 
-          if (!shouldRetry || attempt === maxRetries) {
+          if (!shouldRetry || attempt === this.maxRetries) {
             logger.error(`Fight failed after ${attempt} attempts`);
             return false;
           }
@@ -139,7 +126,9 @@ export class FightObjective extends Objective {
         }
       }
 
-      logger.debug(`Successfully fought ${quantity} ${code}`);
+      logger.debug(
+        `Successfully fought ${this.target.quantity} ${this.target.code}`,
+      );
       return true;
     }
   }

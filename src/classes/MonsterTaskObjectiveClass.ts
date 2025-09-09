@@ -1,8 +1,6 @@
 import { getMaps } from '../api_calls/Maps';
-import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
-import { logger, sleep } from '../utils';
+import { logger } from '../utils';
 import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 
 export class MonsterTaskObjective extends Objective {
@@ -16,9 +14,13 @@ export class MonsterTaskObjective extends Objective {
 
   // ToDo:
   //  - If 3 fights lost, cancel job. We don't want to keep losing fights
-  async execute(): Promise<boolean> {
-    var result: boolean = false;
-    await this.runSharedPrereqChecks();
+
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
+  }
+
+  async run() {
+    var result = false;
 
     if (this.character.data.task === '') {
       this.startNewTask('monsters');
@@ -43,10 +45,7 @@ export class MonsterTaskObjective extends Objective {
     if (this.character.data.task_total === this.character.data.task_progress) {
       result = await this.handInTask('monsters');
     }
-    this.completeJob(result);
-    this.character.removeJob(this);
+
     return result;
   }
-
-  async runPrerequisiteChecks() {}
 }

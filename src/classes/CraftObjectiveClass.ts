@@ -25,49 +25,36 @@ export class CraftObjective extends Objective {
     this.target = target;
   }
 
-  async execute(): Promise<boolean> {
-    this.startJob();
-
-    await this.runSharedPrereqChecks();
-    await this.runPrerequisiteChecks();
-
-    var result = false;
-
-    result = await this.craft(this.target.code);
-
-    this.completeJob(result);
-    this.character.removeJob(this);
-    return result;
-  }
-
-  async runPrerequisiteChecks() {
+  async runPrerequisiteChecks(): Promise<boolean> {
     const quantyInInv = this.character.checkQuantityOfItemInInv(
       this.target.code,
     );
 
     if (quantyInInv < this.target.quantity) {
-    // If we're carrying some then we don't need to collect the full requested amount
-    this.target.quantity = this.target.quantity - quantyInInv;
-    } else this.target.quantity = 0
+      // If we're carrying some then we don't need to collect the full requested amount
+      this.target.quantity = this.target.quantity - quantyInInv;
+    } else this.target.quantity = 0;
+
+    return true;
   }
 
   /**
    * @description Craft the item. Character will move to the correct workshop map
    */
-  async craft(code: string, maxRetries: number = 3): Promise<boolean> {
+  async run(): Promise<boolean> {
     if (this.target.quantity === 0) {
       return true;
     }
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.info(`Craft attempt ${attempt}/${maxRetries}`);
 
-      const targetItem = await getItemInformation(code);
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.info(`Craft attempt ${attempt}/${this.maxRetries}`);
+
+      const targetItem = await getItemInformation(this.target.code);
 
       if (targetItem instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(targetItem);
 
-        if (!shouldRetry || attempt === maxRetries) {
+        if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Craft failed after ${attempt} attempts`);
           return false;
         }
@@ -88,7 +75,7 @@ export class CraftObjective extends Objective {
         const maps = (await getMaps(targetItem.craft.skill, 'workshop')).data;
 
         if (maps.length === 0) {
-          logger.error(`Cannot find any maps to craft ${code}`);
+          logger.error(`Cannot find any maps to craft ${this.target.code}`);
           return true;
         }
 
@@ -108,18 +95,18 @@ export class CraftObjective extends Objective {
           });
 
           logger.info(
-            `Crafting ${this.numItemsPerBatch} ${code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,
+            `Crafting ${this.numItemsPerBatch} ${this.target.code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,
           );
 
           const response = await actionCraft(this.character.data, {
-            code: code,
+            code: this.target.code,
             quantity: this.numItemsPerBatch,
           });
 
           if (response instanceof ApiError) {
             const shouldRetry = await this.character.handleErrors(response);
 
-            if (!shouldRetry || attempt === maxRetries) {
+            if (!shouldRetry || attempt === this.maxRetries) {
               logger.error(`Craft failed after ${attempt} attempts`);
               return false;
             }
@@ -127,14 +114,17 @@ export class CraftObjective extends Objective {
           } else {
             this.character.data = response.data.character;
 
-            this.character.depositNow(this.numItemsPerBatch, code)
+            this.character.depositNow(this.numItemsPerBatch, this.target.code);
 
             logger.info(
-              `Successfully crafted ${this.numItemsPerBatch} ${code}`,
+              `Successfully crafted ${this.numItemsPerBatch} ${this.target.code}`,
             );
           }
         }
-        await this.character.withdrawNow(this.target.quantity, this.target.code)
+        await this.character.withdrawNow(
+          this.target.quantity,
+          this.target.code,
+        );
 
         return true;
       }

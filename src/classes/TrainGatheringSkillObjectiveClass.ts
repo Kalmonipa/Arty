@@ -19,19 +19,11 @@ export class TrainGatheringSkillObjective extends Objective {
     this.skill = skill;
   }
 
-  async execute(): Promise<boolean> {
-    this.startJob();
-
-    await this.runSharedPrereqChecks();
-
-    const result = await this.train();
-
-    this.completeJob(result);
-    this.character.removeJob(this);
-    return result;
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
   }
 
-  async train(): Promise<boolean> {
+  async run(): Promise<boolean> {
     var charLevel = this.character.getCharacterLevel(this.skill);
     while (charLevel < this.targetLevel) {
       const resourceTypes: DataPageResourceSchema =
@@ -47,7 +39,7 @@ export class TrainGatheringSkillObjective extends Objective {
         resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;
 
       await this.character.gatherNow(
-        this.character.data.inventory_max_items * 0.8,
+        Math.round(this.character.data.inventory_max_items * 0.8),
         resourceToGather,
         false,
       );

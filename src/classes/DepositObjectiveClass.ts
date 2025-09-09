@@ -1,12 +1,10 @@
-import { actionDepositItems, actionFight } from '../api_calls/Actions';
+import { actionDepositItems } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
-import { HealthStatus } from '../types/CharacterData';
-import { logger, sleep } from '../utils';
+import { logger } from '../utils';
 import { Character } from './CharacterClass';
 import { ApiError } from './ErrorClass';
 import { Objective } from './ObjectiveClass';
 import { ObjectiveTargets } from '../types/ObjectiveData';
-import { BankItemTransaction } from '../types/BankData';
 import {
   BankItemTransactionResponseSchema,
   SimpleItemSchema,
@@ -26,31 +24,18 @@ export class DepositObjective extends Objective {
     this.target = target;
   }
 
-  async execute(): Promise<boolean> {
-    this.startJob();
-
-    this.runSharedPrereqChecks();
-
-    const result = await this.deposit(this.target.quantity, this.target.code);
-    this.completeJob(result);
-    this.character.removeJob(this);
-    return result;
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
   }
-
-  async runPrerequisiteChecks() {}
 
   /**
    * @description deposit the specified items into the bank
    * If itemCode is 'all', the inventory is emptied into the bank
    * If 0 is entered, all of the specified item is deposited
    */
-  async deposit(
-    quantity: number,
-    itemCode: string,
-    maxRetries: number = 3,
-  ): Promise<boolean> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.debug(`Deposit attempt ${attempt}/${maxRetries}`);
+  async run(): Promise<boolean> {
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.debug(`Deposit attempt ${attempt}/${this.maxRetries}`);
 
       logger.debug(`Finding location of the bank`);
 
@@ -66,7 +51,7 @@ export class DepositObjective extends Objective {
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
       var response: ApiError | BankItemTransactionResponseSchema;
-      if (itemCode === 'all') {
+      if (this.target.code === 'all') {
         var itemsToDeposit: SimpleItemSchema[] = [];
 
         for (var i = 0; i < this.character.data.inventory.length; i++) {
@@ -81,23 +66,23 @@ export class DepositObjective extends Objective {
           this.character.data,
           itemsToDeposit,
         );
-      } else if (quantity === 0) {
+      } else if (this.target.quantity === 0) {
         response = await actionDepositItems(this.character.data, [
           {
-            quantity: this.character.checkQuantityOfItemInInv(itemCode),
-            code: itemCode,
+            quantity: this.character.checkQuantityOfItemInInv(this.target.code),
+            code: this.target.code,
           },
         ]);
       } else {
         response = await actionDepositItems(this.character.data, [
-          { quantity: quantity, code: itemCode },
+          { quantity: this.target.quantity, code: this.target.code },
         ]);
       }
 
       if (response instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(response);
 
-        if (!shouldRetry || attempt === maxRetries) {
+        if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Deposit failed after ${attempt} attempts`);
           return false;
         }

@@ -16,36 +16,23 @@ export class UnequipObjective extends Objective {
     this.quantity = quantity;
   }
 
-  async execute(): Promise<boolean> {
-    this.startJob();
-    await this.runSharedPrereqChecks();
-
-    const result = await this.unequip(this.itemSlot, this.quantity);
-
-    this.completeJob(result);
-    this.character.removeJob(this);
-    return result;
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
   }
-
-  async runPrerequisiteChecks() {}
 
   /**
    * @description equip the item
    */
-  async unequip(
-    itemSlot: ItemSlot,
-    quantity?: number,
-    maxRetries: number = 3,
-  ): Promise<boolean> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.debug(`Unequip attempt ${attempt}/${maxRetries}`);
+  async run(): Promise<boolean> {
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.debug(`Unequip attempt ${attempt}/${this.maxRetries}`);
 
-      if (!quantity) quantity = 1;
+      if (!this.quantity) this.quantity = 1;
 
       // validations
       if (
-        (itemSlot === 'utility1' || itemSlot === 'utility2') &&
-        quantity > 100
+        (this.itemSlot === 'utility1' || this.itemSlot === 'utility2') &&
+        this.quantity > 100
       ) {
         logger.warn(
           `Quantity can only be provided for utility slots and must be less than 100`,
@@ -53,11 +40,11 @@ export class UnequipObjective extends Objective {
         return;
       }
 
-      logger.info(`Unequipping ${itemSlot} slot`);
+      logger.info(`Unequipping ${this.itemSlot} slot`);
 
       const unequipSchema: UnequipSchema = {
-        slot: itemSlot,
-        quantity: quantity,
+        slot: this.itemSlot,
+        quantity: this.quantity,
       };
 
       const response = await actionUnequipItem(
@@ -67,7 +54,7 @@ export class UnequipObjective extends Objective {
       if (response instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(response);
 
-        if (!shouldRetry || attempt === maxRetries) {
+        if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Unequip failed after ${attempt} attempts`);
           return false;
         }

@@ -11,6 +11,7 @@ export abstract class Objective {
   character: Character;
   objectiveId: string;
   status: ObjectiveStatus;
+  maxRetries: number = 3;
 
   constructor(
     character: Character,
@@ -24,23 +25,37 @@ export abstract class Objective {
     this.status = status; // ToDo: Do something with the statuses
   }
 
-  abstract execute(
-    character: Character,
-    target?: ObjectiveTargets,
-  ): Promise<boolean>;
+  async execute(): Promise<boolean> {
+    this.startJob();
+
+    await this.runSharedPrereqChecks();
+    await this.runPrerequisiteChecks();
+
+    const result = await this.run();
+
+    this.completeJob(result);
+    this.character.removeJob(this);
+    return result;
+  }
+
+  abstract run(): Promise<boolean>;
+
+  abstract runPrerequisiteChecks(): Promise<boolean>;
 
   /**
    * @description Runs some validations that all jobs run before they start
    */
-  async runSharedPrereqChecks() {
+  async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
     if (this.character.jobList.indexOf(this) !== 0) {
       logger.info(
         `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
       );
-      await this.character.jobList[0].execute(this.character);
+      await this.character.jobList[0].execute();
     }
+
+    return true;
   }
 
   /**

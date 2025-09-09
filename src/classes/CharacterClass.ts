@@ -140,7 +140,7 @@ export class Character {
   async executeJobList() {
     while (this.jobList.length > 0) {
       logger.info(`Executing job ${this.jobList[0].objectiveId}`);
-      await this.jobList[0].execute(this);
+      await this.jobList[0].execute();
     }
 
     logger.info(`No more jobs to execute`);
@@ -261,7 +261,7 @@ export class Character {
         quantity: 0,
       }),
     );
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**
@@ -644,7 +644,7 @@ export class Character {
         quantity: quantity,
       }),
     );
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**
@@ -687,7 +687,7 @@ export class Character {
         quantity: quantity,
       }),
     );
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**
@@ -703,7 +703,7 @@ export class Character {
    */
   async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number) {
     this.prependJob(new EquipObjective(this, itemName, itemSlot, quantity));
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**
@@ -718,7 +718,7 @@ export class Character {
    */
   async unequipNow(itemSlot: ItemSlot, quantity?: number) {
     this.prependJob(new UnequipObjective(this, itemSlot, quantity));
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**
@@ -738,7 +738,7 @@ export class Character {
     this.prependJob(
       new FightObjective(this, { code: code, quantity: quantity }),
     );
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**
@@ -771,7 +771,7 @@ export class Character {
         checkBank,
       ),
     );
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**
@@ -806,7 +806,7 @@ export class Character {
    */
   async withdrawNow(quantity: number, itemCode: string) {
     this.prependJob(new WithdrawObjective(this, itemCode, quantity));
-    await this.jobList[0].execute(this);
+    await this.jobList[0].execute();
   }
 
   /**

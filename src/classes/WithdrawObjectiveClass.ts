@@ -18,25 +18,16 @@ export class WithdrawObjective extends Objective {
     this.quantity = quantity;
   }
 
-  async execute(): Promise<boolean> {
-    this.startJob();
-    await this.runSharedPrereqChecks();
-
-    const result = await this.withdraw(this.quantity, this.itemCode);
-
-    this.completeJob(result);
-    this.character.removeJob(this);
-    return result;
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
   }
-
-  async runPrerequisiteChecks() {}
 
   /**
    * @description withdraw the specified items from the bank
    */
-  async withdraw(quantity: number, itemCode: string, maxRetries: number = 3) {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      logger.debug(`Withdraw attempt ${attempt}/${maxRetries}`);
+  async run() {
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.debug(`Withdraw attempt ${attempt}/${this.maxRetries}`);
 
       logger.debug(`Finding location of the bank`);
 
@@ -52,13 +43,13 @@ export class WithdrawObjective extends Objective {
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
       const response = await actionWithdrawItem(this.character.data, [
-        { quantity: quantity, code: itemCode },
+        { quantity: this.quantity, code: this.itemCode },
       ]);
 
       if (response instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(response);
 
-        if (!shouldRetry || attempt === maxRetries) {
+        if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Withdraw failed after ${attempt} attempts`);
           return false;
         }
