@@ -1,5 +1,5 @@
-import { Character } from '../classes/CharacterClass';
-import { ApiError } from '../classes/ErrorClass';
+import { Character } from '../classes/Character';
+import { ApiError } from '../classes/Error';
 import { ApiUrl, MyHeaders } from '../constants';
 import {
   CharacterSchema,

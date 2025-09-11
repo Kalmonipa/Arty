@@ -7,9 +7,9 @@ import {
 } from '../api_calls/Tasks';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types';
 import { logger, sleep } from '../utils';
-import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
-import { Objective } from './ObjectiveClass';
+import { Character } from './Character';
+import { ApiError } from './Error';
+import { Objective } from './Objective';
 
 export class ItemTaskObjective extends Objective {
   type: 'items';

@@ -1,9 +1,9 @@
 import { actionDepositItems } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
 import { logger } from '../utils';
-import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
-import { Objective } from './ObjectiveClass';
+import { Character } from './Character';
+import { ApiError } from './Error';
+import { Objective } from './Objective';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   BankItemTransactionResponseSchema,
@@ -51,7 +51,9 @@ export class DepositObjective extends Objective {
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
       var response: ApiError | BankItemTransactionResponseSchema;
-      if (this.target.code === 'all') {
+      if (this.target.code === 'gold') {
+        // deposit gold
+      } else if (this.target.code === 'all') {
         var itemsToDeposit: SimpleItemSchema[] = [];
 
         for (var i = 0; i < this.character.data.inventory.length; i++) {

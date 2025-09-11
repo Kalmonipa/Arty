@@ -12,10 +12,10 @@ import {
   SimpleItemSchema,
 } from '../types/types';
 import { isGatheringSkill, logger } from '../utils';
-import { Character } from './CharacterClass';
-import { CraftObjective } from './CraftObjectiveClass';
-import { ApiError } from './ErrorClass';
-import { Objective } from './ObjectiveClass';
+import { Character } from './Character';
+import { CraftObjective } from './CraftObjective';
+import { ApiError } from './Error';
+import { Objective } from './Objective';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;

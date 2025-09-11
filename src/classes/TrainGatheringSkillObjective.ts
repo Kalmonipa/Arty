@@ -1,7 +1,7 @@
 import { getResourceInformation } from '../api_calls/Resources';
 import { DataPageResourceSchema, GatheringSkill } from '../types/types';
-import { Character } from './CharacterClass';
-import { Objective } from './ObjectiveClass';
+import { Character } from './Character';
+import { Objective } from './Objective';
 
 export class TrainGatheringSkillObjective extends Objective {
   skill: GatheringSkill;

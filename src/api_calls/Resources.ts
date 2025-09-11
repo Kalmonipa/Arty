@@ -1,4 +1,4 @@
-import { ApiError } from '../classes/ErrorClass';
+import { ApiError } from '../classes/Error';
 import { ApiUrl, MyHeaders } from '../constants';
 import {
   DataPageResourceSchema,

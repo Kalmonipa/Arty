@@ -23,28 +23,31 @@ import {
   logger,
   sleep,
 } from '../utils';
-import { CraftObjective } from './CraftObjectiveClass';
-import { DepositObjective } from './DepositObjectiveClass';
-import { ApiError } from './ErrorClass';
-import { GatherObjective } from './GatherObjectiveClass';
-import { Objective } from './ObjectiveClass';
-import { FightObjective } from './FightObjectiveClass';
-import { EquipObjective } from './EquipObjectiveClass';
-import { UnequipObjective } from './UnequipObjectiveClass';
-import { WithdrawObjective } from './WithdrawObjectiveClass';
-import { MonsterTaskObjective } from './MonsterTaskObjectiveClass';
+import { CraftObjective } from './CraftObjective';
+import { DepositObjective } from './DepositObjective';
+import { ApiError } from './Error';
+import { GatherObjective } from './GatherObjective';
+import { Objective } from './Objective';
+import { FightObjective } from './FightObjective';
+import { EquipObjective } from './EquipObjective';
+import { UnequipObjective } from './UnequipObjective';
+import { WithdrawObjective } from './WithdrawObjective';
+import { MonsterTaskObjective } from './MonsterTaskObjective';
 import { getBankItems } from '../api_calls/Bank';
-import { ItemTaskObjective } from './ItemTaskObjectiveClass';
+import { ItemTaskObjective } from './ItemTaskObjective';
 import { UtilityEffects } from '../types/ItemData';
 import { SimpleMapSchema } from '../types/MapData';
-import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjectiveClass';
+import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective';
 
 export class Character {
   data: CharacterSchema;
+  activeJob: Objective;
   jobList: Objective[] = [];
   gatheringWeaponMap: Record<GatheringSkill, ItemSchema[]>;
   utilitiesMap: Record<string, ItemSchema[]>;
   consumablesMap: Record<string, ItemSchema[]>;
+
+  isIdle: boolean = true;
 
   /**
    * Max default number of slots. Can be increased with a backpack
@@ -135,22 +138,40 @@ export class Character {
   }
 
   /**
+   * Sets job in the queue as active
+   */
+  setActiveJob(index?: number) {
+    if (!index) {
+      index = 0
+    }
+    if (index > this.jobList.length - 1) {
+      logger.error(`No job in position ${index}. Only ${this.jobList.length} jobs in queue`)
+      return;
+    } else if (this.activeJob === undefined && this.jobList.length > 0) {
+      logger.info(`Setting ${this.jobList[index].objectiveId} as active, removing from main job queue`)
+      this.activeJob = this.jobList[index]
+      this.jobList.splice(index, 1);
+    } else {
+      logger.warn(`Not able to assign a job to active`)
+    }
+  }
+
+  /**
    * Executes all jobs in the job list
    */
   async executeJobList() {
-    // Run indefinitely, checking for new jobs every 10 seconds
     while (true) {
-      if (this.jobList.length > 0) {
-        logger.info(`Executing job ${this.jobList[0].objectiveId}`);
-        await this.jobList[0].execute();
+      if (this.activeJob === undefined && this.jobList.length > 0) {
+        //this.setActiveJob()
+        logger.info(`Setting ${this.jobList[0].objectiveId} as active, removing from main job queue`)
+        this.activeJob = this.jobList[0]
+        this.removeJob(this.jobList[0])
+        logger.info(`Executing job ${this.activeJob.objectiveId}`);
+        await this.activeJob.execute();
       } else {
-        await sleep(10, 'no more jobs', false);
+        await sleep(10, 'no more jobs');
       }
     }
-
-    //logger.info(`No more jobs to execute`);
-    // ToDo: Get character to do some idle tasks if nothing else to do
-    return true;
   }
 
   /********
@@ -289,7 +310,9 @@ export class Character {
     });
 
     if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
-      logger.info(`Closest map is at x: ${closestMap.x}, y: ${closestMap.y}`);
+      logger.info(
+        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+      );
     }
 
     return closestMap;

@@ -3,9 +3,9 @@ import { actionUnequipItem } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { ItemSlot, UnequipSchema } from '../types/types';
 import { logger, sleep } from '../utils';
-import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
-import { Objective } from './ObjectiveClass';
+import { Character } from './Character';
+import { ApiError } from './Error';
+import { Objective } from './Objective';
 
 export class WithdrawObjective extends Objective {
   itemCode: string;

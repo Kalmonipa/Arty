@@ -2,9 +2,9 @@ import { actionFight } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
 import { logger } from '../utils';
-import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
-import { Objective } from './ObjectiveClass';
+import { Character } from './Character';
+import { ApiError } from './Error';
+import { Objective } from './Objective';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 
 /**

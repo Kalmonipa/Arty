@@ -1,10 +1,10 @@
 import * as crypto from 'node:crypto';
 import { ObjectiveStatus, ObjectiveTargets } from '../types/ObjectiveData';
-import { Character } from './CharacterClass';
+import { Character } from './Character';
 import { logger, sleep } from '../utils';
 import { getMaps } from '../api_calls/Maps';
 import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
-import { ApiError } from './ErrorClass';
+import { ApiError } from './Error';
 import { TaskType } from '../types/types';
 
 export abstract class Objective {
@@ -26,6 +26,7 @@ export abstract class Objective {
   }
 
   async execute(): Promise<boolean> {
+    this.character.isIdle = false;
     this.startJob();
 
     await this.runSharedPrereqChecks();
@@ -34,7 +35,8 @@ export abstract class Objective {
     const result = await this.run();
 
     this.completeJob(result);
-    this.character.removeJob(this);
+    this.character.activeJob = undefined;
+    this.character.isIdle = true;
     return result;
   }
 
@@ -48,12 +50,12 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    if (this.character.jobList.indexOf(this) !== 0) {
-      logger.info(
-        `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-      );
-      await this.character.jobList[0].execute();
-    }
+    // if (this.character.jobList.indexOf(this) !== 0) {
+    //   logger.info(
+    //     `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
+    //   );
+    //   await this.character.jobList[0].execute();
+    // }
 
     return true;
   }

@@ -1,13 +1,12 @@
 import { actionCraft } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
-import { logger, sleep } from '../utils';
-import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
-import { Objective } from './ObjectiveClass';
+import { logger } from '../utils';
+import { Character } from './Character';
+import { ApiError } from './Error';
+import { Objective } from './Objective';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import { getItemInformation } from '../api_calls/Items';
-import { GatherObjective } from './GatherObjectiveClass';
-import { CraftSchema, ItemSchema, SimpleItemSchema } from '../types/types';
+import { ItemSchema, SimpleItemSchema } from '../types/types';
 
 /**
  * @todo
@@ -42,6 +41,7 @@ export class CraftObjective extends Objective {
    * @description Craft the item. Character will move to the correct workshop map
    */
   async run(): Promise<boolean> {
+    logger.info(`Inside craft job`);
     if (this.target.quantity === 0) {
       return true;
     }

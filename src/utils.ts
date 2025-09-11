@@ -8,7 +8,7 @@ import {
   ItemType,
 } from './types/types';
 import { getAllItemInformation } from './api_calls/Items';
-import { ApiError } from './classes/ErrorClass';
+import { ApiError } from './classes/Error';
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 
@@ -51,7 +51,11 @@ export function getEnv(name: string): string {
  * @description Used after every action to wait for the cooldown period to finish
  * @param cooldown Number of seconds to sleep for
  */
-export const sleep = (cooldown: number, reason: string, shouldLog?: boolean) => {
+export const sleep = (
+  cooldown: number,
+  reason: string,
+  shouldLog?: boolean,
+) => {
   if (shouldLog || shouldLog === undefined) {
     logger.info(`Sleeping for ${cooldown} seconds because of ${reason}`);
   }

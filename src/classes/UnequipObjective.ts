@@ -1,9 +1,9 @@
 import { actionUnequipItem } from '../api_calls/Items';
 import { ItemSlot, UnequipSchema } from '../types/types';
 import { logger, sleep } from '../utils';
-import { Character } from './CharacterClass';
-import { ApiError } from './ErrorClass';
-import { Objective } from './ObjectiveClass';
+import { Character } from './Character';
+import { ApiError } from './Error';
+import { Objective } from './Objective';
 
 export class UnequipObjective extends Objective {
   itemSlot: ItemSlot;

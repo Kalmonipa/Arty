@@ -1,14 +1,16 @@
-import { Character } from './classes/CharacterClass';
+import { Character } from './classes/Character';
 import { CharName } from './constants';
 import { getCharacter } from './api_calls/Character';
-import express, { Request, Response } from "express";
-import gatherRouter from './routes/GatherRoutes';
-import depositRouter from './routes/DepositRoutes';
-import craftRouter from './routes/CraftRoutes';
-import equipRouter from './routes/EquipRoutes';
-import fightRouter from './routes/FightRoutes';
-import TaskRouter from './routes/TaskRoutes';
-import TrainSkillRouter from './routes/TrainSkillRoutes';
+import express from 'express';
+import gatherRouter from './routes/Gather';
+import depositRouter from './routes/Deposit';
+import craftRouter from './routes/Craft';
+import equipRouter from './routes/Equip';
+import fightRouter from './routes/Fight';
+import TaskRouter from './routes/Task';
+import TrainSkillRouter from './routes/TrainSkill';
+import { logger } from './utils';
+import ListJobsRouter from './routes/ListJobs';
 
 async function main() {
   const charData = await getCharacter(CharName);
@@ -19,21 +21,20 @@ async function main() {
   const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
-  app.use('/craft', craftRouter(char))
-  app.use('/deposit', depositRouter(char))
-  app.use('/equip', equipRouter(char))
-  app.use('/fight', fightRouter(char))
-  app.use('/gather', gatherRouter(char))
-  app.use('/task', TaskRouter(char))
-  app.use('/train', TrainSkillRouter(char))
+  app.use('/craft', craftRouter(char));
+  app.use('/deposit', depositRouter(char));
+  app.use('/equip', equipRouter(char));
+  app.use('/fight', fightRouter(char));
+  app.use('/gather', gatherRouter(char));
+  app.use('/listjobs', ListJobsRouter(char));
+  app.use('/task', TaskRouter(char));
+  app.use('/train', TrainSkillRouter(char));
 
   app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    logger.info(`Server is running on port ${PORT}`);
   });
 
-    await char.executeJobList();
-  
-  
+  char.executeJobList();
 }
 
 main();
