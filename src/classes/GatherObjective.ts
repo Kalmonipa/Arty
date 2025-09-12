@@ -96,10 +96,9 @@ export class GatherObjective extends Objective {
         continue;
       } else {
         if (
-          !(await this.character.checkWeaponForEffects(
-            resourceDetails.subtype,
-          )) &&
-          isGatheringSkill(resourceDetails.subtype)
+          isGatheringSkill(resourceDetails.subtype) && !(await this.character.checkWeaponForEffects(
+            resourceDetails.subtype as GatheringSkill,
+          ))
         ) {
           await this.character.equipBestWeapon(
             resourceDetails.subtype as WeaponFlavours,

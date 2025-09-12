@@ -186,7 +186,7 @@ export class Character {
   async executeJobList() {
     while (true) {
       if (this.jobList.length === 0) {
-        await sleep(10, 'no more jobs', true);
+        await sleep(10, 'no more jobs', false);
       } else if (this.jobList.length > 0) {
         logger.info(`Executing job ${this.jobList[0].objectiveId}`);
         await this.jobList[0].execute();
@@ -332,7 +332,7 @@ export class Character {
 
     if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
       logger.info(
-        `Closest ${closestMap.content} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+        `Closest ${closestMap.content.code} is at x: ${closestMap.x}, y: ${closestMap.y}`,
       );
     }
 
@@ -350,7 +350,7 @@ export class Character {
    *  - true means the currently equipped weapon is beneficial for the activity
    *  - false means it is not beneficial
    */
-  async checkWeaponForEffects(typeOfActivity: string): Promise<boolean> {
+  async checkWeaponForEffects(typeOfActivity: WeaponFlavours): Promise<boolean> {
     var isEffective: boolean = false;
     var weaponDetails = await getItemInformation(this.data.weapon_slot);
 
@@ -361,7 +361,7 @@ export class Character {
       if (
         weaponDetails.type === 'weapon' &&
         weaponDetails.subtype === '' &&
-        typeOfActivity === 'mob'
+        typeOfActivity === 'combat'
       ) {
         isEffective = true;
       } else if (weaponDetails.effects) {
@@ -485,6 +485,7 @@ export class Character {
       activityType === 'combat'
         ? this.getCharacterLevel()
         : this.getCharacterLevel(activityType);
+
     for (var ind = weapons.length - 1; ind >= 0; ind--) {
       if (weapons[ind].level <= charLevel) {
         logger.debug(`Attempting to equip ${weapons[ind].name}`);
@@ -506,12 +507,15 @@ export class Character {
 
   /**
    * @description top up the preferred food from the bank until we have the amount we want
+   * Moves back to the previous location if one is provided
    */
-  async topUpFood() {
+  async topUpFood(priorLocation?: DestinationSchema) {
     const numNeeded =
       this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood);
 
     await this.withdrawNow(numNeeded, this.preferredFood);
+
+    await this.move(priorLocation)
   }
 
   /********
