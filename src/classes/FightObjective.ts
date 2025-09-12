@@ -25,6 +25,11 @@ export class FightObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+    await this.character.evaluateDepositItemsInBank(
+      [this.target.code, this.character.preferredFood],
+      { x: this.character.data.x, y: this.character.data.y },
+    );
+
     // Check health potions in utility slot 1 before we start
     if (
       this.character.data.utility1_slot_quantity <=
@@ -32,6 +37,10 @@ export class FightObjective extends Objective {
     ) {
       await this.character.equipUtility('restore', 'utility1');
     }
+
+    // ToDo: Equip good weapon
+
+    // ToDo: Check all armor to see if it's good
 
     // Check amount of food in inventory to use after battles
     if (!(await this.character.checkFoodLevels())) {

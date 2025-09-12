@@ -25,20 +25,19 @@ export default function TaskRouter(char: Character) {
 
       var job: Objective;
       if (taskType === 'monsters') {
-        new MonsterTaskObjective(char);
+        job = new MonsterTaskObjective(char);
       } else if (taskType === 'items') {
-        new ItemTaskObjective(char);
+        job = new ItemTaskObjective(char);
       } else
         return res
           .status(404)
           .json({ error: 'Task must be one of monsters or items' });
 
-      char.jobList.push(job);
+      char.appendJob(job);
 
       return res.status(201).json({
-        message: 'Gather job added to queue.',
+        message: `${taskType} job added to queue.`,
         character: char.data.name,
-
         job: {
           id: job.objectiveId,
           status: job.status,

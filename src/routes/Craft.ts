@@ -27,7 +27,7 @@ export default function craftRouter(char: Character) {
 
       const job = new CraftObjective(char, target);
 
-      char.jobList.push(job);
+      char.appendJob(job);
 
       return res.status(201).json({
         message: 'Craft job added to queue.',

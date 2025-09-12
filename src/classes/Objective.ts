@@ -35,7 +35,6 @@ export abstract class Objective {
     const result = await this.run();
 
     this.completeJob(result);
-    this.character.activeJob = undefined;
     this.character.isIdle = true;
     return result;
   }
@@ -49,13 +48,6 @@ export abstract class Objective {
    */
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
-
-    // if (this.character.jobList.indexOf(this) !== 0) {
-    //   logger.info(
-    //     `Current job (${this.objectiveId}) has ${this.character.jobList.indexOf(this)} preceding jobs. Moving focus to ${this.character.jobList[0].objectiveId}`,
-    //   );
-    //   await this.character.jobList[0].execute();
-    // }
 
     return true;
   }

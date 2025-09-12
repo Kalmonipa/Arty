@@ -28,7 +28,7 @@ export default function gatherRouter(char: Character) {
 
       const gatherJob = new GatherObjective(char, target, checkBank);
 
-      char.jobList.push(gatherJob);
+      char.appendJob(gatherJob);
 
       return res.status(201).json({
         message: 'Gather job added to queue.',

@@ -26,7 +26,7 @@ export default function fightRouter(char: Character) {
         quantity: quantity,
       });
 
-      char.jobList.push(job);
+      char.appendJob(job);
 
       return res.status(201).json({
         message: 'Fight job added to queue.',

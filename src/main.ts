@@ -10,7 +10,7 @@ import fightRouter from './routes/Fight';
 import TaskRouter from './routes/Task';
 import TrainSkillRouter from './routes/TrainSkill';
 import { logger } from './utils';
-import ListJobsRouter from './routes/ListJobs';
+import JobsRouter from './routes/Jobs';
 
 async function main() {
   const charData = await getCharacter(CharName);
@@ -26,7 +26,7 @@ async function main() {
   app.use('/equip', equipRouter(char));
   app.use('/fight', fightRouter(char));
   app.use('/gather', gatherRouter(char));
-  app.use('/listjobs', ListJobsRouter(char));
+  app.use('/jobs', JobsRouter(char));
   app.use('/task', TaskRouter(char));
   app.use('/train', TrainSkillRouter(char));
 

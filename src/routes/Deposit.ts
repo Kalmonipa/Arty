@@ -25,18 +25,18 @@ export default function depositRouter(char: Character) {
         quantity: quantity,
       };
 
-      const depositJob = new DepositObjective(char, target);
+      const job = new DepositObjective(char, target);
 
-      char.jobList.push(depositJob);
+      char.appendJob(job);
 
       return res.status(201).json({
         message: `Deposit ${quantity} ${itemCode} job added to queue.`,
         character: char.data.name,
 
         job: {
-          id: depositJob.objectiveId,
-          target: depositJob.target,
-          status: depositJob.status,
+          id: job.objectiveId,
+          target: job.target,
+          status: job.status,
         },
       });
     } catch (error) {
