@@ -41,6 +41,9 @@ export abstract class Objective {
 
   abstract run(): Promise<boolean>;
 
+  /**
+   * @description Prerequisite checks that each job configures in their own class
+   */
   abstract runPrerequisiteChecks(): Promise<boolean>;
 
   /**

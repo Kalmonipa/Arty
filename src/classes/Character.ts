@@ -17,12 +17,7 @@ import {
   SimpleItemSchema,
   Skill,
 } from '../types/types';
-import {
-  buildListOf,
-  buildListOfGatheringWeapons,
-  logger,
-  sleep,
-} from '../utils';
+import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils';
 import { CraftObjective } from './CraftObjective';
 import { DepositObjective } from './DepositObjective';
 import { ApiError } from './Error';
@@ -35,7 +30,7 @@ import { WithdrawObjective } from './WithdrawObjective';
 import { MonsterTaskObjective } from './MonsterTaskObjective';
 import { getBankItems } from '../api_calls/Bank';
 import { ItemTaskObjective } from './ItemTaskObjective';
-import { UtilityEffects } from '../types/ItemData';
+import { UtilityEffects, WeaponFlavours } from '../types/ItemData';
 import { SimpleMapSchema } from '../types/MapData';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective';
 
@@ -49,17 +44,12 @@ export class Character {
   /**
    * The list of jobs that have not been started yet
    */
-  unstartedJobList: Objective[] = [];
-  /**
-   * Jobs that spawn sub-jobs get placed in this queue and will get resumed when activeJob completes
-   * Could potentially place this in the unstartedJobList and just utilise the statuses more?
-   */
-  interruptedJobList: Objective[] = [];
+  jobList: Objective[] = [];
 
   /**
    * Game state that we can refer to without API calls
    */
-  gatheringWeaponMap: Record<GatheringSkill, ItemSchema[]>;
+  weaponMap: Record<WeaponFlavours, ItemSchema[]>;
   utilitiesMap: Record<string, ItemSchema[]>;
   consumablesMap: Record<string, ItemSchema[]>;
 
@@ -110,7 +100,7 @@ export class Character {
    * @description function that builds some data sets to use later on
    */
   async init() {
-    this.gatheringWeaponMap = await buildListOfGatheringWeapons();
+    this.weaponMap = await buildListOfWeapons();
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
   }
@@ -124,9 +114,9 @@ export class Character {
    * @param obj
    */
   appendJob(obj: Objective) {
-    this.unstartedJobList.push(obj);
+    this.jobList.push(obj);
     logger.info(
-      `Added ${obj.objectiveId} to position ${this.unstartedJobList.length} in job list`,
+      `Added ${obj.objectiveId} to position ${this.jobList.length} in job list`,
     );
   }
 
@@ -134,7 +124,7 @@ export class Character {
    * Adds an objective to the beginning of the job list
    */
   prependJob(obj: Objective) {
-    this.unstartedJobList.unshift(obj);
+    this.jobList.unshift(obj);
     logger.info(`Added ${obj.objectiveId} to beginning of job list`);
   }
 
@@ -142,23 +132,23 @@ export class Character {
    * Inserts an objective into the specified position in the array
    */
   insertJob(obj: Objective, index: number) {
-    this.unstartedJobList.splice(index, 0, obj);
+    this.jobList.splice(index, 0, obj);
     logger.info(`Inserted ${obj.objectiveId} into position ${index}`);
   }
 
   /**
-   * Remove job from unstartedJobList
+   * Remove job from jobList
    */
-  removeUnstartedJob(obj: Objective, index?: number) {
+  removeJob(obj: Objective, index?: number) {
     if (!index) {
-      index = this.unstartedJobList.indexOf(obj);
+      index = this.jobList.indexOf(obj);
     }
     logger.debug(`Removing ${obj.objectiveId} from position ${index}`);
-    const deletedObj = this.unstartedJobList.splice(index, 1);
+    const deletedObj = this.jobList.splice(index, 1);
     logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`);
-    if (this.unstartedJobList.length > 0) {
+    if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
-      for (const obj of this.unstartedJobList) {
+      for (const obj of this.jobList) {
         logger.debug(`   - ${obj.objectiveId} - ${obj.status}`);
       }
     }
@@ -171,31 +161,23 @@ export class Character {
     if (!index) {
       index = 0;
     }
-    // Prioritise interrupted jobs before unstarted job
-    if (this.interruptedJobList.length > 0) {
-      logger.info(
-        `Setting ${this.interruptedJobList[0].objectiveId} as active, removing from interrupted job queue`,
-      );
-      this.activeJob = this.interruptedJobList[0];
-      this.interruptedJobList.splice(0, 1);
-    }
 
-    if (index > this.unstartedJobList.length - 1) {
+    if (index > this.jobList.length - 1) {
       logger.error(
-        `No job in position ${index}. Only ${this.unstartedJobList.length} jobs in queue`,
+        `No job in position ${index}. Only ${this.jobList.length} jobs in queue`,
       );
       return;
-    } else if (this.unstartedJobList.length > 0) {
+    } else if (this.jobList.length > 0) {
       logger.info(
-        `Setting ${this.unstartedJobList[index].objectiveId} as active, removing from main job queue`,
+        `Setting ${this.jobList[index].objectiveId} as active, removing from main job queue`,
       );
-      this.activeJob = this.unstartedJobList[index];
-      this.unstartedJobList.splice(index, 1);
+      this.activeJob = this.jobList[index];
+      this.removeJob(this.jobList[index]);
     } else {
-      this.activeJob = undefined
+      this.activeJob = null;
       logger.warn(`Not able to assign a job to active`);
     }
-    return this.activeJob
+    return this.activeJob;
   }
 
   /**
@@ -203,25 +185,12 @@ export class Character {
    */
   async executeJobList() {
     while (true) {
-      if (
-        this.activeJob === undefined &&
-        this.interruptedJobList.length === 0 &&
-        this.unstartedJobList.length === 0
-      ) {
-        await sleep(10, 'no more jobs', false);
-        continue;
-      } else if (this.interruptedJobList.length > 0) {
-        this.setActiveJob();
-        await this.activeJob.execute();
-      } else if (this.unstartedJobList.length > 0) {
-        this.setActiveJob();
-        // logger.info(
-        //   `Setting ${this.unstartedJobList[0].objectiveId} as active, removing from main job queue`,
-        // );
-        // this.activeJob = this.unstartedJobList[0];
-        // this.removeUnstartedJob(this.unstartedJobList[0]);
-        // logger.info(`Executing job ${this.activeJob.objectiveId}`);
-        await this.activeJob.execute();
+      if (this.jobList.length === 0) {
+        await sleep(10, 'no more jobs', true);
+      } else if (this.jobList.length > 0) {
+        logger.info(`Executing job ${this.jobList[0].objectiveId}`);
+        await this.jobList[0].execute();
+        this.removeJob(this.jobList[0]);
       }
     }
   }
@@ -339,7 +308,7 @@ export class Character {
         quantity: 0,
       }),
     );
-    await this.unstartedJobList[0].execute();
+    await this.jobList[0].execute();
   }
 
   /**
@@ -363,7 +332,7 @@ export class Character {
 
     if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
       logger.info(
-        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+        `Closest ${closestMap.content} is at x: ${closestMap.x}, y: ${closestMap.y}`,
       );
     }
 
@@ -375,7 +344,8 @@ export class Character {
    ********/
 
   /**
-   * Check currently equipped weapon
+   * @description Check currently equipped weapon
+   * @todo Expand this to factor in resistances/vulnerabilities of mobs
    * @returns {boolean}
    *  - true means the currently equipped weapon is beneficial for the activity
    *  - false means it is not beneficial
@@ -413,7 +383,7 @@ export class Character {
 
   async findBestWeaponForJob(typeOfActivity: GatheringSkill): Promise<string> {
     logger.debug(`Type of activity is ${typeOfActivity}`);
-    const weapons = this.gatheringWeaponMap[typeOfActivity];
+    const weapons = this.weaponMap[typeOfActivity];
     logger.debug(`Found ${weapons?.length || 0} weapons for ${typeOfActivity}`);
 
     if (!weapons || weapons.length === 0) {
@@ -421,7 +391,7 @@ export class Character {
       return;
     }
 
-    this.gatheringWeaponMap[typeOfActivity].forEach((weapon) => {
+    this.weaponMap[typeOfActivity].forEach((weapon) => {
       logger.debug(`${weapon.code}`);
     });
   }
@@ -507,12 +477,16 @@ export class Character {
   }
 
   /**
-   * @description Equips the best available item for the gathering task
+   * @description Equips the best available weapon for the task
    */
-  async equipBestWeapon(gatheringType: GatheringSkill) {
-    const weapons = this.gatheringWeaponMap[gatheringType];
+  async equipBestWeapon(activityType: WeaponFlavours) {
+    const weapons = this.weaponMap[activityType];
+    const charLevel =
+      activityType === 'combat'
+        ? this.getCharacterLevel()
+        : this.getCharacterLevel(activityType);
     for (var ind = weapons.length - 1; ind >= 0; ind--) {
-      if (weapons[ind].level <= this.getCharacterLevel(gatheringType)) {
+      if (weapons[ind].level <= charLevel) {
         logger.debug(`Attempting to equip ${weapons[ind].name}`);
         if (this.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
           await this.equipNow(weapons[ind].code, 'weapon');
@@ -723,13 +697,11 @@ export class Character {
    * @description Craft the item. Character must be on the correct crafting map
    */
   async craftNow(quantity: number, code: string) {
-    this.prependJob(
-      new CraftObjective(this, {
-        code: code,
-        quantity: quantity,
-      }),
-    );
-    await this.unstartedJobList[0].execute();
+    const craftJob = new CraftObjective(this, {
+      code: code,
+      quantity: quantity,
+    });
+    await craftJob.execute();
   }
 
   /**
@@ -766,13 +738,12 @@ export class Character {
    * @description deposit the specified items into the bank
    */
   async depositNow(quantity: number, itemCode: string) {
-    this.prependJob(
-      new DepositObjective(this, {
-        code: itemCode,
-        quantity: quantity,
-      }),
-    );
-    await this.unstartedJobList[0].execute();
+    const depositJob = new DepositObjective(this, {
+      code: itemCode,
+      quantity: quantity,
+    });
+
+    await depositJob.execute();
   }
 
   /**
@@ -787,8 +758,8 @@ export class Character {
    * beginning of the job list and executes it
    */
   async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number) {
-    this.prependJob(new EquipObjective(this, itemName, itemSlot, quantity));
-    await this.unstartedJobList[0].execute();
+    const equipJob = new EquipObjective(this, itemName, itemSlot, quantity);
+    await equipJob.execute();
   }
 
   /**
@@ -802,8 +773,8 @@ export class Character {
    * @description equip the item from the slot specified
    */
   async unequipNow(itemSlot: ItemSlot, quantity?: number) {
-    this.prependJob(new UnequipObjective(this, itemSlot, quantity));
-    await this.unstartedJobList[0].execute();
+    const unequipJob = new UnequipObjective(this, itemSlot, quantity);
+    await unequipJob.execute();
   }
 
   /**
@@ -820,10 +791,12 @@ export class Character {
    * and executes it
    */
   async fightNow(quantity: number, code: string) {
-    this.prependJob(
-      new FightObjective(this, { code: code, quantity: quantity }),
-    );
-    await this.unstartedJobList[0].execute();
+    const fightJob = new FightObjective(this, {
+      code: code,
+      quantity: quantity,
+    });
+
+    await fightJob.execute();
   }
 
   /**
@@ -846,17 +819,16 @@ export class Character {
    * @description calls the gather endpoint on the current map
    */
   async gatherNow(quantity: number, code: string, checkBank?: boolean) {
-    this.prependJob(
-      new GatherObjective(
-        this,
-        {
-          code: code,
-          quantity: quantity,
-        },
-        checkBank,
-      ),
+    const gatherJob = new GatherObjective(
+      this,
+      {
+        code: code,
+        quantity: quantity,
+      },
+      checkBank,
     );
-    await this.unstartedJobList[0].execute();
+
+    await gatherJob.execute();
   }
 
   /**
@@ -890,8 +862,8 @@ export class Character {
    * @description withdraw the specified items from the bank
    */
   async withdrawNow(quantity: number, itemCode: string) {
-    this.prependJob(new WithdrawObjective(this, itemCode, quantity));
-    await this.unstartedJobList[0].execute();
+    const withdrawJob = new WithdrawObjective(this, itemCode, quantity);
+    await withdrawJob.execute();
   }
 
   /**

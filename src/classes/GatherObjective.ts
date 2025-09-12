@@ -3,6 +3,7 @@ import { getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { getMonsterInformation } from '../api_calls/Monsters';
 import { getResourceInformation } from '../api_calls/Resources';
+import { WeaponFlavours } from '../types/ItemData';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   DestinationSchema,
@@ -101,7 +102,7 @@ export class GatherObjective extends Objective {
           isGatheringSkill(resourceDetails.subtype)
         ) {
           await this.character.equipBestWeapon(
-            resourceDetails.subtype as GatheringSkill,
+            resourceDetails.subtype as WeaponFlavours,
           );
         }
       }

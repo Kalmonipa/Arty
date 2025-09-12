@@ -1,3 +1,5 @@
+import { GatheringSkill } from './types';
+
 export type UtilityEffects =
   | 'antipoison'
   | 'boost_dmg_air'
@@ -10,3 +12,5 @@ export type UtilityEffects =
   | 'boost_res_fire'
   | 'boost_res_water'
   | 'restore';
+
+export type WeaponFlavours = GatheringSkill | 'combat';

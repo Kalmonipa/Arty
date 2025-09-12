@@ -38,7 +38,10 @@ export class FightObjective extends Objective {
       await this.character.equipUtility('restore', 'utility1');
     }
 
-    // ToDo: Equip good weapon
+    // Check weapon and equip a suitable one if current isn't good
+    if (!(await this.character.checkWeaponForEffects('combat'))) {
+      await this.character.equipBestWeapon('combat');
+    }
 
     // ToDo: Check all armor to see if it's good
 

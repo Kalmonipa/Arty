@@ -29,10 +29,10 @@ export class CraftObjective extends Objective {
       this.target.code,
     );
 
-    if (quantyInInv < this.target.quantity) {
+    if (quantyInInv <= this.target.quantity) {
       // If we're carrying some then we don't need to collect the full requested amount
       this.target.quantity = this.target.quantity - quantyInInv;
-    } else this.target.quantity = 0;
+    }
 
     return true;
   }
@@ -41,8 +41,10 @@ export class CraftObjective extends Objective {
    * @description Craft the item. Character will move to the correct workshop map
    */
   async run(): Promise<boolean> {
-    logger.info(`Inside craft job`);
     if (this.target.quantity === 0) {
+      logger.info(
+        `Already have the requested amount of ${this.target.code}. Completing job`,
+      );
       return true;
     }
 
@@ -81,7 +83,7 @@ export class CraftObjective extends Objective {
 
         const contentLocation = this.character.evaluateClosestMap(maps);
 
-        for (var batch = 0; batch <= this.numBatches; batch++) {
+        for (var batch = 0; batch < this.numBatches; batch++) {
           logger.debug(`Crafting batch ${batch}/${this.numBatches}`);
 
           await this.gatherIngredients(
@@ -114,17 +116,28 @@ export class CraftObjective extends Objective {
           } else {
             this.character.data = response.data.character;
 
-            this.character.depositNow(this.numItemsPerBatch, this.target.code);
+            if (this.numBatches > 1) {
+              logger.debug(`Depositing items from batch ${batch}`);
+              this.character.depositNow(
+                this.numItemsPerBatch,
+                this.target.code,
+              );
+            }
 
             logger.info(
               `Successfully crafted ${this.numItemsPerBatch} ${this.target.code}`,
             );
           }
         }
-        await this.character.withdrawNow(
-          this.target.quantity,
-          this.target.code,
-        );
+        if (this.numBatches > 1) {
+          logger.debug(
+            `Withdrawing all ${this.target.quantity} ${this.target.code} from bank`,
+          );
+          await this.character.withdrawNow(
+            this.target.quantity,
+            this.target.code,
+          );
+        }
 
         return true;
       }
@@ -228,12 +241,12 @@ export class CraftObjective extends Objective {
     numPerBatch: number;
   } {
     const numIngredients = this.getTotalNumberOfIngredients(craftList);
-    logger.debug(
-      `Total number of ingredients needed to craft ${this.target.quantity} ${this.target.code}: ${numIngredients}`,
-    );
-    logger.debug(
-      `Total number of inventory space available: ${this.character.data.inventory_max_items}`,
-    );
+    // logger.debug(
+    //   `Total number of ingredients needed to craft ${this.target.quantity} ${this.target.code}: ${numIngredients}`,
+    // );
+    // logger.debug(
+    //   `Total number of inventory space available: ${this.character.data.inventory_max_items}`,
+    // );
 
     const batches: { numBatches: number; numPerBatch: number } =
       this.getTotalNumberOfIngredientsPerBatch(

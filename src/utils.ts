@@ -9,6 +9,7 @@ import {
 } from './types/types';
 import { getAllItemInformation } from './api_calls/Items';
 import { ApiError } from './classes/Error';
+import { WeaponFlavours } from './types/ItemData';
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 
@@ -66,26 +67,27 @@ export const sleep = (
  * @description Builds a map of all the tools that help specific skills
  * @returns {Record<CraftSkill, ItemSchema[]>}
  */
-export async function buildListOfGatheringWeapons(): Promise<
-  Record<GatheringSkill, ItemSchema[]>
+export async function buildListOfWeapons(): Promise<
+  Record<WeaponFlavours, ItemSchema[]>
 > {
   logger.info(`Building map of weapons`);
 
-  const craftSkills: GatheringSkill[] = [
+  const gatherSkills: GatheringSkill[] = [
     'fishing',
     'woodcutting',
     'mining',
     'alchemy',
   ];
 
-  var weaponMap: Record<GatheringSkill, ItemSchema[]> = {} as Record<
-    GatheringSkill,
+  let weaponMap: Record<WeaponFlavours, ItemSchema[]> = {} as Record<
+    WeaponFlavours,
     ItemSchema[]
   >;
 
-  craftSkills.forEach((skill) => {
+  gatherSkills.forEach((skill) => {
     weaponMap[skill] = [];
   });
+  weaponMap['combat'] = [];
 
   const allWeapons: ApiError | GetAllItemsItemsGetResponse =
     await getAllItemInformation({ query: { type: 'weapon' }, url: '/items' });
@@ -95,9 +97,20 @@ export async function buildListOfGatheringWeapons(): Promise<
   }
 
   allWeapons.data.forEach((weapon) => {
-    if (weapon.effects) {
+    if (weapon.subtype === '') {
+      const combatArray = weaponMap['combat'];
+      // Excluding wooden stick here because I don't think it needs to be in the map
+      if (
+        combatArray &&
+        !combatArray.includes(weapon) &&
+        weapon.code !== 'wooden_stick'
+      ) {
+        logger.debug(`Adding ${weapon.code} object to combat map`);
+        combatArray.push(weapon);
+      }
+    } else if (weapon.effects) {
       weapon.effects.forEach((effect) => {
-        if (craftSkills.includes(effect.code as GatheringSkill)) {
+        if (gatherSkills.includes(effect.code as GatheringSkill)) {
           const skillArray = weaponMap[effect.code as GatheringSkill];
           if (skillArray && !skillArray.includes(weapon)) {
             logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
