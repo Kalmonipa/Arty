@@ -28,6 +28,9 @@ export default function JobsRouter(char: Character) {
     }
   });
 
+  /**
+   * @description Not implemented yet
+   */
   router.post('/cancel/active', async (req: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
@@ -36,11 +39,8 @@ export default function JobsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      const activeJob: Objective = this.character.activeJob;
-      this.character.activeJob = null;
-
-      return res.status(201).json({
-        message: `${activeJob.objectiveId} has been removed from active queue`,
+      return res.status(418).json({
+        message: `I'm a teapot`,
         character: char.data.name,
       });
     } catch (error) {

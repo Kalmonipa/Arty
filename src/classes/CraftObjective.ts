@@ -118,7 +118,7 @@ export class CraftObjective extends Objective {
 
             if (this.numBatches > 1) {
               logger.debug(`Depositing items from batch ${batch}`);
-              this.character.depositNow(
+              await this.character.depositNow(
                 this.numItemsPerBatch,
                 this.target.code,
               );
@@ -129,7 +129,7 @@ export class CraftObjective extends Objective {
             );
           }
         }
-        if (this.numBatches > 1) {
+        if (this.numBatches > 1 && this.target.quantity < this.character.data.inventory_max_items) {
           logger.debug(
             `Withdrawing all ${this.target.quantity} ${this.target.code} from bank`,
           );
@@ -198,7 +198,7 @@ export class CraftObjective extends Objective {
             logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
 
             await this.character.gatherNow(
-              craftingItem.quantity - numInInv,
+              totalNumNeededToCraft - numInInv,
               craftingItem.code,
             );
           } else if (craftingItemInfo.craft !== null) {
@@ -207,7 +207,7 @@ export class CraftObjective extends Objective {
             );
 
             await this.character.craftNow(
-              craftingItem.quantity - numInInv,
+              totalNumNeededToCraft - numInInv,
               craftingItem.code,
             );
           } else {
@@ -218,7 +218,7 @@ export class CraftObjective extends Objective {
               );
 
               await this.character.gatherNow(
-                craftingItem.quantity - numInInv,
+                totalNumNeededToCraft - numInInv,
                 craftingItem.code,
               );
             }
@@ -241,12 +241,6 @@ export class CraftObjective extends Objective {
     numPerBatch: number;
   } {
     const numIngredients = this.getTotalNumberOfIngredients(craftList);
-    // logger.debug(
-    //   `Total number of ingredients needed to craft ${this.target.quantity} ${this.target.code}: ${numIngredients}`,
-    // );
-    // logger.debug(
-    //   `Total number of inventory space available: ${this.character.data.inventory_max_items}`,
-    // );
 
     const batches: { numBatches: number; numPerBatch: number } =
       this.getTotalNumberOfIngredientsPerBatch(
@@ -281,7 +275,7 @@ export class CraftObjective extends Objective {
   ): { numBatches: number; numPerBatch: number } {
     const numIngredientsPerBatch = Math.ceil(totalNumIngredients / numBatches);
     const newNumPerBatch = Math.ceil(numPerBatch / numBatches);
-    if (numIngredientsPerBatch > this.character.data.inventory_max_items) {
+    if (numIngredientsPerBatch > (this.character.data.inventory_max_items * 0.9)) {
       numBatches += 1;
       return this.getTotalNumberOfIngredientsPerBatch(
         totalNumIngredients,

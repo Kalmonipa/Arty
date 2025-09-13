@@ -110,6 +110,14 @@ export class Character {
    ********/
 
   /**
+   * @description Cancels the currently active job
+   * @todo Implement some cancel logic
+   */
+  cancelJob() {
+    return true
+  }
+
+  /**
    * Adds an objective to the end of the job list
    * @param obj
    */
@@ -429,24 +437,28 @@ export class Character {
    * @description Equips a utility into the specified slot
    * Calculates how many potions we need to reach max number
    * Checks inventory and bank for the amount we need
+   * @returns a boolean stating whether we need to move back to our original location
    */
-  async equipUtility(utilityType: UtilityEffects, slot: ItemSlot) {
+  async equipUtility(utilityType: UtilityEffects, slot: ItemSlot): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
+
     for (var ind = utility.length - 1; ind >= 0; ind--) {
       if (utility[ind].level <= this.getCharacterLevel()) {
         if (slot === 'utility1') {
           var numNeeded =
             this.maxEquippedUtilities - this.data.utility1_slot_quantity;
-        } else
+        } else {
           var numNeeded =
             this.maxEquippedUtilities - this.data.utility2_slot_quantity;
+        }
 
         const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
+
         logger.debug(`Attempting to equip ${utility[ind].name}`);
         if (numInInv >= numNeeded) {
           logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
           await this.equipNow(utility[ind].code, slot, numInInv);
-          return;
+          return false;
         } else if (numInInv > 0 && numInInv < numNeeded) {
           logger.debug(
             `Carrying ${numInInv} in inv. Equipping them and checking bank`,
@@ -468,7 +480,7 @@ export class Character {
             slot,
             Math.min(numInBank, numNeeded),
           );
-          return;
+          return true;
         } else {
           logger.debug(`Can't find any ${utility[ind].name}`);
         }
@@ -515,7 +527,9 @@ export class Character {
 
     await this.withdrawNow(numNeeded, this.preferredFood);
 
-    await this.move(priorLocation)
+    if (priorLocation) {
+      await this.move(priorLocation)
+    }
   }
 
   /********
@@ -567,7 +581,7 @@ export class Character {
         await this.evaluateDepositItemsInBank(exceptions, priorLocation);
       } else {
         this.data = response.data.character;
-        this.move(priorLocation);
+        await this.move(priorLocation);
       }
       return true;
     }

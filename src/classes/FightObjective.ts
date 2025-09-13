@@ -98,12 +98,8 @@ export class FightObjective extends Objective {
           this.character.data.utility1_slot_quantity <=
           this.character.minEquippedUtilities
         ) {
-          await this.character.equipUtility('restore', 'utility1');
-          // Character may have moved to the bank so need to move back to the monster location
-          if (
-            this.character.data.x !== contentLocation.x &&
-            this.character.data.y !== contentLocation.y
-          ) {
+          if (await this.character.equipUtility('restore', 'utility1')) {
+            // If we moved to the bank we need to move back to the monster location
             await this.character.move(contentLocation);
           }
         }
