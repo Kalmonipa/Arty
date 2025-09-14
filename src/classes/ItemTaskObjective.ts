@@ -62,7 +62,7 @@ export class ItemTaskObjective extends Objective {
         // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
         var numToGather = Math.min(
           this.character.data.task_total - this.character.data.task_progress,
-          this.character.data.inventory_max_items * 0.9,
+          Math.ceil(this.character.data.inventory_max_items * 0.9),
         );
 
         var numInBank = await this.character.checkQuantityOfItemInBank(
@@ -101,7 +101,7 @@ export class ItemTaskObjective extends Objective {
         } else if (taskInfo.craft) {
           await this.character.craftNow(numToGather, this.character.data.task);
         } else {
-          await this.character.gatherNow(numToGather, this.character.data.task);
+          await this.character.gatherNow(numToGather, this.character.data.task, true, true);
         }
       }
     }

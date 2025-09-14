@@ -88,7 +88,7 @@ export async function buildListOfWeapons(): Promise<
   weaponMap['combat'] = [];
 
   const allWeapons: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({ query: { type: 'weapon' }, url: '/items' });
+    await getAllItemInformation({ type: 'weapon' });
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
@@ -137,7 +137,7 @@ export async function buildListOfUtilities(): Promise<
   var utilitiesMap: Record<string, ItemSchema[]> = {};
 
   const allUtilities: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({ query: { type: 'utility' }, url: '/items' });
+    await getAllItemInformation({type: 'utility' });
   if (allUtilities instanceof ApiError) {
     logger.error(`Failed to build list of useful utility: ${allUtilities}`);
     return;
@@ -169,7 +169,7 @@ export async function buildListOf(
   var itemMap: Record<string, ItemSchema[]> = {};
 
   const allItems: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({ query: { type: itemType }, url: '/items' });
+    await getAllItemInformation({ type: itemType });
   if (allItems instanceof ApiError) {
     logger.error(`Failed to build list of useful ${itemType}: ${allItems}`);
     return;

@@ -33,6 +33,7 @@ import { ItemTaskObjective } from './ItemTaskObjective';
 import { UtilityEffects, WeaponFlavours } from '../types/ItemData';
 import { SimpleMapSchema } from '../types/MapData';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective';
+import { TidyBankObjective } from './TidyBankObjective';
 
 export class Character {
   data: CharacterSchema;
@@ -714,12 +715,12 @@ export class Character {
   /**
    * @description Craft the item. Character must be on the correct crafting map
    */
-  async craftNow(quantity: number, code: string) {
+  async craftNow(quantity: number, code: string): Promise<boolean> {
     const craftJob = new CraftObjective(this, {
       code: code,
       quantity: quantity,
     });
-    await craftJob.execute();
+    return await craftJob.execute();
   }
 
   /**
@@ -755,13 +756,13 @@ export class Character {
   /**
    * @description deposit the specified items into the bank
    */
-  async depositNow(quantity: number, itemCode: string) {
+  async depositNow(quantity: number, itemCode: string): Promise<boolean> {
     const depositJob = new DepositObjective(this, {
       code: itemCode,
       quantity: quantity,
     });
 
-    await depositJob.execute();
+    return await depositJob.execute();
   }
 
   /**
@@ -775,9 +776,9 @@ export class Character {
    * @description equip the item now. Creates a new equip job at the
    * beginning of the job list and executes it
    */
-  async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number) {
+  async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
     const equipJob = new EquipObjective(this, itemName, itemSlot, quantity);
-    await equipJob.execute();
+    return await equipJob.execute();
   }
 
   /**
@@ -790,9 +791,9 @@ export class Character {
   /**
    * @description equip the item from the slot specified
    */
-  async unequipNow(itemSlot: ItemSlot, quantity?: number) {
+  async unequipNow(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
     const unequipJob = new UnequipObjective(this, itemSlot, quantity);
-    await unequipJob.execute();
+    return await unequipJob.execute();
   }
 
   /**
@@ -805,16 +806,15 @@ export class Character {
   }
 
   /**
-   * @description Creates a new fight objective at the beginning of the queue
-   * and executes it
+   * @description Creates a new fight objective and executes it
    */
-  async fightNow(quantity: number, code: string) {
+  async fightNow(quantity: number, code: string): Promise<boolean> {
     const fightJob = new FightObjective(this, {
       code: code,
       quantity: quantity,
     });
 
-    await fightJob.execute();
+    return await fightJob.execute();
   }
 
   /**
@@ -837,7 +837,7 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gatherNow(quantity: number, code: string, checkBank?: boolean, includeInventory?: boolean) {
+  async gatherNow(quantity: number, code: string, checkBank?: boolean, includeInventory?: boolean): Promise<boolean> {
     const gatherJob = new GatherObjective(
       this,
       {
@@ -848,7 +848,7 @@ export class Character {
       includeInventory
     );
 
-    await gatherJob.execute();
+    return await gatherJob.execute();
   }
 
   /**
@@ -872,6 +872,14 @@ export class Character {
   }
 
   /**
+   * @description Tidy up the bank. Will be moved to be part of the idle tasks
+   */
+  async tidyUpBank() {
+    const job = new TidyBankObjective(this)
+    await job.execute()
+  }
+
+  /**
    * @description withdraw the specified items from the bank
    */
   async withdraw(quantity: number, itemCode: string) {
@@ -881,9 +889,9 @@ export class Character {
   /**
    * @description withdraw the specified items from the bank
    */
-  async withdrawNow(quantity: number, itemCode: string) {
+  async withdrawNow(quantity: number, itemCode: string): Promise<boolean> {
     const withdrawJob = new WithdrawObjective(this, itemCode, quantity);
-    await withdrawJob.execute();
+    return await withdrawJob.execute();
   }
 
   /**

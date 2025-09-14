@@ -12,3 +12,11 @@ export type InventorySlot = {
   code: string;
   quantity: number;
 };
+
+export type Role = 
+  'alchemist'
+  | 'fighter'
+  | 'fisherman'
+  | 'lumberjack'
+  | 'miner'
+

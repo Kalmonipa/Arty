@@ -11,17 +11,11 @@ import TaskRouter from './routes/Task';
 import TrainSkillRouter from './routes/TrainSkill';
 import { logger } from './utils';
 import JobsRouter from './routes/Jobs';
-import { ApiError } from './classes/Error';
 
 async function main() {
   const charData = await getCharacter(CharName);
-  if (charData instanceof ApiError) {
-    logger.error(`something bad happened`)
-    return;
-  }
   const char = new Character(charData);
   await char.init();
-  logger.info(`Character is ${CharName}`)
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {
     logger.info(`-- Using Test server --`)
