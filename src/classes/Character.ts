@@ -820,7 +820,7 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gather(quantity: number, code: string, checkBank?: boolean) {
+  async gather(quantity: number, code: string, checkBank?: boolean, includeInventory?: boolean) {
     this.appendJob(
       new GatherObjective(
         this,
@@ -829,6 +829,7 @@ export class Character {
           quantity: quantity,
         },
         checkBank,
+        includeInventory
       ),
     );
   }
@@ -836,7 +837,7 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gatherNow(quantity: number, code: string, checkBank?: boolean) {
+  async gatherNow(quantity: number, code: string, checkBank?: boolean, includeInventory?: boolean) {
     const gatherJob = new GatherObjective(
       this,
       {
@@ -844,6 +845,7 @@ export class Character {
         quantity: quantity,
       },
       checkBank,
+      includeInventory
     );
 
     await gatherJob.execute();
