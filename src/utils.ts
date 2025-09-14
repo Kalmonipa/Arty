@@ -1,7 +1,5 @@
 import pino from 'pino';
 import {
-  CharacterLeaderboardType,
-  CraftSkill,
   GatheringSkill,
   GetAllItemsItemsGetResponse,
   ItemSchema,

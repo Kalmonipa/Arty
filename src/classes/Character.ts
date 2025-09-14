@@ -566,7 +566,7 @@ export class Character {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
           break;
-        } else if (exceptions.includes(item.code)) {
+        } else if ( exceptions && exceptions.includes(item.code)) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.info(`Adding ${item.quantity} ${item.code} to deposit list`);
@@ -727,8 +727,8 @@ export class Character {
    * If a task is not in progress, will start a new one
    * Hands in items as they are gathered
    */
-  async doItemsTask() {
-    this.appendJob(new ItemTaskObjective(this));
+  async doItemsTask(quantity: number) {
+    this.appendJob(new ItemTaskObjective(this, quantity));
   }
 
   /**

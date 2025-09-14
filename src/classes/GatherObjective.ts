@@ -14,23 +14,25 @@ import {
 } from '../types/types';
 import { isGatheringSkill, logger } from '../utils';
 import { Character } from './Character';
-import { CraftObjective } from './CraftObjective';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
   checkBank?: boolean;
+  includeInventory?: boolean;
 
   constructor(
     character: Character,
     target: ObjectiveTargets,
     checkBank?: boolean,
+    includeInventory?: boolean,
   ) {
     super(character, `gather_${target.quantity}_${target.code}`, 'not_started');
     this.character = character;
     this.target = target;
     this.checkBank = checkBank;
+    this.includeInventory = includeInventory;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -38,9 +40,14 @@ export class GatherObjective extends Objective {
   }
 
   async run(): Promise<boolean> {
-    var result = false;
-    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
-    var numInBank = 0;
+    let result = false;
+    let numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+    let numInBank = 0;
+
+    if (this.includeInventory) {
+      logger.info(`Including ${numInInv} from our inventory`)
+      this.progress = numInInv;
+    }
 
     // Sometimes we want to collect a bunch of the resource so we should skip checking the bank
     // Other times we want to gather stuff to then craft so taking from the bank is OK
@@ -50,7 +57,7 @@ export class GatherObjective extends Objective {
       );
     }
 
-    if (numInInv >= this.target.quantity) {
+    if (this.includeInventory && numInInv >= this.target.quantity) {
       logger.info(
         `${numInInv} ${this.target.code} in inventory already. No need to collect more`,
       );
@@ -61,7 +68,7 @@ export class GatherObjective extends Objective {
       );
       await this.character.withdrawNow(this.target.quantity, this.target.code);
     } else {
-      result = await this.gather(this.target.quantity, this.target.code);
+      result = await this.gather(this.target.quantity - this.progress, this.target.code);
     }
 
     return result;
@@ -107,7 +114,11 @@ export class GatherObjective extends Objective {
       }
 
       // Evaluate our inventory space before we start collecting items
-      await this.character.evaluateDepositItemsInBank([code], {
+      // If the amount to gather is more than our inventory can handle we will drop off all items
+      // If not, then we keep the target item
+      const exceptions = this.target.quantity < this.character.data.inventory_max_items ? [code] : []
+
+      await this.character.evaluateDepositItemsInBank(exceptions, {
         x: this.character.data.x,
         y: this.character.data.y,
       });
@@ -118,12 +129,9 @@ export class GatherObjective extends Objective {
           numHeld,
         );
       } else if (resourceDetails.craft) {
-        this.character.prependJob(
-          new CraftObjective(this.character, {
-            code: resourceDetails.code,
-            quantity: quantity,
-          }),
-        );
+        await this.character.craftNow(quantity,
+            resourceDetails.code,
+        )
       } else {
         return await this.gatherResource(
           code,
@@ -137,18 +145,18 @@ export class GatherObjective extends Objective {
 
   async gatherItemLoop(
     target: SimpleItemSchema,
-    numHeld: number,
     remainderToGather: number,
     location: DestinationSchema,
+    exceptions?: string[]
   ): Promise<boolean> {
     // Loop that does the gather requests
     for (var count = 0; count < remainderToGather; count++) {
-      if (count % 5 === 0) {
-        numHeld = this.character.checkQuantityOfItemInInv(target.code);
-        logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+      if (this.progress % 5 === 0) {
+        //numHeld = this.character.checkQuantityOfItemInInv(target.code);
+        logger.info(`Gathered ${this.progress}/${this.target.quantity} ${target.code}`);
         // Check inventory space to make sure we are less than 90% full
         await this.character.evaluateDepositItemsInBank(
-          [target.code],
+          exceptions,
           location,
         );
       }
@@ -161,6 +169,7 @@ export class GatherObjective extends Objective {
         return false;
       } else {
         this.character.data = response.data.character;
+        this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
       }
     }
     return true;
@@ -179,12 +188,16 @@ export class GatherObjective extends Objective {
       const remainderToGather = target.quantity - numHeld;
 
       while (numHeld < remainderToGather) {
-        logger.info(`Gathered ${numHeld}/${target.quantity} ${target.code}`);
+        logger.info(`Gathered ${numHeld}/${this.target.quantity} ${target.code}`);
 
         // ToDo: make this check all mobs in case multiple drop the item
         await this.character.fightNow(1, mobInfo.data[0].code);
 
-        numHeld = this.character.checkQuantityOfItemInInv(target.code);
+        const newNumHeld = this.character.checkQuantityOfItemInInv(target.code); 
+        if (newNumHeld > numHeld) {
+          this.progress += newNumHeld - numHeld;
+          numHeld = newNumHeld;
+        }
       }
       return true;
     }
@@ -203,6 +216,7 @@ export class GatherObjective extends Objective {
     quantity: number,
     numHeld: number,
     remainderToGather: number,
+    exceptions?: string[]
   ): Promise<boolean> {
     logger.debug(`Finding resource map type for ${code}`);
 
@@ -226,25 +240,24 @@ export class GatherObjective extends Objective {
 
     await this.gatherItemLoop(
       { code: code, quantity: quantity },
-      numHeld,
       remainderToGather,
       {
         x: contentLocation.x,
         y: contentLocation.y,
       },
+      exceptions
     );
 
     numHeld = this.character.checkQuantityOfItemInInv(code);
-    if (numHeld >= quantity) {
+    if (this.progress >= quantity) {
       logger.info(`Successfully gathered ${quantity} ${code}`);
       return true;
     } else {
       logger.info(
-        `Only holding ${numHeld} ${code}. Collecting ${quantity - numHeld} more`,
+        `Only gathered ${this.progress} ${code}. Collecting ${quantity - this.progress} more`,
       );
       await this.gatherItemLoop(
-        { code: code, quantity: quantity - numHeld },
-        numHeld,
+        { code: code, quantity: quantity - this.progress },
         remainderToGather,
         {
           x: contentLocation.x,

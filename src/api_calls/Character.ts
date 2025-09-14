@@ -26,16 +26,3 @@ export async function getCharacter(
     logger.error(error);
   }
 }
-
-/**
- * @description Gets the latest location of the character
- * @param char
- * @returns {x: number, y: number}
- */
-export async function getCharacterLocation(
-  char: string,
-): Promise<{ x: number; y: number }> {
-  const latestInfo = await getCharacter(char);
-  logger.debug(`Character location: x: ${latestInfo.x}, y: ${latestInfo.y}`);
-  return { x: latestInfo.x, y: latestInfo.y };
-}

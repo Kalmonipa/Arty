@@ -10,6 +10,7 @@ export default function gatherRouter(char: Character) {
       const quantity = parseInt(req.body.quantity, 10);
       const itemCode = req.body.itemCode;
       const checkBank = req.body.checkBank || false;
+      const includeInventory = req.body.includeInventory || false;
 
       if (isNaN(quantity) || !itemCode) {
         return res.status(400).json({ error: 'Invalid quantity or itemCode.' });
@@ -26,7 +27,7 @@ export default function gatherRouter(char: Character) {
         quantity: quantity,
       };
 
-      const gatherJob = new GatherObjective(char, target, checkBank);
+      const gatherJob = new GatherObjective(char, target, checkBank, includeInventory);
 
       char.appendJob(gatherJob);
 

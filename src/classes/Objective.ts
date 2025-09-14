@@ -10,6 +10,7 @@ import { TaskType } from '../types/types';
 export abstract class Objective {
   character: Character;
   objectiveId: string;
+  progress: number;
   status: ObjectiveStatus;
   maxRetries: number = 3;
 
@@ -22,7 +23,9 @@ export abstract class Objective {
     // appending a random string to the objectiveId to ensure uniqueness
     this.objectiveId =
       objectiveId + `_${crypto.randomBytes(2).toString('hex')}`;
-    this.status = status; // ToDo: Do something with the statuses
+    this.status = status;
+
+    this.progress = 0;
   }
 
   async execute(): Promise<boolean> {

@@ -1,3 +1,4 @@
+import { dot } from 'node:test/reporters';
 import { getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import {
@@ -13,11 +14,13 @@ import { Objective } from './Objective';
 
 export class ItemTaskObjective extends Objective {
   type: 'items';
+  quantity: number;
 
-  constructor(character: Character) {
-    super(character, `task_1_itemstask`, 'not_started');
+  constructor(character: Character, quantity: number) {
+    super(character, `task_${quantity}_itemstask`, 'not_started');
 
     this.character = character;
+    this.quantity = quantity
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -25,9 +28,17 @@ export class ItemTaskObjective extends Objective {
   }
 
   async run(): Promise<boolean> {
-    var result = false;
-    // Check if we have the item alread in inv and bank
-    // Gather the required items
+    
+    let result = false;
+
+    for (let count = 0; count < this.quantity; count++) {
+      result = await this.doTask()
+    }
+
+    return result;
+  }
+
+  async doTask(): Promise<boolean> {
 
     if (this.character.data.task === '') {
       await this.startNewTask('items');
@@ -43,15 +54,15 @@ export class ItemTaskObjective extends Objective {
     );
     if (taskInfo instanceof ApiError) {
       await this.character.handleErrors(taskInfo);
-      result = false;
+      return false;
     } else {
       while (
         this.character.data.task_progress < this.character.data.task_total
       ) {
-        // If we need to collect less than 80, gather that amount, otherwise gather 80
+        // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
         var numToGather = Math.min(
           this.character.data.task_total - this.character.data.task_progress,
-          80,
+          this.character.data.inventory_max_items * 0.9,
         );
 
         var numInBank = await this.character.checkQuantityOfItemInBank(
@@ -69,9 +80,6 @@ export class ItemTaskObjective extends Objective {
           this.character.data.task,
         );
 
-        logger.debug(`Num to gather: ${numToGather}`);
-        logger.debug(`Num gathered: ${numGathered}`);
-
         if (numToGather <= numGathered) {
           logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
           await this.moveToTaskMaster('items');
@@ -85,7 +93,7 @@ export class ItemTaskObjective extends Objective {
             logger.warn(taskTradeResponse.message);
             await this.character.handleErrors(taskTradeResponse);
 
-            result = false;
+            return false;
             break;
           } else {
             this.character.data = taskTradeResponse.data.character;
@@ -101,9 +109,7 @@ export class ItemTaskObjective extends Objective {
     if (this.character.data.task_total === this.character.data.task_progress) {
       await this.handInTask('items');
 
-      result = true;
+      return true;
     }
-
-    return result;
   }
 }
