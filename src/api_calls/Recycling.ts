@@ -41,8 +41,6 @@ export async function actionRecycle(
         case 493:
           message = "The character's skill level is too low.";
           break;
-        default:
-          message = `Unknown error from /action/recycling: ${response}`;
       }
       throw new ApiError({
         code: response.status,

@@ -30,7 +30,7 @@ export default function CraftRouter(char: Character) {
       char.appendJob(job);
 
       return res.status(201).json({
-        message: 'Craft job ${job.objectiveId} added to queue.',
+        message: `Craft job ${job.objectiveId} added to queue.`,
         character: char.data.name,
         job: {
           id: job.objectiveId,

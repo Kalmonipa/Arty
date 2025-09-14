@@ -81,7 +81,7 @@ export class RecycleObjective extends Objective {
       );
       if (recycleResult instanceof ApiError) {
         logger.info(recycleResult.message)
-        this.character.handleErrors(recycleResult);
+        await this.character.handleErrors(recycleResult);
         return false
       } else {
         this.character.data = recycleResult.data.character;

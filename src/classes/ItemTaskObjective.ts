@@ -31,6 +31,7 @@ export class ItemTaskObjective extends Objective {
     let result = false;
 
     for (let count = 0; count < this.quantity; count++) {
+      logger.info(`Completed ${count}/${this.quantity} tasks`)
       result = await this.doTask();
     }
 
