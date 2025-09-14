@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { GatherObjective } from '../classes/GatherObjective';
 import { Character } from '../classes/Character';
 
-export default function gatherRouter(char: Character) {
+export default function GatherRouter(char: Character) {
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {
@@ -27,12 +27,17 @@ export default function gatherRouter(char: Character) {
         quantity: quantity,
       };
 
-      const gatherJob = new GatherObjective(char, target, checkBank, includeInventory);
+      const gatherJob = new GatherObjective(
+        char,
+        target,
+        checkBank,
+        includeInventory,
+      );
 
       char.appendJob(gatherJob);
 
       return res.status(201).json({
-        message: 'Gather job added to queue.',
+        message: 'Gather job ${job.objectiveId} added to queue.',
         character: char.data.name,
 
         job: {

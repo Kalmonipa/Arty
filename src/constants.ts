@@ -9,6 +9,6 @@ export const ApiToken = getEnv('API_TOKEN');
 
 export const MyHeaders = new Headers({
   'Content-Type': 'application/json',
-  'Accept': 'application/json',
-  'Authorization': `Bearer ${ApiToken}`,
+  Accept: 'application/json',
+  Authorization: `Bearer ${ApiToken}`,
 });

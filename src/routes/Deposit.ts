@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Character } from '../classes/Character';
 import { DepositObjective } from '../classes/DepositObjective';
 
-export default function depositRouter(char: Character) {
+export default function DepositRouter(char: Character) {
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {

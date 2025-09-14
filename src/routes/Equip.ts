@@ -3,7 +3,7 @@ import { CraftObjective } from '../classes/CraftObjective';
 import { Character } from '../classes/Character';
 import { EquipObjective } from '../classes/EquipObjective';
 
-export default function equipRouter(char: Character) {
+export default function EquipRouter(char: Character) {
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {
@@ -27,7 +27,7 @@ export default function equipRouter(char: Character) {
       char.appendJob(job);
 
       return res.status(201).json({
-        message: 'Gather job added to queue.',
+        message: 'Gather job ${job.objectiveId} added to queue.',
         character: char.data.name,
 
         job: {

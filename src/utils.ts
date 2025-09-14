@@ -88,7 +88,7 @@ export async function buildListOfWeapons(): Promise<
   weaponMap['combat'] = [];
 
   const allWeapons: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({ type: 'weapon' });
+    await getAllItemInformation({type: 'weapon'});
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
@@ -137,7 +137,7 @@ export async function buildListOfUtilities(): Promise<
   var utilitiesMap: Record<string, ItemSchema[]> = {};
 
   const allUtilities: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({type: 'utility' });
+    await getAllItemInformation({ type: 'utility' });
   if (allUtilities instanceof ApiError) {
     logger.error(`Failed to build list of useful utility: ${allUtilities}`);
     return;

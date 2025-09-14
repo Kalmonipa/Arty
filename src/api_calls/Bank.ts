@@ -1,11 +1,6 @@
 import { ApiError } from '../classes/Error';
 import { ApiUrl, MyHeaders } from '../constants';
-import {
-  DataPageSimpleItemSchema,
-  GetAllMapsMapsGetResponse,
-  SimpleItemSchema,
-} from '../types/types';
-import { logger } from '../utils';
+import { DataPageSimpleItemSchema } from '../types/types';
 
 export async function getBankItems(
   item_code?: string,

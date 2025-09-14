@@ -115,7 +115,7 @@ export class Character {
    * @todo Implement some cancel logic
    */
   cancelJob() {
-    return true
+    return true;
   }
 
   /**
@@ -227,11 +227,14 @@ export class Character {
     const foundItem = this.data.inventory.find(
       (item) => item.code === contentCode,
     );
+    let num = 0
     if (foundItem) {
-      return foundItem.quantity;
+      num = foundItem.quantity;
     } else {
-      return 0;
+      num = 0;
     }
+    logger.debug(`Found ${num} ${contentCode} in inventory`)
+    return num;
   }
 
   /**
@@ -359,7 +362,9 @@ export class Character {
    *  - true means the currently equipped weapon is beneficial for the activity
    *  - false means it is not beneficial
    */
-  async checkWeaponForEffects(typeOfActivity: WeaponFlavours): Promise<boolean> {
+  async checkWeaponForEffects(
+    typeOfActivity: WeaponFlavours,
+  ): Promise<boolean> {
     var isEffective: boolean = false;
     var weaponDetails = await getItemInformation(this.data.weapon_slot);
 
@@ -440,7 +445,10 @@ export class Character {
    * Checks inventory and bank for the amount we need
    * @returns a boolean stating whether we need to move back to our original location
    */
-  async equipUtility(utilityType: UtilityEffects, slot: ItemSlot): Promise<boolean> {
+  async equipUtility(
+    utilityType: UtilityEffects,
+    slot: ItemSlot,
+  ): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
 
     for (var ind = utility.length - 1; ind >= 0; ind--) {
@@ -529,7 +537,7 @@ export class Character {
     await this.withdrawNow(numNeeded, this.preferredFood);
 
     if (priorLocation) {
-      await this.move(priorLocation)
+      await this.move(priorLocation);
     }
   }
 
@@ -567,7 +575,7 @@ export class Character {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
           break;
-        } else if ( exceptions && exceptions.includes(item.code)) {
+        } else if (exceptions && exceptions.includes(item.code)) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.info(`Adding ${item.quantity} ${item.code} to deposit list`);
@@ -755,6 +763,7 @@ export class Character {
 
   /**
    * @description deposit the specified items into the bank
+   * @todo Should be able to provide a list of items to deposit instead of depositing one type at a time
    */
   async depositNow(quantity: number, itemCode: string): Promise<boolean> {
     const depositJob = new DepositObjective(this, {
@@ -776,7 +785,11 @@ export class Character {
    * @description equip the item now. Creates a new equip job at the
    * beginning of the job list and executes it
    */
-  async equipNow(itemName: string, itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
+  async equipNow(
+    itemName: string,
+    itemSlot: ItemSlot,
+    quantity?: number,
+  ): Promise<boolean> {
     const equipJob = new EquipObjective(this, itemName, itemSlot, quantity);
     return await equipJob.execute();
   }
@@ -820,7 +833,12 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gather(quantity: number, code: string, checkBank?: boolean, includeInventory?: boolean) {
+  async gather(
+    quantity: number,
+    code: string,
+    checkBank?: boolean,
+    includeInventory?: boolean,
+  ) {
     this.appendJob(
       new GatherObjective(
         this,
@@ -829,7 +847,7 @@ export class Character {
           quantity: quantity,
         },
         checkBank,
-        includeInventory
+        includeInventory,
       ),
     );
   }
@@ -837,7 +855,12 @@ export class Character {
   /**
    * @description calls the gather endpoint on the current map
    */
-  async gatherNow(quantity: number, code: string, checkBank?: boolean, includeInventory?: boolean): Promise<boolean> {
+  async gatherNow(
+    quantity: number,
+    code: string,
+    checkBank?: boolean,
+    includeInventory?: boolean,
+  ): Promise<boolean> {
     const gatherJob = new GatherObjective(
       this,
       {
@@ -845,7 +868,7 @@ export class Character {
         quantity: quantity,
       },
       checkBank,
-      includeInventory
+      includeInventory,
     );
 
     return await gatherJob.execute();
@@ -875,8 +898,8 @@ export class Character {
    * @description Tidy up the bank. Will be moved to be part of the idle tasks
    */
   async tidyUpBank() {
-    const job = new TidyBankObjective(this)
-    await job.execute()
+    const job = new TidyBankObjective(this);
+    await job.execute();
   }
 
   /**

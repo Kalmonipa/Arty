@@ -183,7 +183,7 @@ export async function actionUse(
  * @returns
  */
 export async function getAllItemInformation(
-  data: GetAllItemsItemsGetData,
+  data: GetAllItemsItemsGetData["query"],
 ): Promise<GetAllItemsItemsGetResponse | ApiError> {
   var requestOptions = {
     method: 'GET',
@@ -192,29 +192,29 @@ export async function getAllItemInformation(
 
   var apiUrl = new URL(`${ApiUrl}/items`);
 
-  if (data.query.craft_material) {
-    apiUrl.searchParams.set('craft_material', data.query.craft_material);
+  if (data.craft_material) {
+    apiUrl.searchParams.set('craft_material', data.craft_material);
   }
-  if (data.query.craft_skill) {
-    apiUrl.searchParams.set('craft_skill', data.query.craft_skill);
+  if (data.craft_skill) {
+    apiUrl.searchParams.set('craft_skill', data.craft_skill);
   }
-  if (data.query.max_level) {
-    apiUrl.searchParams.set('max_level', data.query.max_level.toString());
+  if (data.max_level) {
+    apiUrl.searchParams.set('max_level', data.max_level.toString());
   }
-  if (data.query.min_level) {
-    apiUrl.searchParams.set('min_level', data.query.min_level.toString());
+  if (data.min_level) {
+    apiUrl.searchParams.set('min_level', data.min_level.toString());
   }
-  if (data.query.name) {
-    apiUrl.searchParams.set('name', data.query.name);
+  if (data.name) {
+    apiUrl.searchParams.set('name', data.name);
   }
-  if (data.query.page) {
-    apiUrl.searchParams.set('page', data.query.page.toString());
+  if (data.page) {
+    apiUrl.searchParams.set('page', data.page.toString());
   }
-  if (data.query.size) {
-    apiUrl.searchParams.set('size', data.query.size.toString());
+  if (data.size) {
+    apiUrl.searchParams.set('size', data.size.toString());
   }
-  if (data.query.type) {
-    apiUrl.searchParams.set('type', data.query.type);
+  if (data.type) {
+    apiUrl.searchParams.set('type', data.type);
   }
 
   try {

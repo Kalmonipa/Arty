@@ -4,7 +4,7 @@ import { Character } from '../classes/Character';
 import { EquipObjective } from '../classes/EquipObjective';
 import { FightObjective } from '../classes/FightObjective';
 
-export default function fightRouter(char: Character) {
+export default function FightRouter(char: Character) {
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {
@@ -29,7 +29,7 @@ export default function fightRouter(char: Character) {
       char.appendJob(job);
 
       return res.status(201).json({
-        message: 'Fight job added to queue.',
+        message: 'Fight job ${job.objectiveId} added to queue.',
         character: char.data.name,
 
         job: {

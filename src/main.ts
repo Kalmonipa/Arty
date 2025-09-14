@@ -1,16 +1,17 @@
 import { Character } from './classes/Character';
-import { ApiToken, ApiUrl, CharName } from './constants';
+import { ApiUrl, CharName } from './constants';
 import { getCharacter } from './api_calls/Character';
 import express from 'express';
-import gatherRouter from './routes/Gather';
-import depositRouter from './routes/Deposit';
-import craftRouter from './routes/Craft';
-import equipRouter from './routes/Equip';
-import fightRouter from './routes/Fight';
+import GatherRouter from './routes/Gather';
 import TaskRouter from './routes/Task';
 import TrainSkillRouter from './routes/TrainSkill';
 import { logger } from './utils';
 import JobsRouter from './routes/Jobs';
+import CraftRouter from './routes/Craft';
+import DepositRouter from './routes/Deposit';
+import EquipRouter from './routes/Equip';
+import FightRouter from './routes/Fight';
+import RecycleRouter from './routes/Recycle';
 
 async function main() {
   const charData = await getCharacter(CharName);
@@ -18,19 +19,20 @@ async function main() {
   await char.init();
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {
-    logger.info(`-- Using Test server --`)
+    logger.info(`-- Using Test server --`);
   }
 
   const app = express();
   const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
-  app.use('/craft', craftRouter(char));
-  app.use('/deposit', depositRouter(char));
-  app.use('/equip', equipRouter(char));
-  app.use('/fight', fightRouter(char));
-  app.use('/gather', gatherRouter(char));
+  app.use('/craft', CraftRouter(char));
+  app.use('/deposit', DepositRouter(char));
+  app.use('/equip', EquipRouter(char));
+  app.use('/fight', FightRouter(char));
+  app.use('/gather', GatherRouter(char));
   app.use('/jobs', JobsRouter(char));
+  app.use('/recycle', RecycleRouter(char))
   app.use('/task', TaskRouter(char));
   app.use('/train', TrainSkillRouter(char));
 

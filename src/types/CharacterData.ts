@@ -13,10 +13,9 @@ export type InventorySlot = {
   quantity: number;
 };
 
-export type Role = 
-  'alchemist'
+export type Role =
+  | 'alchemist'
   | 'fighter'
   | 'fisherman'
   | 'lumberjack'
-  | 'miner'
-
+  | 'miner';

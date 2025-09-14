@@ -20,7 +20,7 @@ export class ItemTaskObjective extends Objective {
     super(character, `task_${quantity}_itemstask`, 'not_started');
 
     this.character = character;
-    this.quantity = quantity
+    this.quantity = quantity;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -28,18 +28,16 @@ export class ItemTaskObjective extends Objective {
   }
 
   async run(): Promise<boolean> {
-    
     let result = false;
 
     for (let count = 0; count < this.quantity; count++) {
-      result = await this.doTask()
+      result = await this.doTask();
     }
 
     return result;
   }
 
   async doTask(): Promise<boolean> {
-
     if (this.character.data.task === '') {
       await this.startNewTask('items');
     } else {
@@ -101,7 +99,12 @@ export class ItemTaskObjective extends Objective {
         } else if (taskInfo.craft) {
           await this.character.craftNow(numToGather, this.character.data.task);
         } else {
-          await this.character.gatherNow(numToGather, this.character.data.task, true, true);
+          await this.character.gatherNow(
+            numToGather,
+            this.character.data.task,
+            true,
+            true,
+          );
         }
       }
     }

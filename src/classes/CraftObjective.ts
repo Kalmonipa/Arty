@@ -129,7 +129,10 @@ export class CraftObjective extends Objective {
             );
           }
         }
-        if (this.numBatches > 1 && this.target.quantity < this.character.data.inventory_max_items) {
+        if (
+          this.numBatches > 1 &&
+          this.target.quantity < this.character.data.inventory_max_items
+        ) {
           logger.debug(
             `Withdrawing all ${this.target.quantity} ${this.target.code} from bank`,
           );
@@ -275,7 +278,10 @@ export class CraftObjective extends Objective {
   ): { numBatches: number; numPerBatch: number } {
     const numIngredientsPerBatch = Math.ceil(totalNumIngredients / numBatches);
     const newNumPerBatch = Math.ceil(numPerBatch / numBatches);
-    if (numIngredientsPerBatch > (this.character.data.inventory_max_items * 0.9)) {
+    if (
+      numIngredientsPerBatch >
+      this.character.data.inventory_max_items * 0.9
+    ) {
       numBatches += 1;
       return this.getTotalNumberOfIngredientsPerBatch(
         totalNumIngredients,

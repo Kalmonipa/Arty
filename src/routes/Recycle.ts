@@ -1,14 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { CraftObjective } from '../classes/CraftObjective';
 import { Character } from '../classes/Character';
+import { RecycleObjective } from '../classes/RecycleObjective';
 
-export default function CraftRouter(char: Character) {
+export default function RecycleRouter(char: Character) {
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {
     try {
-      const quantity = parseInt(req.body.quantity, 10);
-      const itemCode = req.body.itemCode;
+      const { quantity, itemCode } = req.body;
 
       if (isNaN(quantity) || !itemCode) {
         return res.status(400).json({ error: 'Invalid quantity or itemCode.' });
@@ -20,21 +19,20 @@ export default function CraftRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      const target = {
+      const job = new RecycleObjective(char, {
         code: itemCode,
         quantity: quantity,
-      };
-
-      const job = new CraftObjective(char, target);
+      });
 
       char.appendJob(job);
 
       return res.status(201).json({
-        message: 'Craft job ${job.objectiveId} added to queue.',
+        message: `Recycle job ${job.objectiveId} added to queue.`,
         character: char.data.name,
         job: {
           id: job.objectiveId,
-          target: job.target,
+          itemCode: job.target.code,
+          quantity: job.target.quantity,
           status: job.status,
         },
       });
