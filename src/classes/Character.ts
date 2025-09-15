@@ -531,6 +531,11 @@ export class Character {
    * Moves back to the previous location if one is provided
    */
   async topUpFood(priorLocation?: DestinationSchema) {
+    if (!this.preferredFood) {
+      logger.debug(`No preferred food set to top up`)
+      return;
+    }
+    
     const numNeeded =
       this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood);
 
@@ -649,7 +654,10 @@ export class Character {
       const bankItems = await getBankItems();
       if (bankItems instanceof ApiError) {
         this.handleErrors(bankItems);
-      } else {
+      } else if (!bankItems) {
+        logger.info(`No food items in the bank`)
+        return true;
+      }else {
         const foundItem = bankItems.data.find((bankItem) => {
           return this.consumablesMap.heal.find(
             (item) => bankItem.code === item.code,
@@ -661,6 +669,7 @@ export class Character {
             `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
           );
           this.preferredFood = foundItem.code;
+          return true;
         }
       }
     }

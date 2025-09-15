@@ -1,5 +1,4 @@
 import { ApiError } from '../classes/Error';
-import {  } from '../constants';
 import {
   CharacterSchema,
   RewardDataResponseSchema,
