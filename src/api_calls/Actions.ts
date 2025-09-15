@@ -1,5 +1,4 @@
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../constants';
 import {
   BankGoldTransactionResponseSchema,
   BankItemTransactionResponseSchema,
@@ -9,11 +8,10 @@ import {
   CharacterSchema,
   CraftingSchema,
   DestinationSchema,
-  RewardDataResponseSchema,
   SimpleItemSchema,
   SkillResponseSchema,
 } from '../types/types';
-import { logger, sleep } from '../utils';
+import { ApiUrl, MyHeaders, logger, sleep } from '../utils';
 
 /**
  * @description craft the specified item

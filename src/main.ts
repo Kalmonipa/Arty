@@ -1,11 +1,10 @@
 import { Character } from './classes/Character';
-import { ApiUrl, CharName } from './constants';
 import { getCharacter } from './api_calls/Character';
 import express from 'express';
 import GatherRouter from './routes/Gather';
 import TaskRouter from './routes/Task';
 import TrainSkillRouter from './routes/TrainSkill';
-import { logger } from './utils';
+import { ApiUrl, CharName, logger } from './utils';
 import JobsRouter from './routes/Jobs';
 import CraftRouter from './routes/Craft';
 import DepositRouter from './routes/Deposit';

@@ -1,5 +1,5 @@
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../constants';
+import { ApiUrl, MyHeaders } from '../utils';
 import { DataPageSimpleItemSchema } from '../types/types';
 
 export async function getBankItems(

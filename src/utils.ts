@@ -8,12 +8,28 @@ import {
 import { getAllItemInformation } from './api_calls/Items';
 import { ApiError } from './classes/Error';
 import { WeaponFlavours } from './types/ItemData';
+import dotenv from 'dotenv';
 
+dotenv.config({ quiet: true });
+
+export const CharName = getEnv('CHARACTER_NAME');
+export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
+export const ApiToken = getEnv('API_TOKEN');
 const logLevel = process.env.LOG_LEVEL || 'info';
+
+
+export const MyHeaders = new Headers({
+  'Content-Type': 'application/json',
+  Accept: 'application/json',
+  Authorization: `Bearer ${ApiToken}`,
+});
+
 
 export const logger = pino({
   level: logLevel,
-  base: undefined,
+  base: {
+    character: CharName,
+  },
   transport: {
     targets: [
       {
@@ -26,7 +42,11 @@ export const logger = pino({
       {
         level: logLevel,
         target: 'pino-pretty',
-        options: {},
+        options: {
+          messageFormat: '[{character}] {msg}',
+          ignore: 'character'
+        },
+        
       },
     ],
   },

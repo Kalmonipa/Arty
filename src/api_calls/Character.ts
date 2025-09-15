@@ -1,6 +1,5 @@
-import { ApiUrl, MyHeaders } from '../constants';
 import { CharacterSchema } from '../types/types';
-import { logger } from '../utils';
+import { ApiUrl, MyHeaders, logger } from '../utils';
 
 /**
  * @description returns the character information

@@ -1,6 +1,5 @@
-import { Character } from '../classes/Character';
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../constants';
+import { ApiUrl, MyHeaders, sleep } from '../utils';
 import {
   CharacterSchema,
   EquipmentResponseSchema,
@@ -13,7 +12,6 @@ import {
   UnequipSchema,
   UseItemResponseSchema,
 } from '../types/types';
-import { sleep } from '../utils';
 
 /**
  * API call to equip the item

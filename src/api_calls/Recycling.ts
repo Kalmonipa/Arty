@@ -1,7 +1,6 @@
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../constants';
 import { CharacterSchema, RecyclingResponseSchema } from '../types/types';
-import { logger, sleep } from '../utils';
+import { ApiUrl, MyHeaders, logger, sleep } from '../utils';
 
 export async function actionRecycle(
   character: CharacterSchema,

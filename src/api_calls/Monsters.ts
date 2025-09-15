@@ -1,10 +1,9 @@
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../constants';
 import {
   GetAllMonstersMonstersGetResponse,
   GetAllMonstersMonstersGetData,
 } from '../types/types';
-import { logger } from '../utils';
+import { ApiUrl, MyHeaders } from '../utils';
 
 export async function getMonsterInformation(
   data: GetAllMonstersMonstersGetData,

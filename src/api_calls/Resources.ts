@@ -1,12 +1,9 @@
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../constants';
 import {
   DataPageResourceSchema,
   GetAllResourcesResourcesGetData,
-  GetAllResourcesResourcesGetResponse,
-  SkillResponseSchema,
 } from '../types/types';
-import { logger } from '../utils';
+import { ApiUrl, MyHeaders } from '../utils';
 
 export async function getResourceInformation(
   data: GetAllResourcesResourcesGetData,

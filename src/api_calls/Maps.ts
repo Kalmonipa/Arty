@@ -1,7 +1,6 @@
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../constants';
 import { GetAllMapsMapsGetResponse } from '../types/types';
-import { logger } from '../utils';
+import { ApiUrl, MyHeaders } from '../utils';
 
 export async function getMaps(
   contentCode?: string,
