@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Character } from '../classes/Character';
 import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObjective';
 import { isGatheringSkill, logger } from '../utils';
+import { GatheringSkill } from '../types/types';
 
 export default function TrainSkillRouter(char: Character) {
   const router = Router();
@@ -9,7 +10,7 @@ export default function TrainSkillRouter(char: Character) {
   router.post('/', async (req: Request, res: Response) => {
     try {
       const targetLevel = parseInt(req.body.targetLevel, 10);
-      const skillName = req.body.skill;
+      const skillName: GatheringSkill = req.body.skill;
 
       if (isNaN(targetLevel) || !skillName) {
         logger.info(targetLevel);

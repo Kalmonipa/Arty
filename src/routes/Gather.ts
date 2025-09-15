@@ -37,7 +37,7 @@ export default function GatherRouter(char: Character) {
       char.appendJob(gatherJob);
 
       return res.status(201).json({
-        message: 'Gather job ${job.objectiveId} added to queue.',
+        message: `Gather job ${gatherJob.objectiveId} added to queue.`,
         character: char.data.name,
 
         job: {

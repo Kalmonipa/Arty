@@ -27,7 +27,7 @@ export default function EquipRouter(char: Character) {
       char.appendJob(job);
 
       return res.status(201).json({
-        message: 'Gather job ${job.objectiveId} added to queue.',
+        message: `Gather job ${job.objectiveId} added to queue.`,
         character: char.data.name,
 
         job: {

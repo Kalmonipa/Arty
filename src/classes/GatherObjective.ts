@@ -39,15 +39,15 @@ export class GatherObjective extends Objective {
     return true;
   }
 
+  /**
+   * This method figures out how many we have in our inventory and in the bank
+   * Then calls gather() to retrieve the remaining amount
+   * @returns true if successful, false if failure
+   */
   async run(): Promise<boolean> {
     let result = false;
     let numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
     let numInBank = 0;
-
-    if (this.includeInventory) {
-      logger.info(`Including ${numInInv} from our inventory`);
-      this.progress = numInInv;
-    }
 
     // Sometimes we want to collect a bunch of the resource so we should skip checking the bank
     // Other times we want to gather stuff to then craft so taking from the bank is OK
@@ -61,19 +61,27 @@ export class GatherObjective extends Objective {
       logger.info(
         `${numInInv} ${this.target.code} in inventory already. No need to collect more`,
       );
-      result = true;
+      return true;
     } else if (numInBank >= this.target.quantity) {
       logger.info(
         `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${this.target.quantity}`,
       );
-      await this.character.withdrawNow(this.target.quantity, this.target.code);
-    } else {
-      result = await this.gather(
-        this.target.quantity - this.progress,
-        this.target.code,
-      );
+      return await this.character.withdrawNow(this.target.quantity, this.target.code);
+    } else if (numInBank > 0) {
+      logger.info(`Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`)
+    } 
+
+
+    if (this.includeInventory) {
+      logger.info(`Including ${numInInv} from our inventory`);
+      this.progress = numInInv;
     }
 
+    result = await this.gather(
+      this.target.quantity - this.progress,
+      this.target.code,
+    );
+    
     return result;
   }
 
@@ -86,11 +94,6 @@ export class GatherObjective extends Objective {
       logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
       var numHeld = this.character.checkQuantityOfItemInInv(code);
-      if (numHeld >= quantity) {
-        logger.info(`There are already ${numHeld} in the inventory. Exiting`);
-        return true;
-      }
-      const remainderToGather = quantity - numHeld;
 
       // Check our equipment to see if we can equip something useful
       var resourceDetails: ItemSchema | ApiError =
@@ -132,7 +135,6 @@ export class GatherObjective extends Objective {
       if (resourceDetails.subtype === 'mob') {
         return await this.gatherMobDrop(
           { code: resourceDetails.code, quantity: quantity },
-          numHeld,
         );
       } else if (resourceDetails.craft) {
         await this.character.craftNow(quantity, resourceDetails.code);
@@ -141,7 +143,6 @@ export class GatherObjective extends Objective {
           code,
           quantity,
           numHeld,
-          remainderToGather,
         );
       }
     }
@@ -149,12 +150,11 @@ export class GatherObjective extends Objective {
 
   async gatherItemLoop(
     target: SimpleItemSchema,
-    remainderToGather: number,
     location: DestinationSchema,
     exceptions?: string[],
   ): Promise<boolean> {
     // Loop that does the gather requests
-    for (var count = 0; count < remainderToGather; count++) {
+    for (var count = 0; count < target.quantity; count++) {
       if (this.progress % 5 === 0) {
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${target.code}`,
@@ -177,7 +177,7 @@ export class GatherObjective extends Objective {
     return true;
   }
 
-  async gatherMobDrop(target: SimpleItemSchema, numHeld: number) {
+  async gatherMobDrop(target: SimpleItemSchema) {
     const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
       await getMonsterInformation({
         query: { drop: target.code, max_level: this.character.data.level },
@@ -187,17 +187,17 @@ export class GatherObjective extends Objective {
       await this.character.handleErrors(mobInfo);
       return false;
     } else {
-      const remainderToGather = target.quantity - numHeld;
+      let numHeld = 0
 
-      while (numHeld < remainderToGather) {
+      while (numHeld < target.quantity) {
         logger.info(
-          `Gathered ${numHeld}/${this.target.quantity} ${target.code}`,
+          `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
         );
 
         // ToDo: make this check all mobs in case multiple drop the item
         await this.character.fightNow(1, mobInfo.data[0].code);
 
-        const newNumHeld = this.character.checkQuantityOfItemInInv(target.code);
+        const newNumHeld = this.character.checkQuantityOfItemInInv(this.target.code);
         if (newNumHeld > numHeld) {
           this.progress += newNumHeld - numHeld;
           numHeld = newNumHeld;
@@ -219,7 +219,6 @@ export class GatherObjective extends Objective {
     code: string,
     quantity: number,
     numHeld: number,
-    remainderToGather: number,
     exceptions?: string[],
   ): Promise<boolean> {
     logger.debug(`Finding resource map type for ${code}`);
@@ -244,7 +243,6 @@ export class GatherObjective extends Objective {
 
     await this.gatherItemLoop(
       { code: code, quantity: quantity },
-      remainderToGather,
       {
         x: contentLocation.x,
         y: contentLocation.y,
@@ -262,7 +260,6 @@ export class GatherObjective extends Objective {
       );
       await this.gatherItemLoop(
         { code: code, quantity: quantity - this.progress },
-        remainderToGather,
         {
           x: contentLocation.x,
           y: contentLocation.y,

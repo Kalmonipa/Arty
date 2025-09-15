@@ -29,7 +29,7 @@ export default function FightRouter(char: Character) {
       char.appendJob(job);
 
       return res.status(201).json({
-        message: 'Fight job ${job.objectiveId} added to queue.',
+        message: `Fight job ${job.objectiveId} added to queue.`,
         character: char.data.name,
 
         job: {
