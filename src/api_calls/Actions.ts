@@ -23,7 +23,7 @@ export async function actionCraft(
   character: CharacterSchema,
   craftData: CraftingSchema,
 ): Promise<SkillResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(craftData),
@@ -36,7 +36,7 @@ export async function actionCraft(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Craft not found.';
@@ -83,7 +83,7 @@ export async function actionDepositGold(
   character: CharacterSchema,
   quantity: number,
 ): Promise<BankGoldTransactionResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify({ quantity: quantity }),
@@ -96,7 +96,7 @@ export async function actionDepositGold(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 461:
           message =
@@ -141,7 +141,7 @@ export async function actionDepositItems(
   character: CharacterSchema,
   items: SimpleItemSchema[],
 ): Promise<BankItemTransactionResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(items),
@@ -154,7 +154,7 @@ export async function actionDepositItems(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';
@@ -208,7 +208,7 @@ export async function actionDepositItems(
 export async function actionFight(
   character: CharacterSchema,
 ): Promise<CharacterFightResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
@@ -220,7 +220,7 @@ export async function actionFight(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 486:
           message = 'An action is already in progress for this character.';
@@ -260,18 +260,18 @@ export async function actionFight(
 export async function actionGather(
   character: CharacterSchema,
 ): Promise<SkillResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/gathering`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/gathering`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 486:
           message = 'An action is already in progress for this character.';
@@ -320,7 +320,7 @@ export async function actionMove(
   character: CharacterSchema,
   destination: DestinationSchema,
 ): Promise<CharacterMovementResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(destination),
@@ -333,7 +333,7 @@ export async function actionMove(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Map not found';
@@ -373,7 +373,7 @@ export async function actionMove(
 export async function actionRest(
   character: CharacterSchema,
 ): Promise<CharacterRestResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
@@ -385,7 +385,7 @@ export async function actionRest(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 486:
           message = 'An action is already in progress for this character.';
@@ -426,7 +426,7 @@ export async function actionWithdrawItem(
   character: CharacterSchema,
   items: SimpleItemSchema[],
 ): Promise<BankItemTransactionResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(items),
@@ -439,7 +439,7 @@ export async function actionWithdrawItem(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';

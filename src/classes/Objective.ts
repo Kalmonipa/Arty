@@ -1,7 +1,7 @@
 import * as crypto from 'node:crypto';
-import { ObjectiveStatus, ObjectiveTargets } from '../types/ObjectiveData';
+import { ObjectiveStatus } from '../types/ObjectiveData';
 import { Character } from './Character';
-import { logger, sleep } from '../utils';
+import { logger } from '../utils';
 import { getMaps } from '../api_calls/Maps';
 import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
 import { ApiError } from './Error';
@@ -83,7 +83,7 @@ export abstract class Objective {
    * @description Moves to the nearest task master
    */
   async moveToTaskMaster(taskType: TaskType) {
-    const maps = (await getMaps(taskType, 'tasks_master')).data;
+    const maps = (await getMaps({content_code: taskType, content_type: 'tasks_master'})).data;
 
     if (maps.length === 0) {
       logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
@@ -124,7 +124,7 @@ export abstract class Objective {
         `Collected ${this.character.data.task_total} items. Handing in task`,
       );
     }
-    const maps = (await getMaps(taskType, 'tasks_master')).data;
+    const maps = (await getMaps({content_code: taskType, content_type: 'tasks_master'})).data;
 
     if (maps.length === 0) {
       logger.error(`Cannot find the tasks master. This shouldn't happen ??`);

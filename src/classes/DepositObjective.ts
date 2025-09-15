@@ -39,7 +39,7 @@ export class DepositObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
-      const maps = (await getMaps(undefined, 'bank')).data;
+      const maps = (await getMaps({content_type: 'bank'})).data;
 
       if (maps.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
@@ -50,13 +50,13 @@ export class DepositObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      var response: ApiError | BankItemTransactionResponseSchema;
+      let response: ApiError | BankItemTransactionResponseSchema;
       if (this.target.code === 'gold') {
         // deposit gold
       } else if (this.target.code === 'all') {
-        var itemsToDeposit: SimpleItemSchema[] = [];
+        const itemsToDeposit: SimpleItemSchema[] = [];
 
-        for (var i = 0; i < this.character.data.inventory.length; i++) {
+        for (let i = 0; i < this.character.data.inventory.length; i++) {
           if (this.character.data.inventory[i].code !== '') {
             itemsToDeposit.push({
               code: this.character.data.inventory[i].code,

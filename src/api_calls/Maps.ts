@@ -1,23 +1,34 @@
 import { ApiError } from '../classes/Error';
-import { GetAllMapsMapsGetResponse } from '../types/types';
+import { DataPageMapSchema, GetAllMapsMapsGetParams } from '../types/types';
 import { ApiUrl, MyHeaders } from '../utils';
 
 export async function getMaps(
-  contentCode?: string,
-  contentType?: string,
-): Promise<GetAllMapsMapsGetResponse> {
-  var requestOptions = {
+  params: GetAllMapsMapsGetParams
+): Promise<DataPageMapSchema> {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/maps`);
+  const apiUrl = new URL(`${ApiUrl}/maps`);
 
-  if (contentCode) {
-    apiUrl.searchParams.set('content_code', contentCode);
+  if (params.content_code) {
+    apiUrl.searchParams.set('content_code', params.content_code);
   }
-  if (contentType) {
-    apiUrl.searchParams.set('content_type', contentType);
+  if (params.content_type) {
+    apiUrl.searchParams.set('content_type', params.content_type);
+  }
+  if (params.hide_blocked_maps) {
+    apiUrl.searchParams.set('hide_blocked_maps', String(params.hide_blocked_maps));
+  }
+  if (params.layer) {
+    apiUrl.searchParams.set('layer', params.layer);
+  }
+  if (params.page) {
+    apiUrl.searchParams.set('page', String(params.page));
+  }
+  if (params.size) {
+    apiUrl.searchParams.set('size', String(params.size));
   }
 
   try {

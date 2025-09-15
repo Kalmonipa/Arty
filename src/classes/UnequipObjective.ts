@@ -1,6 +1,6 @@
 import { actionUnequipItem } from '../api_calls/Items';
 import { ItemSlot, UnequipSchema } from '../types/types';
-import { logger, sleep } from '../utils';
+import { logger } from '../utils';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

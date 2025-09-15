@@ -20,13 +20,13 @@ export class MonsterTaskObjective extends Objective {
   }
 
   async run() {
-    var result = false;
+    let result = false;
 
     if (this.character.data.task === '') {
       this.startNewTask('monsters');
     }
 
-    const maps = (await getMaps(this.character.data.task, 'monster')).data;
+    const maps = (await getMaps({content_code: this.character.data.task, content_type: 'monster'})).data;
 
     if (maps.length === 0) {
       logger.error(`Cannot find the task target. This shouldn't happen ??`);

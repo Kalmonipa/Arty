@@ -1,7 +1,7 @@
 import pino from 'pino';
 import {
+  DataPageItemSchema,
   GatheringSkill,
-  GetAllItemsItemsGetResponse,
   ItemSchema,
   ItemType,
 } from './types/types';
@@ -17,13 +17,16 @@ export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // 
 export const ApiToken = getEnv('API_TOKEN');
 const logLevel = process.env.LOG_LEVEL || 'info';
 
-
 export const MyHeaders = new Headers({
   'Content-Type': 'application/json',
   Accept: 'application/json',
   Authorization: `Bearer ${ApiToken}`,
 });
 
+export const getRequestOptions = {
+  method: 'GET',
+  headers: MyHeaders,
+};
 
 export const logger = pino({
   level: logLevel,
@@ -44,9 +47,8 @@ export const logger = pino({
         target: 'pino-pretty',
         options: {
           messageFormat: '[{character}] {msg}',
-          ignore: 'character'
+          ignore: 'character',
         },
-        
       },
     ],
   },
@@ -97,7 +99,7 @@ export async function buildListOfWeapons(): Promise<
     'alchemy',
   ];
 
-  let weaponMap: Record<WeaponFlavours, ItemSchema[]> = {} as Record<
+  const weaponMap: Record<WeaponFlavours, ItemSchema[]> = {} as Record<
     WeaponFlavours,
     ItemSchema[]
   >;
@@ -107,8 +109,8 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-  const allWeapons: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({type: 'weapon'});
+  const allWeapons: ApiError | DataPageItemSchema =
+    await getAllItemInformation({ type: 'weapon' });
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
@@ -154,9 +156,9 @@ export async function buildListOfUtilities(): Promise<
 > {
   logger.info(`Building map of utilities`);
 
-  var utilitiesMap: Record<string, ItemSchema[]> = {};
+  const utilitiesMap: Record<string, ItemSchema[]> = {};
 
-  const allUtilities: ApiError | GetAllItemsItemsGetResponse =
+  const allUtilities: ApiError | DataPageItemSchema =
     await getAllItemInformation({ type: 'utility' });
   if (allUtilities instanceof ApiError) {
     logger.error(`Failed to build list of useful utility: ${allUtilities}`);
@@ -186,9 +188,9 @@ export async function buildListOf(
 ): Promise<Record<string, ItemSchema[]>> {
   logger.info(`Building map of ${itemType}`);
 
-  var itemMap: Record<string, ItemSchema[]> = {};
+  const itemMap: Record<string, ItemSchema[]> = {};
 
-  const allItems: ApiError | GetAllItemsItemsGetResponse =
+  const allItems: ApiError | DataPageItemSchema =
     await getAllItemInformation({ type: itemType });
   if (allItems instanceof ApiError) {
     logger.error(`Failed to build list of useful ${itemType}: ${allItems}`);

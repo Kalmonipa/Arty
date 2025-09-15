@@ -62,7 +62,7 @@ export class FightObjective extends Objective {
 
       logger.info(`Finding location of ${this.target.code}`);
 
-      const maps = (await getMaps(this.target.code)).data;
+      const maps = (await getMaps({content_code: this.target.code})).data;
 
       if (maps.length === 0) {
         logger.error(`Cannot find any maps for ${this.target.code}`);
@@ -73,7 +73,7 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (var count = 0; count < this.target.quantity; count++) {
+      for (let count = 0; count < this.target.quantity; count++) {
         logger.info(
           `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
         );
@@ -122,15 +122,15 @@ export class FightObjective extends Objective {
         } else {
           if (response.data.fight.result === 'loss') {
             logger.warn(
-              `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
+              `Fight was a ${response.data.fight.result}. Returned to ${response.data.characters[0].x},${response.data.characters[0].y}`,
             );
           } else if (response.data.fight.result === 'win') {
             logger.info(
-              `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp and ${response.data.fight.gold} gold`,
+              `Fight was a ${response.data.fight.result}`,
             );
           }
-
-          this.character.data = response.data.character;
+          // ToDo: Need to handle multi-char fights somehow. Currently this is just pulling the first char data
+          this.character.data = response.data.characters[0];
         }
       }
 

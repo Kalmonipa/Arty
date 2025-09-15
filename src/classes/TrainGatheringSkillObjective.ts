@@ -27,16 +27,14 @@ export class TrainGatheringSkillObjective extends Objective {
   }
 
   async run(): Promise<boolean> {
-    var charLevel = this.character.getCharacterLevel(this.skill);
+    let charLevel = this.character.getCharacterLevel(this.skill);
     while (charLevel < this.targetLevel) {
       const resourceTypes: DataPageResourceSchema =
         await getResourceInformation({
-          query: {
             skill: this.skill,
             max_level: charLevel,
           },
-          url: '/resources',
-        });
+          );
 
       const resourceToGather =
         resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;

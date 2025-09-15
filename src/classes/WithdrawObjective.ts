@@ -1,8 +1,6 @@
 import { actionWithdrawItem } from '../api_calls/Actions';
-import { actionUnequipItem } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
-import { ItemSlot, UnequipSchema } from '../types/types';
-import { logger, sleep } from '../utils';
+import { logger } from '../utils';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
@@ -31,7 +29,7 @@ export class WithdrawObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
-      const maps = (await getMaps(undefined, 'bank')).data;
+      const maps = (await getMaps({content_type: 'bank'})).data;
 
       if (maps.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);

@@ -1,5 +1,5 @@
 import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../utils';
+import { ApiUrl, getRequestOptions } from '../utils';
 import { DataPageSimpleItemSchema } from '../types/types';
 
 export async function getBankItems(
@@ -7,12 +7,7 @@ export async function getBankItems(
   page?: number,
   size?: number,
 ): Promise<DataPageSimpleItemSchema | ApiError> {
-  var requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
-  var apiUrl = new URL(`${ApiUrl}/my/bank/items`);
+  const apiUrl = new URL(`${ApiUrl}/my/bank/items`);
 
   if (item_code) {
     apiUrl.searchParams.set('item_code', item_code);
@@ -25,7 +20,7 @@ export async function getBankItems(
   }
 
   try {
-    const response = await fetch(apiUrl, requestOptions);
+    const response = await fetch(apiUrl, getRequestOptions);
     if (!response.ok) {
       throw new ApiError({
         code: response.status,

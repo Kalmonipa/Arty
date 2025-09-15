@@ -9,7 +9,7 @@ import { ApiUrl, MyHeaders, logger } from '../utils';
 export async function getCharacter(
   characterName: string,
 ): Promise<CharacterSchema> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };

@@ -227,13 +227,13 @@ export class Character {
     const foundItem = this.data.inventory.find(
       (item) => item.code === contentCode,
     );
-    let num = 0
+    let num = 0;
     if (foundItem) {
       num = foundItem.quantity;
     } else {
       num = 0;
     }
-    logger.debug(`Found ${num} ${contentCode} in inventory`)
+    logger.debug(`Found ${num} ${contentCode} in inventory`);
     return num;
   }
 
@@ -278,7 +278,7 @@ export class Character {
       } else if (bankItem.total === 1) {
         return bankItem.data[0].quantity;
       } else {
-        var total = 0;
+        let total = 0;
         for (const item of bankItem.data) {
           total += item.quantity;
         }
@@ -327,15 +327,15 @@ export class Character {
    * @description Finds the closest map based on manhattan distance from current location
    */
   evaluateClosestMap(maps: MapSchema[]): MapSchema {
-    var closestDistance = 1000000;
-    var closestMap: MapSchema;
+    let closestDistance = 1000000;
+    let closestMap: MapSchema;
 
     if (maps.length === 0) {
       return;
     }
 
     maps.forEach((map) => {
-      var dist = Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
+      const dist = Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
       if (dist < closestDistance) {
         closestDistance = dist;
         closestMap = map;
@@ -344,7 +344,7 @@ export class Character {
 
     if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
       logger.info(
-        `Closest ${closestMap.content.code} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+        `Closest ${closestMap.map_id} is at x: ${closestMap.x}, y: ${closestMap.y}`,
       );
     }
 
@@ -365,8 +365,8 @@ export class Character {
   async checkWeaponForEffects(
     typeOfActivity: WeaponFlavours,
   ): Promise<boolean> {
-    var isEffective: boolean = false;
-    var weaponDetails = await getItemInformation(this.data.weapon_slot);
+    let isEffective: boolean = false;
+    const weaponDetails = await getItemInformation(this.data.weapon_slot);
 
     if (weaponDetails instanceof ApiError) {
       logger.info(weaponDetails.message);
@@ -451,13 +451,14 @@ export class Character {
   ): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
 
-    for (var ind = utility.length - 1; ind >= 0; ind--) {
+    for (let ind = utility.length - 1; ind >= 0; ind--) {
+      let numNeeded: number = 0
       if (utility[ind].level <= this.getCharacterLevel()) {
         if (slot === 'utility1') {
-          var numNeeded =
+          numNeeded =
             this.maxEquippedUtilities - this.data.utility1_slot_quantity;
         } else {
-          var numNeeded =
+          numNeeded =
             this.maxEquippedUtilities - this.data.utility2_slot_quantity;
         }
 
@@ -507,7 +508,7 @@ export class Character {
         ? this.getCharacterLevel()
         : this.getCharacterLevel(activityType);
 
-    for (var ind = weapons.length - 1; ind >= 0; ind--) {
+    for (let ind = weapons.length - 1; ind >= 0; ind--) {
       if (weapons[ind].level <= charLevel) {
         logger.debug(`Attempting to equip ${weapons[ind].name}`);
         if (this.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
@@ -561,16 +562,16 @@ export class Character {
     priorLocation?: SimpleMapSchema,
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
-    let usedInventorySpace = this.getInventoryFullness();
+    const usedInventorySpace = this.getInventoryFullness();
     if (usedInventorySpace >= 90 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing items`);
-      const maps = (await getMaps(undefined, 'bank')).data;
+      const maps = (await getMaps({content_type: 'bank'})).data;
 
       const contentLocation = this.evaluateClosestMap(maps);
 
       await this.move({ x: contentLocation.x, y: contentLocation.y });
 
-      var itemsToDeposit: SimpleItemSchema[] = [];
+      const itemsToDeposit: SimpleItemSchema[] = [];
       for (const item of this.data.inventory) {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
@@ -601,7 +602,7 @@ export class Character {
    * @returns what percentage of the backpack is full
    */
   getInventoryFullness(): number {
-    var usedSpace = 0;
+    let usedSpace = 0;
     this.data.inventory.forEach((invSlot) => {
       usedSpace += invSlot.quantity;
     });
@@ -880,7 +881,7 @@ export class Character {
    * @param targetLevel level to train too. Must be less than the max level 45
    */
   async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
-    logger.warn(`Levelling craft skills isn't implemented yet`);
+    logger.warn(`Levelling ${targetSkill} to ${targetLevel} isn't implemented yet`);
   }
 
   /**

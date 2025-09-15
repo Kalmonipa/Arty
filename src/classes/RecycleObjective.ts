@@ -1,4 +1,3 @@
-import { actionCraft } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
 import { logger } from '../utils';
 import { Character } from './Character';
@@ -6,7 +5,6 @@ import { ApiError } from './Error';
 import { Objective } from './Objective';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import { getItemInformation } from '../api_calls/Items';
-import { ItemSchema, SimpleItemSchema } from '../types/types';
 import { actionRecycle } from '../api_calls/Recycling';
 
 /**
@@ -44,9 +42,11 @@ export class RecycleObjective extends Objective {
     // [] Calculate how many resulting items we can carry, batch it based on the result
     //      - i.e recycling 90 iron_armor would result in 180 iron_bar
 
-    let result = false
+    let result = false;
 
-    const numInInv = await this.character.checkQuantityOfItemInInv(this.target.code)
+    const numInInv = await this.character.checkQuantityOfItemInInv(
+      this.target.code,
+    );
 
     if (
       !(await this.character.withdrawNow(
@@ -64,7 +64,7 @@ export class RecycleObjective extends Objective {
     if (itemInfo instanceof ApiError) {
       this.character.handleErrors(itemInfo);
     } else {
-      const maps = (await getMaps(itemInfo.craft.skill, 'workshop')).data;
+      const maps = (await getMaps({content_code: itemInfo.craft.skill, content_type: 'workshop'})).data;
 
       if (maps.length === 0) {
         logger.error(`Cannot find any maps to recycle ${this.target.code}`);
@@ -75,21 +75,22 @@ export class RecycleObjective extends Objective {
 
       await this.character.move(contentLocation);
 
-      const recycleResult = await actionRecycle(this.character.data,
+      const recycleResult = await actionRecycle(
+        this.character.data,
         this.target.code,
         this.target.quantity,
       );
       if (recycleResult instanceof ApiError) {
-        logger.info(recycleResult.message)
+        logger.info(recycleResult.message);
         await this.character.handleErrors(recycleResult);
-        return false
+        return false;
       } else {
         this.character.data = recycleResult.data.character;
 
         for (const item of recycleResult.data.details.items) {
-            result = await this.character.depositNow(item.quantity, item.code)
+          result = await this.character.depositNow(item.quantity, item.code);
         }
-        return result
+        return result;
       }
     }
 

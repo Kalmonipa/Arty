@@ -45,11 +45,11 @@ export class TidyBankObjective extends Objective {
    */
   async cookFish(): Promise<boolean> {
     for (const item of this.rawFishList) {
-      let numInBank = await this.character.checkQuantityOfItemInBank(item);
+      const numInBank = await this.character.checkQuantityOfItemInBank(item);
       if (numInBank == 0) {
         break;
       } else {
-        let itemToCraftSchema = await this.identifyCraftedItemFrom(
+        const itemToCraftSchema = await this.identifyCraftedItemFrom(
           item,
           'cooking',
         );
@@ -57,7 +57,7 @@ export class TidyBankObjective extends Objective {
           break;
         }
 
-        let numToCraft = Math.floor(
+        const numToCraft = Math.floor(
           numInBank / itemToCraftSchema.craft.items[0].quantity,
         );
 
@@ -77,7 +77,7 @@ export class TidyBankObjective extends Objective {
     ingredient: string,
     craftSkill: CraftSkill,
   ): Promise<ItemSchema> {
-    let craftedItemList = await getAllItemInformation({
+    const craftedItemList = await getAllItemInformation({
       craft_material: ingredient,
       craft_skill: craftSkill,
       max_level: this.character.getCharacterLevel(craftSkill),
@@ -94,7 +94,7 @@ export class TidyBankObjective extends Objective {
 
     // ToDo: we should make a better decision somehow if there are multiple options
     // Currently this just picks one that only requires 1 ingredient
-    for (let craftItem of craftedItemList.data) {
+    for (const craftItem of craftedItemList.data) {
       if (craftItem.craft.items.length > 1) {
         logger.debug(
           `${craftItem.code} requires more than 1 ingredient. Skipping`,

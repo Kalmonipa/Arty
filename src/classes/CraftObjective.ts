@@ -74,7 +74,7 @@ export class CraftObjective extends Objective {
           return true;
         }
 
-        const maps = (await getMaps(targetItem.craft.skill, 'workshop')).data;
+        const maps = (await getMaps({content_code: targetItem.craft.skill, content_type: 'workshop'})).data;
 
         if (maps.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
@@ -83,7 +83,7 @@ export class CraftObjective extends Objective {
 
         const contentLocation = this.character.evaluateClosestMap(maps);
 
-        for (var batch = 0; batch < this.numBatches; batch++) {
+        for (let batch = 0; batch < this.numBatches; batch++) {
           logger.debug(`Crafting batch ${batch}/${this.numBatches}`);
 
           await this.gatherIngredients(
@@ -164,7 +164,7 @@ export class CraftObjective extends Objective {
       if (craftingItemInfo instanceof ApiError) {
         await this.character.handleErrors(craftingItemInfo);
       } else {
-        var numInInv = this.character.checkQuantityOfItemInInv(
+        let numInInv = this.character.checkQuantityOfItemInInv(
           craftingItem.code,
         );
 
@@ -260,7 +260,7 @@ export class CraftObjective extends Objective {
    * @returns the total number of ingredients to craft the target number of items
    */
   private getTotalNumberOfIngredients(craftList: SimpleItemSchema[]): number {
-    var totalNumIngredients = 0;
+    let totalNumIngredients = 0;
     for (const craftItem of craftList) {
       totalNumIngredients += craftItem.quantity * this.target.quantity;
     }

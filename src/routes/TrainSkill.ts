@@ -32,7 +32,11 @@ export default function TrainSkillRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      var job = new TrainGatheringSkillObjective(char, skillName, targetLevel);
+      const job = new TrainGatheringSkillObjective(
+        char,
+        skillName,
+        targetLevel,
+      );
 
       char.appendJob(job);
 

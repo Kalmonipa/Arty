@@ -4,11 +4,11 @@ import { getMaps } from '../api_calls/Maps';
 import { getMonsterInformation } from '../api_calls/Monsters';
 import { getResourceInformation } from '../api_calls/Resources';
 import { WeaponFlavours } from '../types/ItemData';
+import { SimpleMapSchema } from '../types/MapData';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
-  DestinationSchema,
+  DataPageMonsterSchema,
   GatheringSkill,
-  GetAllMonstersMonstersGetResponse,
   ItemSchema,
   SimpleItemSchema,
 } from '../types/types';
@@ -46,7 +46,7 @@ export class GatherObjective extends Objective {
    */
   async run(): Promise<boolean> {
     let result = false;
-    let numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
     let numInBank = 0;
 
     // Sometimes we want to collect a bunch of the resource so we should skip checking the bank
@@ -66,11 +66,15 @@ export class GatherObjective extends Objective {
       logger.info(
         `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${this.target.quantity}`,
       );
-      return await this.character.withdrawNow(this.target.quantity, this.target.code);
+      return await this.character.withdrawNow(
+        this.target.quantity,
+        this.target.code,
+      );
     } else if (numInBank > 0) {
-      logger.info(`Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`)
-    } 
-
+      logger.info(
+        `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`,
+      );
+    }
 
     if (this.includeInventory) {
       logger.info(`Including ${numInInv} from our inventory`);
@@ -81,7 +85,7 @@ export class GatherObjective extends Objective {
       this.target.quantity - this.progress,
       this.target.code,
     );
-    
+
     return result;
   }
 
@@ -93,10 +97,10 @@ export class GatherObjective extends Objective {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
-      var numHeld = this.character.checkQuantityOfItemInInv(code);
+      const numHeld = this.character.checkQuantityOfItemInInv(code);
 
       // Check our equipment to see if we can equip something useful
-      var resourceDetails: ItemSchema | ApiError =
+      const resourceDetails: ItemSchema | ApiError =
         await getItemInformation(code);
       if (resourceDetails instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(resourceDetails);
@@ -133,28 +137,25 @@ export class GatherObjective extends Objective {
       });
 
       if (resourceDetails.subtype === 'mob') {
-        return await this.gatherMobDrop(
-          { code: resourceDetails.code, quantity: quantity },
-        );
+        return await this.gatherMobDrop({
+          code: resourceDetails.code,
+          quantity: quantity,
+        });
       } else if (resourceDetails.craft) {
         await this.character.craftNow(quantity, resourceDetails.code);
       } else {
-        return await this.gatherResource(
-          code,
-          quantity,
-          numHeld,
-        );
+        return await this.gatherResource(code, quantity, numHeld);
       }
     }
   }
 
   async gatherItemLoop(
     target: SimpleItemSchema,
-    location: DestinationSchema,
+    location: SimpleMapSchema,
     exceptions?: string[],
   ): Promise<boolean> {
     // Loop that does the gather requests
-    for (var count = 0; count < target.quantity; count++) {
+    for (let count = 0; count < target.quantity; count++) {
       if (this.progress % 5 === 0) {
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${target.code}`,
@@ -178,16 +179,15 @@ export class GatherObjective extends Objective {
   }
 
   async gatherMobDrop(target: SimpleItemSchema) {
-    const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
+    const mobInfo: DataPageMonsterSchema | ApiError =
       await getMonsterInformation({
-        query: { drop: target.code, max_level: this.character.data.level },
-        url: '/monsters',
-      });
+        drop: target.code, max_level: this.character.data.level },
+      );
     if (mobInfo instanceof ApiError) {
       await this.character.handleErrors(mobInfo);
       return false;
     } else {
-      let numHeld = 0
+      let numHeld = 0;
 
       while (numHeld < target.quantity) {
         logger.info(
@@ -197,7 +197,9 @@ export class GatherObjective extends Objective {
         // ToDo: make this check all mobs in case multiple drop the item
         await this.character.fightNow(1, mobInfo.data[0].code);
 
-        const newNumHeld = this.character.checkQuantityOfItemInInv(this.target.code);
+        const newNumHeld = this.character.checkQuantityOfItemInInv(
+          this.target.code,
+        );
         if (newNumHeld > numHeld) {
           this.progress += newNumHeld - numHeld;
           numHeld = newNumHeld;
@@ -224,13 +226,11 @@ export class GatherObjective extends Objective {
     logger.debug(`Finding resource map type for ${code}`);
 
     const resources = await getResourceInformation({
-      query: { drop: code },
-      url: '/resources',
-    });
+      drop: code });
 
     logger.info(`Finding location of ${resources.data[0].code}`);
 
-    const maps = (await getMaps(resources.data[0].code)).data;
+    const maps = (await getMaps({content_code: resources.data[0].code})).data;
 
     if (maps.length === 0) {
       logger.error(`Cannot find any maps for ${resources.data[0].code}`);
