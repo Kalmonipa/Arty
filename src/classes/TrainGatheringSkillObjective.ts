@@ -3,6 +3,10 @@ import { DataPageResourceSchema, GatheringSkill } from '../types/types';
 import { Character } from './Character';
 import { Objective } from './Objective';
 
+/**
+ * @todo
+ * - Alchemy requires crafting potions after level 30 to level up past. Gathering nettles doesn't provide exp at level 31
+ */
 export class TrainGatheringSkillObjective extends Objective {
   skill: GatheringSkill;
   targetLevel: number;
