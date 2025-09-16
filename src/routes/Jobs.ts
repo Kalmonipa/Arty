@@ -1,10 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../classes/Character';
-import { Objective } from '../classes/Objective';
 
 export default function JobsRouter(char: Character) {
   const router = Router();
 
+  /**
+   * @description a list of all objective IDs in the objective queue
+   * @param char 
+   * @returns {string[]}
+   */
   router.get('/list/all', async (req: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
@@ -13,7 +17,7 @@ export default function JobsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let jobs: Objective[] = char.jobList;
+      let jobs: string[] = char.listObjectives()
 
       return res.status(201).json({
         message: `${char.data.name} has ${jobs.length} jobs in queue`,
@@ -31,18 +35,32 @@ export default function JobsRouter(char: Character) {
   /**
    * @description Not implemented yet
    */
-  router.post('/cancel/active', async (req: Request, res: Response) => {
+  router.post('/cancel/:objectiveId', async (req: Request, res: Response) => {
     try {
+      const objId = req.params.objectiveId
+
       if (typeof char === 'undefined' || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
       }
 
-      return res.status(418).json({
-        message: `I'm a teapot`,
-        character: char.data.name,
-      });
+      // Find obj in obj list
+      // Remove
+      const result = char.removeJob(objId)
+      if ( !result ) {
+        return res.status(400).json({
+          message: `Objective ${objId} not found`,
+          character: char.data.name,
+          jobs: char.listObjectives()
+        })
+      } else {
+        return res.status(200).json({
+          message: `Objective ${objId} removed from queue`,
+          character: char.data.name,
+          jobs: char.listObjectives()
+        });
+    }
     } catch (error) {
       return res
         .status(500)

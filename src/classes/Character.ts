@@ -119,6 +119,17 @@ export class Character {
   }
 
   /**
+   * @description Lists the names of all the objectivs in the queue
+   */
+  listObjectives(): string[] {
+    let objNames: string[] = []
+    for (const obj of this.jobList) {
+      objNames.push(obj.objectiveId)
+    }
+    return objNames
+  }
+
+  /**
    * Adds an objective to the end of the job list
    * @param obj
    */
@@ -148,12 +159,17 @@ export class Character {
   /**
    * Remove job from jobList
    */
-  removeJob(obj: Objective, index?: number) {
-    if (!index) {
-      index = this.jobList.indexOf(obj);
+  removeJob(objectiveId: string): boolean {
+
+    const ind = this.jobList.indexOf(this.jobList.find((obj) => objectiveId === obj.objectiveId));
+
+    if (ind === -1) {
+      logger.info(`Objective ${objectiveId} not found`)
+      return false
     }
-    logger.debug(`Removing ${obj.objectiveId} from position ${index}`);
-    const deletedObj = this.jobList.splice(index, 1);
+
+    logger.debug(`Removing ${objectiveId} from position ${ind}`);
+    const deletedObj = this.jobList.splice(ind, 1);
     logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
@@ -161,6 +177,7 @@ export class Character {
         logger.debug(`   - ${obj.objectiveId} - ${obj.status}`);
       }
     }
+    return true
   }
 
   /**
@@ -181,7 +198,7 @@ export class Character {
         `Setting ${this.jobList[index].objectiveId} as active, removing from main job queue`,
       );
       this.activeJob = this.jobList[index];
-      this.removeJob(this.jobList[index]);
+      this.removeJob(this.jobList[index].objectiveId);
     } else {
       this.activeJob = null;
       logger.warn(`Not able to assign a job to active`);
@@ -199,7 +216,7 @@ export class Character {
       } else if (this.jobList.length > 0) {
         logger.info(`Executing job ${this.jobList[0].objectiveId}`);
         await this.jobList[0].execute();
-        this.removeJob(this.jobList[0]);
+        this.removeJob(this.jobList[0].objectiveId);
       }
     }
   }
