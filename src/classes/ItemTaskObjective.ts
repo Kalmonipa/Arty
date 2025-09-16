@@ -1,13 +1,9 @@
-import { dot } from 'node:test/reporters';
 import { getItemInformation } from '../api_calls/Items';
-import { getMaps } from '../api_calls/Maps';
 import {
-  actionAcceptNewTask,
-  actionCompleteTask,
   actionTasksTrade,
 } from '../api_calls/Tasks';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types';
-import { logger, sleep } from '../utils';
+import { logger } from '../utils';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
@@ -42,8 +38,8 @@ export class ItemTaskObjective extends Objective {
     if (this.character.data.task === '') {
       await this.startNewTask('items');
     } else {
-      logger.debug(
-        `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}`,
+      logger.info(
+        `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}. Collected ${this.character.data.task_progress} so far`,
       );
     }
 
@@ -79,6 +75,8 @@ export class ItemTaskObjective extends Objective {
           this.character.data.task,
         );
 
+        logger.debug(`Num gathered: ${numGathered}, Num remaining: ${numToGather}`)
+
         if (numToGather <= numGathered) {
           logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
           await this.moveToTaskMaster('items');
@@ -98,8 +96,10 @@ export class ItemTaskObjective extends Objective {
             this.character.data = taskTradeResponse.data.character;
           }
         } else if (taskInfo.craft) {
+          logger.debug(`${taskInfo.code} is a crafted item. Crafting...`)
           await this.character.craftNow(numToGather, this.character.data.task);
         } else {
+          logger.debug(`${taskInfo.code} is a gather resource. Gathering...`)
           await this.character.gatherNow(
             numToGather,
             this.character.data.task,

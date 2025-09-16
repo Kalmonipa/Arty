@@ -105,7 +105,7 @@ export class FightObjective extends Objective {
         }
 
         // Check amount of food in inventory to use after battles
-        if (!(await this.character.checkFoodLevels())) {
+        if (this.character.preferredFood && !(await this.character.checkFoodLevels())) {
           await this.character.topUpFood(contentLocation);
         }
 
