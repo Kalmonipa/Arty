@@ -4,6 +4,7 @@ export type ObjectiveTargets = {
 };
 
 export type ObjectiveStatus =
+  'cancelled'
   | 'not_started'
   | 'in_progress'
   | 'complete'

@@ -80,6 +80,17 @@ export abstract class Objective {
   }
 
   /**
+   * @description Checks if the job has been cancelled. If cancelled, should stop the loop
+   * This must be implemented in all job loops to ensure cancelling will cancel the job
+   * @returns true if cancelled, false if not
+   */
+  isCancelled(): boolean {
+    if (this.status === 'cancelled') {
+      return true;
+    } else { return false }
+  }
+
+  /**
    * @description Moves to the nearest task master
    */
   async moveToTaskMaster(taskType: TaskType) {

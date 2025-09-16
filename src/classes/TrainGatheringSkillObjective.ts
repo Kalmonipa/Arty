@@ -61,6 +61,10 @@ export class TrainGatheringSkillObjective extends Objective {
       await this.character.depositAllItems();
 
       charLevel = this.character.getCharacterLevel(this.skill);
+
+      if (this.isCancelled) {
+        return true
+      }
     }
     return true;
   }

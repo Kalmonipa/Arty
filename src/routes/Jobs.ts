@@ -45,8 +45,6 @@ export default function JobsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      // Find obj in obj list
-      // Remove
       const result = char.removeJob(objId)
       if ( !result ) {
         return res.status(400).json({

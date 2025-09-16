@@ -600,7 +600,7 @@ export class Character {
         } else if (exceptions && exceptions.includes(item.code)) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
-          logger.info(`Adding ${item.quantity} ${item.code} to deposit list`);
+          logger.debug(`Adding ${item.quantity} ${item.code} to deposit list`);
           itemsToDeposit.push({ code: item.code, quantity: item.quantity });
         }
       }
