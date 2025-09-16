@@ -174,6 +174,8 @@ export class CraftObjective extends Objective {
 
         const totalNumNeededToCraft = craftingItem.quantity * itemsPerBatch;
 
+        logger.debug(`Numininv: ${numInInv}, total needed: ${totalNumNeededToCraft}`)
+
         if (numInInv >= totalNumNeededToCraft) {
           logger.info(
             `${numInInv} ${craftingItem.code} in inventory already. No need to collect more`,
@@ -192,9 +194,11 @@ export class CraftObjective extends Objective {
             totalNumNeededToCraft - numInInv,
             craftingItem.code,
           );
+        
+          numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
         }
 
-        numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
+        logger.debug(`NumInInv: ${numInInv}`)
 
         if (numInInv < totalNumNeededToCraft) {
           if (craftingItemInfo.subtype === 'mob') {
@@ -214,17 +218,14 @@ export class CraftObjective extends Objective {
               craftingItem.code,
             );
           } else {
-            // It must be a gather resource
-            if (craftingItemInfo.craft) {
-              logger.debug(
-                `Resource ${craftingItem.code} is a gatherable item`,
-              );
+            logger.debug(
+              `Resource ${craftingItem.code} is a gatherable item`,
+            );
 
-              await this.character.gatherNow(
-                totalNumNeededToCraft - numInInv,
-                craftingItem.code,
-              );
-            }
+            await this.character.gatherNow(
+              totalNumNeededToCraft - numInInv,
+              craftingItem.code,
+            );
           }
         }
       }
