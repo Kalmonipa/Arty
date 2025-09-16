@@ -58,6 +58,11 @@ export class FightObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+              if (this.isCancelled) {
+          logger.info(`${this.objectiveId} has been cancelled`)
+          return false;
+        }
+
       logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
 
       logger.info(`Finding location of ${this.target.code}`);
@@ -74,6 +79,11 @@ export class FightObjective extends Objective {
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
       for (var count = 0; count < this.target.quantity; count++) {
+                if (this.isCancelled) {
+          logger.info(`${this.objectiveId} has been cancelled`)
+          return false;
+        }
+        
         logger.info(
           `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
         );

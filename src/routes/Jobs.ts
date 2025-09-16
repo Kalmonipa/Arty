@@ -33,7 +33,9 @@ export default function JobsRouter(char: Character) {
   });
 
   /**
-   * @description Not implemented yet
+   * @description Cancels the given job, removing it from the job queue
+   * If the cancelled job is active, we must wait until an isCancelled check happens so the job
+   * may not cancel immediately
    */
   router.post('/cancel/:objectiveId', async (req: Request, res: Response) => {
     try {
@@ -45,16 +47,18 @@ export default function JobsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      const result = char.removeJob(objId)
+      let obj = char.jobList.find(obj => objId === obj.objectiveId)
+      const result = char.cancelJob(obj)
+
       if ( !result ) {
-        return res.status(400).json({
-          message: `Objective ${objId} not found`,
+        return res.status(404).json({
+          message: `Objective ${obj.objectiveId} not found`,
           character: char.data.name,
           jobs: char.listObjectives()
         })
       } else {
         return res.status(200).json({
-          message: `Objective ${objId} removed from queue`,
+          message: `Objective ${obj.objectiveId} removed from queue`,
           character: char.data.name,
           jobs: char.listObjectives()
         });

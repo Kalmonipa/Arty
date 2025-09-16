@@ -114,8 +114,9 @@ export class Character {
    * @description Cancels the currently active job
    * @todo Implement some cancel logic
    */
-  cancelJob() {
-    return true;
+  cancelJob(obj: Objective) {
+    obj.status = 'cancelled';
+    return this.removeJob(obj.objectiveId)
   }
 
   /**

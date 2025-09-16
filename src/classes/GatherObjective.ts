@@ -173,23 +173,29 @@ export class GatherObjective extends Objective {
         this.character.data = response.data.character;
         this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
       }
+
+      if (this.isCancelled) {
+        logger.info(`${this.objectiveId} has been cancelled.`)
+        return false;
+      }
     }
     return true;
   }
 
   async gatherMobDrop(target: SimpleItemSchema) {
+    // ToDo: change this with new types in season-6-changes branch
     const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
       await getMonsterInformation({
         query: { drop: target.code, max_level: this.character.data.level },
         url: '/monsters',
       });
     if (mobInfo instanceof ApiError) {
-      await this.character.handleErrors(mobInfo);
-      return false;
+      return await this.character.handleErrors(mobInfo);
     } else {
       let numHeld = 0
 
-      while (numHeld < target.quantity) {
+      // We want to compare total progress with the target quantity
+      while (this.progress < target.quantity) {
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
         );
@@ -201,6 +207,11 @@ export class GatherObjective extends Objective {
         if (newNumHeld > numHeld) {
           this.progress += newNumHeld - numHeld;
           numHeld = newNumHeld;
+        }
+
+        if (this.isCancelled) {
+          logger.info(`${this.objectiveId} has been cancelled.`)
+          return false;
         }
       }
       return true;
@@ -249,6 +260,11 @@ export class GatherObjective extends Objective {
       },
       exceptions,
     );
+
+    if (this.isCancelled) {
+      logger.info(`${this.objectiveId} has been cancelled.`)
+      return false;
+    }
 
     numHeld = this.character.checkQuantityOfItemInInv(code);
     if (this.progress >= quantity) {

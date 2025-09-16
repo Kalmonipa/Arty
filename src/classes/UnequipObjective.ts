@@ -25,6 +25,12 @@ export class UnequipObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+
+      if (this.isCancelled) {
+        logger.info(`${this.objectiveId} has been cancelled`)
+        return false;
+      }
+
       logger.debug(`Unequip attempt ${attempt}/${this.maxRetries}`);
 
       if (!this.quantity) this.quantity = 1;

@@ -62,6 +62,10 @@ export class CraftObjective extends Objective {
         }
         continue;
       } else {
+        if (this.isCancelled) {
+          logger.info(`${this.objectiveId} has been cancelled`)
+          return false;
+        }
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
         // If not enough inv space, split it into 2 jobs, craft half as much at once
         // If still not enough, keep splitting in half until we have enough inv space
@@ -85,6 +89,11 @@ export class CraftObjective extends Objective {
 
         for (var batch = 0; batch < this.numBatches; batch++) {
           logger.debug(`Crafting batch ${batch}/${this.numBatches}`);
+
+          if (this.isCancelled) {
+            logger.info(`${this.objectiveId} has been cancelled`)
+            return false;
+          }
 
           await this.gatherIngredients(
             targetItem.craft.items,
@@ -201,6 +210,12 @@ export class CraftObjective extends Objective {
         logger.debug(`NumInInv: ${numInInv}`)
 
         if (numInInv < totalNumNeededToCraft) {
+          
+          if (this.isCancelled) {
+            logger.info(`${this.objectiveId} has been cancelled`)
+            return false;
+          }
+
           if (craftingItemInfo.subtype === 'mob') {
             logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
 

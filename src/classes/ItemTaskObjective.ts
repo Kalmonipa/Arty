@@ -35,6 +35,12 @@ export class ItemTaskObjective extends Objective {
   }
 
   async doTask(): Promise<boolean> {
+
+            if (this.isCancelled) {
+          logger.info(`${this.objectiveId} has been cancelled`)
+          return false;
+        }
+
     if (this.character.data.task === '') {
       await this.startNewTask('items');
     } else {
@@ -54,6 +60,12 @@ export class ItemTaskObjective extends Objective {
       while (
         this.character.data.task_progress < this.character.data.task_total
       ) {
+
+                if (this.isCancelled) {
+          logger.info(`${this.objectiveId} has been cancelled`)
+          return false;
+        }
+
         // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
         var numToGather = Math.min(
           this.character.data.task_total - this.character.data.task_progress,
@@ -91,7 +103,6 @@ export class ItemTaskObjective extends Objective {
             await this.character.handleErrors(taskTradeResponse);
 
             return false;
-            break;
           } else {
             this.character.data = taskTradeResponse.data.character;
           }
