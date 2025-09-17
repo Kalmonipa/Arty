@@ -30,8 +30,9 @@ export class TrainGatheringSkillObjective extends Objective {
   async run(): Promise<boolean> {
     var charLevel = this.character.getCharacterLevel(this.skill);
     while (charLevel < this.targetLevel) {
-      if (this.isCancelled) {
-        logger.info(`${this.objectiveId} has been cancelled`)
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        this.character.removeJob(this.objectiveId);
         return false;
       }
 

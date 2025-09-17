@@ -1,7 +1,5 @@
 import { getItemInformation } from '../api_calls/Items';
-import {
-  actionTasksTrade,
-} from '../api_calls/Tasks';
+import { actionTasksTrade } from '../api_calls/Tasks';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types';
 import { logger } from '../utils';
 import { Character } from './Character';
@@ -27,7 +25,7 @@ export class ItemTaskObjective extends Objective {
     let result = false;
 
     for (let count = 0; count < this.quantity; count++) {
-      logger.info(`Completed ${count}/${this.quantity} tasks`)
+      logger.info(`Completed ${count}/${this.quantity} tasks`);
       result = await this.doTask();
     }
 
@@ -35,11 +33,11 @@ export class ItemTaskObjective extends Objective {
   }
 
   async doTask(): Promise<boolean> {
-
-            if (this.isCancelled) {
-          logger.info(`${this.objectiveId} has been cancelled`)
-          return false;
-        }
+    if (this.isCancelled()) {
+      logger.info(`${this.objectiveId} has been cancelled`);
+      this.character.removeJob(this.objectiveId);
+      return false;
+    }
 
     if (this.character.data.task === '') {
       await this.startNewTask('items');
@@ -60,9 +58,9 @@ export class ItemTaskObjective extends Objective {
       while (
         this.character.data.task_progress < this.character.data.task_total
       ) {
-
-                if (this.isCancelled) {
-          logger.info(`${this.objectiveId} has been cancelled`)
+        if (this.isCancelled()) {
+          logger.info(`${this.objectiveId} has been cancelled`);
+          this.character.removeJob(this.objectiveId);
           return false;
         }
 
@@ -87,7 +85,9 @@ export class ItemTaskObjective extends Objective {
           this.character.data.task,
         );
 
-        logger.debug(`Num gathered: ${numGathered}, Num remaining: ${numToGather}`)
+        logger.debug(
+          `Num gathered: ${numGathered}, Num remaining: ${numToGather}`,
+        );
 
         if (numToGather <= numGathered) {
           logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
@@ -107,10 +107,10 @@ export class ItemTaskObjective extends Objective {
             this.character.data = taskTradeResponse.data.character;
           }
         } else if (taskInfo.craft) {
-          logger.debug(`${taskInfo.code} is a crafted item. Crafting...`)
+          logger.debug(`${taskInfo.code} is a crafted item. Crafting...`);
           await this.character.craftNow(numToGather, this.character.data.task);
         } else {
-          logger.debug(`${taskInfo.code} is a gather resource. Gathering...`)
+          logger.debug(`${taskInfo.code} is a gather resource. Gathering...`);
           await this.character.gatherNow(
             numToGather,
             this.character.data.task,

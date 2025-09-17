@@ -18,7 +18,7 @@ export async function actionRecycle(
 
   var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/recycling`);
 
-  logger.info(`Recycling ${quantity} ${itemCode}`)
+  logger.info(`Recycling ${quantity} ${itemCode}`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);

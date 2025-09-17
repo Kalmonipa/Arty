@@ -31,7 +31,7 @@ async function main() {
   app.use('/fight', FightRouter(char));
   app.use('/gather', GatherRouter(char));
   app.use('/jobs', JobsRouter(char));
-  app.use('/recycle', RecycleRouter(char))
+  app.use('/recycle', RecycleRouter(char));
   app.use('/task', TaskRouter(char));
   app.use('/train', TrainSkillRouter(char));
 

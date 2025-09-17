@@ -66,11 +66,15 @@ export class GatherObjective extends Objective {
       logger.info(
         `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${this.target.quantity}`,
       );
-      return await this.character.withdrawNow(this.target.quantity, this.target.code);
+      return await this.character.withdrawNow(
+        this.target.quantity,
+        this.target.code,
+      );
     } else if (numInBank > 0) {
-      logger.info(`Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`)
-    } 
-
+      logger.info(
+        `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`,
+      );
+    }
 
     if (this.includeInventory) {
       logger.info(`Including ${numInInv} from our inventory`);
@@ -81,7 +85,7 @@ export class GatherObjective extends Objective {
       this.target.quantity - this.progress,
       this.target.code,
     );
-    
+
     return result;
   }
 
@@ -133,17 +137,14 @@ export class GatherObjective extends Objective {
       });
 
       if (resourceDetails.subtype === 'mob') {
-        return await this.gatherMobDrop(
-          { code: resourceDetails.code, quantity: quantity },
-        );
+        return await this.gatherMobDrop({
+          code: resourceDetails.code,
+          quantity: quantity,
+        });
       } else if (resourceDetails.craft) {
         await this.character.craftNow(quantity, resourceDetails.code);
       } else {
-        return await this.gatherResource(
-          code,
-          quantity,
-          numHeld,
-        );
+        return await this.gatherResource(code, quantity, numHeld);
       }
     }
   }
@@ -174,8 +175,9 @@ export class GatherObjective extends Objective {
         this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
       }
 
-      if (this.isCancelled) {
-        logger.info(`${this.objectiveId} has been cancelled.`)
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled.`);
+        this.character.removeJob(this.objectiveId);
         return false;
       }
     }
@@ -192,7 +194,7 @@ export class GatherObjective extends Objective {
     if (mobInfo instanceof ApiError) {
       return await this.character.handleErrors(mobInfo);
     } else {
-      let numHeld = 0
+      let numHeld = 0;
 
       // We want to compare total progress with the target quantity
       while (this.progress < target.quantity) {
@@ -203,14 +205,17 @@ export class GatherObjective extends Objective {
         // ToDo: make this check all mobs in case multiple drop the item
         await this.character.fightNow(1, mobInfo.data[0].code);
 
-        const newNumHeld = this.character.checkQuantityOfItemInInv(this.target.code);
+        const newNumHeld = this.character.checkQuantityOfItemInInv(
+          this.target.code,
+        );
         if (newNumHeld > numHeld) {
           this.progress += newNumHeld - numHeld;
           numHeld = newNumHeld;
         }
 
-        if (this.isCancelled) {
-          logger.info(`${this.objectiveId} has been cancelled.`)
+        if (this.isCancelled()) {
+          logger.info(`${this.objectiveId} has been cancelled.`);
+          this.character.removeJob(this.objectiveId);
           return false;
         }
       }
@@ -261,8 +266,9 @@ export class GatherObjective extends Objective {
       exceptions,
     );
 
-    if (this.isCancelled) {
-      logger.info(`${this.objectiveId} has been cancelled.`)
+    if (this.isCancelled()) {
+      logger.info(`${this.objectiveId} has been cancelled.`);
+      this.character.removeJob(this.objectiveId);
       return false;
     }
 

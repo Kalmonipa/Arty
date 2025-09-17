@@ -17,13 +17,11 @@ export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // 
 export const ApiToken = getEnv('API_TOKEN');
 const logLevel = process.env.LOG_LEVEL || 'info';
 
-
 export const MyHeaders = new Headers({
   'Content-Type': 'application/json',
   Accept: 'application/json',
   Authorization: `Bearer ${ApiToken}`,
 });
-
 
 export const logger = pino({
   level: logLevel,
@@ -44,9 +42,8 @@ export const logger = pino({
         target: 'pino-pretty',
         options: {
           messageFormat: '[{character}] {msg}',
-          ignore: 'character'
+          ignore: 'character',
         },
-        
       },
     ],
   },
@@ -108,7 +105,7 @@ export async function buildListOfWeapons(): Promise<
   weaponMap['combat'] = [];
 
   const allWeapons: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({type: 'weapon'});
+    await getAllItemInformation({ type: 'weapon' });
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;

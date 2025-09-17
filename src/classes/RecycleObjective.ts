@@ -44,14 +44,15 @@ export class RecycleObjective extends Objective {
     // [] Calculate how many resulting items we can carry, batch it based on the result
     //      - i.e recycling 90 iron_armor would result in 180 iron_bar which is too many
 
-    let result = false
+    let result = false;
 
-    if (this.isCancelled) {
-      logger.info(`${this.objectiveId} has been cancelled`)
+    if (this.isCancelled()) {
+      logger.info(`${this.objectiveId} has been cancelled`);
+      this.character.removeJob(this.objectiveId);
       return false;
     }
 
-    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code)
+    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 
     if (
       !(await this.character.withdrawNow(
@@ -80,21 +81,22 @@ export class RecycleObjective extends Objective {
 
       await this.character.move(contentLocation);
 
-      const recycleResult = await actionRecycle(this.character.data,
+      const recycleResult = await actionRecycle(
+        this.character.data,
         this.target.code,
         this.target.quantity,
       );
       if (recycleResult instanceof ApiError) {
-        logger.info(recycleResult.message)
+        logger.info(recycleResult.message);
         await this.character.handleErrors(recycleResult);
-        return false
+        return false;
       } else {
         this.character.data = recycleResult.data.character;
 
         for (const item of recycleResult.data.details.items) {
-            result = await this.character.depositNow(item.quantity, item.code)
+          result = await this.character.depositNow(item.quantity, item.code);
         }
-        return result
+        return result;
       }
     }
 
