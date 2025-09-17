@@ -87,7 +87,9 @@ export abstract class Objective {
   isCancelled(): boolean {
     if (this.status === 'cancelled') {
       return true;
-    } else { return false }
+    } else {
+      return false;
+    }
   }
 
   /**

@@ -58,6 +58,12 @@ export class FightObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        this.character.removeJob(this.objectiveId);
+        return false;
+      }
+
       logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
 
       logger.info(`Finding location of ${this.target.code}`);
@@ -73,7 +79,13 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (let count = 0; count < this.target.quantity; count++) {
+      for (var count = 0; count < this.target.quantity; count++) {
+        if (this.isCancelled()) {
+          logger.info(`${this.objectiveId} has been cancelled`);
+          this.character.removeJob(this.objectiveId);
+          return false;
+        }
+
         logger.info(
           `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
         );
@@ -105,7 +117,10 @@ export class FightObjective extends Objective {
         }
 
         // Check amount of food in inventory to use after battles
-        if (this.character.preferredFood && !(await this.character.checkFoodLevels())) {
+        if (
+          this.character.preferredFood &&
+          !(await this.character.checkFoodLevels())
+        ) {
           await this.character.topUpFood(contentLocation);
         }
 

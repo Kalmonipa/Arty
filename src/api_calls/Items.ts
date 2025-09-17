@@ -156,9 +156,27 @@ export async function actionUse(
       requestOptions,
     );
     if (!response.ok) {
+      var message: string;
+      switch (response.status) {
+        case 404:
+          message = 'Item not found.';
+          break;
+        case 476:
+          message = 'This item is not a consumable.';
+          break;
+        case 478:
+          message = 'Missing item or insufficient quantity.';
+          break;
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 496:
+          message = 'The character does not meet the required condition.';
+          break;
+      }
       throw new ApiError({
         code: response.status,
-        message: `Unknown error from /action/use: ${response}`,
+        message: message,
       });
     }
 

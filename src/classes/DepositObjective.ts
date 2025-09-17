@@ -35,6 +35,12 @@ export class DepositObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        this.character.removeJob(this.objectiveId);
+        return false;
+      }
+
       logger.debug(`Deposit attempt ${attempt}/${this.maxRetries}`);
 
       logger.debug(`Finding location of the bank`);
@@ -52,6 +58,7 @@ export class DepositObjective extends Objective {
 
       let response: ApiError | BankItemTransactionResponseSchema;
       if (this.target.code === 'gold') {
+        logger.warn(`Deposit gold has not been implemented yet`);
         // deposit gold
       } else if (this.target.code === 'all') {
         const itemsToDeposit: SimpleItemSchema[] = [];

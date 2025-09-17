@@ -1,5 +1,6 @@
 import { getResourceInformation } from '../api_calls/Resources';
 import { DataPageResourceSchema, GatheringSkill } from '../types/types';
+import { logger } from '../utils';
 import { Character } from './Character';
 import { Objective } from './Objective';
 
@@ -29,6 +30,12 @@ export class TrainGatheringSkillObjective extends Objective {
   async run(): Promise<boolean> {
     let charLevel = this.character.getCharacterLevel(this.skill);
     while (charLevel < this.targetLevel) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        this.character.removeJob(this.objectiveId);
+        return false;
+      }
+
       const resourceTypes: DataPageResourceSchema =
         await getResourceInformation({
             skill: this.skill,
@@ -48,7 +55,7 @@ export class TrainGatheringSkillObjective extends Objective {
       const numGathered =
         this.character.checkQuantityOfItemInInv(resourceToGather);
 
-      // ToDo: Make this actually check for the type to craft
+      // ToDo: Make this actually check for the type to craft instead of hardcoding 'cooked_'
       if (this.skill === 'fishing') {
         await this.character.craftNow(
           numGathered,
@@ -59,10 +66,6 @@ export class TrainGatheringSkillObjective extends Objective {
       await this.character.depositAllItems();
 
       charLevel = this.character.getCharacterLevel(this.skill);
-
-      if (this.isCancelled) {
-        return true
-      }
     }
     return true;
   }

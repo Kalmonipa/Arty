@@ -25,6 +25,12 @@ export class WithdrawObjective extends Objective {
    */
   async run() {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        this.character.removeJob(this.objectiveId);
+        return false;
+      }
+
       logger.debug(`Withdraw attempt ${attempt}/${this.maxRetries}`);
 
       logger.debug(`Finding location of the bank`);

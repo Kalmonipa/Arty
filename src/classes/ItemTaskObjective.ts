@@ -1,7 +1,5 @@
 import { getItemInformation } from '../api_calls/Items';
-import {
-  actionTasksTrade,
-} from '../api_calls/Tasks';
+import { actionTasksTrade } from '../api_calls/Tasks';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types';
 import { logger } from '../utils';
 import { Character } from './Character';
@@ -35,6 +33,12 @@ export class ItemTaskObjective extends Objective {
   }
 
   async doTask(): Promise<boolean> {
+    if (this.isCancelled()) {
+      logger.info(`${this.objectiveId} has been cancelled`);
+      this.character.removeJob(this.objectiveId);
+      return false;
+    }
+
     if (this.character.data.task === '') {
       await this.startNewTask('items');
     } else {
@@ -54,6 +58,12 @@ export class ItemTaskObjective extends Objective {
       while (
         this.character.data.task_progress < this.character.data.task_total
       ) {
+        if (this.isCancelled()) {
+          logger.info(`${this.objectiveId} has been cancelled`);
+          this.character.removeJob(this.objectiveId);
+          return false;
+        }
+
         // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
         var numToGather = Math.min(
           this.character.data.task_total - this.character.data.task_progress,
@@ -75,7 +85,9 @@ export class ItemTaskObjective extends Objective {
           this.character.data.task,
         );
 
-        logger.debug(`Num gathered: ${numGathered}, Num remaining: ${numToGather}`)
+        logger.debug(
+          `Num gathered: ${numGathered}, Num remaining: ${numToGather}`,
+        );
 
         if (numToGather <= numGathered) {
           logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
@@ -91,15 +103,14 @@ export class ItemTaskObjective extends Objective {
             await this.character.handleErrors(taskTradeResponse);
 
             return false;
-            break;
           } else {
             this.character.data = taskTradeResponse.data.character;
           }
         } else if (taskInfo.craft) {
-          logger.debug(`${taskInfo.code} is a crafted item. Crafting...`)
+          logger.debug(`${taskInfo.code} is a crafted item. Crafting...`);
           await this.character.craftNow(numToGather, this.character.data.task);
         } else {
-          logger.debug(`${taskInfo.code} is a gather resource. Gathering...`)
+          logger.debug(`${taskInfo.code} is a gather resource. Gathering...`);
           await this.character.gatherNow(
             numToGather,
             this.character.data.task,

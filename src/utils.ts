@@ -23,11 +23,14 @@ export const MyHeaders = new Headers({
   Authorization: `Bearer ${ApiToken}`,
 });
 
+<<<<<<< HEAD
 export const getRequestOptions = {
   method: 'GET',
   headers: MyHeaders,
 };
 
+=======
+>>>>>>> origin/main
 export const logger = pino({
   level: logLevel,
   base: {
@@ -109,7 +112,11 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
+<<<<<<< HEAD
   const allWeapons: ApiError | DataPageItemSchema =
+=======
+  const allWeapons: ApiError | GetAllItemsItemsGetResponse =
+>>>>>>> origin/main
     await getAllItemInformation({ type: 'weapon' });
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);

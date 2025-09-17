@@ -114,7 +114,8 @@ export class Character {
    * @description Cancels the currently active job
    * @todo Implement some cancel logic
    */
-  cancelJob() {
+  cancelJob(obj: Objective): boolean {
+    obj.status = 'cancelled';
     return true;
   }
 
@@ -122,11 +123,11 @@ export class Character {
    * @description Lists the names of all the objectivs in the queue
    */
   listObjectives(): string[] {
-    let objNames: string[] = []
+    let objNames: string[] = [];
     for (const obj of this.jobList) {
-      objNames.push(obj.objectiveId)
+      objNames.push(obj.objectiveId);
     }
-    return objNames
+    return objNames;
   }
 
   /**
@@ -160,12 +161,13 @@ export class Character {
    * Remove job from jobList
    */
   removeJob(objectiveId: string): boolean {
-
-    const ind = this.jobList.indexOf(this.jobList.find((obj) => objectiveId === obj.objectiveId));
+    const ind = this.jobList.indexOf(
+      this.jobList.find((obj) => objectiveId === obj.objectiveId),
+    );
 
     if (ind === -1) {
-      logger.info(`Objective ${objectiveId} not found`)
-      return false
+      logger.info(`Objective ${objectiveId} not found`);
+      return false;
     }
 
     logger.debug(`Removing ${objectiveId} from position ${ind}`);
@@ -177,7 +179,7 @@ export class Character {
         logger.debug(`   - ${obj.objectiveId} - ${obj.status}`);
       }
     }
-    return true
+    return true;
   }
 
   /**
@@ -331,13 +333,11 @@ export class Character {
    * @description Deposit all inventory items into bank
    */
   async depositAllItems() {
-    this.prependJob(
-      new DepositObjective(this, {
-        code: 'all',
-        quantity: 0,
-      }),
-    );
-    await this.jobList[0].execute();
+    const job = new DepositObjective(this, {
+      code: 'all',
+      quantity: 0,
+    });
+    await job.execute();
   }
 
   /**
@@ -550,10 +550,10 @@ export class Character {
    */
   async topUpFood(priorLocation?: DestinationSchema) {
     if (!this.preferredFood) {
-      logger.debug(`No preferred food set to top up`)
+      logger.debug(`No preferred food set to top up`);
       return;
     }
-    
+
     const numNeeded =
       this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood);
 
@@ -673,9 +673,9 @@ export class Character {
       if (bankItems instanceof ApiError) {
         this.handleErrors(bankItems);
       } else if (!bankItems) {
-        logger.info(`No food items in the bank`)
+        logger.info(`No food items in the bank`);
         return true;
-      }else {
+      } else {
         const foundItem = bankItems.data.find((bankItem) => {
           return this.consumablesMap.heal.find(
             (item) => bankItem.code === item.code,

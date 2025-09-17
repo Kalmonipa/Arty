@@ -40,13 +40,17 @@ export class RecycleObjective extends Objective {
     // [x] Recycle items
     // [x] Deposit the resulting items into the bank
     // [] Calculate how many resulting items we can carry, batch it based on the result
-    //      - i.e recycling 90 iron_armor would result in 180 iron_bar
+    //      - i.e recycling 90 iron_armor would result in 180 iron_bar which is too many
 
     let result = false;
 
-    const numInInv = await this.character.checkQuantityOfItemInInv(
-      this.target.code,
-    );
+    if (this.isCancelled()) {
+      logger.info(`${this.objectiveId} has been cancelled`);
+      this.character.removeJob(this.objectiveId);
+      return false;
+    }
+
+    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 
     if (
       !(await this.character.withdrawNow(
