@@ -1,13 +1,14 @@
-import pino from 'pino';
+import winston from 'winston';
+import { SeqTransport } from '@datalust/winston-seq';
 import {
   GatheringSkill,
   GetAllItemsItemsGetResponse,
   ItemSchema,
   ItemType,
-} from './types/types';
-import { getAllItemInformation } from './api_calls/Items';
-import { ApiError } from './classes/Error';
-import { WeaponFlavours } from './types/ItemData';
+} from './types/types.js';
+import { getAllItemInformation } from './api_calls/Items.js';
+import { ApiError } from './classes/Error.js';
+import { WeaponFlavours } from './types/ItemData.js';
 import dotenv from 'dotenv';
 
 dotenv.config({ quiet: true });
@@ -23,31 +24,57 @@ export const MyHeaders = new Headers({
   Authorization: `Bearer ${ApiToken}`,
 });
 
-export const logger = pino({
+const customFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
+  winston.format.errors({ stack: true }),
+  winston.format.json(),
+  winston.format.printf(({ timestamp, level, message, character, ...meta }) => {
+    const logObject = {
+      timestamp,
+      level,
+      message,
+      character: character || CharName,
+      ...meta,
+    };
+    return JSON.stringify(logObject);
+  }),
+);
+
+const consoleFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YY-MM-DD HH:mm:ss' }),
+  winston.format.errors({ stack: true }),
+  winston.format.printf(({ timestamp, level, message, character }) => {
+    const char = character || CharName;
+    return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
+  }),
+);
+
+export const logger = winston.createLogger({
   level: logLevel,
-  base: {
+  defaultMeta: {
     character: CharName,
   },
-  transport: {
-    targets: [
-      {
-        level: logLevel,
-        target: 'pino/file',
-        options: {
-          destination: './logs/arty.log',
-        },
+  transports: [
+    new winston.transports.File({
+      filename: './logs/arty.log',
+      level: logLevel,
+      format: customFormat,
+    }),
+
+    new winston.transports.Console({
+      level: logLevel,
+      format: consoleFormat,
+    }),
+
+    new SeqTransport({
+      serverUrl: process.env.SEQ_SERVER_URL || 'http://seq:5341',
+      apiKey: getEnv('SEQ_API_KEY'),
+      level: logLevel,
+      onError: (err) => {
+        console.error('Seq transport error:', err.message);
       },
-      {
-        level: logLevel,
-        target: 'pino-pretty',
-        options: {
-          messageFormat: '[{character}] {msg}',
-          ignore: 'character',
-        },
-      },
-    ],
-  },
-  timestamp: pino.stdTimeFunctions.isoTime, //'DD-MM-YYYY HH:mm:ss.SSS'
+    }),
+  ],
 });
 
 /**
@@ -108,7 +135,7 @@ export async function buildListOfWeapons(): Promise<
     await getAllItemInformation({ type: 'weapon' });
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
-    return;
+    return {};
   }
 
   allWeapons.data.forEach((weapon) => {
@@ -157,19 +184,21 @@ export async function buildListOfUtilities(): Promise<
     await getAllItemInformation({ type: 'utility' });
   if (allUtilities instanceof ApiError) {
     logger.error(`Failed to build list of useful utility: ${allUtilities}`);
-    return;
+    return {};
   }
 
   allUtilities.data.forEach((utility) => {
-    utility.effects.forEach((effect) => {
-      if (utilitiesMap[effect.code]) {
-        logger.debug(`Adding ${utility.code} to ${effect.code} map`);
-        utilitiesMap[effect.code].push(utility);
-      } else {
-        logger.debug(`Adding ${effect.code} to utilities map`);
-        utilitiesMap[effect.code] = [utility];
-      }
-    });
+    if (utility.effects) {
+      utility.effects.forEach((effect) => {
+        if (utilitiesMap[effect.code]) {
+          logger.debug(`Adding ${utility.code} to ${effect.code} map`);
+          utilitiesMap[effect.code].push(utility);
+        } else {
+          logger.debug(`Adding ${effect.code} to utilities map`);
+          utilitiesMap[effect.code] = [utility];
+        }
+      });
+    }
   });
 
   return utilitiesMap;
@@ -189,19 +218,21 @@ export async function buildListOf(
     await getAllItemInformation({ type: itemType });
   if (allItems instanceof ApiError) {
     logger.error(`Failed to build list of useful ${itemType}: ${allItems}`);
-    return;
+    return {};
   }
 
   allItems.data.forEach((utility) => {
-    utility.effects.forEach((effect) => {
-      if (itemMap[effect.code]) {
-        logger.debug(`Adding ${utility.code} to ${effect.code} map`);
-        itemMap[effect.code].push(utility);
-      } else {
-        logger.debug(`Adding ${effect.code} to ${itemType} map`);
-        itemMap[effect.code] = [utility];
-      }
-    });
+    if (utility.effects) {
+      utility.effects.forEach((effect) => {
+        if (itemMap[effect.code]) {
+          logger.debug(`Adding ${utility.code} to ${effect.code} map`);
+          itemMap[effect.code].push(utility);
+        } else {
+          logger.debug(`Adding ${effect.code} to ${itemType} map`);
+          itemMap[effect.code] = [utility];
+        }
+      });
+    }
   });
 
   return itemMap;

@@ -17,7 +17,7 @@ import {
   SimpleItemSchema,
   Skill,
 } from '../types/types';
-import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils';
+import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils.js';
 import { CraftObjective } from './CraftObjective';
 import { DepositObjective } from './DepositObjective';
 import { ApiError } from './Error';

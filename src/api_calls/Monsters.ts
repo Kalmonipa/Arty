@@ -1,9 +1,9 @@
-import { ApiError } from '../classes/Error';
+import { ApiError } from '../classes/Error.js';
 import {
   GetAllMonstersMonstersGetResponse,
   GetAllMonstersMonstersGetData,
-} from '../types/types';
-import { ApiUrl, MyHeaders } from '../utils';
+} from '../types/types.js';
+import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getMonsterInformation(
   data: GetAllMonstersMonstersGetData,
@@ -15,22 +15,22 @@ export async function getMonsterInformation(
 
   var apiUrl = new URL(`${ApiUrl}/monsters`);
 
-  if (data.query.drop) {
+  if (data.query?.drop) {
     apiUrl.searchParams.set('drop', data.query.drop);
   }
-  if (data.query.max_level) {
+  if (data.query?.max_level) {
     apiUrl.searchParams.set('max_level', data.query.max_level.toString());
   }
-  if (data.query.min_level) {
+  if (data.query?.min_level) {
     apiUrl.searchParams.set('min_level', data.query.min_level.toString());
   }
-  if (data.query.page) {
+  if (data.query?.page) {
     apiUrl.searchParams.set('page', data.query.page.toString());
   }
-  if (data.query.size) {
+  if (data.query?.size) {
     apiUrl.searchParams.set('size', data.query.size.toString());
   }
-  if (data.query.name) {
+  if (data.query?.name) {
     apiUrl.searchParams.set('name', data.query.name);
   }
 
@@ -44,6 +44,6 @@ export async function getMonsterInformation(
     }
     return await response.json();
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

@@ -1,6 +1,6 @@
-import { ApiError } from '../classes/Error';
-import { ApiUrl, MyHeaders } from '../utils';
-import { DataPageSimpleItemSchema } from '../types/types';
+import { ApiError } from '../classes/Error.js';
+import { ApiUrl, MyHeaders } from '../utils.js';
+import { DataPageSimpleItemSchema } from '../types/types.js';
 
 export async function getBankItems(
   item_code?: string,
@@ -34,6 +34,6 @@ export async function getBankItems(
     }
     return await response.json();
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

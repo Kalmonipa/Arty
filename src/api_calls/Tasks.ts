@@ -6,7 +6,7 @@ import {
   TaskResponseSchema,
   TaskTradeResponseSchema,
 } from '../types/types';
-import { ApiUrl, MyHeaders, logger, sleep } from '../utils';
+import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
 
 export async function actionAcceptNewTask(
   character: CharacterSchema,
@@ -69,7 +69,7 @@ export async function actionAcceptNewTask(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -130,7 +130,7 @@ export async function actionCompleteTask(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -192,6 +192,6 @@ export async function actionTasksTrade(
     );
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@types/express": "^5.0.3",
@@ -9,13 +10,14 @@
     "nodemon": "^3.1.10",
     "prettier": "3.6.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.43.0",
     "winston": "^3.17.0"
   },
   "scripts": {
     "serve": "ts-node src/main.ts",
-    "dev": "LOG_LEVEL=debug nodemon src/main.ts",
+    "dev": "LOG_LEVEL=debug nodemon --exec tsx src/main.ts",
     "dev:test": "API_URL=https://api-test.artifactsmmo.com/ LOG_LEVEL=debug nodemon src/main.ts",
     "build": "tsc",
     "start": "node dist/main.js",
@@ -23,10 +25,13 @@
     "prettier:fix": "npx prettier . --write --log-level silent"
   },
   "dependencies": {
+    "@datalust/winston-seq": "^3.0.1",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "pino": "^9.9.0",
-    "pino-pretty": "^13.1.1"
+    "pino-pretty": "^13.1.1",
+    "pino-seq": "^2.1.0",
+    "winston-seq": "^0.1.0"
   },
   "prettier": {
     "singleQuote": true,

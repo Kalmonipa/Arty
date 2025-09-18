@@ -1,5 +1,6 @@
-import { CharacterSchema } from '../types/types';
-import { ApiUrl, MyHeaders, logger } from '../utils';
+import { ApiError } from '../classes/Error.js';
+import { CharacterSchema } from '../types/types.js';
+import { ApiUrl, MyHeaders, logger } from '../utils.js';
 
 /**
  * @description returns the character information
@@ -8,7 +9,7 @@ import { ApiUrl, MyHeaders, logger } from '../utils';
  */
 export async function getCharacter(
   characterName: string,
-): Promise<CharacterSchema> {
+): Promise<CharacterSchema | ApiError> {
   var requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -22,6 +23,6 @@ export async function getCharacter(
     const data = await response.json();
     return data.data;
   } catch (error) {
-    logger.error(error);
+    return error as ApiError;
   }
 }

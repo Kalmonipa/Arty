@@ -1,13 +1,13 @@
-import { ApiError } from '../classes/Error';
+import { ApiError } from '../classes/Error.js';
 import {
   DataPageResourceSchema,
   GetAllResourcesResourcesGetData,
-} from '../types/types';
-import { ApiUrl, MyHeaders } from '../utils';
+} from '../types/types.js';
+import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getResourceInformation(
   data: GetAllResourcesResourcesGetData,
-): Promise<DataPageResourceSchema> {
+): Promise<DataPageResourceSchema | ApiError> {
   var requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -15,22 +15,22 @@ export async function getResourceInformation(
 
   var apiUrl = new URL(`${ApiUrl}/resources`);
 
-  if (data.query.drop) {
+  if (data.query?.drop) {
     apiUrl.searchParams.set('drop', data.query.drop);
   }
-  if (data.query.max_level) {
+  if (data.query?.max_level) {
     apiUrl.searchParams.set('max_level', data.query.max_level.toString());
   }
-  if (data.query.min_level) {
+  if (data.query?.min_level) {
     apiUrl.searchParams.set('min_level', data.query.min_level.toString());
   }
-  if (data.query.page) {
+  if (data.query?.page) {
     apiUrl.searchParams.set('page', data.query.page.toString());
   }
-  if (data.query.size) {
+  if (data.query?.size) {
     apiUrl.searchParams.set('size', data.query.size.toString());
   }
-  if (data.query.skill) {
+  if (data.query?.skill) {
     apiUrl.searchParams.set('skill', data.query.skill);
   }
 
@@ -44,6 +44,6 @@ export async function getResourceInformation(
     }
     return await response.json();
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

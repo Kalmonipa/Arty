@@ -12,7 +12,7 @@ import {
   ItemSchema,
   SimpleItemSchema,
 } from '../types/types';
-import { isGatheringSkill, logger } from '../utils';
+import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

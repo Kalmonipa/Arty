@@ -2,7 +2,7 @@ import { actionWithdrawItem } from '../api_calls/Actions';
 import { actionUnequipItem } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
 import { ItemSlot, UnequipSchema } from '../types/types';
-import { logger, sleep } from '../utils';
+import { logger, sleep } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

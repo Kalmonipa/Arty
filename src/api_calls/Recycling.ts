@@ -1,6 +1,6 @@
-import { ApiError } from '../classes/Error';
-import { CharacterSchema, RecyclingResponseSchema } from '../types/types';
-import { ApiUrl, MyHeaders, logger, sleep } from '../utils';
+import { ApiError } from '../classes/Error.js';
+import { CharacterSchema, RecyclingResponseSchema } from '../types/types.js';
+import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
 
 export async function actionRecycle(
   character: CharacterSchema,
@@ -40,6 +40,9 @@ export async function actionRecycle(
         case 493:
           message = "The character's skill level is too low.";
           break;
+        default:
+          message = 'Unknown error from /action/recycle'
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -60,6 +63,6 @@ export async function actionRecycle(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

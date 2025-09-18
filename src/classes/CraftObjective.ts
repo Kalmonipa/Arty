@@ -1,6 +1,6 @@
 import { actionCraft } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
-import { logger } from '../utils';
+import { logger } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
@@ -185,10 +185,6 @@ export class CraftObjective extends Objective {
 
         const totalNumNeededToCraft = craftingItem.quantity * itemsPerBatch;
 
-        logger.debug(
-          `Numininv: ${numInInv}, total needed: ${totalNumNeededToCraft}`,
-        );
-
         if (numInInv >= totalNumNeededToCraft) {
           logger.info(
             `${numInInv} ${craftingItem.code} in inventory already. No need to collect more`,
@@ -210,8 +206,6 @@ export class CraftObjective extends Objective {
 
           numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
         }
-
-        logger.debug(`NumInInv: ${numInInv}`);
 
         if (numInInv < totalNumNeededToCraft) {
           if (this.isCancelled()) {
