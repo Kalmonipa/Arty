@@ -1,9 +1,9 @@
-import { actionGather } from '../api_calls/Actions';
-import { getItemInformation } from '../api_calls/Items';
-import { getMaps } from '../api_calls/Maps';
+import { actionGather } from '../api_calls/Actions.js';
+import { getItemInformation } from '../api_calls/Items.js';
+import { getMaps } from '../api_calls/Maps.js';
 import { getMonsterInformation } from '../api_calls/Monsters';
 import { getResourceInformation } from '../api_calls/Resources';
-import { WeaponFlavours } from '../types/ItemData';
+import { WeaponFlavours } from '../types/ItemData.js';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   DestinationSchema,
@@ -11,11 +11,11 @@ import {
   GetAllMonstersMonstersGetResponse,
   ItemSchema,
   SimpleItemSchema,
-} from '../types/types';
+} from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;

@@ -1,9 +1,9 @@
-import { getAllItemInformation } from '../api_calls/Items';
-import { CraftSkill, ItemSchema } from '../types/types';
+import { getAllItemInformation } from '../api_calls/Items.js';
+import { CraftSkill, ItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API

@@ -1,11 +1,11 @@
-import { actionWithdrawItem } from '../api_calls/Actions';
-import { actionUnequipItem } from '../api_calls/Items';
-import { getMaps } from '../api_calls/Maps';
-import { ItemSlot, UnequipSchema } from '../types/types';
+import { actionWithdrawItem } from '../api_calls/Actions.js';
+import { actionUnequipItem } from '../api_calls/Items.js';
+import { getMaps } from '../api_calls/Maps.js';
+import { ItemSlot, UnequipSchema } from '../types/types.js';
 import { logger, sleep } from '../utils.js';
 import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 
 export class WithdrawObjective extends Objective {
   itemCode: string;

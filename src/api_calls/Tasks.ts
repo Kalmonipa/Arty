@@ -5,7 +5,7 @@ import {
   SimpleItemSchema,
   TaskResponseSchema,
   TaskTradeResponseSchema,
-} from '../types/types';
+} from '../types/types.js';
 import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
 
 export async function actionAcceptNewTask(

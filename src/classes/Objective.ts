@@ -2,10 +2,10 @@ import * as crypto from 'node:crypto';
 import { ObjectiveStatus, ObjectiveTargets } from '../types/ObjectiveData';
 import { Character } from './Character';
 import { logger, sleep } from '../utils.js';
-import { getMaps } from '../api_calls/Maps';
+import { getMaps } from '../api_calls/Maps.js';
 import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
-import { ApiError } from './Error';
-import { TaskType } from '../types/types';
+import { ApiError } from './Error.js';
+import { TaskType } from '../types/types.js';
 
 export abstract class Objective {
   character: Character;

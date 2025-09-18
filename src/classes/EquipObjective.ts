@@ -1,10 +1,10 @@
-import { actionEquipItem } from '../api_calls/Items';
+import { actionEquipItem } from '../api_calls/Items.js';
 import { ObjectiveTargets } from '../types/ObjectiveData';
-import { EquipSchema, ItemSlot } from '../types/types';
+import { EquipSchema, ItemSlot } from '../types/types.js';
 import { logger, sleep } from '../utils.js';
 import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 
 export class EquipObjective extends Objective {
   itemCode: string;

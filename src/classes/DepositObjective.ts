@@ -1,14 +1,14 @@
-import { actionDepositItems } from '../api_calls/Actions';
-import { getMaps } from '../api_calls/Maps';
+import { actionDepositItems } from '../api_calls/Actions.js';
+import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   BankItemTransactionResponseSchema,
   SimpleItemSchema,
-} from '../types/types';
+} from '../types/types.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;

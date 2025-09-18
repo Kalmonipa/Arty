@@ -1,7 +1,7 @@
-import { getMaps } from '../api_calls/Maps';
+import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character';
-import { Objective } from './Objective';
+import { Objective } from './Objective.js';
 
 export class MonsterTaskObjective extends Objective {
   type: 'monster';

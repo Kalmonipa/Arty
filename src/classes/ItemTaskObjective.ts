@@ -1,10 +1,10 @@
-import { getItemInformation } from '../api_calls/Items';
+import { getItemInformation } from '../api_calls/Items.js';
 import { actionTasksTrade } from '../api_calls/Tasks';
-import { ItemSchema, TaskTradeResponseSchema } from '../types/types';
+import { ItemSchema, TaskTradeResponseSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 
 export class ItemTaskObjective extends Objective {
   type: 'items';
