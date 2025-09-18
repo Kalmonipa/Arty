@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../classes/Character';
+import { Character } from '../classes/Character.js';
 
 export default function JobsRouter(char: Character) {
   const router = Router();

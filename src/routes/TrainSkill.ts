@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../classes/Character';
-import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObjective';
+import { Character } from '../classes/Character.js';
+import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObjective.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { GatheringSkill } from '../types/types.js';
 

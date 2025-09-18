@@ -1,4 +1,3 @@
-import { actionCraft } from '../api_calls/Actions.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
@@ -6,8 +5,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import { ItemSchema, SimpleItemSchema } from '../types/types.js';
-import { actionRecycle } from '../api_calls/Recycling';
+import { actionRecycle } from '../api_calls/Recycling.js';
 
 /**
  * @description Recycles the specified items and deposits the results into the bank
@@ -70,14 +68,20 @@ export class RecycleObjective extends Objective {
     if (itemInfo instanceof ApiError) {
       this.character.handleErrors(itemInfo);
     } else {
-      const maps = (await getMaps(itemInfo.craft.skill, 'workshop')).data;
+      const maps = await getMaps({
+        content_code: itemInfo.craft.skill,
+        content_type: 'workshop',
+      });
+      if (maps instanceof ApiError) {
+        return this.character.handleErrors(maps);
+      }
 
-      if (maps.length === 0) {
+      if (maps.data.length === 0) {
         logger.error(`Cannot find any maps to recycle ${this.target.code}`);
         return false;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps);
+      const contentLocation = this.character.evaluateClosestMap(maps.data);
 
       await this.character.move(contentLocation);
 

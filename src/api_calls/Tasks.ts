@@ -1,4 +1,4 @@
-import { ApiError } from '../classes/Error';
+import { ApiError } from '../classes/Error.js';
 import {
   CharacterSchema,
   RewardDataResponseSchema,

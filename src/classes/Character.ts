@@ -586,9 +586,12 @@ export class Character {
     let usedInventorySpace = this.getInventoryFullness();
     if (usedInventorySpace >= 90 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing items`);
-      const maps = (await getMaps(undefined, 'bank')).data;
+      const maps = await getMaps({ content_type: 'bank' });
+      if (maps instanceof ApiError) {
+        return this.handleErrors(maps);
+      }
 
-      const contentLocation = this.evaluateClosestMap(maps);
+      const contentLocation = this.evaluateClosestMap(maps.data);
 
       await this.move({ x: contentLocation.x, y: contentLocation.y });
 

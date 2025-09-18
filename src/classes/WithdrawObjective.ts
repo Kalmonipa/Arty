@@ -37,14 +37,17 @@ export class WithdrawObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
-      const maps = (await getMaps(undefined, 'bank')).data;
+      const maps = await getMaps({ content_type: 'bank' });
+      if (maps instanceof ApiError) {
+        return this.character.handleErrors(maps);
+      }
 
-      if (maps.length === 0) {
+      if (maps.data.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
         return true;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps);
+      const contentLocation = this.character.evaluateClosestMap(maps.data);
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

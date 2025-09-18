@@ -79,14 +79,20 @@ export class CraftObjective extends Objective {
           return true;
         }
 
-        const maps = (await getMaps(targetItem.craft.skill, 'workshop')).data;
+        const maps = await getMaps({
+          content_code: targetItem.craft.skill,
+          content_type: 'workshop',
+        });
+        if (maps instanceof ApiError) {
+          return this.character.handleErrors(maps);
+        }
 
-        if (maps.length === 0) {
+        if (maps.data.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
           return true;
         }
 
-        const contentLocation = this.character.evaluateClosestMap(maps);
+        const contentLocation = this.character.evaluateClosestMap(maps.data);
 
         for (var batch = 0; batch < this.numBatches; batch++) {
           logger.debug(`Crafting batch ${batch}/${this.numBatches}`);

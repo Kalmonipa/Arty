@@ -2,7 +2,7 @@ import winston from 'winston';
 import { SeqTransport } from '@datalust/winston-seq';
 import {
   GatheringSkill,
-  GetAllItemsItemsGetResponse,
+  DataPageItemSchema,
   ItemSchema,
   ItemType,
 } from './types/types.js';
@@ -131,11 +131,12 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-  const allWeapons: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({ type: 'weapon' });
+  const allWeapons: ApiError | DataPageItemSchema = await getAllItemInformation(
+    { type: 'weapon' },
+  );
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
-    return {};
+    return;
   }
 
   allWeapons.data.forEach((weapon) => {
@@ -180,7 +181,7 @@ export async function buildListOfUtilities(): Promise<
 
   var utilitiesMap: Record<string, ItemSchema[]> = {};
 
-  const allUtilities: ApiError | GetAllItemsItemsGetResponse =
+  const allUtilities: ApiError | DataPageItemSchema =
     await getAllItemInformation({ type: 'utility' });
   if (allUtilities instanceof ApiError) {
     logger.error(`Failed to build list of useful utility: ${allUtilities}`);
@@ -214,8 +215,9 @@ export async function buildListOf(
 
   var itemMap: Record<string, ItemSchema[]> = {};
 
-  const allItems: ApiError | GetAllItemsItemsGetResponse =
-    await getAllItemInformation({ type: itemType });
+  const allItems: ApiError | DataPageItemSchema = await getAllItemInformation({
+    type: itemType,
+  });
   if (allItems instanceof ApiError) {
     logger.error(`Failed to build list of useful ${itemType}: ${allItems}`);
     return {};

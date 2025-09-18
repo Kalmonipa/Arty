@@ -6,6 +6,7 @@ import { getResourceInformation } from '../api_calls/Resources.js';
 import { WeaponFlavours } from '../types/ItemData.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
+  DataPageMonsterSchema,
   DestinationSchema,
   GatheringSkill,
   ItemSchema,
@@ -185,10 +186,10 @@ export class GatherObjective extends Objective {
 
   async gatherMobDrop(target: SimpleItemSchema) {
     // ToDo: change this with new types in season-6-changes branch
-    const mobInfo: GetAllMonstersMonstersGetResponse | ApiError =
+    const mobInfo: DataPageMonsterSchema | ApiError =
       await getMonsterInformation({
-        query: { drop: target.code, max_level: this.character.data.level },
-        url: '/monsters',
+        drop: target.code,
+        max_level: this.character.data.level,
       });
     if (mobInfo instanceof ApiError) {
       return await this.character.handleErrors(mobInfo);
@@ -239,20 +240,25 @@ export class GatherObjective extends Objective {
     logger.debug(`Finding resource map type for ${code}`);
 
     const resources = await getResourceInformation({
-      query: { drop: code },
-      url: '/resources',
+      drop: code,
     });
+    if (resources instanceof ApiError) {
+      return this.character.handleErrors(resources);
+    }
 
     logger.info(`Finding location of ${resources.data[0].code}`);
 
-    const maps = (await getMaps(resources.data[0].code)).data;
+    const maps = await getMaps({ content_code: resources.data[0].code });
+    if (maps instanceof ApiError) {
+      return this.character.handleErrors(maps);
+    }
 
-    if (maps.length === 0) {
+    if (maps.data.length === 0) {
       logger.error(`Cannot find any maps for ${resources.data[0].code}`);
       return false;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+    const contentLocation = this.character.evaluateClosestMap(maps.data);
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

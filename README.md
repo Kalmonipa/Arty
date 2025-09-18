@@ -4,7 +4,8 @@ This is my client for ArtifactsMMO written in Typescript. It exposes an API that
 and send it HTTP requests to get characters to do stuff.
 ToDo: write up docs on the API
 
-It can be run standalone with 
+It can be run standalone with
+
 ```
 npm run install
 npm run build
@@ -12,6 +13,7 @@ npm run start
 ```
 
 or in a Docker container. Example Docker compose file:
+
 ```
 services:
   arty:

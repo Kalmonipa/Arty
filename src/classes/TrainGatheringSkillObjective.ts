@@ -1,7 +1,8 @@
-import { getResourceInformation } from '../api_calls/Resources';
+import { getResourceInformation } from '../api_calls/Resources.js';
 import { DataPageResourceSchema, GatheringSkill } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
+import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
 /**
@@ -36,14 +37,14 @@ export class TrainGatheringSkillObjective extends Objective {
         return false;
       }
 
-      const resourceTypes: DataPageResourceSchema =
+      const resourceTypes: DataPageResourceSchema | ApiError =
         await getResourceInformation({
-          query: {
-            skill: this.skill,
-            max_level: charLevel,
-          },
-          url: '/resources',
+          skill: this.skill,
+          max_level: charLevel,
         });
+      if (resourceTypes instanceof ApiError) {
+        return this.character.handleErrors(resourceTypes);
+      }
 
       const resourceToGather =
         resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;

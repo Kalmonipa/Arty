@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { CraftObjective } from '../classes/CraftObjective';
-import { Character } from '../classes/Character';
-import { EquipObjective } from '../classes/EquipObjective';
-import { FightObjective } from '../classes/FightObjective';
+import { CraftObjective } from '../classes/CraftObjective.js';
+import { Character } from '../classes/Character.js';
+import { EquipObjective } from '../classes/EquipObjective.js';
+import { FightObjective } from '../classes/FightObjective.js';
 
 export default function FightRouter(char: Character) {
   const router = Router();

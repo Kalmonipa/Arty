@@ -57,8 +57,8 @@ export async function actionEquipItem(
         case 496:
           message = 'Character does not meet the required condition';
           break;
-                default:
-          message = 'Unknown error from /action/equip'
+        default:
+          message = 'Unknown error from /action/equip';
           break;
       }
       throw new ApiError({
@@ -121,7 +121,7 @@ export async function actionUnequipItem(
           message = 'The equipment slot is empty.';
           break;
         default:
-          message = 'Unknown error from /action/unequip'
+          message = 'Unknown error from /action/unequip';
           break;
       }
       throw new ApiError({
@@ -180,7 +180,7 @@ export async function actionUse(
           message = 'The character does not meet the required condition.';
           break;
         default:
-          message = 'Unknown error from /action/use'
+          message = 'Unknown error from /action/use';
           break;
       }
       throw new ApiError({

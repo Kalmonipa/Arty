@@ -68,14 +68,17 @@ export class FightObjective extends Objective {
 
       logger.info(`Finding location of ${this.target.code}`);
 
-      const maps = (await getMaps(this.target.code)).data;
+      const maps = await getMaps({ content_code: this.target.code });
+      if (maps instanceof ApiError) {
+        return this.character.handleErrors(maps);
+      }
 
-      if (maps.length === 0) {
+      if (maps.data.length === 0) {
         logger.error(`Cannot find any maps for ${this.target.code}`);
         return false;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps);
+      const contentLocation = this.character.evaluateClosestMap(maps.data);
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

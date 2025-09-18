@@ -1,5 +1,5 @@
 import { getItemInformation } from '../api_calls/Items.js';
-import { actionTasksTrade } from '../api_calls/Tasks';
+import { actionTasksTrade } from '../api_calls/Tasks.js';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
