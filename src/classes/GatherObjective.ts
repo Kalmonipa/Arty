@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { actionGather } from '../api_calls/Actions';
 import { getItemInformation } from '../api_calls/Items';
 import { getMaps } from '../api_calls/Maps';
@@ -8,14 +9,26 @@ import { SimpleMapSchema } from '../types/MapData';
 import { ObjectiveTargets } from '../types/ObjectiveData';
 import {
   DataPageMonsterSchema,
+=======
+import { actionGather } from '../api_calls/Actions.js';
+import { getItemInformation } from '../api_calls/Items.js';
+import { getMaps } from '../api_calls/Maps.js';
+import { getMonsterInformation } from '../api_calls/Monsters.js';
+import { getResourceInformation } from '../api_calls/Resources.js';
+import { WeaponFlavours } from '../types/ItemData.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  DataPageMonsterSchema,
+  DestinationSchema,
+>>>>>>> main
   GatheringSkill,
   ItemSchema,
   SimpleItemSchema,
-} from '../types/types';
+} from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -185,10 +198,19 @@ export class GatherObjective extends Objective {
   }
 
   async gatherMobDrop(target: SimpleItemSchema) {
+<<<<<<< HEAD
     const mobInfo: DataPageMonsterSchema | ApiError =
       await getMonsterInformation({
         drop: target.code, max_level: this.character.data.level },
       );
+=======
+    // ToDo: change this with new types in season-6-changes branch
+    const mobInfo: DataPageMonsterSchema | ApiError =
+      await getMonsterInformation({
+        drop: target.code,
+        max_level: this.character.data.level,
+      });
+>>>>>>> main
     if (mobInfo instanceof ApiError) {
       return await this.character.handleErrors(mobInfo);
     } else {
@@ -238,18 +260,33 @@ export class GatherObjective extends Objective {
     logger.debug(`Finding resource map type for ${code}`);
 
     const resources = await getResourceInformation({
+<<<<<<< HEAD
       drop: code });
 
     logger.info(`Finding location of ${resources.data[0].code}`);
 
     const maps = (await getMaps({content_code: resources.data[0].code})).data;
+=======
+      drop: code,
+    });
+    if (resources instanceof ApiError) {
+      return this.character.handleErrors(resources);
+    }
 
-    if (maps.length === 0) {
+    logger.info(`Finding location of ${resources.data[0].code}`);
+
+    const maps = await getMaps({ content_code: resources.data[0].code });
+    if (maps instanceof ApiError) {
+      return this.character.handleErrors(maps);
+    }
+>>>>>>> main
+
+    if (maps.data.length === 0) {
       logger.error(`Cannot find any maps for ${resources.data[0].code}`);
       return false;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+    const contentLocation = this.character.evaluateClosestMap(maps.data);
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

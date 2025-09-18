@@ -1,4 +1,5 @@
 import * as crypto from 'node:crypto';
+<<<<<<< HEAD
 import { ObjectiveStatus } from '../types/ObjectiveData';
 import { Character } from './Character';
 <<<<<<< HEAD
@@ -10,6 +11,15 @@ import { getMaps } from '../api_calls/Maps';
 import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
 import { ApiError } from './Error';
 import { TaskType } from '../types/types';
+=======
+import { ObjectiveStatus } from '../types/ObjectiveData.js';
+import { Character } from './Character.js';
+import { logger, sleep } from '../utils.js';
+import { getMaps } from '../api_calls/Maps.js';
+import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks.js';
+import { ApiError } from './Error.js';
+import { TaskType } from '../types/types.js';
+>>>>>>> main
 
 export abstract class Objective {
   character: Character;
@@ -100,14 +110,24 @@ export abstract class Objective {
    * @description Moves to the nearest task master
    */
   async moveToTaskMaster(taskType: TaskType) {
+<<<<<<< HEAD
     const maps = (await getMaps({content_code: taskType, content_type: 'tasks_master'})).data;
+=======
+    const maps = await getMaps({
+      content_code: taskType,
+      content_type: 'tasks_master',
+    });
+    if (maps instanceof ApiError) {
+      return this.character.handleErrors(maps);
+    }
+>>>>>>> main
 
-    if (maps.length === 0) {
+    if (maps.data.length === 0) {
       logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
       return;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+    const contentLocation = this.character.evaluateClosestMap(maps.data);
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
   }
@@ -141,14 +161,24 @@ export abstract class Objective {
         `Collected ${this.character.data.task_total} items. Handing in task`,
       );
     }
+<<<<<<< HEAD
     const maps = (await getMaps({content_code: taskType, content_type: 'tasks_master'})).data;
+=======
+    const maps = await getMaps({
+      content_code: taskType,
+      content_type: 'tasks_master',
+    });
+    if (maps instanceof ApiError) {
+      return this.character.handleErrors(maps);
+    }
+>>>>>>> main
 
-    if (maps.length === 0) {
+    if (maps.data.length === 0) {
       logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
       return;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+    const contentLocation = this.character.evaluateClosestMap(maps.data);
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

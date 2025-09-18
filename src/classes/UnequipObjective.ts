@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { actionUnequipItem } from '../api_calls/Items';
 import { ItemSlot, UnequipSchema } from '../types/types';
 <<<<<<< HEAD
@@ -8,6 +9,14 @@ import { logger, sleep } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
+=======
+import { actionUnequipItem } from '../api_calls/Items.js';
+import { ItemSlot, UnequipSchema } from '../types/types.js';
+import { logger, sleep } from '../utils.js';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+>>>>>>> main
 
 export class UnequipObjective extends Objective {
   itemSlot: ItemSlot;

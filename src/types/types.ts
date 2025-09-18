@@ -46,10 +46,7 @@ OpenAPI Spec: https://api.artifactsmmo.com/openapi.json
  * OpenAPI spec version: 5.0
  */
 import axios from 'axios';
-import type {
-  AxiosRequestConfig,
-  AxiosResponse
-} from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 /**
  * Target of the achievement.
@@ -137,10 +134,15 @@ export interface AccountLeaderboardSchema {
   gold: number;
 }
 
+<<<<<<< HEAD
 export type AccountLeaderboardType = typeof AccountLeaderboardType[keyof typeof AccountLeaderboardType];
 <<<<<<< HEAD
 =======
 
+=======
+export type AccountLeaderboardType =
+  (typeof AccountLeaderboardType)[keyof typeof AccountLeaderboardType];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AccountLeaderboardType = {
@@ -157,11 +159,15 @@ export const AccountLeaderboardType = {
   gold: 'gold',
 } as const;
 
+<<<<<<< HEAD
 export type AccountStatus = typeof AccountStatus[keyof typeof AccountStatus];
 
 =======
 export type AccountStatus = typeof AccountStatus[keyof typeof AccountStatus];
 
+>>>>>>> main
+=======
+export type AccountStatus = (typeof AccountStatus)[keyof typeof AccountStatus];
 >>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -216,10 +222,15 @@ export interface AchievementSchema {
   rewards: AchievementRewardsSchema;
 }
 
+<<<<<<< HEAD
 export type AchievementType = typeof AchievementType[keyof typeof AchievementType];
 <<<<<<< HEAD
 =======
 
+=======
+export type AchievementType =
+  (typeof AchievementType)[keyof typeof AchievementType];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AchievementType = {
@@ -250,11 +261,15 @@ export const AchievementType = {
   use: 'use',
 } as const;
 
+<<<<<<< HEAD
 export type ActionType = typeof ActionType[keyof typeof ActionType];
 
 =======
 export type ActionType = typeof ActionType[keyof typeof ActionType];
 
+>>>>>>> main
+=======
+export type ActionType = (typeof ActionType)[keyof typeof ActionType];
 >>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -645,10 +660,15 @@ export interface CharacterLeaderboardSchema {
   gold: number;
 }
 
+<<<<<<< HEAD
 export type CharacterLeaderboardType = typeof CharacterLeaderboardType[keyof typeof CharacterLeaderboardType];
 <<<<<<< HEAD
 =======
 
+=======
+export type CharacterLeaderboardType =
+  (typeof CharacterLeaderboardType)[keyof typeof CharacterLeaderboardType];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CharacterLeaderboardType = {
@@ -950,8 +970,7 @@ export interface CharacterSchema {
   inventory?: InventorySlot[];
 }
 
-export type CharacterSkin = typeof CharacterSkin[keyof typeof CharacterSkin];
-
+export type CharacterSkin = (typeof CharacterSkin)[keyof typeof CharacterSkin];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CharacterSkin = {
@@ -988,6 +1007,7 @@ export interface CharactersListSchema {
   data: CharacterSchema[];
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 export type CombatResultSchemaCharacterResultsItem = { [key: string]: unknown };
 
@@ -1042,6 +1062,10 @@ export interface CombatSimulationResponseSchema {
 >>>>>>> main
 export type ConditionOperator = typeof ConditionOperator[keyof typeof ConditionOperator];
 
+=======
+export type ConditionOperator =
+  (typeof ConditionOperator)[keyof typeof ConditionOperator];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConditionOperator = {
@@ -1094,10 +1118,14 @@ export interface CraftSchema {
   quantity?: number;
 }
 
+<<<<<<< HEAD
 export type CraftSkill = typeof CraftSkill[keyof typeof CraftSkill];
 <<<<<<< HEAD
 =======
 
+=======
+export type CraftSkill = (typeof CraftSkill)[keyof typeof CraftSkill];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CraftSkill = {
@@ -2057,8 +2085,7 @@ export interface EffectSchema {
   subtype: EffectSubtype;
 }
 
-export type EffectSubtype = typeof EffectSubtype[keyof typeof EffectSubtype];
-
+export type EffectSubtype = (typeof EffectSubtype)[keyof typeof EffectSubtype];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EffectSubtype = {
@@ -2073,8 +2100,7 @@ export const EffectSubtype = {
   gold: 'gold',
 } as const;
 
-export type EffectType = typeof EffectType[keyof typeof EffectType];
-
+export type EffectType = (typeof EffectType)[keyof typeof EffectType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EffectType = {
@@ -2155,6 +2181,7 @@ export interface EventSchema {
   rate: number;
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 export interface FakeCharacterSchema {
   /**
@@ -2272,6 +2299,9 @@ export const FightResult = {
 =======
 export type FightResult = typeof FightResult[keyof typeof FightResult];
 
+=======
+export type FightResult = (typeof FightResult)[keyof typeof FightResult];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const FightResult = {
@@ -2433,10 +2463,15 @@ export interface GETransactionSchema {
   total_price: number;
 }
 
+<<<<<<< HEAD
 export type GatheringSkill = typeof GatheringSkill[keyof typeof GatheringSkill];
 <<<<<<< HEAD
 =======
 
+=======
+export type GatheringSkill =
+  (typeof GatheringSkill)[keyof typeof GatheringSkill];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const GatheringSkill = {
@@ -2883,8 +2918,7 @@ export interface ItemSchema {
   tradeable: boolean;
 }
 
-export type ItemSlot = typeof ItemSlot[keyof typeof ItemSlot];
-
+export type ItemSlot = (typeof ItemSlot)[keyof typeof ItemSlot];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ItemSlot = {
@@ -2906,8 +2940,7 @@ export const ItemSlot = {
   rune: 'rune',
 } as const;
 
-export type ItemType = typeof ItemType[keyof typeof ItemType];
-
+export type ItemType = (typeof ItemType)[keyof typeof ItemType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ItemType = {
@@ -2954,8 +2987,7 @@ export interface LogSchema {
   created_at: string;
 }
 
-export type LogType = typeof LogType[keyof typeof LogType];
-
+export type LogType = (typeof LogType)[keyof typeof LogType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LogType = {
@@ -3002,8 +3034,8 @@ export interface MapContentSchema {
   code: string;
 }
 
-export type MapContentType = typeof MapContentType[keyof typeof MapContentType];
-
+export type MapContentType =
+  (typeof MapContentType)[keyof typeof MapContentType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MapContentType = {
@@ -3194,8 +3226,7 @@ export interface NPCSchema {
   type: NPCType;
 }
 
-export type NPCType = typeof NPCType[keyof typeof NPCType];
-
+export type NPCType = (typeof NPCType)[keyof typeof NPCType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const NPCType = {
@@ -3532,8 +3563,7 @@ export interface SimpleItemSchema {
   quantity: number;
 }
 
-export type Skill = typeof Skill[keyof typeof Skill];
-
+export type Skill = (typeof Skill)[keyof typeof Skill];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const Skill = {
@@ -3749,10 +3779,14 @@ export interface TaskTradeSchema {
   quantity: number;
 }
 
+<<<<<<< HEAD
 export type TaskType = typeof TaskType[keyof typeof TaskType];
 <<<<<<< HEAD
 =======
 
+=======
+export type TaskType = (typeof TaskType)[keyof typeof TaskType];
+>>>>>>> main
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const TaskType = {
@@ -3864,147 +3898,147 @@ export interface ErrorResponseSchema {
 =======
 >>>>>>> main
 export type GetBankItemsMyBankItemsGetParams = {
-/**
- * Item to search in your bank.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-item_code?: string;
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Item to search in your bank.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  item_code?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetGeSellOrdersMyGrandexchangeOrdersGetParams = {
-/**
- * The code of the item.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-code?: string;
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * The code of the item.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  code?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetGeSellHistoryMyGrandexchangeHistoryGetParams = {
-/**
- * Order ID to search in your history.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-id?: string;
-/**
- * Item to search in your history.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-code?: string;
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Order ID to search in your history.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  id?: string;
+  /**
+   * Item to search in your history.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  code?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAllCharactersLogsMyLogsGetParams = {
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetCharacterLogsMyLogsNameGetParams = {
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAccountAchievementsAccountsAccountAchievementsGetParams = {
-/**
- * Type of achievements.
- */
-type?: AchievementType;
-/**
- * Filter by completed achievements.
- */
-completed?: boolean;
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Type of achievements.
+   */
+  type?: AchievementType;
+  /**
+   * Filter by completed achievements.
+   */
+  completed?: boolean;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAllAchievementsAchievementsGetParams = {
-/**
- * Type of achievements.
- */
-type?: AchievementType;
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Type of achievements.
+   */
+  type?: AchievementType;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAllBadgesBadgesGetParams = {
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 <<<<<<< HEAD
@@ -4025,34 +4059,35 @@ size?: number;
 =======
 >>>>>>> main
 export type GetAllEffectsEffectsGetParams = {
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAllActiveEventsEventsActiveGetParams = {
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAllEventsEventsGetParams = {
+<<<<<<< HEAD
 /**
 <<<<<<< HEAD
  * Type of events.
@@ -4072,57 +4107,75 @@ page?: number;
  * @maximum 100
  */
 size?: number;
+=======
+  /**
+   * Type of event.
+   */
+  type?: MapContentType;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+>>>>>>> main
 };
 
 export type GetGeSellHistoryGrandexchangeHistoryCodeGetParams = {
-/**
- * The seller (account name) of the item.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-seller?: string;
-/**
- * The buyer (account name) of the item.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-buyer?: string;
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * The seller (account name) of the item.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  seller?: string;
+  /**
+   * The buyer (account name) of the item.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  buyer?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetGeSellOrdersGrandexchangeOrdersGetParams = {
-/**
- * The code of the item.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-code?: string;
-/**
- * The seller (account name) of the item.
- * @pattern ^[a-zA-Z0-9_-]+$
- */
-seller?: string;
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * The code of the item.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  code?: string;
+  /**
+   * The seller (account name) of the item.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  seller?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAllItemsItemsGetParams = {
+<<<<<<< HEAD
 /**
  * Name of the item.
  * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
@@ -4370,23 +4423,191 @@ page?: number;
  * @maximum 100
  */
 size?: number;
+=======
+  /**
+   * Name of the item.
+   * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
+   */
+  name?: string;
+  /**
+   * Minimum level items.
+   * @minimum 0
+   */
+  min_level?: number;
+  /**
+   * Maximum level items.
+   * @minimum 0
+   */
+  max_level?: number;
+  /**
+   * Type of items.
+   */
+  type?: ItemType;
+  /**
+   * Skill to craft items.
+   */
+  craft_skill?: CraftSkill;
+  /**
+   * Item code of items used as material for crafting.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  craft_material?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetCharactersLeaderboardLeaderboardCharactersGetParams = {
+  /**
+   * Default sort by combat total XP.
+   */
+  sort?: CharacterLeaderboardType;
+  /**
+   * Find a character by name.
+   * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
+   */
+  name?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetAccountsLeaderboardLeaderboardAccountsGetParams = {
+  /**
+   * Default sort by achievements points.
+   */
+  sort?: AccountLeaderboardType;
+  /**
+   * Find a account by name.
+   * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
+   */
+  name?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetAllMapsMapsGetParams = {
+  /**
+   * Type of content on the map.
+   */
+  content_type?: MapContentType;
+  /**
+   * Content code on the map.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  content_code?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetAllMonstersMonstersGetParams = {
+  /**
+   * Name of the monster.
+   * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
+   */
+  name?: string;
+  /**
+   * Monster minimum level.
+   * @minimum 0
+   */
+  min_level?: number;
+  /**
+   * Monster maximum level.
+   * @minimum 0
+   */
+  max_level?: number;
+  /**
+   * Item code of the drop.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  drop?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetAllNpcsNpcsDetailsGetParams = {
+  /**
+   * Name of the npc.
+   * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
+   */
+  name?: string;
+  /**
+   * The type of the NPC.
+   */
+  type?: NPCType;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+>>>>>>> main
 };
 
 export type GetNpcItemsNpcsItemsCodeGetParams = {
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 export type GetAllNpcsItemsNpcsItemsGetParams = {
+<<<<<<< HEAD
 /**
 <<<<<<< HEAD
  * Item code.
@@ -4510,26 +4731,120 @@ page?: number;
  * @maximum 100
  */
 size?: number;
+=======
+  /**
+   * The code of the item.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  code?: string;
+  /**
+   * The code of the npc.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  npc?: string;
+  /**
+   * The code of the currency.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  currency?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetAllResourcesResourcesGetParams = {
+  /**
+   * Skill minimum level.
+   * @minimum 0
+   */
+  min_level?: number;
+  /**
+   * Skill maximum level.
+   * @minimum 0
+   */
+  max_level?: number;
+  /**
+   * The code of the skill.
+   */
+  skill?: GatheringSkill;
+  /**
+   * Item code of the drop.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  drop?: string;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetAllTasksTasksListGetParams = {
+  /**
+   * Minimum level.
+   * @minimum 0
+   */
+  min_level?: number;
+  /**
+   * Maximum level.
+   * @minimum 0
+   */
+  max_level?: number;
+  /**
+   * The code of the skill.
+   */
+  skill?: Skill;
+  /**
+   * The type of tasks.
+   */
+  type?: TaskType;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+>>>>>>> main
 };
 
 export type GetAllTasksRewardsTasksRewardsGetParams = {
-/**
- * Page number
- * @minimum 1
- */
-page?: number;
-/**
- * Page size
- * @minimum 1
- * @maximum 100
- */
-size?: number;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
 };
 
 /**
  * Return the status of the game server.
  * @summary Get Server Details
  */
+<<<<<<< HEAD
 export const getServerDetailsGet = <TData = AxiosResponse<StatusResponseSchema>>(
      options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4541,11 +4856,21 @@ export const getServerDetailsGet = <TData = AxiosResponse<StatusResponseSchema>>
       `/`,options
     );
   }
+=======
+export const getServerDetailsGet = <
+  TData = AxiosResponse<StatusResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch bank details.
  * @summary Get Bank Details
  */
+<<<<<<< HEAD
 export const getBankDetailsMyBankGet = <TData = AxiosResponse<BankResponseSchema>>(
      options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4557,11 +4882,21 @@ export const getBankDetailsMyBankGet = <TData = AxiosResponse<BankResponseSchema
       `/my/bank`,options
     );
   }
+=======
+export const getBankDetailsMyBankGet = <
+  TData = AxiosResponse<BankResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/bank`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch all items in your bank.
  * @summary Get Bank Items
  */
+<<<<<<< HEAD
 export const getBankItemsMyBankItemsGet = <TData = AxiosResponse<DataPageSimpleItemSchema>>(
     params?: GetBankItemsMyBankItemsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4571,15 +4906,25 @@ export const getBankItemsMyBankItemsGet = <TData = AxiosResponse<DataPageSimpleI
     return axios.get(
 >>>>>>> main
       `/my/bank/items`,{
+=======
+export const getBankItemsMyBankItemsGet = <
+  TData = AxiosResponse<DataPageSimpleItemSchema>,
+>(
+  params?: GetBankItemsMyBankItemsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/bank/items`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch your sell orders details.
  * @summary Get Ge Sell Orders
  */
+<<<<<<< HEAD
 export const getGeSellOrdersMyGrandexchangeOrdersGet = <TData = AxiosResponse<DataPageGEOrderSchema>>(
     params?: GetGeSellOrdersMyGrandexchangeOrdersGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4589,15 +4934,25 @@ export const getGeSellOrdersMyGrandexchangeOrdersGet = <TData = AxiosResponse<Da
     return axios.get(
 >>>>>>> main
       `/my/grandexchange/orders`,{
+=======
+export const getGeSellOrdersMyGrandexchangeOrdersGet = <
+  TData = AxiosResponse<DataPageGEOrderSchema>,
+>(
+  params?: GetGeSellOrdersMyGrandexchangeOrdersGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/grandexchange/orders`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch your sales history of the last 7 days.
  * @summary Get Ge Sell History
  */
+<<<<<<< HEAD
 export const getGeSellHistoryMyGrandexchangeHistoryGet = <TData = AxiosResponse<DataPageGeOrderHistorySchema>>(
     params?: GetGeSellHistoryMyGrandexchangeHistoryGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4607,15 +4962,25 @@ export const getGeSellHistoryMyGrandexchangeHistoryGet = <TData = AxiosResponse<
     return axios.get(
 >>>>>>> main
       `/my/grandexchange/history`,{
+=======
+export const getGeSellHistoryMyGrandexchangeHistoryGet = <
+  TData = AxiosResponse<DataPageGeOrderHistorySchema>,
+>(
+  params?: GetGeSellHistoryMyGrandexchangeHistoryGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/grandexchange/history`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch account details.
  * @summary Get Account Details
  */
+<<<<<<< HEAD
 export const getAccountDetailsMyDetailsGet = <TData = AxiosResponse<MyAccountDetailsSchema>>(
      options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4627,11 +4992,21 @@ export const getAccountDetailsMyDetailsGet = <TData = AxiosResponse<MyAccountDet
       `/my/details`,options
     );
   }
+=======
+export const getAccountDetailsMyDetailsGet = <
+  TData = AxiosResponse<MyAccountDetailsSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/details`, options);
+};
+>>>>>>> main
 
 /**
  * Change your account password. Changing the password reset the account token.
  * @summary Change Password
  */
+<<<<<<< HEAD
 export const changePasswordMyChangePasswordPost = <TData = AxiosResponse<ResponseSchema>>(
     changePassword: ChangePassword, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4644,6 +5019,16 @@ export const changePasswordMyChangePasswordPost = <TData = AxiosResponse<Respons
       changePassword,options
     );
   }
+=======
+export const changePasswordMyChangePasswordPost = <
+  TData = AxiosResponse<ResponseSchema>,
+>(
+  changePassword: ChangePassword,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/change_password`, changePassword, options);
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -4654,6 +5039,7 @@ Provide either 'map_id' or both 'x' and 'y' coordinates in the request body.
 >>>>>>> main
  * @summary Action Move
  */
+<<<<<<< HEAD
 export const actionMoveMyNameActionMovePost = <TData = AxiosResponse<CharacterMovementResponseSchema>>(
     name: string,
     destinationSchema: DestinationSchema, options?: AxiosRequestConfig
@@ -4667,6 +5053,17 @@ export const actionMoveMyNameActionMovePost = <TData = AxiosResponse<CharacterMo
       destinationSchema,options
     );
   }
+=======
+export const actionMoveMyNameActionMovePost = <
+  TData = AxiosResponse<CharacterMovementResponseSchema>,
+>(
+  name: string,
+  destinationSchema: DestinationSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/move`, destinationSchema, options);
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -4688,6 +5085,7 @@ export const actionTransitionMyNameActionTransitionPost = <TData = AxiosResponse
  * Recovers hit points by resting. (1 second per 5 HP, minimum 3 seconds)
  * @summary Action Rest
  */
+<<<<<<< HEAD
 export const actionRestMyNameActionRestPost = <TData = AxiosResponse<CharacterRestResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4699,11 +5097,22 @@ export const actionRestMyNameActionRestPost = <TData = AxiosResponse<CharacterRe
       `/my/${name}/action/rest`,undefined,options
     );
   }
+=======
+export const actionRestMyNameActionRestPost = <
+  TData = AxiosResponse<CharacterRestResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/rest`, undefined, options);
+};
+>>>>>>> main
 
 /**
  * Equip an item on your character.
  * @summary Action Equip Item
  */
+<<<<<<< HEAD
 export const actionEquipItemMyNameActionEquipPost = <TData = AxiosResponse<EquipmentResponseSchema>>(
     name: string,
     equipSchema: EquipSchema, options?: AxiosRequestConfig
@@ -4717,11 +5126,23 @@ export const actionEquipItemMyNameActionEquipPost = <TData = AxiosResponse<Equip
       equipSchema,options
     );
   }
+=======
+export const actionEquipItemMyNameActionEquipPost = <
+  TData = AxiosResponse<EquipmentResponseSchema>,
+>(
+  name: string,
+  equipSchema: EquipSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/equip`, equipSchema, options);
+};
+>>>>>>> main
 
 /**
  * Unequip an item on your character.
  * @summary Action Unequip Item
  */
+<<<<<<< HEAD
 export const actionUnequipItemMyNameActionUnequipPost = <TData = AxiosResponse<EquipmentResponseSchema>>(
     name: string,
     unequipSchema: UnequipSchema, options?: AxiosRequestConfig
@@ -4735,11 +5156,23 @@ export const actionUnequipItemMyNameActionUnequipPost = <TData = AxiosResponse<E
       unequipSchema,options
     );
   }
+=======
+export const actionUnequipItemMyNameActionUnequipPost = <
+  TData = AxiosResponse<EquipmentResponseSchema>,
+>(
+  name: string,
+  unequipSchema: UnequipSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/unequip`, unequipSchema, options);
+};
+>>>>>>> main
 
 /**
  * Use an item as a consumable.
  * @summary Action Use Item
  */
+<<<<<<< HEAD
 export const actionUseItemMyNameActionUsePost = <TData = AxiosResponse<UseItemResponseSchema>>(
     name: string,
     simpleItemSchema: SimpleItemSchema, options?: AxiosRequestConfig
@@ -4753,6 +5186,17 @@ export const actionUseItemMyNameActionUsePost = <TData = AxiosResponse<UseItemRe
       simpleItemSchema,options
     );
   }
+=======
+export const actionUseItemMyNameActionUsePost = <
+  TData = AxiosResponse<UseItemResponseSchema>,
+>(
+  name: string,
+  simpleItemSchema: SimpleItemSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/use`, simpleItemSchema, options);
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -4770,6 +5214,7 @@ export const actionFightMyNameActionFightPost = <TData = AxiosResponse<Character
  * Start a fight against a monster on the character's map.
  * @summary Action Fight
  */
+<<<<<<< HEAD
 export const actionFightMyNameActionFightPost = <TData = AxiosResponse<CharacterFightResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4778,11 +5223,22 @@ export const actionFightMyNameActionFightPost = <TData = AxiosResponse<Character
 >>>>>>> main
     );
   }
+=======
+export const actionFightMyNameActionFightPost = <
+  TData = AxiosResponse<CharacterFightResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/fight`, undefined, options);
+};
+>>>>>>> main
 
 /**
  * Harvest a resource on the character's map.
  * @summary Action Gathering
  */
+<<<<<<< HEAD
 export const actionGatheringMyNameActionGatheringPost = <TData = AxiosResponse<SkillResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4794,6 +5250,16 @@ export const actionGatheringMyNameActionGatheringPost = <TData = AxiosResponse<S
       `/my/${name}/action/gathering`,undefined,options
     );
   }
+=======
+export const actionGatheringMyNameActionGatheringPost = <
+  TData = AxiosResponse<SkillResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/gathering`, undefined, options);
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -4803,6 +5269,7 @@ export const actionGatheringMyNameActionGatheringPost = <TData = AxiosResponse<S
 >>>>>>> main
  * @summary Action Crafting
  */
+<<<<<<< HEAD
 export const actionCraftingMyNameActionCraftingPost = <TData = AxiosResponse<SkillResponseSchema>>(
     name: string,
     craftingSchema: CraftingSchema, options?: AxiosRequestConfig
@@ -4816,11 +5283,23 @@ export const actionCraftingMyNameActionCraftingPost = <TData = AxiosResponse<Ski
       craftingSchema,options
     );
   }
+=======
+export const actionCraftingMyNameActionCraftingPost = <
+  TData = AxiosResponse<SkillResponseSchema>,
+>(
+  name: string,
+  craftingSchema: CraftingSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/crafting`, craftingSchema, options);
+};
+>>>>>>> main
 
 /**
  * Deposit gold in a bank on the character's map.
  * @summary Action Deposit Bank Gold
  */
+<<<<<<< HEAD
 export const actionDepositBankGoldMyNameActionBankDepositGoldPost = <TData = AxiosResponse<BankGoldTransactionResponseSchema>>(
     name: string,
     depositWithdrawGoldSchema: DepositWithdrawGoldSchema, options?: AxiosRequestConfig
@@ -4834,6 +5313,21 @@ export const actionDepositBankGoldMyNameActionBankDepositGoldPost = <TData = Axi
       depositWithdrawGoldSchema,options
     );
   }
+=======
+export const actionDepositBankGoldMyNameActionBankDepositGoldPost = <
+  TData = AxiosResponse<BankGoldTransactionResponseSchema>,
+>(
+  name: string,
+  depositWithdrawGoldSchema: DepositWithdrawGoldSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/bank/deposit/gold`,
+    depositWithdrawGoldSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Deposit multiple items in a bank on the character's map.
@@ -4844,6 +5338,7 @@ The cooldown will be 3 seconds multiplied by the number of different items withd
 >>>>>>> main
  * @summary Action Deposit Bank Item
  */
+<<<<<<< HEAD
 export const actionDepositBankItemMyNameActionBankDepositItemPost = <TData = AxiosResponse<BankItemTransactionResponseSchema>>(
     name: string,
     simpleItemSchema: SimpleItemSchema[], options?: AxiosRequestConfig
@@ -4857,12 +5352,28 @@ export const actionDepositBankItemMyNameActionBankDepositItemPost = <TData = Axi
       simpleItemSchema,options
     );
   }
+=======
+export const actionDepositBankItemMyNameActionBankDepositItemPost = <
+  TData = AxiosResponse<BankItemTransactionResponseSchema>,
+>(
+  name: string,
+  simpleItemSchema: SimpleItemSchema[],
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/bank/deposit/item`,
+    simpleItemSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Take items from your bank and put them in the character's inventory.
 The cooldown will be 3 seconds multiplied by the number of different items withdrawn.
  * @summary Action Withdraw Bank Item
  */
+<<<<<<< HEAD
 export const actionWithdrawBankItemMyNameActionBankWithdrawItemPost = <TData = AxiosResponse<BankItemTransactionResponseSchema>>(
     name: string,
     simpleItemSchema: SimpleItemSchema[], options?: AxiosRequestConfig
@@ -4876,11 +5387,27 @@ export const actionWithdrawBankItemMyNameActionBankWithdrawItemPost = <TData = A
       simpleItemSchema,options
     );
   }
+=======
+export const actionWithdrawBankItemMyNameActionBankWithdrawItemPost = <
+  TData = AxiosResponse<BankItemTransactionResponseSchema>,
+>(
+  name: string,
+  simpleItemSchema: SimpleItemSchema[],
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/bank/withdraw/item`,
+    simpleItemSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Withdraw gold from your bank.
  * @summary Action Withdraw Bank Gold
  */
+<<<<<<< HEAD
 export const actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost = <TData = AxiosResponse<BankGoldTransactionResponseSchema>>(
     name: string,
     depositWithdrawGoldSchema: DepositWithdrawGoldSchema, options?: AxiosRequestConfig
@@ -4894,6 +5421,21 @@ export const actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost = <TData = A
       depositWithdrawGoldSchema,options
     );
   }
+=======
+export const actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost = <
+  TData = AxiosResponse<BankGoldTransactionResponseSchema>,
+>(
+  name: string,
+  depositWithdrawGoldSchema: DepositWithdrawGoldSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/bank/withdraw/gold`,
+    depositWithdrawGoldSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -4903,6 +5445,7 @@ export const actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost = <TData = A
 >>>>>>> main
  * @summary Action Buy Bank Expansion
  */
+<<<<<<< HEAD
 export const actionBuyBankExpansionMyNameActionBankBuyExpansionPost = <TData = AxiosResponse<BankExtensionTransactionResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -4914,11 +5457,26 @@ export const actionBuyBankExpansionMyNameActionBankBuyExpansionPost = <TData = A
       `/my/${name}/action/bank/buy_expansion`,undefined,options
     );
   }
+=======
+export const actionBuyBankExpansionMyNameActionBankBuyExpansionPost = <
+  TData = AxiosResponse<BankExtensionTransactionResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/bank/buy_expansion`,
+    undefined,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Buy an item from an NPC on the character's map.
  * @summary Action Npc Buy Item
  */
+<<<<<<< HEAD
 export const actionNpcBuyItemMyNameActionNpcBuyPost = <TData = AxiosResponse<NpcMerchantTransactionResponseSchema>>(
     name: string,
     npcMerchantBuySchema: NpcMerchantBuySchema, options?: AxiosRequestConfig
@@ -4932,11 +5490,27 @@ export const actionNpcBuyItemMyNameActionNpcBuyPost = <TData = AxiosResponse<Npc
       npcMerchantBuySchema,options
     );
   }
+=======
+export const actionNpcBuyItemMyNameActionNpcBuyPost = <
+  TData = AxiosResponse<NpcMerchantTransactionResponseSchema>,
+>(
+  name: string,
+  npcMerchantBuySchema: NpcMerchantBuySchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/npc/buy`,
+    npcMerchantBuySchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Sell an item to an NPC on the character's map.
  * @summary Action Npc Sell Item
  */
+<<<<<<< HEAD
 export const actionNpcSellItemMyNameActionNpcSellPost = <TData = AxiosResponse<NpcMerchantTransactionResponseSchema>>(
     name: string,
     npcMerchantBuySchema: NpcMerchantBuySchema, options?: AxiosRequestConfig
@@ -4950,11 +5524,27 @@ export const actionNpcSellItemMyNameActionNpcSellPost = <TData = AxiosResponse<N
       npcMerchantBuySchema,options
     );
   }
+=======
+export const actionNpcSellItemMyNameActionNpcSellPost = <
+  TData = AxiosResponse<NpcMerchantTransactionResponseSchema>,
+>(
+  name: string,
+  npcMerchantBuySchema: NpcMerchantBuySchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/npc/sell`,
+    npcMerchantBuySchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Recycling an item. The character must be on a map with a workshop (only for equipments and weapons).
  * @summary Action Recycling
  */
+<<<<<<< HEAD
 export const actionRecyclingMyNameActionRecyclingPost = <TData = AxiosResponse<RecyclingResponseSchema>>(
     name: string,
     recyclingSchema: RecyclingSchema, options?: AxiosRequestConfig
@@ -4968,11 +5558,23 @@ export const actionRecyclingMyNameActionRecyclingPost = <TData = AxiosResponse<R
       recyclingSchema,options
     );
   }
+=======
+export const actionRecyclingMyNameActionRecyclingPost = <
+  TData = AxiosResponse<RecyclingResponseSchema>,
+>(
+  name: string,
+  recyclingSchema: RecyclingSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/recycling`, recyclingSchema, options);
+};
+>>>>>>> main
 
 /**
  * Buy an item at the Grand Exchange on the character's map.
  * @summary Action Ge Buy Item
  */
+<<<<<<< HEAD
 export const actionGeBuyItemMyNameActionGrandexchangeBuyPost = <TData = AxiosResponse<GETransactionResponseSchema>>(
     name: string,
     gEBuyOrderSchema: GEBuyOrderSchema, options?: AxiosRequestConfig
@@ -4986,6 +5588,21 @@ export const actionGeBuyItemMyNameActionGrandexchangeBuyPost = <TData = AxiosRes
       gEBuyOrderSchema,options
     );
   }
+=======
+export const actionGeBuyItemMyNameActionGrandexchangeBuyPost = <
+  TData = AxiosResponse<GETransactionResponseSchema>,
+>(
+  name: string,
+  gEBuyOrderSchema: GEBuyOrderSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/grandexchange/buy`,
+    gEBuyOrderSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -4996,6 +5613,7 @@ Please note there is a 3% listing tax, charged at the time of posting, on the to
 >>>>>>> main
  * @summary Action Ge Create Sell Order
  */
+<<<<<<< HEAD
 export const actionGeCreateSellOrderMyNameActionGrandexchangeSellPost = <TData = AxiosResponse<GECreateOrderTransactionResponseSchema>>(
     name: string,
     gEOrderCreationrSchema: GEOrderCreationrSchema, options?: AxiosRequestConfig
@@ -5009,11 +5627,27 @@ export const actionGeCreateSellOrderMyNameActionGrandexchangeSellPost = <TData =
       gEOrderCreationrSchema,options
     );
   }
+=======
+export const actionGeCreateSellOrderMyNameActionGrandexchangeSellPost = <
+  TData = AxiosResponse<GECreateOrderTransactionResponseSchema>,
+>(
+  name: string,
+  gEOrderCreationrSchema: GEOrderCreationrSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/grandexchange/sell`,
+    gEOrderCreationrSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Cancel a sell order at the Grand Exchange on the character's map.
  * @summary Action Ge Cancel Sell Order
  */
+<<<<<<< HEAD
 export const actionGeCancelSellOrderMyNameActionGrandexchangeCancelPost = <TData = AxiosResponse<GETransactionResponseSchema>>(
     name: string,
     gECancelOrderSchema: GECancelOrderSchema, options?: AxiosRequestConfig
@@ -5027,11 +5661,27 @@ export const actionGeCancelSellOrderMyNameActionGrandexchangeCancelPost = <TData
       gECancelOrderSchema,options
     );
   }
+=======
+export const actionGeCancelSellOrderMyNameActionGrandexchangeCancelPost = <
+  TData = AxiosResponse<GETransactionResponseSchema>,
+>(
+  name: string,
+  gECancelOrderSchema: GECancelOrderSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/grandexchange/cancel`,
+    gECancelOrderSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Complete a task.
  * @summary Action Complete Task
  */
+<<<<<<< HEAD
 export const actionCompleteTaskMyNameActionTaskCompletePost = <TData = AxiosResponse<RewardDataResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5043,11 +5693,22 @@ export const actionCompleteTaskMyNameActionTaskCompletePost = <TData = AxiosResp
       `/my/${name}/action/task/complete`,undefined,options
     );
   }
+=======
+export const actionCompleteTaskMyNameActionTaskCompletePost = <
+  TData = AxiosResponse<RewardDataResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/task/complete`, undefined, options);
+};
+>>>>>>> main
 
 /**
  * Exchange 6 tasks coins for a random reward. Rewards are exclusive items or resources.
  * @summary Action Task Exchange
  */
+<<<<<<< HEAD
 export const actionTaskExchangeMyNameActionTaskExchangePost = <TData = AxiosResponse<RewardDataResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5059,11 +5720,22 @@ export const actionTaskExchangeMyNameActionTaskExchangePost = <TData = AxiosResp
       `/my/${name}/action/task/exchange`,undefined,options
     );
   }
+=======
+export const actionTaskExchangeMyNameActionTaskExchangePost = <
+  TData = AxiosResponse<RewardDataResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/task/exchange`, undefined, options);
+};
+>>>>>>> main
 
 /**
  * Accepting a new task.
  * @summary Action Accept New Task
  */
+<<<<<<< HEAD
 export const actionAcceptNewTaskMyNameActionTaskNewPost = <TData = AxiosResponse<TaskResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5075,11 +5747,22 @@ export const actionAcceptNewTaskMyNameActionTaskNewPost = <TData = AxiosResponse
       `/my/${name}/action/task/new`,undefined,options
     );
   }
+=======
+export const actionAcceptNewTaskMyNameActionTaskNewPost = <
+  TData = AxiosResponse<TaskResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/task/new`, undefined, options);
+};
+>>>>>>> main
 
 /**
  * Trading items with a Tasks Master.
  * @summary Action Task Trade
  */
+<<<<<<< HEAD
 export const actionTaskTradeMyNameActionTaskTradePost = <TData = AxiosResponse<TaskTradeResponseSchema>>(
     name: string,
     simpleItemSchema: SimpleItemSchema, options?: AxiosRequestConfig
@@ -5093,11 +5776,23 @@ export const actionTaskTradeMyNameActionTaskTradePost = <TData = AxiosResponse<T
       simpleItemSchema,options
     );
   }
+=======
+export const actionTaskTradeMyNameActionTaskTradePost = <
+  TData = AxiosResponse<TaskTradeResponseSchema>,
+>(
+  name: string,
+  simpleItemSchema: SimpleItemSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/task/trade`, simpleItemSchema, options);
+};
+>>>>>>> main
 
 /**
  * Cancel a task for 1 tasks coin.
  * @summary Action Task Cancel
  */
+<<<<<<< HEAD
 export const actionTaskCancelMyNameActionTaskCancelPost = <TData = AxiosResponse<TaskCancelledResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5109,11 +5804,22 @@ export const actionTaskCancelMyNameActionTaskCancelPost = <TData = AxiosResponse
       `/my/${name}/action/task/cancel`,undefined,options
     );
   }
+=======
+export const actionTaskCancelMyNameActionTaskCancelPost = <
+  TData = AxiosResponse<TaskCancelledResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/task/cancel`, undefined, options);
+};
+>>>>>>> main
 
 /**
  * Give gold to another character in your account on the same map.
  * @summary Action Give Gold
  */
+<<<<<<< HEAD
 <<<<<<< HEAD
 export const actionGiveGoldMyNameActionGiveGoldPost = <TData = AxiosResponse<GiveGoldResponseSchema>>(
     name: string,
@@ -5131,12 +5837,24 @@ export const actionGiveGoldMyNameActionGiveGoldPost = <TData = AxiosResponse<Giv
       giveGoldSchema,options
     );
   }
+=======
+export const actionGiveGoldMyNameActionGiveGoldPost = <
+  TData = AxiosResponse<GiveGoldReponseSchema>,
+>(
+  name: string,
+  giveGoldSchema: GiveGoldSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/give/gold`, giveGoldSchema, options);
+};
+>>>>>>> main
 
 /**
  * Give items to another character in your account on the same map.
 The cooldown will be 3 seconds multiplied by the number of different items given.
  * @summary Action Give Items
  */
+<<<<<<< HEAD
 <<<<<<< HEAD
 export const actionGiveItemsMyNameActionGiveItemPost = <TData = AxiosResponse<GiveItemResponseSchema>>(
     name: string,
@@ -5154,11 +5872,23 @@ export const actionGiveItemsMyNameActionGiveItemPost = <TData = AxiosResponse<Gi
       giveItemsSchema,options
     );
   }
+=======
+export const actionGiveItemsMyNameActionGiveItemPost = <
+  TData = AxiosResponse<GiveItemReponseSchema>,
+>(
+  name: string,
+  giveItemsSchema: GiveItemsSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/give/item`, giveItemsSchema, options);
+};
+>>>>>>> main
 
 /**
  * Delete an item from your character's inventory.
  * @summary Action Delete Item
  */
+<<<<<<< HEAD
 export const actionDeleteItemMyNameActionDeletePost = <TData = AxiosResponse<DeleteItemResponseSchema>>(
     name: string,
     simpleItemSchema: SimpleItemSchema, options?: AxiosRequestConfig
@@ -5172,11 +5902,23 @@ export const actionDeleteItemMyNameActionDeletePost = <TData = AxiosResponse<Del
       simpleItemSchema,options
     );
   }
+=======
+export const actionDeleteItemMyNameActionDeletePost = <
+  TData = AxiosResponse<DeleteItemResponseSchema>,
+>(
+  name: string,
+  simpleItemSchema: SimpleItemSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/delete`, simpleItemSchema, options);
+};
+>>>>>>> main
 
 /**
  * Change the skin of your character.
  * @summary Action Change Skin
  */
+<<<<<<< HEAD
 export const actionChangeSkinMyNameActionChangeSkinPost = <TData = AxiosResponse<ChangeSkinResponseSchema>>(
     name: string,
     changeSkinCharacterSchema: ChangeSkinCharacterSchema, options?: AxiosRequestConfig
@@ -5190,11 +5932,27 @@ export const actionChangeSkinMyNameActionChangeSkinPost = <TData = AxiosResponse
       changeSkinCharacterSchema,options
     );
   }
+=======
+export const actionChangeSkinMyNameActionChangeSkinPost = <
+  TData = AxiosResponse<ChangeSkinResponseSchema>,
+>(
+  name: string,
+  changeSkinCharacterSchema: ChangeSkinCharacterSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/my/${name}/action/change_skin`,
+    changeSkinCharacterSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * History of the last 250 actions of all your characters.
  * @summary Get All Characters Logs
  */
+<<<<<<< HEAD
 export const getAllCharactersLogsMyLogsGet = <TData = AxiosResponse<DataPageLogSchema>>(
     params?: GetAllCharactersLogsMyLogsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5204,15 +5962,25 @@ export const getAllCharactersLogsMyLogsGet = <TData = AxiosResponse<DataPageLogS
     return axios.get(
 >>>>>>> main
       `/my/logs`,{
+=======
+export const getAllCharactersLogsMyLogsGet = <
+  TData = AxiosResponse<DataPageLogSchema>,
+>(
+  params?: GetAllCharactersLogsMyLogsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/logs`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * History of the last actions of your character.
  * @summary Get Character Logs
  */
+<<<<<<< HEAD
 export const getCharacterLogsMyLogsNameGet = <TData = AxiosResponse<DataPageLogSchema>>(
     name: string,
     params?: GetCharacterLogsMyLogsNameGetParams, options?: AxiosRequestConfig
@@ -5223,15 +5991,26 @@ export const getCharacterLogsMyLogsNameGet = <TData = AxiosResponse<DataPageLogS
     return axios.get(
 >>>>>>> main
       `/my/logs/${name}`,{
+=======
+export const getCharacterLogsMyLogsNameGet = <
+  TData = AxiosResponse<DataPageLogSchema>,
+>(
+  name: string,
+  params?: GetCharacterLogsMyLogsNameGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/logs/${name}`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * List of your characters.
  * @summary Get My Characters
  */
+<<<<<<< HEAD
 export const getMyCharactersMyCharactersGet = <TData = AxiosResponse<MyCharactersListSchema>>(
      options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5243,10 +6022,20 @@ export const getMyCharactersMyCharactersGet = <TData = AxiosResponse<MyCharacter
       `/my/characters`,options
     );
   }
+=======
+export const getMyCharactersMyCharactersGet = <
+  TData = AxiosResponse<MyCharactersListSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/characters`, options);
+};
+>>>>>>> main
 
 /**
  * @summary Create Account
  */
+<<<<<<< HEAD
 export const createAccountAccountsCreatePost = <TData = AxiosResponse<ResponseSchema>>(
     addAccountSchema: AddAccountSchema, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5259,11 +6048,22 @@ export const createAccountAccountsCreatePost = <TData = AxiosResponse<ResponseSc
       addAccountSchema,options
     );
   }
+=======
+export const createAccountAccountsCreatePost = <
+  TData = AxiosResponse<ResponseSchema>,
+>(
+  addAccountSchema: AddAccountSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/accounts/create`, addAccountSchema, options);
+};
+>>>>>>> main
 
 /**
  * Request a password reset.
  * @summary Forgot Password
  */
+<<<<<<< HEAD
 export const forgotPasswordAccountsForgotPasswordPost = <TData = AxiosResponse<PasswordResetResponseSchema>>(
     passwordResetRequestSchema: PasswordResetRequestSchema, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5276,11 +6076,26 @@ export const forgotPasswordAccountsForgotPasswordPost = <TData = AxiosResponse<P
       passwordResetRequestSchema,options
     );
   }
+=======
+export const forgotPasswordAccountsForgotPasswordPost = <
+  TData = AxiosResponse<PasswordResetResponseSchema>,
+>(
+  passwordResetRequestSchema: PasswordResetRequestSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/accounts/forgot_password`,
+    passwordResetRequestSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Reset password with a token. Use /forgot_password to get a token by email.
  * @summary Reset Password
  */
+<<<<<<< HEAD
 export const resetPasswordAccountsResetPasswordPost = <TData = AxiosResponse<PasswordResetResponseSchema>>(
     passwordResetConfirmSchema: PasswordResetConfirmSchema, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5293,11 +6108,26 @@ export const resetPasswordAccountsResetPasswordPost = <TData = AxiosResponse<Pas
       passwordResetConfirmSchema,options
     );
   }
+=======
+export const resetPasswordAccountsResetPasswordPost = <
+  TData = AxiosResponse<PasswordResetResponseSchema>,
+>(
+  passwordResetConfirmSchema: PasswordResetConfirmSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/accounts/reset_password`,
+    passwordResetConfirmSchema,
+    options,
+  );
+};
+>>>>>>> main
 
 /**
  * Retrieve the achievements of a account.
  * @summary Get Account Achievements
  */
+<<<<<<< HEAD
 export const getAccountAchievementsAccountsAccountAchievementsGet = <TData = AxiosResponse<DataPageAccountAchievementSchema>>(
     account: string,
     params?: GetAccountAchievementsAccountsAccountAchievementsGetParams, options?: AxiosRequestConfig
@@ -5308,15 +6138,26 @@ export const getAccountAchievementsAccountsAccountAchievementsGet = <TData = Axi
     return axios.get(
 >>>>>>> main
       `/accounts/${account}/achievements`,{
+=======
+export const getAccountAchievementsAccountsAccountAchievementsGet = <
+  TData = AxiosResponse<DataPageAccountAchievementSchema>,
+>(
+  account: string,
+  params?: GetAccountAchievementsAccountsAccountAchievementsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/accounts/${account}/achievements`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Account character lists.
  * @summary Get Account Characters
  */
+<<<<<<< HEAD
 export const getAccountCharactersAccountsAccountCharactersGet = <TData = AxiosResponse<CharactersListSchema>>(
     account: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5328,6 +6169,16 @@ export const getAccountCharactersAccountsAccountCharactersGet = <TData = AxiosRe
       `/accounts/${account}/characters`,options
     );
   }
+=======
+export const getAccountCharactersAccountsAccountCharactersGet = <
+  TData = AxiosResponse<CharactersListSchema>,
+>(
+  account: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/accounts/${account}/characters`, options);
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -5337,6 +6188,7 @@ export const getAccountCharactersAccountsAccountCharactersGet = <TData = AxiosRe
 >>>>>>> main
  * @summary Get Account
  */
+<<<<<<< HEAD
 export const getAccountAccountsAccountGet = <TData = AxiosResponse<AccountDetailsSchema>>(
     account: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5348,11 +6200,22 @@ export const getAccountAccountsAccountGet = <TData = AxiosResponse<AccountDetail
       `/accounts/${account}`,options
     );
   }
+=======
+export const getAccountAccountsAccountGet = <
+  TData = AxiosResponse<AccountDetailsSchema>,
+>(
+  account: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/accounts/${account}`, options);
+};
+>>>>>>> main
 
 /**
  * List of all achievements.
  * @summary Get All Achievements
  */
+<<<<<<< HEAD
 export const getAllAchievementsAchievementsGet = <TData = AxiosResponse<DataPageAchievementSchema>>(
     params?: GetAllAchievementsAchievementsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5362,10 +6225,19 @@ export const getAllAchievementsAchievementsGet = <TData = AxiosResponse<DataPage
     return axios.get(
 >>>>>>> main
       `/achievements`,{
+=======
+export const getAllAchievementsAchievementsGet = <
+  TData = AxiosResponse<DataPageAchievementSchema>,
+>(
+  params?: GetAllAchievementsAchievementsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/achievements`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
 <<<<<<< HEAD
@@ -5375,6 +6247,7 @@ export const getAllAchievementsAchievementsGet = <TData = AxiosResponse<DataPage
 >>>>>>> main
  * @summary Get Achievement
  */
+<<<<<<< HEAD
 export const getAchievementAchievementsCodeGet = <TData = AxiosResponse<AchievementResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5386,11 +6259,22 @@ export const getAchievementAchievementsCodeGet = <TData = AxiosResponse<Achievem
       `/achievements/${code}`,options
     );
   }
+=======
+export const getAchievementAchievementsCodeGet = <
+  TData = AxiosResponse<AchievementResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/achievements/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * List of all badges.
  * @summary Get All Badges
  */
+<<<<<<< HEAD
 export const getAllBadgesBadgesGet = <TData = AxiosResponse<DataPageBadgeSchema>>(
     params?: GetAllBadgesBadgesGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5400,15 +6284,25 @@ export const getAllBadgesBadgesGet = <TData = AxiosResponse<DataPageBadgeSchema>
     return axios.get(
 >>>>>>> main
       `/badges`,{
+=======
+export const getAllBadgesBadgesGet = <
+  TData = AxiosResponse<DataPageBadgeSchema>,
+>(
+  params?: GetAllBadgesBadgesGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/badges`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the details of a badge.
  * @summary Get Badge
  */
+<<<<<<< HEAD
 export const getBadgeBadgesCodeGet = <TData = AxiosResponse<BadgeResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5420,11 +6314,22 @@ export const getBadgeBadgesCodeGet = <TData = AxiosResponse<BadgeResponseSchema>
       `/badges/${code}`,options
     );
   }
+=======
+export const getBadgeBadgesCodeGet = <
+  TData = AxiosResponse<BadgeResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/badges/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * Create new character on your account. You can create up to 5 characters.
  * @summary Create Character
  */
+<<<<<<< HEAD
 export const createCharacterCharactersCreatePost = <TData = AxiosResponse<CharacterResponseSchema>>(
     addCharacterSchema: AddCharacterSchema, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5437,11 +6342,22 @@ export const createCharacterCharactersCreatePost = <TData = AxiosResponse<Charac
       addCharacterSchema,options
     );
   }
+=======
+export const createCharacterCharactersCreatePost = <
+  TData = AxiosResponse<CharacterResponseSchema>,
+>(
+  addCharacterSchema: AddCharacterSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/characters/create`, addCharacterSchema, options);
+};
+>>>>>>> main
 
 /**
  * Delete character on your account.
  * @summary Delete Character
  */
+<<<<<<< HEAD
 export const deleteCharacterCharactersDeletePost = <TData = AxiosResponse<CharacterResponseSchema>>(
     deleteCharacterSchema: DeleteCharacterSchema, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5454,6 +6370,16 @@ export const deleteCharacterCharactersDeletePost = <TData = AxiosResponse<Charac
       deleteCharacterSchema,options
     );
   }
+=======
+export const deleteCharacterCharactersDeletePost = <
+  TData = AxiosResponse<CharacterResponseSchema>,
+>(
+  deleteCharacterSchema: DeleteCharacterSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/characters/delete`, deleteCharacterSchema, options);
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -5476,6 +6402,7 @@ export const getActiveCharactersCharactersActiveGet = <TData = AxiosResponse<Dat
  * Retrieve the details of a character.
  * @summary Get Character
  */
+<<<<<<< HEAD
 export const getCharacterCharactersNameGet = <TData = AxiosResponse<CharacterResponseSchema>>(
     name: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5487,11 +6414,22 @@ export const getCharacterCharactersNameGet = <TData = AxiosResponse<CharacterRes
       `/characters/${name}`,options
     );
   }
+=======
+export const getCharacterCharactersNameGet = <
+  TData = AxiosResponse<CharacterResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/characters/${name}`, options);
+};
+>>>>>>> main
 
 /**
  * List of all effects. Effects are used by equipment, tools, runes, consumables and monsters. An effect is an action that produces an effect on the game.
  * @summary Get All Effects
  */
+<<<<<<< HEAD
 export const getAllEffectsEffectsGet = <TData = AxiosResponse<DataPageEffectSchema>>(
     params?: GetAllEffectsEffectsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5501,10 +6439,19 @@ export const getAllEffectsEffectsGet = <TData = AxiosResponse<DataPageEffectSche
     return axios.get(
 >>>>>>> main
       `/effects`,{
+=======
+export const getAllEffectsEffectsGet = <
+  TData = AxiosResponse<DataPageEffectSchema>,
+>(
+  params?: GetAllEffectsEffectsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/effects`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
 <<<<<<< HEAD
@@ -5514,6 +6461,7 @@ export const getAllEffectsEffectsGet = <TData = AxiosResponse<DataPageEffectSche
 >>>>>>> main
  * @summary Get Effect
  */
+<<<<<<< HEAD
 export const getEffectEffectsCodeGet = <TData = AxiosResponse<EffectResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5525,11 +6473,22 @@ export const getEffectEffectsCodeGet = <TData = AxiosResponse<EffectResponseSche
       `/effects/${code}`,options
     );
   }
+=======
+export const getEffectEffectsCodeGet = <
+  TData = AxiosResponse<EffectResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/effects/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch active events details.
  * @summary Get All Active Events
  */
+<<<<<<< HEAD
 export const getAllActiveEventsEventsActiveGet = <TData = AxiosResponse<DataPageActiveEventSchema>>(
     params?: GetAllActiveEventsEventsActiveGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5539,15 +6498,25 @@ export const getAllActiveEventsEventsActiveGet = <TData = AxiosResponse<DataPage
     return axios.get(
 >>>>>>> main
       `/events/active`,{
+=======
+export const getAllActiveEventsEventsActiveGet = <
+  TData = AxiosResponse<DataPageActiveEventSchema>,
+>(
+  params?: GetAllActiveEventsEventsActiveGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/events/active`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch events details.
  * @summary Get All Events
  */
+<<<<<<< HEAD
 export const getAllEventsEventsGet = <TData = AxiosResponse<DataPageEventSchema>>(
     params?: GetAllEventsEventsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5557,10 +6526,19 @@ export const getAllEventsEventsGet = <TData = AxiosResponse<DataPageEventSchema>
     return axios.get(
 >>>>>>> main
       `/events`,{
+=======
+export const getAllEventsEventsGet = <
+  TData = AxiosResponse<DataPageEventSchema>,
+>(
+  params?: GetAllEventsEventsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/events`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
 <<<<<<< HEAD
@@ -5587,6 +6565,7 @@ export const spawnEventEventsSpawnPost = <TData = AxiosResponse<ActiveEventRespo
  * Fetch the sales history of the item for the last 7 days.
  * @summary Get Ge Sell History
  */
+<<<<<<< HEAD
 export const getGeSellHistoryGrandexchangeHistoryCodeGet = <TData = AxiosResponse<DataPageGeOrderHistorySchema>>(
     code: string,
     params?: GetGeSellHistoryGrandexchangeHistoryCodeGetParams, options?: AxiosRequestConfig
@@ -5597,15 +6576,26 @@ export const getGeSellHistoryGrandexchangeHistoryCodeGet = <TData = AxiosRespons
     return axios.get(
 >>>>>>> main
       `/grandexchange/history/${code}`,{
+=======
+export const getGeSellHistoryGrandexchangeHistoryCodeGet = <
+  TData = AxiosResponse<DataPageGeOrderHistorySchema>,
+>(
+  code: string,
+  params?: GetGeSellHistoryGrandexchangeHistoryCodeGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/grandexchange/history/${code}`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch all sell orders.
  * @summary Get Ge Sell Orders
  */
+<<<<<<< HEAD
 export const getGeSellOrdersGrandexchangeOrdersGet = <TData = AxiosResponse<DataPageGEOrderSchema>>(
     params?: GetGeSellOrdersGrandexchangeOrdersGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5615,15 +6605,25 @@ export const getGeSellOrdersGrandexchangeOrdersGet = <TData = AxiosResponse<Data
     return axios.get(
 >>>>>>> main
       `/grandexchange/orders`,{
+=======
+export const getGeSellOrdersGrandexchangeOrdersGet = <
+  TData = AxiosResponse<DataPageGEOrderSchema>,
+>(
+  params?: GetGeSellOrdersGrandexchangeOrdersGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/grandexchange/orders`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the sell order of a item.
  * @summary Get Ge Sell Order
  */
+<<<<<<< HEAD
 <<<<<<< HEAD
 export const getGeSellOrderGrandexchangeOrdersIdGet = <TData = AxiosResponse<GEOrderResponseSchema>>(
     id: string, options?: AxiosRequestConfig
@@ -5638,12 +6638,23 @@ export const getGeSellOrderGrandexchangeOrdersIdGet = <TData = AxiosResponse<GEO
       `/grandexchange/orders/${id}`,options
     );
   }
+=======
+export const getGeSellOrderGrandexchangeOrdersIdGet = <
+  TData = AxiosResponse<GEOrderReponseSchema>,
+>(
+  id: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/grandexchange/orders/${id}`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch items details.
  * @summary Get All Items
  */
 export const getAllItemsItemsGet = <TData = AxiosResponse<DataPageItemSchema>>(
+<<<<<<< HEAD
     params?: GetAllItemsItemsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
 <<<<<<< HEAD
@@ -5652,16 +6663,23 @@ export const getAllItemsItemsGet = <TData = AxiosResponse<DataPageItemSchema>>(
     return axios.get(
 >>>>>>> main
       `/items`,{
+=======
+  params?: GetAllItemsItemsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/items`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the details of a item.
  * @summary Get Item
  */
 export const getItemItemsCodeGet = <TData = AxiosResponse<ItemResponseSchema>>(
+<<<<<<< HEAD
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
 <<<<<<< HEAD
@@ -5672,11 +6690,19 @@ export const getItemItemsCodeGet = <TData = AxiosResponse<ItemResponseSchema>>(
       `/items/${code}`,options
     );
   }
+=======
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/items/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch leaderboard details.
  * @summary Get Characters Leaderboard
  */
+<<<<<<< HEAD
 export const getCharactersLeaderboardLeaderboardCharactersGet = <TData = AxiosResponse<DataPageCharacterLeaderboardSchema>>(
     params?: GetCharactersLeaderboardLeaderboardCharactersGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5686,15 +6712,25 @@ export const getCharactersLeaderboardLeaderboardCharactersGet = <TData = AxiosRe
     return axios.get(
 >>>>>>> main
       `/leaderboard/characters`,{
+=======
+export const getCharactersLeaderboardLeaderboardCharactersGet = <
+  TData = AxiosResponse<DataPageCharacterLeaderboardSchema>,
+>(
+  params?: GetCharactersLeaderboardLeaderboardCharactersGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/leaderboard/characters`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch leaderboard details.
  * @summary Get Accounts Leaderboard
  */
+<<<<<<< HEAD
 export const getAccountsLeaderboardLeaderboardAccountsGet = <TData = AxiosResponse<DataPageAccountLeaderboardSchema>>(
     params?: GetAccountsLeaderboardLeaderboardAccountsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5704,16 +6740,26 @@ export const getAccountsLeaderboardLeaderboardAccountsGet = <TData = AxiosRespon
     return axios.get(
 >>>>>>> main
       `/leaderboard/accounts`,{
+=======
+export const getAccountsLeaderboardLeaderboardAccountsGet = <
+  TData = AxiosResponse<DataPageAccountLeaderboardSchema>,
+>(
+  params?: GetAccountsLeaderboardLeaderboardAccountsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/leaderboard/accounts`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch maps details.
  * @summary Get All Maps
  */
 export const getAllMapsMapsGet = <TData = AxiosResponse<DataPageMapSchema>>(
+<<<<<<< HEAD
     params?: GetAllMapsMapsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
 <<<<<<< HEAD
@@ -5722,10 +6768,16 @@ export const getAllMapsMapsGet = <TData = AxiosResponse<DataPageMapSchema>>(
     return axios.get(
 >>>>>>> main
       `/maps`,{
+=======
+  params?: GetAllMapsMapsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/maps`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
 <<<<<<< HEAD
@@ -5771,6 +6823,7 @@ export const getMapByIdMapsIdMapIdGet = <TData = AxiosResponse<MapResponseSchema
  * @summary Get Map
  */
 export const getMapMapsXYGet = <TData = AxiosResponse<MapResponseSchema>>(
+<<<<<<< HEAD
     x: number,
     y: number, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5779,11 +6832,20 @@ export const getMapMapsXYGet = <TData = AxiosResponse<MapResponseSchema>>(
 >>>>>>> main
     );
   }
+=======
+  x: number,
+  y: number,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/maps/${x}/${y}`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch monsters details.
  * @summary Get All Monsters
  */
+<<<<<<< HEAD
 export const getAllMonstersMonstersGet = <TData = AxiosResponse<DataPageMonsterSchema>>(
     params?: GetAllMonstersMonstersGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5793,15 +6855,25 @@ export const getAllMonstersMonstersGet = <TData = AxiosResponse<DataPageMonsterS
     return axios.get(
 >>>>>>> main
       `/monsters`,{
+=======
+export const getAllMonstersMonstersGet = <
+  TData = AxiosResponse<DataPageMonsterSchema>,
+>(
+  params?: GetAllMonstersMonstersGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/monsters`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the details of a monster.
  * @summary Get Monster
  */
+<<<<<<< HEAD
 export const getMonsterMonstersCodeGet = <TData = AxiosResponse<MonsterResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5813,11 +6885,22 @@ export const getMonsterMonstersCodeGet = <TData = AxiosResponse<MonsterResponseS
       `/monsters/${code}`,options
     );
   }
+=======
+export const getMonsterMonstersCodeGet = <
+  TData = AxiosResponse<MonsterResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/monsters/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch NPCs details.
  * @summary Get All Npcs
  */
+<<<<<<< HEAD
 export const getAllNpcsNpcsDetailsGet = <TData = AxiosResponse<DataPageNPCSchema>>(
     params?: GetAllNpcsNpcsDetailsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5827,15 +6910,25 @@ export const getAllNpcsNpcsDetailsGet = <TData = AxiosResponse<DataPageNPCSchema
     return axios.get(
 >>>>>>> main
       `/npcs/details`,{
+=======
+export const getAllNpcsNpcsDetailsGet = <
+  TData = AxiosResponse<DataPageNPCSchema>,
+>(
+  params?: GetAllNpcsNpcsDetailsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/npcs/details`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the details of a NPC.
  * @summary Get Npc
  */
+<<<<<<< HEAD
 export const getNpcNpcsDetailsCodeGet = <TData = AxiosResponse<NPCResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5847,11 +6940,22 @@ export const getNpcNpcsDetailsCodeGet = <TData = AxiosResponse<NPCResponseSchema
       `/npcs/details/${code}`,options
     );
   }
+=======
+export const getNpcNpcsDetailsCodeGet = <
+  TData = AxiosResponse<NPCResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/npcs/details/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * Retrieve the items list of a NPC. If the NPC has items to buy, sell or trade, they will be displayed.
  * @summary Get Npc Items
  */
+<<<<<<< HEAD
 export const getNpcItemsNpcsItemsCodeGet = <TData = AxiosResponse<DataPageNPCItem>>(
     code: string,
     params?: GetNpcItemsNpcsItemsCodeGetParams, options?: AxiosRequestConfig
@@ -5862,15 +6966,26 @@ export const getNpcItemsNpcsItemsCodeGet = <TData = AxiosResponse<DataPageNPCIte
     return axios.get(
 >>>>>>> main
       `/npcs/items/${code}`,{
+=======
+export const getNpcItemsNpcsItemsCodeGet = <
+  TData = AxiosResponse<DataPageNPCItem>,
+>(
+  code: string,
+  params?: GetNpcItemsNpcsItemsCodeGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/npcs/items/${code}`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the list of all NPC items.
  * @summary Get All Npcs Items
  */
+<<<<<<< HEAD
 export const getAllNpcsItemsNpcsItemsGet = <TData = AxiosResponse<DataPageNPCItem>>(
     params?: GetAllNpcsItemsNpcsItemsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5880,15 +6995,25 @@ export const getAllNpcsItemsNpcsItemsGet = <TData = AxiosResponse<DataPageNPCIte
     return axios.get(
 >>>>>>> main
       `/npcs/items`,{
+=======
+export const getAllNpcsItemsNpcsItemsGet = <
+  TData = AxiosResponse<DataPageNPCItem>,
+>(
+  params?: GetAllNpcsItemsNpcsItemsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/npcs/items`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Fetch resources details.
  * @summary Get All Resources
  */
+<<<<<<< HEAD
 export const getAllResourcesResourcesGet = <TData = AxiosResponse<DataPageResourceSchema>>(
     params?: GetAllResourcesResourcesGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5898,15 +7023,25 @@ export const getAllResourcesResourcesGet = <TData = AxiosResponse<DataPageResour
     return axios.get(
 >>>>>>> main
       `/resources`,{
+=======
+export const getAllResourcesResourcesGet = <
+  TData = AxiosResponse<DataPageResourceSchema>,
+>(
+  params?: GetAllResourcesResourcesGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/resources`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the details of a resource.
  * @summary Get Resource
  */
+<<<<<<< HEAD
 export const getResourceResourcesCodeGet = <TData = AxiosResponse<ResourceResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5918,11 +7053,22 @@ export const getResourceResourcesCodeGet = <TData = AxiosResponse<ResourceRespon
       `/resources/${code}`,options
     );
   }
+=======
+export const getResourceResourcesCodeGet = <
+  TData = AxiosResponse<ResourceResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/resources/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch the list of all tasks.
  * @summary Get All Tasks
  */
+<<<<<<< HEAD
 export const getAllTasksTasksListGet = <TData = AxiosResponse<DataPageTaskFullSchema>>(
     params?: GetAllTasksTasksListGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5932,15 +7078,25 @@ export const getAllTasksTasksListGet = <TData = AxiosResponse<DataPageTaskFullSc
     return axios.get(
 >>>>>>> main
       `/tasks/list`,{
+=======
+export const getAllTasksTasksListGet = <
+  TData = AxiosResponse<DataPageTaskFullSchema>,
+>(
+  params?: GetAllTasksTasksListGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/tasks/list`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the details of a task.
  * @summary Get Task
  */
+<<<<<<< HEAD
 export const getTaskTasksListCodeGet = <TData = AxiosResponse<TaskFullResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5952,11 +7108,22 @@ export const getTaskTasksListCodeGet = <TData = AxiosResponse<TaskFullResponseSc
       `/tasks/list/${code}`,options
     );
   }
+=======
+export const getTaskTasksListCodeGet = <
+  TData = AxiosResponse<TaskFullResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/tasks/list/${code}`, options);
+};
+>>>>>>> main
 
 /**
  * Fetch the list of all tasks rewards. To obtain these rewards, you must exchange 6 task coins with a tasks master.
  * @summary Get All Tasks Rewards
  */
+<<<<<<< HEAD
 export const getAllTasksRewardsTasksRewardsGet = <TData = AxiosResponse<DataPageDropRateSchema>>(
     params?: GetAllTasksRewardsTasksRewardsGetParams, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5966,15 +7133,25 @@ export const getAllTasksRewardsTasksRewardsGet = <TData = AxiosResponse<DataPage
     return axios.get(
 >>>>>>> main
       `/tasks/rewards`,{
+=======
+export const getAllTasksRewardsTasksRewardsGet = <
+  TData = AxiosResponse<DataPageDropRateSchema>,
+>(
+  params?: GetAllTasksRewardsTasksRewardsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/tasks/rewards`, {
+>>>>>>> main
     ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params: { ...params, ...options?.params },
+  });
+};
 
 /**
  * Retrieve the details of a tasks reward.
  * @summary Get Tasks Reward
  */
+<<<<<<< HEAD
 export const getTasksRewardTasksRewardsCodeGet = <TData = AxiosResponse<RewardResponseSchema>>(
     code: string, options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -5986,6 +7163,16 @@ export const getTasksRewardTasksRewardsCodeGet = <TData = AxiosResponse<RewardRe
       `/tasks/rewards/${code}`,options
     );
   }
+=======
+export const getTasksRewardTasksRewardsCodeGet = <
+  TData = AxiosResponse<RewardResponseSchema>,
+>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/tasks/rewards/${code}`, options);
+};
+>>>>>>> main
 
 /**
 <<<<<<< HEAD
@@ -6064,6 +7251,7 @@ export const spawnEventSandboxSpawnEventPost = <TData = AxiosResponse<ActiveEven
  * Use your account as HTTPBasic Auth to generate your token to use the API. You can also generate your token directly on the website.
  * @summary Generate Token
  */
+<<<<<<< HEAD
 export const generateTokenTokenPost = <TData = AxiosResponse<TokenResponseSchema>>(
      options?: AxiosRequestConfig
  ): Promise<TData> => {
@@ -6187,3 +7375,151 @@ export type SpawnEventSandboxSpawnEventPostResult = AxiosResponse<ActiveEventRes
 =======
 >>>>>>> main
 export type GenerateTokenTokenPostResult = AxiosResponse<TokenResponseSchema>
+=======
+export const generateTokenTokenPost = <
+  TData = AxiosResponse<TokenResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/token`, undefined, options);
+};
+
+export type GetServerDetailsGetResult = AxiosResponse<StatusResponseSchema>;
+export type GetBankDetailsMyBankGetResult = AxiosResponse<BankResponseSchema>;
+export type GetBankItemsMyBankItemsGetResult =
+  AxiosResponse<DataPageSimpleItemSchema>;
+export type GetGeSellOrdersMyGrandexchangeOrdersGetResult =
+  AxiosResponse<DataPageGEOrderSchema>;
+export type GetGeSellHistoryMyGrandexchangeHistoryGetResult =
+  AxiosResponse<DataPageGeOrderHistorySchema>;
+export type GetAccountDetailsMyDetailsGetResult =
+  AxiosResponse<MyAccountDetailsSchema>;
+export type ChangePasswordMyChangePasswordPostResult =
+  AxiosResponse<ResponseSchema>;
+export type ActionMoveMyNameActionMovePostResult =
+  AxiosResponse<CharacterMovementResponseSchema>;
+export type ActionRestMyNameActionRestPostResult =
+  AxiosResponse<CharacterRestResponseSchema>;
+export type ActionEquipItemMyNameActionEquipPostResult =
+  AxiosResponse<EquipmentResponseSchema>;
+export type ActionUnequipItemMyNameActionUnequipPostResult =
+  AxiosResponse<EquipmentResponseSchema>;
+export type ActionUseItemMyNameActionUsePostResult =
+  AxiosResponse<UseItemResponseSchema>;
+export type ActionFightMyNameActionFightPostResult =
+  AxiosResponse<CharacterFightResponseSchema>;
+export type ActionGatheringMyNameActionGatheringPostResult =
+  AxiosResponse<SkillResponseSchema>;
+export type ActionCraftingMyNameActionCraftingPostResult =
+  AxiosResponse<SkillResponseSchema>;
+export type ActionDepositBankGoldMyNameActionBankDepositGoldPostResult =
+  AxiosResponse<BankGoldTransactionResponseSchema>;
+export type ActionDepositBankItemMyNameActionBankDepositItemPostResult =
+  AxiosResponse<BankItemTransactionResponseSchema>;
+export type ActionWithdrawBankItemMyNameActionBankWithdrawItemPostResult =
+  AxiosResponse<BankItemTransactionResponseSchema>;
+export type ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostResult =
+  AxiosResponse<BankGoldTransactionResponseSchema>;
+export type ActionBuyBankExpansionMyNameActionBankBuyExpansionPostResult =
+  AxiosResponse<BankExtensionTransactionResponseSchema>;
+export type ActionNpcBuyItemMyNameActionNpcBuyPostResult =
+  AxiosResponse<NpcMerchantTransactionResponseSchema>;
+export type ActionNpcSellItemMyNameActionNpcSellPostResult =
+  AxiosResponse<NpcMerchantTransactionResponseSchema>;
+export type ActionRecyclingMyNameActionRecyclingPostResult =
+  AxiosResponse<RecyclingResponseSchema>;
+export type ActionGeBuyItemMyNameActionGrandexchangeBuyPostResult =
+  AxiosResponse<GETransactionResponseSchema>;
+export type ActionGeCreateSellOrderMyNameActionGrandexchangeSellPostResult =
+  AxiosResponse<GECreateOrderTransactionResponseSchema>;
+export type ActionGeCancelSellOrderMyNameActionGrandexchangeCancelPostResult =
+  AxiosResponse<GETransactionResponseSchema>;
+export type ActionCompleteTaskMyNameActionTaskCompletePostResult =
+  AxiosResponse<RewardDataResponseSchema>;
+export type ActionTaskExchangeMyNameActionTaskExchangePostResult =
+  AxiosResponse<RewardDataResponseSchema>;
+export type ActionAcceptNewTaskMyNameActionTaskNewPostResult =
+  AxiosResponse<TaskResponseSchema>;
+export type ActionTaskTradeMyNameActionTaskTradePostResult =
+  AxiosResponse<TaskTradeResponseSchema>;
+export type ActionTaskCancelMyNameActionTaskCancelPostResult =
+  AxiosResponse<TaskCancelledResponseSchema>;
+export type ActionGiveGoldMyNameActionGiveGoldPostResult =
+  AxiosResponse<GiveGoldReponseSchema>;
+export type ActionGiveItemsMyNameActionGiveItemPostResult =
+  AxiosResponse<GiveItemReponseSchema>;
+export type ActionDeleteItemMyNameActionDeletePostResult =
+  AxiosResponse<DeleteItemResponseSchema>;
+export type ActionChangeSkinMyNameActionChangeSkinPostResult =
+  AxiosResponse<ChangeSkinResponseSchema>;
+export type GetAllCharactersLogsMyLogsGetResult =
+  AxiosResponse<DataPageLogSchema>;
+export type GetCharacterLogsMyLogsNameGetResult =
+  AxiosResponse<DataPageLogSchema>;
+export type GetMyCharactersMyCharactersGetResult =
+  AxiosResponse<MyCharactersListSchema>;
+export type CreateAccountAccountsCreatePostResult =
+  AxiosResponse<ResponseSchema>;
+export type ForgotPasswordAccountsForgotPasswordPostResult =
+  AxiosResponse<PasswordResetResponseSchema>;
+export type ResetPasswordAccountsResetPasswordPostResult =
+  AxiosResponse<PasswordResetResponseSchema>;
+export type GetAccountAchievementsAccountsAccountAchievementsGetResult =
+  AxiosResponse<DataPageAccountAchievementSchema>;
+export type GetAccountCharactersAccountsAccountCharactersGetResult =
+  AxiosResponse<CharactersListSchema>;
+export type GetAccountAccountsAccountGetResult =
+  AxiosResponse<AccountDetailsSchema>;
+export type GetAllAchievementsAchievementsGetResult =
+  AxiosResponse<DataPageAchievementSchema>;
+export type GetAchievementAchievementsCodeGetResult =
+  AxiosResponse<AchievementResponseSchema>;
+export type GetAllBadgesBadgesGetResult = AxiosResponse<DataPageBadgeSchema>;
+export type GetBadgeBadgesCodeGetResult = AxiosResponse<BadgeResponseSchema>;
+export type CreateCharacterCharactersCreatePostResult =
+  AxiosResponse<CharacterResponseSchema>;
+export type DeleteCharacterCharactersDeletePostResult =
+  AxiosResponse<CharacterResponseSchema>;
+export type GetCharacterCharactersNameGetResult =
+  AxiosResponse<CharacterResponseSchema>;
+export type GetAllEffectsEffectsGetResult = AxiosResponse<DataPageEffectSchema>;
+export type GetEffectEffectsCodeGetResult = AxiosResponse<EffectResponseSchema>;
+export type GetAllActiveEventsEventsActiveGetResult =
+  AxiosResponse<DataPageActiveEventSchema>;
+export type GetAllEventsEventsGetResult = AxiosResponse<DataPageEventSchema>;
+export type GetGeSellHistoryGrandexchangeHistoryCodeGetResult =
+  AxiosResponse<DataPageGeOrderHistorySchema>;
+export type GetGeSellOrdersGrandexchangeOrdersGetResult =
+  AxiosResponse<DataPageGEOrderSchema>;
+export type GetGeSellOrderGrandexchangeOrdersIdGetResult =
+  AxiosResponse<GEOrderReponseSchema>;
+export type GetAllItemsItemsGetResult = AxiosResponse<DataPageItemSchema>;
+export type GetItemItemsCodeGetResult = AxiosResponse<ItemResponseSchema>;
+export type GetCharactersLeaderboardLeaderboardCharactersGetResult =
+  AxiosResponse<DataPageCharacterLeaderboardSchema>;
+export type GetAccountsLeaderboardLeaderboardAccountsGetResult =
+  AxiosResponse<DataPageAccountLeaderboardSchema>;
+export type GetAllMapsMapsGetResult = AxiosResponse<DataPageMapSchema>;
+export type GetMapMapsXYGetResult = AxiosResponse<MapResponseSchema>;
+export type GetAllMonstersMonstersGetResult =
+  AxiosResponse<DataPageMonsterSchema>;
+export type GetMonsterMonstersCodeGetResult =
+  AxiosResponse<MonsterResponseSchema>;
+export type GetAllNpcsNpcsDetailsGetResult = AxiosResponse<DataPageNPCSchema>;
+export type GetNpcNpcsDetailsCodeGetResult = AxiosResponse<NPCResponseSchema>;
+export type GetNpcItemsNpcsItemsCodeGetResult = AxiosResponse<DataPageNPCItem>;
+export type GetAllNpcsItemsNpcsItemsGetResult = AxiosResponse<DataPageNPCItem>;
+export type GetAllResourcesResourcesGetResult =
+  AxiosResponse<DataPageResourceSchema>;
+export type GetResourceResourcesCodeGetResult =
+  AxiosResponse<ResourceResponseSchema>;
+export type GetAllTasksTasksListGetResult =
+  AxiosResponse<DataPageTaskFullSchema>;
+export type GetTaskTasksListCodeGetResult =
+  AxiosResponse<TaskFullResponseSchema>;
+export type GetAllTasksRewardsTasksRewardsGetResult =
+  AxiosResponse<DataPageDropRateSchema>;
+export type GetTasksRewardTasksRewardsCodeGetResult =
+  AxiosResponse<RewardResponseSchema>;
+export type GenerateTokenTokenPostResult = AxiosResponse<TokenResponseSchema>;
+>>>>>>> main

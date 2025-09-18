@@ -41,7 +41,7 @@ export class Character {
   /**
    * The current active job. We only ever execute this job
    */
-  activeJob: Objective;
+  activeJob?: Objective;
   /**
    * The list of jobs that have not been started yet
    */
@@ -50,9 +50,9 @@ export class Character {
   /**
    * Game state that we can refer to without API calls
    */
-  weaponMap: Record<WeaponFlavours, ItemSchema[]>;
-  utilitiesMap: Record<string, ItemSchema[]>;
-  consumablesMap: Record<string, ItemSchema[]>;
+  weaponMap?: Record<WeaponFlavours, ItemSchema[]>;
+  utilitiesMap?: Record<string, ItemSchema[]>;
+  consumablesMap?: Record<string, ItemSchema[]>;
 
   /**
    * True when character is not doing anything
@@ -78,7 +78,7 @@ export class Character {
    * The code of the food we're currently using. Saving it as a var so
    * I don't have to search my inv to figure out what to use
    */
-  preferredFood: string;
+  preferredFood: string = '';
   /**
    * Desired number of food in inventory
    */
@@ -587,9 +587,16 @@ export class Character {
     const usedInventorySpace = this.getInventoryFullness();
     if (usedInventorySpace >= 90 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing items`);
+<<<<<<< HEAD
       const maps = (await getMaps({content_type: 'bank'})).data;
+=======
+      const maps = await getMaps({ content_type: 'bank' });
+      if (maps instanceof ApiError) {
+        return this.handleErrors(maps);
+      }
+>>>>>>> main
 
-      const contentLocation = this.evaluateClosestMap(maps);
+      const contentLocation = this.evaluateClosestMap(maps.data);
 
       await this.move({ x: contentLocation.x, y: contentLocation.y });
 

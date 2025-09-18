@@ -57,8 +57,8 @@ export async function actionEquipItem(
         case 496:
           message = 'Character does not meet the required condition';
           break;
-                default:
-          message = 'Unknown error from /action/equip'
+        default:
+          message = 'Unknown error from /action/equip';
           break;
       }
       throw new ApiError({
@@ -121,7 +121,7 @@ export async function actionUnequipItem(
           message = 'The equipment slot is empty.';
           break;
         default:
-          message = 'Unknown error from /action/unequip'
+          message = 'Unknown error from /action/unequip';
           break;
       }
       throw new ApiError({
@@ -180,7 +180,7 @@ export async function actionUse(
           message = 'The character does not meet the required condition.';
           break;
         default:
-          message = 'Unknown error from /action/use'
+          message = 'Unknown error from /action/use';
           break;
       }
       throw new ApiError({
@@ -210,7 +210,16 @@ export async function actionUse(
 export async function getAllItemInformation(
   data: GetAllItemsItemsGetParams,
 ): Promise<DataPageItemSchema | ApiError> {
+<<<<<<< HEAD
   const apiUrl = new URL(`${ApiUrl}/items`);
+=======
+  var requestOptions = {
+    method: 'GET',
+    headers: MyHeaders,
+  };
+
+  var apiUrl = new URL(`${ApiUrl}/items`);
+>>>>>>> main
 
   if (data?.craft_material) {
     apiUrl.searchParams.set('craft_material', data.craft_material);

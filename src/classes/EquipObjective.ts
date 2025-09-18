@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { actionEquipItem } from '../api_calls/Items';
 import { EquipSchema, ItemSlot } from '../types/types';
 <<<<<<< HEAD
@@ -8,6 +9,15 @@ import { logger, sleep } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
+=======
+import { actionEquipItem } from '../api_calls/Items.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import { EquipSchema, ItemSlot } from '../types/types.js';
+import { logger, sleep } from '../utils.js';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+>>>>>>> main
 
 export class EquipObjective extends Objective {
   itemCode: string;

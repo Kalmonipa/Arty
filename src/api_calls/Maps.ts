@@ -3,9 +3,15 @@ import { GetAllMapsMapsGetParams, DataPageMapSchema } from '../types/types.js';
 import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getMaps(
+<<<<<<< HEAD
   params: GetAllMapsMapsGetParams
 ): Promise<DataPageMapSchema | ApiError> {
   const requestOptions = {
+=======
+  params: GetAllMapsMapsGetParams,
+): Promise<DataPageMapSchema | ApiError> {
+  var requestOptions = {
+>>>>>>> main
     method: 'GET',
     headers: MyHeaders,
   };
@@ -17,6 +23,7 @@ export async function getMaps(
   }
   if (params.content_type) {
     apiUrl.searchParams.set('content_type', params.content_type);
+<<<<<<< HEAD
   }
   if (params.hide_blocked_maps) {
     apiUrl.searchParams.set('hide_blocked_maps', String(params.hide_blocked_maps));
@@ -29,6 +36,8 @@ export async function getMaps(
   }
   if (params.size) {
     apiUrl.searchParams.set('size', String(params.size));
+=======
+>>>>>>> main
   }
 
   try {

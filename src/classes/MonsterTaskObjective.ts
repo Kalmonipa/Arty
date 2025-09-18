@@ -1,7 +1,8 @@
-import { getMaps } from '../api_calls/Maps';
+import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
-import { Character } from './Character';
-import { Objective } from './Objective';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
 
 export class MonsterTaskObjective extends Objective {
   type: 'monster';
@@ -26,14 +27,24 @@ export class MonsterTaskObjective extends Objective {
       this.startNewTask('monsters');
     }
 
+<<<<<<< HEAD
     const maps = (await getMaps({content_code: this.character.data.task, content_type: 'monster'})).data;
+=======
+    const maps = await getMaps({
+      content_code: this.character.data.task,
+      content_type: 'monster',
+    });
+    if (maps instanceof ApiError) {
+      return this.character.handleErrors(maps);
+    }
+>>>>>>> main
 
-    if (maps.length === 0) {
+    if (maps.data.length === 0) {
       logger.error(`Cannot find the task target. This shouldn't happen ??`);
       return;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+    const contentLocation = this.character.evaluateClosestMap(maps.data);
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

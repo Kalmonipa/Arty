@@ -1,14 +1,14 @@
-import { actionDepositItems } from '../api_calls/Actions';
-import { getMaps } from '../api_calls/Maps';
+import { actionDepositItems } from '../api_calls/Actions.js';
+import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
-import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
-import { ObjectiveTargets } from '../types/ObjectiveData';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
   BankItemTransactionResponseSchema,
   SimpleItemSchema,
-} from '../types/types';
+} from '../types/types.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;
@@ -45,14 +45,21 @@ export class DepositObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
+<<<<<<< HEAD
       const maps = (await getMaps({content_type: 'bank'})).data;
+=======
+      const maps = await getMaps({ content_type: 'bank' });
+      if (maps instanceof ApiError) {
+        return this.character.handleErrors(maps);
+      }
+>>>>>>> main
 
-      if (maps.length === 0) {
+      if (maps.data.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
         return false;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps);
+      const contentLocation = this.character.evaluateClosestMap(maps.data);
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

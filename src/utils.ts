@@ -3,6 +3,10 @@ import { SeqTransport } from '@datalust/winston-seq';
 import {
   DataPageItemSchema,
   GatheringSkill,
+<<<<<<< HEAD
+=======
+  DataPageItemSchema,
+>>>>>>> main
   ItemSchema,
   ItemType,
 } from './types/types.js';
@@ -144,14 +148,20 @@ export async function buildListOfWeapons(): Promise<
   weaponMap['combat'] = [];
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   const allWeapons: ApiError | DataPageItemSchema =
 =======
   const allWeapons: ApiError | GetAllItemsItemsGetResponse =
 >>>>>>> origin/main
     await getAllItemInformation({ type: 'weapon' });
+=======
+  const allWeapons: ApiError | DataPageItemSchema = await getAllItemInformation(
+    { type: 'weapon' },
+  );
+>>>>>>> main
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
-    return {};
+    return;
   }
 
   allWeapons.data.forEach((weapon) => {
@@ -230,8 +240,14 @@ export async function buildListOf(
 
   const itemMap: Record<string, ItemSchema[]> = {};
 
+<<<<<<< HEAD
   const allItems: ApiError | DataPageItemSchema =
     await getAllItemInformation({ type: itemType });
+=======
+  const allItems: ApiError | DataPageItemSchema = await getAllItemInformation({
+    type: itemType,
+  });
+>>>>>>> main
   if (allItems instanceof ApiError) {
     logger.error(`Failed to build list of useful ${itemType}: ${allItems}`);
     return {};

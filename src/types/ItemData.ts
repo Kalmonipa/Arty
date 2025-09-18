@@ -1,4 +1,4 @@
-import { GatheringSkill } from './types';
+import { GatheringSkill } from './types.js';
 
 export type UtilityEffects =
   | 'antipoison'

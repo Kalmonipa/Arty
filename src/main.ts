@@ -1,19 +1,24 @@
-import { Character } from './classes/Character';
-import { getCharacter } from './api_calls/Character';
+import { Character } from './classes/Character.js';
+import { getCharacter } from './api_calls/Character.js';
 import express from 'express';
-import GatherRouter from './routes/Gather';
-import TaskRouter from './routes/Task';
-import TrainSkillRouter from './routes/TrainSkill';
-import { ApiUrl, CharName, logger } from './utils';
-import JobsRouter from './routes/Jobs';
-import CraftRouter from './routes/Craft';
-import DepositRouter from './routes/Deposit';
-import EquipRouter from './routes/Equip';
-import FightRouter from './routes/Fight';
-import RecycleRouter from './routes/Recycle';
+import GatherRouter from './routes/Gather.js';
+import TaskRouter from './routes/Task.js';
+import TrainSkillRouter from './routes/TrainSkill.js';
+import { ApiUrl, CharName, logger } from './utils.js';
+import JobsRouter from './routes/Jobs.js';
+import CraftRouter from './routes/Craft.js';
+import DepositRouter from './routes/Deposit.js';
+import EquipRouter from './routes/Equip.js';
+import FightRouter from './routes/Fight.js';
+import RecycleRouter from './routes/Recycle.js';
+import { ApiError } from './classes/Error.js';
 
 async function main() {
   const charData = await getCharacter(CharName);
+  if (charData instanceof ApiError) {
+    logger.error(`Failed to get character data`);
+    return;
+  }
   const char = new Character(charData);
   await char.init();
 

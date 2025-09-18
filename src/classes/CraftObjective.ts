@@ -1,12 +1,12 @@
-import { actionCraft } from '../api_calls/Actions';
-import { getMaps } from '../api_calls/Maps';
+import { actionCraft } from '../api_calls/Actions.js';
+import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
-import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
-import { ObjectiveTargets } from '../types/ObjectiveData';
-import { getItemInformation } from '../api_calls/Items';
-import { ItemSchema, SimpleItemSchema } from '../types/types';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import { getItemInformation } from '../api_calls/Items.js';
+import { ItemSchema, SimpleItemSchema } from '../types/types.js';
 
 /**
  * @todo
@@ -79,14 +79,24 @@ export class CraftObjective extends Objective {
           return true;
         }
 
+<<<<<<< HEAD
         const maps = (await getMaps({content_code: targetItem.craft.skill, content_type: 'workshop'})).data;
+=======
+        const maps = await getMaps({
+          content_code: targetItem.craft.skill,
+          content_type: 'workshop',
+        });
+        if (maps instanceof ApiError) {
+          return this.character.handleErrors(maps);
+        }
+>>>>>>> main
 
-        if (maps.length === 0) {
+        if (maps.data.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
           return true;
         }
 
-        const contentLocation = this.character.evaluateClosestMap(maps);
+        const contentLocation = this.character.evaluateClosestMap(maps.data);
 
         for (let batch = 0; batch < this.numBatches; batch++) {
           logger.debug(`Crafting batch ${batch}/${this.numBatches}`);

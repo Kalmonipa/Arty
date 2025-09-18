@@ -1,11 +1,11 @@
-import { actionFight } from '../api_calls/Actions';
-import { getMaps } from '../api_calls/Maps';
-import { HealthStatus } from '../types/CharacterData';
+import { actionFight } from '../api_calls/Actions.js';
+import { getMaps } from '../api_calls/Maps.js';
+import { HealthStatus } from '../types/CharacterData.js';
 import { logger } from '../utils.js';
-import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
-import { ObjectiveTargets } from '../types/ObjectiveData';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
 
 /**
  * @todo
@@ -68,14 +68,21 @@ export class FightObjective extends Objective {
 
       logger.info(`Finding location of ${this.target.code}`);
 
+<<<<<<< HEAD
       const maps = (await getMaps({content_code: this.target.code})).data;
+=======
+      const maps = await getMaps({ content_code: this.target.code });
+      if (maps instanceof ApiError) {
+        return this.character.handleErrors(maps);
+      }
+>>>>>>> main
 
-      if (maps.length === 0) {
+      if (maps.data.length === 0) {
         logger.error(`Cannot find any maps for ${this.target.code}`);
         return false;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps);
+      const contentLocation = this.character.evaluateClosestMap(maps.data);
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 

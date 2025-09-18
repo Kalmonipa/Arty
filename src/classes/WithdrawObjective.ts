@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { actionWithdrawItem } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
 <<<<<<< HEAD
@@ -9,6 +10,16 @@ import { logger, sleep } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
+=======
+import { actionWithdrawItem } from '../api_calls/Actions.js';
+import { actionUnequipItem } from '../api_calls/Items.js';
+import { getMaps } from '../api_calls/Maps.js';
+import { ItemSlot, UnequipSchema } from '../types/types.js';
+import { logger, sleep } from '../utils.js';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+>>>>>>> main
 
 export class WithdrawObjective extends Objective {
   itemCode: string;
@@ -40,14 +51,21 @@ export class WithdrawObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
+<<<<<<< HEAD
       const maps = (await getMaps({content_type: 'bank'})).data;
+=======
+      const maps = await getMaps({ content_type: 'bank' });
+      if (maps instanceof ApiError) {
+        return this.character.handleErrors(maps);
+      }
+>>>>>>> main
 
-      if (maps.length === 0) {
+      if (maps.data.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
         return true;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps);
+      const contentLocation = this.character.evaluateClosestMap(maps.data);
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
