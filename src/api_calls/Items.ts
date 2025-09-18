@@ -2,10 +2,10 @@ import { ApiError } from '../classes/Error.js';
 import { ApiUrl, MyHeaders, sleep } from '../utils.js';
 import {
   CharacterSchema,
+  DataPageItemSchema,
   EquipmentResponseSchema,
   EquipSchema,
-  GetAllItemsItemsGetData,
-  GetAllItemsItemsGetResponse,
+  GetAllItemsItemsGetParams,
   ItemResponseSchema,
   ItemSchema,
   SimpleItemSchema,
@@ -208,8 +208,8 @@ export async function actionUse(
  * @returns
  */
 export async function getAllItemInformation(
-  data: GetAllItemsItemsGetData['query'],
-): Promise<GetAllItemsItemsGetResponse | ApiError> {
+  data: GetAllItemsItemsGetParams,
+): Promise<DataPageItemSchema | ApiError> {
   var requestOptions = {
     method: 'GET',
     headers: MyHeaders,

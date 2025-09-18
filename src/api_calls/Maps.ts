@@ -1,5 +1,5 @@
 import { ApiError } from '../classes/Error.js';
-import { GetAllMapsMapsGetResponse } from '../types/types.js';
+import {  } from '../types/types.js';
 import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getMaps(
