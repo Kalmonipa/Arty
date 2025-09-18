@@ -3,7 +3,7 @@ import { actionUnequipItem } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { ItemSlot, UnequipSchema } from '../types/types.js';
 import { logger, sleep } from '../utils.js';
-import { Character } from './Character';
+import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 

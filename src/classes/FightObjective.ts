@@ -2,10 +2,10 @@ import { actionFight } from '../api_calls/Actions.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { HealthStatus } from '../types/CharacterData.js';
 import { logger } from '../utils.js';
-import { Character } from './Character';
+import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { ObjectiveTargets } from '../types/ObjectiveData';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
 
 /**
  * @todo

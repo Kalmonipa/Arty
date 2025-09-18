@@ -1,8 +1,8 @@
 import { actionEquipItem } from '../api_calls/Items.js';
-import { ObjectiveTargets } from '../types/ObjectiveData';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { EquipSchema, ItemSlot } from '../types/types.js';
 import { logger, sleep } from '../utils.js';
-import { Character } from './Character';
+import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 

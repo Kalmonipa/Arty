@@ -1,6 +1,6 @@
 import * as crypto from 'node:crypto';
-import { ObjectiveStatus, ObjectiveTargets } from '../types/ObjectiveData';
-import { Character } from './Character';
+import { ObjectiveStatus, ObjectiveTargets } from '../types/ObjectiveData.js';
+import { Character } from './Character.js';
 import { logger, sleep } from '../utils.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
