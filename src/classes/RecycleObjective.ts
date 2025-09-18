@@ -1,5 +1,5 @@
 import { getMaps } from '../api_calls/Maps';
-import { logger } from '../utils';
+import { logger } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

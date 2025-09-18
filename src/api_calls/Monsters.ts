@@ -1,9 +1,9 @@
-import { ApiError } from '../classes/Error';
+import { ApiError } from '../classes/Error.js';
 import {
   GetAllMonstersMonstersGetParams,
   DataPageMonsterSchema,
-} from '../types/types';
-import { ApiUrl, MyHeaders } from '../utils';
+} from '../types/types.js';
+import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getMonsterInformation(
   data: GetAllMonstersMonstersGetParams,
@@ -44,6 +44,6 @@ export async function getMonsterInformation(
     }
     return await response.json();
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

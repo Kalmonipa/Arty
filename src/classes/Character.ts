@@ -2,10 +2,10 @@ import {
   actionDepositItems,
   actionMove,
   actionRest,
-} from '../api_calls/Actions';
-import { actionUse, getItemInformation } from '../api_calls/Items';
-import { getMaps } from '../api_calls/Maps';
-import { HealthStatus } from '../types/CharacterData';
+} from '../api_calls/Actions.js';
+import { actionUse, getItemInformation } from '../api_calls/Items.js';
+import { getMaps } from '../api_calls/Maps.js';
+import { HealthStatus } from '../types/CharacterData.js';
 import {
   CharacterSchema,
   CraftSkill,
@@ -16,24 +16,24 @@ import {
   MapSchema,
   SimpleItemSchema,
   Skill,
-} from '../types/types';
-import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils';
-import { CraftObjective } from './CraftObjective';
-import { DepositObjective } from './DepositObjective';
-import { ApiError } from './Error';
-import { GatherObjective } from './GatherObjective';
-import { Objective } from './Objective';
-import { FightObjective } from './FightObjective';
-import { EquipObjective } from './EquipObjective';
-import { UnequipObjective } from './UnequipObjective';
-import { WithdrawObjective } from './WithdrawObjective';
-import { MonsterTaskObjective } from './MonsterTaskObjective';
-import { getBankItems } from '../api_calls/Bank';
-import { ItemTaskObjective } from './ItemTaskObjective';
-import { UtilityEffects, WeaponFlavours } from '../types/ItemData';
-import { SimpleMapSchema } from '../types/MapData';
-import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective';
-import { TidyBankObjective } from './TidyBankObjective';
+} from '../types/types.js';
+import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils.js';
+import { CraftObjective } from './CraftObjective.js';
+import { DepositObjective } from './DepositObjective.js';
+import { ApiError } from './Error.js';
+import { GatherObjective } from './GatherObjective.js';
+import { Objective } from './Objective.js';
+import { FightObjective } from './FightObjective.js';
+import { EquipObjective } from './EquipObjective.js';
+import { UnequipObjective } from './UnequipObjective.js';
+import { WithdrawObjective } from './WithdrawObjective.js';
+import { MonsterTaskObjective } from './MonsterTaskObjective.js';
+import { getBankItems } from '../api_calls/Bank.js';
+import { ItemTaskObjective } from './ItemTaskObjective.js';
+import { UtilityEffects, WeaponFlavours } from '../types/ItemData.js';
+import { SimpleMapSchema } from '../types/MapData.js';
+import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
+import { TidyBankObjective } from './TidyBankObjective.js';
 
 export class Character {
   data: CharacterSchema;

@@ -1,7 +1,11 @@
 import * as crypto from 'node:crypto';
 import { ObjectiveStatus } from '../types/ObjectiveData';
 import { Character } from './Character';
+<<<<<<< HEAD
 import { logger } from '../utils';
+=======
+import { logger, sleep } from '../utils.js';
+>>>>>>> main
 import { getMaps } from '../api_calls/Maps';
 import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
 import { ApiError } from './Error';

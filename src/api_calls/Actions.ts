@@ -1,4 +1,4 @@
-import { ApiError } from '../classes/Error';
+import { ApiError } from '../classes/Error.js';
 import {
   BankGoldTransactionResponseSchema,
   BankItemTransactionResponseSchema,
@@ -10,8 +10,8 @@ import {
   DestinationSchema,
   SimpleItemSchema,
   SkillResponseSchema,
-} from '../types/types';
-import { ApiUrl, MyHeaders, logger, sleep } from '../utils';
+} from '../types/types.js';
+import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
 
 /**
  * @description craft the specified item
@@ -53,6 +53,9 @@ export async function actionCraft(
         case 497:
           message = 'The characters inventory is full.';
           break;
+        default:
+          message = 'Unknown error from /action/crafting';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -69,7 +72,7 @@ export async function actionCraft(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -114,6 +117,9 @@ export async function actionDepositGold(
         case 499:
           message = 'The character is in cooldown.';
           break;
+        default:
+          message = 'Unknown error from /action/bank/deposit/gold';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -127,7 +133,7 @@ export async function actionDepositGold(
     );
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -172,6 +178,9 @@ export async function actionDepositItems(
         case 486:
           message = 'An action is already in progress for this character.';
           break;
+        default:
+          message = 'Unknown error from /action/bank/deposit/item';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -191,7 +200,7 @@ export async function actionDepositItems(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -237,6 +246,9 @@ export async function actionFight(
         case 598:
           message = 'Monster not found on this map.';
           break;
+        default:
+          message = 'Unknown error from /action/fight';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -253,7 +265,7 @@ export async function actionFight(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -288,6 +300,9 @@ export async function actionGather(
         case 499:
           message = 'The character is in cooldown.';
           break;
+        default:
+          message = 'Unknown error from /action/gathering';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -306,7 +321,7 @@ export async function actionGather(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -350,6 +365,9 @@ export async function actionMove(
         case 499:
           message = 'The character is in cooldown.';
           break;
+        default:
+          message = 'Unknown error from /action/move';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -366,7 +384,7 @@ export async function actionMove(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -396,6 +414,9 @@ export async function actionRest(
         case 499:
           message = 'The character is in cooldown.';
           break;
+        default:
+          message = 'Unknown error from /action/rest';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -412,7 +433,7 @@ export async function actionRest(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -457,6 +478,9 @@ export async function actionWithdrawItem(
         case 497:
           message = "The character's inventory is full.";
           break;
+        default:
+          message = 'Unknown error from /action/withdraw/item';
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -476,6 +500,6 @@ export async function actionWithdrawItem(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

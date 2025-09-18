@@ -1,6 +1,6 @@
 import { getResourceInformation } from '../api_calls/Resources';
 import { DataPageResourceSchema, GatheringSkill } from '../types/types';
-import { logger } from '../utils';
+import { logger } from '../utils.js';
 import { Character } from './Character';
 import { Objective } from './Objective';
 

@@ -1,6 +1,6 @@
 import { getAllItemInformation } from '../api_calls/Items';
 import { CraftSkill, ItemSchema } from '../types/types';
-import { logger } from '../utils';
+import { logger } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

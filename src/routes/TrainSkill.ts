@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../classes/Character';
 import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObjective';
-import { isGatheringSkill, logger } from '../utils';
+import { isGatheringSkill, logger } from '../utils.js';
 import { GatheringSkill } from '../types/types';
 
 export default function TrainSkillRouter(char: Character) {

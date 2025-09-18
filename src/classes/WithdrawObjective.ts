@@ -1,6 +1,11 @@
 import { actionWithdrawItem } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
+<<<<<<< HEAD
 import { logger } from '../utils';
+=======
+import { ItemSlot, UnequipSchema } from '../types/types';
+import { logger, sleep } from '../utils.js';
+>>>>>>> main
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

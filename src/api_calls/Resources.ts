@@ -1,13 +1,13 @@
-import { ApiError } from '../classes/Error';
+import { ApiError } from '../classes/Error.js';
 import {
   DataPageResourceSchema,
   GetAllResourcesResourcesGetParams,
-} from '../types/types';
-import { ApiUrl, MyHeaders } from '../utils';
+} from '../types/types.js';
+import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getResourceInformation(
   data: GetAllResourcesResourcesGetParams,
-): Promise<DataPageResourceSchema> {
+): Promise<DataPageResourceSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -44,6 +44,6 @@ export async function getResourceInformation(
     }
     return await response.json();
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

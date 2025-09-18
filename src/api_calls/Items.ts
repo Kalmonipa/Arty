@@ -1,5 +1,5 @@
-import { ApiError } from '../classes/Error';
-import { ApiUrl, getRequestOptions, MyHeaders, sleep } from '../utils';
+import { ApiError } from '../classes/Error.js';
+import { ApiUrl, MyHeaders, sleep } from '../utils.js';
 import {
   CharacterSchema,
   DataPageItemSchema,
@@ -11,7 +11,7 @@ import {
   SimpleItemSchema,
   UnequipSchema,
   UseItemResponseSchema,
-} from '../types/types';
+} from '../types/types.js';
 
 /**
  * API call to equip the item
@@ -57,6 +57,9 @@ export async function actionEquipItem(
         case 496:
           message = 'Character does not meet the required condition';
           break;
+                default:
+          message = 'Unknown error from /action/equip'
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -73,7 +76,7 @@ export async function actionEquipItem(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -117,6 +120,9 @@ export async function actionUnequipItem(
         case 491:
           message = 'The equipment slot is empty.';
           break;
+        default:
+          message = 'Unknown error from /action/unequip'
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -133,7 +139,7 @@ export async function actionUnequipItem(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -173,6 +179,9 @@ export async function actionUse(
         case 496:
           message = 'The character does not meet the required condition.';
           break;
+        default:
+          message = 'Unknown error from /action/use'
+          break;
       }
       throw new ApiError({
         code: response.status,
@@ -189,7 +198,7 @@ export async function actionUse(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -203,33 +212,35 @@ export async function getAllItemInformation(
 ): Promise<DataPageItemSchema | ApiError> {
   const apiUrl = new URL(`${ApiUrl}/items`);
 
-  if (data.craft_material) {
+  if (data?.craft_material) {
     apiUrl.searchParams.set('craft_material', data.craft_material);
   }
-  if (data.craft_skill) {
+  if (data?.craft_skill) {
     apiUrl.searchParams.set('craft_skill', data.craft_skill);
   }
-  if (data.max_level) {
+  if (data?.max_level) {
     apiUrl.searchParams.set('max_level', data.max_level.toString());
   }
-  if (data.min_level) {
+  if (data?.min_level) {
     apiUrl.searchParams.set('min_level', data.min_level.toString());
   }
-  if (data.name) {
+  if (data?.name) {
     apiUrl.searchParams.set('name', data.name);
   }
-  if (data.page) {
+  if (data?.page) {
     apiUrl.searchParams.set('page', data.page.toString());
   }
-  if (data.size) {
+  if (data?.size) {
     apiUrl.searchParams.set('size', data.size.toString());
   }
-  if (data.type) {
+  if (data?.type) {
     apiUrl.searchParams.set('type', data.type);
   }
 
   try {
     const response = await fetch(apiUrl, getRequestOptions);
+
+    // ToDo: add more error handling
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
@@ -238,7 +249,7 @@ export async function getAllItemInformation(
     }
     return await response.json();
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -253,6 +264,7 @@ export async function getItemInformation(
   try {
     const response = await fetch(`${ApiUrl}/items/${code}`, getRequestOptions);
 
+    // ToDo: add more error handling into here
     if (response.status === 404) {
       throw new ApiError({
         code: response.status,
@@ -264,6 +276,6 @@ export async function getItemInformation(
 
     return data.data;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

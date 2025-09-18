@@ -1,7 +1,7 @@
 import { actionFight } from '../api_calls/Actions';
 import { getMaps } from '../api_calls/Maps';
 import { HealthStatus } from '../types/CharacterData';
-import { logger } from '../utils';
+import { logger } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

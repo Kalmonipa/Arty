@@ -1,7 +1,7 @@
 import { getItemInformation } from '../api_calls/Items';
 import { actionTasksTrade } from '../api_calls/Tasks';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types';
-import { logger } from '../utils';
+import { logger } from '../utils.js';
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';

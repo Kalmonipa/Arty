@@ -1,12 +1,12 @@
-import { ApiError } from '../classes/Error';
+import { ApiError } from '../classes/Error.js';
 import {
   CharacterSchema,
   RewardDataResponseSchema,
   SimpleItemSchema,
   TaskResponseSchema,
   TaskTradeResponseSchema,
-} from '../types/types';
-import { ApiUrl, MyHeaders, logger, sleep } from '../utils';
+} from '../types/types.js';
+import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
 
 export async function actionAcceptNewTask(
   character: CharacterSchema,
@@ -42,6 +42,8 @@ export async function actionAcceptNewTask(
         case 598:
           message = 'Tasks Master not found on this map.';
           break;
+        default:
+          message = 'Unknown error from /action/task/new'
       }
       throw new ApiError({
         code: response.status,
@@ -69,7 +71,7 @@ export async function actionAcceptNewTask(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -107,6 +109,8 @@ export async function actionCompleteTask(
         case 598:
           message = 'Tasks Master not found on this map.';
           break;
+        default:
+          message = 'Unknown error from /action/task/complete'
       }
       throw new ApiError({
         code: response.status,
@@ -130,7 +134,7 @@ export async function actionCompleteTask(
 
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }
 
@@ -173,6 +177,8 @@ export async function actionTasksTrade(
         case 598:
           message = 'Tasks Master not found on this map.';
           break;
+        default:
+          message = 'Unknown error from /action/task/trade'
       }
       throw new ApiError({
         code: response.status,
@@ -192,6 +198,6 @@ export async function actionTasksTrade(
     );
     return result;
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

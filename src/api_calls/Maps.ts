@@ -1,10 +1,10 @@
-import { ApiError } from '../classes/Error';
-import { DataPageMapSchema, GetAllMapsMapsGetParams } from '../types/types';
-import { ApiUrl, MyHeaders } from '../utils';
+import { ApiError } from '../classes/Error.js';
+import { GetAllMapsMapsGetParams, DataPageMapSchema } from '../types/types.js';
+import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getMaps(
   params: GetAllMapsMapsGetParams
-): Promise<DataPageMapSchema> {
+): Promise<DataPageMapSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -41,6 +41,6 @@ export async function getMaps(
     }
     return await response.json();
   } catch (error) {
-    return error;
+    return error as ApiError;
   }
 }

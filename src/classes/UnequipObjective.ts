@@ -1,6 +1,10 @@
 import { actionUnequipItem } from '../api_calls/Items';
 import { ItemSlot, UnequipSchema } from '../types/types';
+<<<<<<< HEAD
 import { logger } from '../utils';
+=======
+import { logger, sleep } from '../utils.js';
+>>>>>>> main
 import { Character } from './Character';
 import { ApiError } from './Error';
 import { Objective } from './Objective';
