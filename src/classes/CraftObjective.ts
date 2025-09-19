@@ -64,7 +64,7 @@ export class CraftObjective extends Objective {
       } else {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
-          this.character.removeJob(this.objectiveId);
+          //this.character.removeJob(this.objectiveId);
           return false;
         }
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
@@ -99,7 +99,7 @@ export class CraftObjective extends Objective {
 
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
-            this.character.removeJob(this.objectiveId);
+            //this.character.removeJob(this.objectiveId);
             return false;
           }
 
@@ -216,7 +216,7 @@ export class CraftObjective extends Objective {
         if (numInInv < totalNumNeededToCraft) {
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
-            this.character.removeJob(this.objectiveId);
+            //this.character.removeJob(this.objectiveId);
             return false;
           }
 

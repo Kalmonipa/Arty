@@ -35,7 +35,7 @@ export class ItemTaskObjective extends Objective {
   async doTask(): Promise<boolean> {
     if (this.isCancelled()) {
       logger.info(`${this.objectiveId} has been cancelled`);
-      this.character.removeJob(this.objectiveId);
+      //this.character.removeJob(this.objectiveId);
       return false;
     }
 
@@ -60,7 +60,7 @@ export class ItemTaskObjective extends Objective {
       ) {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
-          this.character.removeJob(this.objectiveId);
+          //this.character.removeJob(this.objectiveId);
           return false;
         }
 

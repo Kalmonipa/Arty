@@ -30,6 +30,9 @@ export abstract class Objective {
 
   async execute(): Promise<boolean> {
     this.character.isIdle = false;
+    if (this.status === 'cancelled') {
+      return false;
+    }
     this.startJob();
 
     await this.runSharedPrereqChecks();
@@ -59,6 +62,16 @@ export abstract class Objective {
   }
 
   /**
+   * @description Cancels the currently active job
+   * @todo Implement some cancel logic
+   */
+  cancelJob(): boolean {
+    logger.info(`Setting status of ${this.objectiveId} to 'cancelled'`);
+    this.status = 'cancelled';
+    return true;
+  }
+
+  /**
    * @description Sets the status of the job to 'in_progress'
    */
   startJob() {
@@ -74,8 +87,12 @@ export abstract class Objective {
       logger.info(`Setting status of ${this.objectiveId} to 'complete'`);
       this.status = 'complete';
     } else {
-      logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
-      this.status = 'failed';
+      if (this.status === 'cancelled') {
+        return;
+      } else {
+        logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
+        this.status = 'failed';
+      }
     }
   }
 

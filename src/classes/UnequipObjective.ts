@@ -27,7 +27,7 @@ export class UnequipObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        this.character.removeJob(this.objectiveId);
+        //this.character.removeJob(this.objectiveId);
         return false;
       }
 

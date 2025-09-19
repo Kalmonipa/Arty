@@ -46,7 +46,7 @@ export class RecycleObjective extends Objective {
 
     if (this.isCancelled()) {
       logger.info(`${this.objectiveId} has been cancelled`);
-      this.character.removeJob(this.objectiveId);
+      //this.character.removeJob(this.objectiveId);
       return false;
     }
 

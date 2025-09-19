@@ -34,6 +34,7 @@ import { UtilityEffects, WeaponFlavours } from '../types/ItemData.js';
 import { SimpleMapSchema } from '../types/MapData.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
+import { actionBuyItem, actionSellItem } from '../api_calls/NPC.js';
 
 export class Character {
   data: CharacterSchema;
@@ -109,15 +110,6 @@ export class Character {
   /********
    * Job functions
    ********/
-
-  /**
-   * @description Cancels the currently active job
-   * @todo Implement some cancel logic
-   */
-  cancelJob(obj: Objective): boolean {
-    obj.status = 'cancelled';
-    return true;
-  }
 
   /**
    * @description Lists the names of all the objectivs in the queue
@@ -218,6 +210,9 @@ export class Character {
       } else if (this.jobList.length > 0) {
         logger.info(`Executing job ${this.jobList[0].objectiveId}`);
         await this.jobList[0].execute();
+        // ToDo: cancelling the active job then makes this fail because we already remove the job
+        // in the cancelled job check so there are no jobs to remove
+        // Find a better way to handle this
         this.removeJob(this.jobList[0].objectiveId);
       }
     }
@@ -447,7 +442,10 @@ export class Character {
 
     const useResponse = await actionUse(this.data, {
       code: this.preferredFood,
-      quantity: Math.min(amountNeededToEat, this.checkQuantityOfItemInInv(this.preferredFood)), // Eat the smaller of amount needed and number in inventory 
+      quantity: Math.min(
+        amountNeededToEat,
+        this.checkQuantityOfItemInInv(this.preferredFood),
+      ), // Eat the smaller of amount needed and number in inventory
     });
     if (useResponse instanceof ApiError) {
       this.handleErrors(useResponse);
@@ -550,13 +548,15 @@ export class Character {
   async topUpFood(priorLocation?: DestinationSchema) {
     if (!this.preferredFood) {
       logger.debug(`No preferred food set to top up`);
-      this.setPreferredFood()
+      this.setPreferredFood();
       return;
     }
 
     // Check to make sure we have enough preferred food in the bank. If not then pick a new preferred food
-    if (await this.checkQuantityOfItemInBank(this.preferredFood) < this.minFood) {
-      this.setPreferredFood()
+    if (
+      (await this.checkQuantityOfItemInBank(this.preferredFood)) < this.minFood
+    ) {
+      this.setPreferredFood();
     }
 
     const numNeeded =
@@ -566,6 +566,68 @@ export class Character {
 
     if (priorLocation) {
       await this.move(priorLocation);
+    }
+  }
+
+  /**
+   * @description Find the NPC and buy from them
+   */
+  async buyFromNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
+    // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
+    // Make it into it's own function and just call it
+    const maps = await getMaps({
+      content_code: npcCode,
+      content_type: 'npc',
+    });
+    if (maps instanceof ApiError) {
+      return await this.handleErrors(maps);
+    }
+
+    if (maps.data.length === 0) {
+      logger.error(`Cannot find any maps for ${npcCode}`);
+      return false;
+    }
+
+    const traderLocation = this.evaluateClosestMap(maps.data);
+
+    await this.move(traderLocation);
+
+    let buyResponse = await actionBuyItem(this.data, items);
+    if (buyResponse instanceof ApiError) {
+      return this.handleErrors(buyResponse);
+    } else {
+      this.data = buyResponse.character;
+      return true;
+    }
+  }
+
+  /**
+   * @description Find the NPC and sell to them
+   */
+  async sellToNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
+    const maps = await getMaps({
+      content_code: npcCode,
+      content_type: 'npc',
+    });
+    if (maps instanceof ApiError) {
+      return await this.handleErrors(maps);
+    }
+
+    if (maps.data.length === 0) {
+      logger.error(`Cannot find any maps for ${npcCode}`);
+      return false;
+    }
+
+    const traderLocation = this.evaluateClosestMap(maps.data);
+
+    await this.move(traderLocation);
+
+    let sellResponse = await actionSellItem(this.data, items);
+    if (sellResponse instanceof ApiError) {
+      return this.handleErrors(sellResponse);
+    } else {
+      this.data = sellResponse.character;
+      return true;
     }
   }
 
@@ -590,11 +652,14 @@ export class Character {
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
     let usedInventorySpace = this.getInventoryFullness();
-    if (usedInventorySpace >= this.data.inventory_max_items * 0.9 || makeSpaceForOtherItems) {
+    if (
+      usedInventorySpace >= this.data.inventory_max_items * 0.9 ||
+      makeSpaceForOtherItems
+    ) {
       logger.warn(`Inventory is almost full. Depositing items`);
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
-        logger.warn(`Failed to get bank map`)
+        logger.warn(`Failed to get bank map`);
         return this.handleErrors(maps);
       }
 
@@ -658,51 +723,51 @@ export class Character {
       }
     } else {
       logger.debug(`No preferred food. Finding one`);
-      return await this.setPreferredFood()
+      return await this.setPreferredFood();
     }
   }
 
   async setPreferredFood(): Promise<boolean> {
-      const foundItem = this.data.inventory.find((invItem) => {
+    const foundItem = this.data.inventory.find((invItem) => {
+      return this.consumablesMap.heal.find(
+        (item) => invItem.code === item.code,
+      );
+    });
+
+    if (foundItem && foundItem.quantity > this.minFood) {
+      logger.debug(
+        `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
+      );
+      this.preferredFood = foundItem.code;
+
+      if (foundItem.quantity <= this.minFood) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+    logger.debug(`Not enough food in inventory. Checking bank to find some`);
+    const bankItems = await getBankItems();
+    if (bankItems instanceof ApiError) {
+      this.handleErrors(bankItems);
+    } else if (!bankItems) {
+      logger.info(`No food items in the bank`);
+      return true;
+    } else {
+      const foundItem = bankItems.data.find((bankItem) => {
         return this.consumablesMap.heal.find(
-          (item) => invItem.code === item.code,
+          (item) => bankItem.code === item.code,
         );
       });
 
-      if (foundItem && foundItem.quantity > this.minFood) {
+      if (foundItem) {
         logger.debug(
-          `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
+          `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
         );
         this.preferredFood = foundItem.code;
-
-        if (foundItem.quantity <= this.minFood) {
-          return false;
-        } else {
-          return true;
-        }
-      }
-      logger.debug(`Not enough food in inventory. Checking bank to find some`);
-      const bankItems = await getBankItems();
-      if (bankItems instanceof ApiError) {
-        this.handleErrors(bankItems);
-      } else if (!bankItems) {
-        logger.info(`No food items in the bank`);
         return true;
-      } else {
-        const foundItem = bankItems.data.find((bankItem) => {
-          return this.consumablesMap.heal.find(
-            (item) => bankItem.code === item.code,
-          );
-        });
-
-        if (foundItem) {
-          logger.debug(
-            `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
-          );
-          this.preferredFood = foundItem.code;
-          return true;
-        }
       }
+    }
   }
 
   /**
@@ -945,14 +1010,19 @@ export class Character {
    * @description withdraw the specified items from the bank
    */
   async withdraw(quantity: number, itemCode: string) {
-    this.appendJob(new WithdrawObjective(this, itemCode, quantity));
+    this.appendJob(
+      new WithdrawObjective(this, { code: itemCode, quantity: quantity }),
+    );
   }
 
   /**
    * @description withdraw the specified items from the bank
    */
   async withdrawNow(quantity: number, itemCode: string): Promise<boolean> {
-    const withdrawJob = new WithdrawObjective(this, itemCode, quantity);
+    const withdrawJob = new WithdrawObjective(this, {
+      code: itemCode,
+      quantity: quantity,
+    });
     return await withdrawJob.execute();
   }
 
@@ -980,7 +1050,7 @@ export class Character {
         return false;
       case 493: // Character's level is too low
         // ToDo: Maybe train the skill to the required level?
-        return false
+        return false;
       case 497: // The character's inventory is full.
         await this.evaluateDepositItemsInBank(
           this.itemsToKeep,

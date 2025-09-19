@@ -177,7 +177,7 @@ export class GatherObjective extends Objective {
 
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled.`);
-        this.character.removeJob(this.objectiveId);
+        //this.character.removeJob(this.objectiveId);
         return false;
       }
     }
@@ -215,7 +215,7 @@ export class GatherObjective extends Objective {
 
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled.`);
-          this.character.removeJob(this.objectiveId);
+          //this.character.removeJob(this.objectiveId);
           return false;
         }
       }
@@ -273,7 +273,7 @@ export class GatherObjective extends Objective {
 
     if (this.isCancelled()) {
       logger.info(`${this.objectiveId} has been cancelled.`);
-      this.character.removeJob(this.objectiveId);
+      //this.character.removeJob(this.objectiveId);
       return false;
     }
 

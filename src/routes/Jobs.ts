@@ -48,7 +48,7 @@ export default function JobsRouter(char: Character) {
       }
 
       let obj = char.jobList.find((obj) => objId === obj.objectiveId);
-      const result = char.cancelJob(obj);
+      const result = obj.cancelJob();
 
       if (!result) {
         return res.status(404).json({
