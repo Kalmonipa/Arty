@@ -292,7 +292,7 @@ export class GatherObjective extends Objective {
           y: contentLocation.y,
         },
       );
+      return true;
     }
-    return false;
   }
 }

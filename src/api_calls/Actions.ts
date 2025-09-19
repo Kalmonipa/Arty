@@ -310,9 +310,11 @@ export async function actionGather(
       });
     }
 
-    logger.info(`Gathering at x: ${character.x}, y: ${character.y}`);
-
     const result: SkillResponseSchema = await response.json();
+    
+    for (const item of result.data.details.items) {
+      logger.info(`Gathered ${item.quantity} ${item.code} at x: ${character.x}, y: ${character.y}`);
+    }
 
     await sleep(
       result.data.cooldown.remaining_seconds,
