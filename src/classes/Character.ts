@@ -78,7 +78,7 @@ export class Character {
    * The code of the food we're currently using. Saving it as a var so
    * I don't have to search my inv to figure out what to use
    */
-  preferredFood: string = '';
+  preferredFood: string;
   /**
    * Desired number of food in inventory
    */
@@ -86,7 +86,7 @@ export class Character {
   /**
    *  Minimum food in inventory when going into a fight
    */
-  minFood = 10;
+  minFood = 15;
 
   /**
    * List of items to keep when doing a deposit all
@@ -433,12 +433,12 @@ export class Character {
   async eatFood() {
     const healthStatus: HealthStatus = this.checkHealth();
 
-    const preferredFoodInfo = this.consumablesMap.heal
+    const preferredFoodHealValue = this.consumablesMap.heal
       .find((food) => food.code === this.preferredFood)
       .effects.find((effect) => effect.code === 'heal').value;
 
     const amountNeededToEat = Math.ceil(
-      healthStatus.difference / preferredFoodInfo,
+      healthStatus.difference / preferredFoodHealValue,
     );
 
     logger.info(
@@ -447,7 +447,7 @@ export class Character {
 
     const useResponse = await actionUse(this.data, {
       code: this.preferredFood,
-      quantity: amountNeededToEat,
+      quantity: Math.min(amountNeededToEat, this.checkQuantityOfItemInInv(this.preferredFood)), // Eat the smaller of amount needed and number in inventory 
     });
     if (useResponse instanceof ApiError) {
       this.handleErrors(useResponse);
@@ -550,7 +550,13 @@ export class Character {
   async topUpFood(priorLocation?: DestinationSchema) {
     if (!this.preferredFood) {
       logger.debug(`No preferred food set to top up`);
+      this.setPreferredFood()
       return;
+    }
+
+    // Check to make sure we have enough preferred food in the bank. If not then pick a new preferred food
+    if (await this.checkQuantityOfItemInBank(this.preferredFood) < this.minFood) {
+      this.setPreferredFood()
     }
 
     const numNeeded =
@@ -652,14 +658,18 @@ export class Character {
       }
     } else {
       logger.debug(`No preferred food. Finding one`);
+      return await this.setPreferredFood()
+    }
+  }
 
+  async setPreferredFood(): Promise<boolean> {
       const foundItem = this.data.inventory.find((invItem) => {
         return this.consumablesMap.heal.find(
           (item) => invItem.code === item.code,
         );
       });
 
-      if (foundItem) {
+      if (foundItem && foundItem.quantity > this.minFood) {
         logger.debug(
           `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
         );
@@ -671,7 +681,7 @@ export class Character {
           return true;
         }
       }
-      logger.debug(`No food in inventory. Checking bank to find some`);
+      logger.debug(`Not enough food in inventory. Checking bank to find some`);
       const bankItems = await getBankItems();
       if (bankItems instanceof ApiError) {
         this.handleErrors(bankItems);
@@ -693,7 +703,6 @@ export class Character {
           return true;
         }
       }
-    }
   }
 
   /**
