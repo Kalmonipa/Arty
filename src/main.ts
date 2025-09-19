@@ -18,6 +18,8 @@ async function main() {
   if (charData instanceof ApiError) {
     logger.error(`Failed to get character data`);
     return;
+  } else {
+    logger.debug(`Gathered data for ${charData.name}`)
   }
   const char = new Character(charData);
   await char.init();

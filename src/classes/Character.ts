@@ -584,10 +584,11 @@ export class Character {
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
     let usedInventorySpace = this.getInventoryFullness();
-    if (usedInventorySpace >= 90 || makeSpaceForOtherItems) {
+    if (usedInventorySpace >= this.data.inventory_max_items * 0.9 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing items`);
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
+        logger.warn(`Failed to get bank map`)
         return this.handleErrors(maps);
       }
 
@@ -599,7 +600,7 @@ export class Character {
       for (const item of this.data.inventory) {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
-          break;
+          continue;
         } else if (exceptions && exceptions.includes(item.code)) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
@@ -968,13 +969,15 @@ export class Character {
         return true;
       case 488: // Character has not completed the task. Should not retry completing task
         return false;
+      case 493: // Character's level is too low
+        // ToDo: Maybe train the skill to the required level?
+        return false
       case 497: // The character's inventory is full.
         await this.evaluateDepositItemsInBank(
           this.itemsToKeep,
           { x: this.data.x, y: this.data.y },
           true,
         );
-        //await this.depositAllItems();
         return true;
       case 499:
         await sleep(this.data.cooldown, 'cooldown');
