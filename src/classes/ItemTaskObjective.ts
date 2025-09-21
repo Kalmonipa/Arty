@@ -111,12 +111,17 @@ export class ItemTaskObjective extends Objective {
           await this.character.craftNow(numToGather, this.character.data.task);
         } else {
           logger.debug(`${taskInfo.code} is a gather resource. Gathering...`);
-          await this.character.gatherNow(
+          // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
+          // This happens sometimes with fish when our cooking level is high 
+          // but fishing might be too low to actually gather the required ingredient
+          if (!await this.character.gatherNow(
             numToGather,
             this.character.data.task,
             true,
             true,
-          );
+          )) {
+            return false;
+          }
         }
       }
     }
