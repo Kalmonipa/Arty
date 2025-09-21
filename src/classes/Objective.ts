@@ -3,7 +3,7 @@ import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
 import { logger, sleep } from '../utils.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks.js';
+import { actionAcceptNewTask, actionCancelTask, actionCompleteTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { TaskType } from '../types/types.js';
 
@@ -13,11 +13,15 @@ export abstract class Objective {
   progress: number;
   status: ObjectiveStatus;
   maxRetries: number = 3;
+  parentId?: string;
+  childId?: string;
 
   constructor(
     character: Character,
     objectiveId: string,
     status: ObjectiveStatus,
+    parentId?: string,
+    childId?: string,
   ) {
     this.character = character;
     // appending a random string to the objectiveId to ensure uniqueness
@@ -26,6 +30,8 @@ export abstract class Objective {
     this.status = status;
 
     this.progress = 0;
+    this.parentId = parentId;
+    this.childId = childId;
   }
 
   async execute(): Promise<boolean> {
@@ -63,12 +69,19 @@ export abstract class Objective {
 
   /**
    * @description Cancels the currently active job
-   * @todo Implement some cancel logic
    */
   cancelJob(): boolean {
     logger.info(`Setting status of ${this.objectiveId} to 'cancelled'`);
     this.status = 'cancelled';
     return true;
+  }
+
+  /**
+   * @description If the parent job has been cancelled we should cancel any child jobs
+   * @todo Implement this
+   */
+  cancelIfParentIsCancelled(): boolean {
+    return false
   }
 
   /**
@@ -106,6 +119,29 @@ export abstract class Objective {
       return true;
     } else {
       return false;
+    }
+  }
+
+
+  /********
+   * Task functions
+   ********/
+
+  /**
+   * @description Withdraws a task coin, moves to the task master and cancels the current task
+   */
+  async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
+    if (!await this.character.withdrawNow(1, 'tasks_coin')) {
+      return false
+    }
+
+    await this.moveToTaskMaster(taskType)
+
+    const response = await actionCancelTask(this.character.data)
+    if (response instanceof ApiError) {
+      await this.character.handleErrors(response);
+    } else {
+      this.character.data = response.character;
     }
   }
 

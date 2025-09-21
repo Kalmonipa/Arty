@@ -120,7 +120,8 @@ export class ItemTaskObjective extends Objective {
             true,
             true,
           )) {
-            return false;
+            // Cancel the job and start a new one
+            return this.cancelCurrentTask('items')
           }
         }
       }

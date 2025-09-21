@@ -16,6 +16,7 @@ import {
   MapSchema,
   SimpleItemSchema,
   Skill,
+  TaskType,
 } from '../types/types.js';
 import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils.js';
 import { CraftObjective } from './CraftObjective.js';
@@ -217,6 +218,11 @@ export class Character {
       }
     }
   }
+
+  /********
+   * Character activity functions
+   ********/
+
 
   /********
    * Character detail functions
