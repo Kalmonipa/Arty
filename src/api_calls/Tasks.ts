@@ -90,8 +90,8 @@ export async function actionCancelTask(
     if (!response.ok) {
       var message: string;
       switch (response.status) {
-        case 478: 
-          message = 'Missing item or insufficient quantity.'
+        case 478:
+          message = 'Missing item or insufficient quantity.';
           break;
         case 486:
           message = 'An action is already in progress for this character.';
@@ -114,14 +114,9 @@ export async function actionCancelTask(
 
     const result: TaskCancelledSchema = await response.json();
 
-    logger.info(
-      `Cancelled current task.`,
-    );
+    logger.info(`Cancelled current task.`);
 
-    await sleep(
-      result.cooldown.remaining_seconds,
-      result.cooldown.reason,
-    );
+    await sleep(result.cooldown.remaining_seconds, result.cooldown.reason);
 
     return result;
   } catch (error) {

@@ -223,7 +223,6 @@ export class Character {
    * Character activity functions
    ********/
 
-
   /********
    * Character detail functions
    ********/
@@ -438,9 +437,15 @@ export class Character {
       .find((food) => food.code === this.preferredFood)
       .effects.find((effect) => effect.code === 'heal').value;
 
-    const amountNeededToEat = Math.ceil(
+    let amountNeededToEat = Math.ceil(
       healthStatus.difference / preferredFoodHealValue,
     );
+
+    let numInInv = this.checkQuantityOfItemInInv(this.preferredFood)
+    if (amountNeededToEat > numInInv) {
+      logger.info(`Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`)
+      amountNeededToEat = numInInv
+    }
 
     logger.info(
       `Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`,
@@ -448,10 +453,7 @@ export class Character {
 
     const useResponse = await actionUse(this.data, {
       code: this.preferredFood,
-      quantity: Math.min(
-        amountNeededToEat,
-        this.checkQuantityOfItemInInv(this.preferredFood),
-      ), // Eat the smaller of amount needed and number in inventory
+      quantity: amountNeededToEat,
     });
     if (useResponse instanceof ApiError) {
       this.handleErrors(useResponse);
@@ -558,15 +560,16 @@ export class Character {
       return;
     }
 
-    // Check to make sure we have enough preferred food in the bank. If not then pick a new preferred food
-    if (
-      (await this.checkQuantityOfItemInBank(this.preferredFood)) < this.minFood
-    ) {
+    // Check to make sure we have enough preferred food in the bank. If there's none, set a new preferred food
+    let numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+    if (numInBank === 0) {
       this.setPreferredFood();
     }
 
-    const numNeeded =
-      this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood);
+    const numNeeded = Math.min(
+      numInBank,
+      this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood),
+    );
 
     await this.withdrawNow(numNeeded, this.preferredFood);
 
@@ -733,6 +736,10 @@ export class Character {
     }
   }
 
+  /**
+   * @description Preferred food is used to withdraw from the bank without having to figure out what food is available
+   * @returns true if successful, false otherwise
+   */
   async setPreferredFood(): Promise<boolean> {
     const foundItem = this.data.inventory.find((invItem) => {
       return this.consumablesMap.heal.find(

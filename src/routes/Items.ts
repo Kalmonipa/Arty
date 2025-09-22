@@ -51,11 +51,13 @@ export default function ItemsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let bankItems: DataPageSimpleItemSchema | ApiError = await getBankItems(undefined, undefined, 100);
+      let bankItems: DataPageSimpleItemSchema | ApiError = await getBankItems(
+        undefined,
+        undefined,
+        100,
+      );
       if (bankItems instanceof ApiError) {
-        return res
-          .status(bankItems.error.code)
-          .json(bankItems.error)
+        return res.status(bankItems.error.code).json(bankItems.error);
       }
 
       return res.status(201).json({

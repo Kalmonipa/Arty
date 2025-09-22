@@ -3,7 +3,11 @@ import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
 import { logger, sleep } from '../utils.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { actionAcceptNewTask, actionCancelTask, actionCompleteTask } from '../api_calls/Tasks.js';
+import {
+  actionAcceptNewTask,
+  actionCancelTask,
+  actionCompleteTask,
+} from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { TaskType } from '../types/types.js';
 
@@ -81,7 +85,7 @@ export abstract class Objective {
    * @todo Implement this
    */
   cancelIfParentIsCancelled(): boolean {
-    return false
+    return false;
   }
 
   /**
@@ -122,7 +126,6 @@ export abstract class Objective {
     }
   }
 
-
   /********
    * Task functions
    ********/
@@ -131,13 +134,13 @@ export abstract class Objective {
    * @description Withdraws a task coin, moves to the task master and cancels the current task
    */
   async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
-    if (!await this.character.withdrawNow(1, 'tasks_coin')) {
-      return false
+    if (!(await this.character.withdrawNow(1, 'tasks_coin'))) {
+      return false;
     }
 
-    await this.moveToTaskMaster(taskType)
+    await this.moveToTaskMaster(taskType);
 
-    const response = await actionCancelTask(this.character.data)
+    const response = await actionCancelTask(this.character.data);
     if (response instanceof ApiError) {
       await this.character.handleErrors(response);
     } else {

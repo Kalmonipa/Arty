@@ -65,15 +65,6 @@ export const logger = winston.createLogger({
       level: logLevel,
       format: consoleFormat,
     }),
-
-    new SeqTransport({
-      serverUrl: process.env.SEQ_SERVER_URL || 'http://seq:5341',
-      apiKey: getEnv('SEQ_API_KEY'),
-      level: logLevel,
-      onError: (err) => {
-        console.error('Seq transport error:', err.message);
-      },
-    }),
   ],
 });
 
