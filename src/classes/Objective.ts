@@ -134,8 +134,10 @@ export abstract class Objective {
    * @description Withdraws a task coin, moves to the task master and cancels the current task
    */
   async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
-    if (!(await this.character.withdrawNow(1, 'tasks_coin'))) {
-      return false;
+    if (this.character.checkQuantityOfItemInInv('tasks_coin') < 1) {
+      if (!(await this.character.withdrawNow(1, 'tasks_coin'))) {
+        return false;
+      }
     }
 
     await this.moveToTaskMaster(taskType);

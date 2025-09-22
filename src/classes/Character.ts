@@ -441,10 +441,12 @@ export class Character {
       healthStatus.difference / preferredFoodHealValue,
     );
 
-    let numInInv = this.checkQuantityOfItemInInv(this.preferredFood)
+    let numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
     if (amountNeededToEat > numInInv) {
-      logger.info(`Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`)
-      amountNeededToEat = numInInv
+      logger.info(
+        `Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`,
+      );
+      amountNeededToEat = numInInv;
     }
 
     logger.info(

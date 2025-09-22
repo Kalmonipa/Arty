@@ -25,6 +25,10 @@ export class ItemTaskObjective extends Objective {
     let result = false;
 
     for (let count = 0; count < this.quantity; count++) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        return false;
+      }
       logger.info(`Completed ${count}/${this.quantity} tasks`);
       result = await this.doTask();
     }
@@ -108,7 +112,14 @@ export class ItemTaskObjective extends Objective {
           }
         } else if (taskInfo.craft) {
           logger.debug(`${taskInfo.code} is a crafted item. Crafting...`);
-          await this.character.craftNow(numToGather, this.character.data.task);
+          if (
+            !(await this.character.craftNow(
+              numToGather,
+              this.character.data.task,
+            ))
+          ) {
+            return this.cancelCurrentTask('items');
+          }
         } else {
           logger.debug(`${taskInfo.code} is a gather resource. Gathering...`);
           // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
