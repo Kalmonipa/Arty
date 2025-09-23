@@ -64,7 +64,6 @@ export class CraftObjective extends Objective {
       } else {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
-          //this.character.removeJob(this.objectiveId);
           return false;
         }
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
@@ -94,7 +93,7 @@ export class CraftObjective extends Objective {
 
         const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-        for (var batch = 0; batch < this.numBatches; batch++) {
+        for (let batch = 0; batch < this.numBatches; batch++) {
           logger.debug(`Crafting batch ${batch}/${this.numBatches}`);
 
           if (this.isCancelled()) {
@@ -107,6 +106,11 @@ export class CraftObjective extends Objective {
             targetItem.craft.items,
             batchInfo.numPerBatch,
           );
+
+          if (this.isCancelled()) {
+            logger.info(`${this.objectiveId} has been cancelled`);
+            return false;
+          }
 
           await this.character.move({
             x: contentLocation.x,
@@ -227,6 +231,12 @@ export class CraftObjective extends Objective {
               totalNumNeededToCraft - numInInv,
               craftingItem.code,
             );
+
+            if (this.isCancelled()) {
+              logger.info(`${this.objectiveId} has been cancelled`);
+              return false;
+            }
+            
           } else if (craftingItemInfo.craft !== null) {
             logger.debug(
               `Resource ${craftingItemInfo.code} is a craftable item`,
@@ -236,6 +246,12 @@ export class CraftObjective extends Objective {
               totalNumNeededToCraft - numInInv,
               craftingItem.code,
             );
+
+            if (this.isCancelled()) {
+              logger.info(`${this.objectiveId} has been cancelled`);
+              return false;
+            }
+
           } else {
             logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
@@ -243,6 +259,11 @@ export class CraftObjective extends Objective {
               totalNumNeededToCraft - numInInv,
               craftingItem.code,
             );
+
+            if (this.isCancelled()) {
+              logger.info(`${this.objectiveId} has been cancelled`);
+              return false;
+            }
           }
         }
       }

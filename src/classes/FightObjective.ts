@@ -82,10 +82,9 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (var count = 0; count < this.target.quantity; count++) {
+      for (let count = 0; count < this.target.quantity; count++) {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
-          //this.character.removeJob(this.objectiveId);
           return false;
         }
 

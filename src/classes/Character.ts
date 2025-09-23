@@ -16,7 +16,6 @@ import {
   MapSchema,
   SimpleItemSchema,
   Skill,
-  TaskType,
 } from '../types/types.js';
 import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils.js';
 import { CraftObjective } from './CraftObjective.js';
@@ -120,7 +119,7 @@ export class Character {
    * @description Lists the names of all the objectivs in the queue
    */
   listObjectives(): string[] {
-    let objNames: string[] = [];
+    const objNames: string[] = [];
     for (const obj of this.jobList) {
       objNames.push(obj.objectiveId);
     }
@@ -185,6 +184,16 @@ export class Character {
   }
 
   /**
+   * @description Gets all cancelled jobs in the queue
+   * @returns Array of cancelled job IDs
+   */
+  getCancelledJobs(): string[] {
+    return this.jobList
+      .filter((job) => job.status === 'cancelled')
+      .map((job) => job.objectiveId);
+  }
+
+  /**
    * Adds an objective to the end of the job list
    * @param obj
    */
@@ -230,30 +239,9 @@ export class Character {
     if (parentId) {
       obj.parentId = parentId;
       logger.debug(`Set parentId ${parentId} for job ${obj.objectiveId}`);
-
-      // Set the childId on the parent job
-      const parentJob = this.jobList.find(
-        (job) => job.objectiveId === parentId,
-      );
-      if (parentJob) {
-        parentJob.childId = obj.objectiveId;
-        logger.debug(
-          `Set childId ${obj.objectiveId} for parent job ${parentId}`,
-        );
-      } else if (
-        this.currentExecutingJob &&
-        this.currentExecutingJob.objectiveId === parentId
-      ) {
-        // If the parent is currently executing (not in jobList), set its childId
-        this.currentExecutingJob.childId = obj.objectiveId;
-        logger.debug(
-          `Set childId ${obj.objectiveId} for currently executing parent job ${parentId}`,
-        );
-      }
     }
 
     if (trackInQueue) {
-      // Add to the beginning of the queue so it gets priority
       if (prepend) {
         this.prependJob(obj);
       } else {
@@ -263,18 +251,34 @@ export class Character {
       logger.info(
         `Executing job ${obj.objectiveId} immediately (added to position ${prepend ? 0 : this.jobList.length - 1})${parentId ? `, parent: ${parentId}` : ''}`,
       );
+      
+      // Set this job as the currently executing job during its execution
+      const previousExecutingJob = this.currentExecutingJob;
+      this.currentExecutingJob = obj;
+      
       const result = await obj.execute();
+      
+      // Restore the previous executing job
+      this.currentExecutingJob = previousExecutingJob;
 
-      // Remove the job from the list after execution
       this.removeJob(obj.objectiveId);
 
       return result;
     } else {
-      // Execute without adding to queue (for sub-jobs that shouldn't disrupt main queue)
       logger.info(
         `Executing sub-job ${obj.objectiveId} without queue tracking${parentId ? `, parent: ${parentId}` : ''}`,
       );
-      return await obj.execute();
+      
+      // Set this job as the currently executing job during its execution
+      const previousExecutingJob = this.currentExecutingJob;
+      this.currentExecutingJob = obj;
+      
+      const result = await obj.execute();
+      
+      // Restore the previous executing job
+      this.currentExecutingJob = previousExecutingJob;
+      
+      return result;
     }
   }
 
@@ -301,6 +305,46 @@ export class Character {
       }
     }
     return true;
+  }
+
+  /**
+   * Cancels a job and all its child jobs recursively
+   * @param objectiveId The ID of the job to cancel
+   * @returns Array of cancelled job IDs
+   */
+  cancelJobAndChildren(objectiveId: string): string[] {
+    const cancelledJobs: string[] = [];
+    
+    // Find the job to cancel
+    const jobToCancel = this.jobList.find((job) => job.objectiveId === objectiveId);
+    if (!jobToCancel) {
+      logger.warn(`Job ${objectiveId} not found in job list`);
+      return cancelledJobs;
+    }
+
+    // Cancel the job itself
+    jobToCancel.cancelJob();
+    cancelledJobs.push(objectiveId);
+    logger.info(`Cancelled job ${objectiveId}`);
+
+    // Recursively cancel all child jobs
+    const cancelChildren = (parentJobId: string) => {
+      const childJobs = this.jobList.filter((job) => job.parentId === parentJobId);
+      
+      for (const childJob of childJobs) {
+        childJob.cancelJob();
+        cancelledJobs.push(childJob.objectiveId);
+        logger.info(`Cancelled child job ${childJob.objectiveId} of parent ${parentJobId}`);
+        
+        // Recursively cancel grandchildren
+        cancelChildren(childJob.objectiveId);
+      }
+    };
+
+    cancelChildren(objectiveId);
+    
+    logger.info(`Cancelled ${cancelledJobs.length} jobs total: ${cancelledJobs.join(', ')}`);
+    return cancelledJobs;
   }
 
   /**
@@ -428,7 +472,7 @@ export class Character {
       } else if (bankItem.total === 1) {
         return bankItem.data[0].quantity;
       } else {
-        var total = 0;
+        let total = 0;
         for (const item of bankItem.data) {
           total += item.quantity;
         }
@@ -480,15 +524,15 @@ export class Character {
    * @description Finds the closest map based on manhattan distance from current location
    */
   evaluateClosestMap(maps: MapSchema[]): MapSchema {
-    var closestDistance = 1000000;
-    var closestMap: MapSchema;
+    let closestDistance = 1000000;
+    let closestMap: MapSchema;
 
     if (maps.length === 0) {
       return;
     }
 
     maps.forEach((map) => {
-      var dist = Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
+      const dist = Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
       if (dist < closestDistance) {
         closestDistance = dist;
         closestMap = map;
@@ -518,8 +562,8 @@ export class Character {
   async checkWeaponForEffects(
     typeOfActivity: WeaponFlavours,
   ): Promise<boolean> {
-    var isEffective: boolean = false;
-    var weaponDetails = await getItemInformation(this.data.weapon_slot);
+    let isEffective: boolean = false;
+    const weaponDetails = await getItemInformation(this.data.weapon_slot);
 
     if (weaponDetails instanceof ApiError) {
       logger.info(weaponDetails.message);
@@ -577,7 +621,7 @@ export class Character {
       healthStatus.difference / preferredFoodHealValue,
     );
 
-    let numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+    const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
     if (amountNeededToEat > numInInv) {
       logger.info(
         `Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`,
@@ -612,13 +656,14 @@ export class Character {
   ): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
 
-    for (var ind = utility.length - 1; ind >= 0; ind--) {
+    for (let ind = utility.length - 1; ind >= 0; ind--) {
       if (utility[ind].level <= this.getCharacterLevel()) {
+        let numNeeded: number
         if (slot === 'utility1') {
-          var numNeeded =
+          numNeeded =
             this.maxEquippedUtilities - this.data.utility1_slot_quantity;
         } else {
-          var numNeeded =
+          numNeeded =
             this.maxEquippedUtilities - this.data.utility2_slot_quantity;
         }
 
@@ -668,7 +713,7 @@ export class Character {
         ? this.getCharacterLevel()
         : this.getCharacterLevel(activityType);
 
-    for (var ind = weapons.length - 1; ind >= 0; ind--) {
+    for (let ind = weapons.length - 1; ind >= 0; ind--) {
       if (weapons[ind].level <= charLevel) {
         logger.debug(`Attempting to equip ${weapons[ind].name}`);
         if (this.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
@@ -739,7 +784,7 @@ export class Character {
 
     await this.move(traderLocation);
 
-    let buyResponse = await actionBuyItem(this.data, items);
+    const buyResponse = await actionBuyItem(this.data, items);
     if (buyResponse instanceof ApiError) {
       return this.handleErrors(buyResponse);
     } else {
@@ -769,7 +814,7 @@ export class Character {
 
     await this.move(traderLocation);
 
-    let sellResponse = await actionSellItem(this.data, items);
+    const sellResponse = await actionSellItem(this.data, items);
     if (sellResponse instanceof ApiError) {
       return this.handleErrors(sellResponse);
     } else {
@@ -798,7 +843,7 @@ export class Character {
     priorLocation?: SimpleMapSchema,
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
-    let usedInventorySpace = this.getInventoryFullness();
+    const usedInventorySpace = this.getInventoryFullness();
     if (
       usedInventorySpace >= this.data.inventory_max_items * 0.9 ||
       makeSpaceForOtherItems
@@ -814,7 +859,7 @@ export class Character {
 
       await this.move({ x: contentLocation.x, y: contentLocation.y });
 
-      var itemsToDeposit: SimpleItemSchema[] = [];
+      const itemsToDeposit: SimpleItemSchema[] = [];
       for (const item of this.data.inventory) {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
@@ -845,7 +890,7 @@ export class Character {
    * @returns what percentage of the backpack is full
    */
   getInventoryFullness(): number {
-    var usedSpace = 0;
+    let usedSpace = 0;
     this.data.inventory.forEach((invSlot) => {
       usedSpace += invSlot.quantity;
     });
@@ -1164,9 +1209,9 @@ export class Character {
    * @param targetSkill skill to train
    * @param targetLevel level to train too. Must be less than the max level 45
    */
-  async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
-    logger.warn(`Levelling craft skills isn't implemented yet`);
-  }
+  // async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
+  //   logger.warn(`Levelling craft skills isn't implemented yet`);
+  // }
 
   /**
    * @description levels the specified gathering skill to the target level

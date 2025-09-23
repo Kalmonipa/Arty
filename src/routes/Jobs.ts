@@ -17,7 +17,7 @@ export default function JobsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let jobs: string[] = char.listObjectives();
+      const jobs: string[] = char.listObjectives();
 
       return res.status(201).json({
         message: `${char.data.name} has ${jobs.length} jobs in queue`,
@@ -92,7 +92,35 @@ export default function JobsRouter(char: Character) {
   });
 
   /**
-   * @description Cancels the given job, removing it from the job queue
+   * @description Gets all cancelled jobs in the queue
+   * @param char
+   * @returns {string[]} Array of cancelled job IDs
+   */
+  router.get('/cancelled', async (req: Request, res: Response) => {
+    try {
+      if (typeof char === 'undefined' || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      const cancelledJobs = char.getCancelledJobs();
+
+      return res.status(200).json({
+        message: `${char.data.name} has ${cancelledJobs.length} cancelled jobs`,
+        character: char.data.name,
+        cancelledJobs: cancelledJobs,
+        num_cancelled: cancelledJobs.length,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
+   * @description Cancels the given job and all its child jobs, removing them from the job queue
    * If the cancelled job is active, we must wait until an isCancelled check happens so the job
    * may not cancel immediately
    */
@@ -106,22 +134,25 @@ export default function JobsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let obj = char.jobList.find((obj) => objId === obj.objectiveId);
-      const result = obj.cancelJob();
-
-      if (!result) {
+      // Check if the job exists
+      const obj = char.jobList.find((obj) => objId === obj.objectiveId);
+      if (!obj) {
         return res.status(404).json({
-          message: `Objective ${obj.objectiveId} not found`,
-          character: char.data.name,
-          jobs: char.listObjectives(),
-        });
-      } else {
-        return res.status(200).json({
-          message: `Objective ${obj.objectiveId} removed from queue`,
+          message: `Objective ${objId} not found`,
           character: char.data.name,
           jobs: char.listObjectives(),
         });
       }
+
+      // Cancel the job and all its children
+      const cancelledJobs = char.cancelJobAndChildren(objId);
+
+      return res.status(200).json({
+        message: `Cancelled job ${objId} and ${cancelledJobs.length - 1} child jobs`,
+        character: char.data.name,
+        cancelledJobs: cancelledJobs,
+        jobs: char.listObjectives(),
+      });
     } catch (error) {
       return res
         .status(500)

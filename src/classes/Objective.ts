@@ -1,7 +1,7 @@
 import * as crypto from 'node:crypto';
 import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
-import { logger, sleep } from '../utils.js';
+import { logger } from '../utils.js';
 import { getMaps } from '../api_calls/Maps.js';
 import {
   actionAcceptNewTask,
@@ -43,6 +43,12 @@ export abstract class Objective {
     if (this.status === 'cancelled') {
       return false;
     }
+    
+    // Check if parent job has been cancelled
+    if (this.cancelIfParentIsCancelled()) {
+      return false;
+    }
+    
     this.startJob();
 
     await this.runSharedPrereqChecks();
@@ -82,9 +88,17 @@ export abstract class Objective {
 
   /**
    * @description If the parent job has been cancelled we should cancel any child jobs
-   * @todo Implement this
    */
   cancelIfParentIsCancelled(): boolean {
+    if (this.parentId) {
+      // Find the parent job in the character's job list
+      const parentJob = this.character.jobList.find((job) => job.objectiveId === this.parentId);
+      if (parentJob && parentJob.status === 'cancelled') {
+        logger.info(`Parent job ${this.parentId} is cancelled, cancelling child job ${this.objectiveId}`);
+        this.cancelJob();
+        return true;
+      }
+    }
     return false;
   }
 
