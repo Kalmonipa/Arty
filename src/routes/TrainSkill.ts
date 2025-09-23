@@ -32,7 +32,7 @@ export default function TrainSkillRouter(char: Character) {
 
       const job = new TrainGatheringSkillObjective(char, skill, targetLevel);
 
-      char.appendJob(job);
+      await char.appendJob(job);
 
       return res.status(201).json({
         message: `Train ${skill} skill job added to queue.`,

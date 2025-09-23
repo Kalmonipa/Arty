@@ -27,7 +27,7 @@ export default function WithdrawRouter(char: Character) {
 
       const job = new WithdrawObjective(char, target);
 
-      char.appendJob(job);
+      await char.appendJob(job);
 
       return res.status(201).json({
         message: `Withdraw ${quantity} ${itemCode} job added to queue.`,

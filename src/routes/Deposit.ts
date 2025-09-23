@@ -27,7 +27,7 @@ export default function DepositRouter(char: Character) {
 
       const job = new DepositObjective(char, target);
 
-      char.appendJob(job);
+      await char.appendJob(job);
 
       return res.status(201).json({
         message: `Deposit ${quantity} ${itemCode} job added to queue.`,

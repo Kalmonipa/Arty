@@ -33,7 +33,7 @@ export default function TaskRouter(char: Character) {
           .status(404)
           .json({ error: 'Task must be one of monsters or items' });
 
-      char.appendJob(job);
+      await char.appendJob(job);
 
       return res.status(201).json({
         message: `${taskType} job ${job.objectiveId} added to queue.`,

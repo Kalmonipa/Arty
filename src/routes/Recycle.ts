@@ -24,7 +24,7 @@ export default function RecycleRouter(char: Character) {
         quantity: quantity,
       });
 
-      char.appendJob(job);
+      await char.appendJob(job);
 
       return res.status(201).json({
         message: `Recycle job ${job.objectiveId} added to queue.`,

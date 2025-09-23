@@ -120,6 +120,31 @@ export default function JobsRouter(char: Character) {
   });
 
   /**
+   * @description Manually saves the current job queue to disk
+   */
+  router.post('/save', async (req: Request, res: Response) => {
+    try {
+      if (typeof char === 'undefined' || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      await char.saveJobQueue();
+
+      return res.status(200).json({
+        message: `Job queue saved for ${char.data.name}`,
+        character: char.data.name,
+        numJobs: char.jobList.length,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
    * @description Cancels the given job and all its child jobs, removing them from the job queue
    * If the cancelled job is active, we must wait until an isCancelled check happens so the job
    * may not cancel immediately
@@ -145,7 +170,7 @@ export default function JobsRouter(char: Character) {
       }
 
       // Cancel the job and all its children
-      const cancelledJobs = char.cancelJobAndChildren(objId);
+      const cancelledJobs = await char.cancelJobAndChildren(objId);
 
       return res.status(200).json({
         message: `Cancelled job ${objId} and ${cancelledJobs.length - 1} child jobs`,

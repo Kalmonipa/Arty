@@ -34,7 +34,7 @@ export default function GatherRouter(char: Character) {
         includeInventory,
       );
 
-      char.appendJob(gatherJob);
+      await char.appendJob(gatherJob);
 
       return res.status(201).json({
         message: `Gather job ${gatherJob.objectiveId} added to queue.`,
