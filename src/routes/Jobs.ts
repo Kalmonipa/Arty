@@ -45,7 +45,7 @@ export default function JobsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let jobs = char.listObjectivesWithParents();
+      const jobs = char.listObjectivesWithParents();
 
       return res.status(201).json({
         message: `${char.data.name} has ${jobs.length} jobs in queue`,
