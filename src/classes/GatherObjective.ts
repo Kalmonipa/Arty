@@ -99,7 +99,7 @@ export class GatherObjective extends Objective {
 
       // Add the gathering item to the exclusion list
       if (!this.character.itemsToKeep.includes(code)) {
-        this.character.itemsToKeep.push(code)
+        this.character.itemsToKeep.push(code);
       }
 
       const numHeld = this.character.checkQuantityOfItemInInv(code);
@@ -154,7 +154,10 @@ export class GatherObjective extends Objective {
     }
     // Remove the gathered item if it's in the exclusion list
     if (this.character.itemsToKeep.includes(code)) {
-      this.character.itemsToKeep.splice(this.character.itemsToKeep.indexOf(code), 1)
+      this.character.itemsToKeep.splice(
+        this.character.itemsToKeep.indexOf(code),
+        1,
+      );
     }
   }
 

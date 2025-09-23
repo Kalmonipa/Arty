@@ -130,14 +130,19 @@ export class Character {
   /**
    * @description Lists all objectives with their parent-child relationships
    */
-  listObjectivesWithParents(): Array<{id: string, parentId?: string, childId?: string, status: string}> {
+  listObjectivesWithParents(): Array<{
+    id: string;
+    parentId?: string;
+    childId?: string;
+    status: string;
+  }> {
     const objectives = [];
     for (const obj of this.jobList) {
       objectives.push({
         id: obj.objectiveId,
         parentId: obj.parentId,
         childId: obj.childId,
-        status: obj.status
+        status: obj.status,
       });
     }
     return objectives;
@@ -150,22 +155,32 @@ export class Character {
    */
   getJobChain(rootJobId: string): string[] {
     const chain = [rootJobId];
-    
+
     // Find the job in the current jobList or currentExecutingJob
-    let currentJob = this.jobList.find(job => job.objectiveId === rootJobId);
-    if (!currentJob && this.currentExecutingJob && this.currentExecutingJob.objectiveId === rootJobId) {
+    let currentJob = this.jobList.find((job) => job.objectiveId === rootJobId);
+    if (
+      !currentJob &&
+      this.currentExecutingJob &&
+      this.currentExecutingJob.objectiveId === rootJobId
+    ) {
       currentJob = this.currentExecutingJob;
     }
-    
+
     // Follow the child chain
     while (currentJob && currentJob.childId) {
       chain.push(currentJob.childId);
-      currentJob = this.jobList.find(job => job.objectiveId === currentJob.childId);
-      if (!currentJob && this.currentExecutingJob && this.currentExecutingJob.objectiveId === currentJob.childId) {
+      currentJob = this.jobList.find(
+        (job) => job.objectiveId === currentJob.childId,
+      );
+      if (
+        !currentJob &&
+        this.currentExecutingJob &&
+        this.currentExecutingJob.objectiveId === currentJob.childId
+      ) {
         currentJob = this.currentExecutingJob;
       }
     }
-    
+
     return chain;
   }
 
@@ -205,24 +220,38 @@ export class Character {
    * @param parentId The objectiveId of the parent job that spawned this job
    * @returns Promise<boolean> The result of the job execution
    */
-  async executeJobNow(obj: Objective, prepend: boolean = true, trackInQueue: boolean = true, parentId?: string): Promise<boolean> {
+  async executeJobNow(
+    obj: Objective,
+    prepend: boolean = true,
+    trackInQueue: boolean = true,
+    parentId?: string,
+  ): Promise<boolean> {
     // Set the parentId if provided
     if (parentId) {
       obj.parentId = parentId;
       logger.debug(`Set parentId ${parentId} for job ${obj.objectiveId}`);
-      
+
       // Set the childId on the parent job
-      const parentJob = this.jobList.find(job => job.objectiveId === parentId);
+      const parentJob = this.jobList.find(
+        (job) => job.objectiveId === parentId,
+      );
       if (parentJob) {
         parentJob.childId = obj.objectiveId;
-        logger.debug(`Set childId ${obj.objectiveId} for parent job ${parentId}`);
-      } else if (this.currentExecutingJob && this.currentExecutingJob.objectiveId === parentId) {
+        logger.debug(
+          `Set childId ${obj.objectiveId} for parent job ${parentId}`,
+        );
+      } else if (
+        this.currentExecutingJob &&
+        this.currentExecutingJob.objectiveId === parentId
+      ) {
         // If the parent is currently executing (not in jobList), set its childId
         this.currentExecutingJob.childId = obj.objectiveId;
-        logger.debug(`Set childId ${obj.objectiveId} for currently executing parent job ${parentId}`);
+        logger.debug(
+          `Set childId ${obj.objectiveId} for currently executing parent job ${parentId}`,
+        );
       }
     }
-    
+
     if (trackInQueue) {
       // Add to the beginning of the queue so it gets priority
       if (prepend) {
@@ -230,17 +259,21 @@ export class Character {
       } else {
         this.appendJob(obj);
       }
-      
-      logger.info(`Executing job ${obj.objectiveId} immediately (added to position ${prepend ? 0 : this.jobList.length - 1})${parentId ? `, parent: ${parentId}` : ''}`);
+
+      logger.info(
+        `Executing job ${obj.objectiveId} immediately (added to position ${prepend ? 0 : this.jobList.length - 1})${parentId ? `, parent: ${parentId}` : ''}`,
+      );
       const result = await obj.execute();
-      
+
       // Remove the job from the list after execution
       this.removeJob(obj.objectiveId);
-      
+
       return result;
     } else {
       // Execute without adding to queue (for sub-jobs that shouldn't disrupt main queue)
-      logger.info(`Executing sub-job ${obj.objectiveId} without queue tracking${parentId ? `, parent: ${parentId}` : ''}`);
+      logger.info(
+        `Executing sub-job ${obj.objectiveId} without queue tracking${parentId ? `, parent: ${parentId}` : ''}`,
+      );
       return await obj.execute();
     }
   }
@@ -435,7 +468,12 @@ export class Character {
       code: 'all',
       quantity: 0,
     });
-    await this.executeJobNow(job, true, true, this.currentExecutingJob?.objectiveId);
+    await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -945,7 +983,12 @@ export class Character {
       code: code,
       quantity: quantity,
     });
-    return await this.executeJobNow(craftJob, true, true, this.currentExecutingJob?.objectiveId);
+    return await this.executeJobNow(
+      craftJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -988,7 +1031,12 @@ export class Character {
       quantity: quantity,
     });
 
-    return await this.executeJobNow(depositJob, true, true, this.currentExecutingJob?.objectiveId);
+    return await this.executeJobNow(
+      depositJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -1008,7 +1056,12 @@ export class Character {
     quantity?: number,
   ): Promise<boolean> {
     const equipJob = new EquipObjective(this, itemName, itemSlot, quantity);
-    return await this.executeJobNow(equipJob, true, true, this.currentExecutingJob?.objectiveId);
+    return await this.executeJobNow(
+      equipJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -1023,7 +1076,12 @@ export class Character {
    */
   async unequipNow(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
     const unequipJob = new UnequipObjective(this, itemSlot, quantity);
-    return await this.executeJobNow(unequipJob, true, true, this.currentExecutingJob?.objectiveId);
+    return await this.executeJobNow(
+      unequipJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -1044,7 +1102,12 @@ export class Character {
       quantity: quantity,
     });
 
-    return await this.executeJobNow(fightJob, true, true, this.currentExecutingJob?.objectiveId);
+    return await this.executeJobNow(
+      fightJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -1088,7 +1151,12 @@ export class Character {
       includeInventory,
     );
 
-    return await this.executeJobNow(gatherJob, true, true, this.currentExecutingJob?.objectiveId);
+    return await this.executeJobNow(
+      gatherJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -1116,7 +1184,12 @@ export class Character {
    */
   async tidyUpBank() {
     const job = new TidyBankObjective(this);
-    await this.executeJobNow(job, true, true, this.currentExecutingJob?.objectiveId);
+    await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -1136,7 +1209,12 @@ export class Character {
       code: itemCode,
       quantity: quantity,
     });
-    return await this.executeJobNow(withdrawJob, true, true, this.currentExecutingJob?.objectiveId);
+    return await this.executeJobNow(
+      withdrawJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**

@@ -46,7 +46,10 @@ export class ItemTaskObjective extends Objective {
         return false;
       }
 
-      if (this.character.data.task === undefined || this.character.data.task === '') {
+      if (
+        this.character.data.task === undefined ||
+        this.character.data.task === ''
+      ) {
         await this.startNewTask('items');
       } else {
         logger.info(
