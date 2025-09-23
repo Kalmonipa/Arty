@@ -97,6 +97,11 @@ export class GatherObjective extends Objective {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
+      // Add the gathering item to the exclusion list
+      if (!this.character.itemsToKeep.includes(code)) {
+        this.character.itemsToKeep.push(code)
+      }
+
       var numHeld = this.character.checkQuantityOfItemInInv(code);
 
       // Check our equipment to see if we can equip something useful
@@ -146,6 +151,10 @@ export class GatherObjective extends Objective {
       } else {
         return await this.gatherResource(code, quantity, numHeld);
       }
+    }
+    // Remove the gathered item if it's in the exclusion list
+    if (this.character.itemsToKeep.includes(code)) {
+      this.character.itemsToKeep.splice(this.character.itemsToKeep.indexOf(code), 1)
     }
   }
 

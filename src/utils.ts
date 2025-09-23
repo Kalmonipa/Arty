@@ -25,7 +25,7 @@ export const MyHeaders = new Headers({
 });
 
 const customFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
+  winston.format.timestamp({ format: 'DD-MM-YYYYTHH:mm:ss.SSSZ' }),
   winston.format.errors({ stack: true }),
   winston.format.json(),
   winston.format.printf(({ timestamp, level, message, character, ...meta }) => {
@@ -41,7 +41,7 @@ const customFormat = winston.format.combine(
 );
 
 const consoleFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.printf(({ timestamp, level, message, character }) => {
     const char = character || CharName;
