@@ -185,7 +185,7 @@ export class CraftObjective extends Objective {
       if (craftingItemInfo instanceof ApiError) {
         await this.character.handleErrors(craftingItemInfo);
       } else {
-        var numInInv = this.character.checkQuantityOfItemInInv(
+        let numInInv = this.character.checkQuantityOfItemInInv(
           craftingItem.code,
         );
 
@@ -299,7 +299,7 @@ export class CraftObjective extends Objective {
    * @returns the total number of ingredients to craft the target number of items
    */
   private getTotalNumberOfIngredients(craftList: SimpleItemSchema[]): number {
-    var totalNumIngredients = 0;
+    let totalNumIngredients = 0;
     for (const craftItem of craftList) {
       totalNumIngredients += craftItem.quantity * this.target.quantity;
     }
