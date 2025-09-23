@@ -25,6 +25,7 @@ import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
 import { Objective } from './Objective.js';
+import { ObjectiveTargets, ObjectiveStatus } from '../types/ObjectiveData.js';
 import { FightObjective } from './FightObjective.js';
 import { EquipObjective } from './EquipObjective.js';
 import { UnequipObjective } from './UnequipObjective.js';
@@ -326,34 +327,52 @@ export class Character {
 
       switch (type) {
         case 'CraftObjective':
-          job = new CraftObjective(this, specificData.target);
+          job = new CraftObjective(this, specificData.target as ObjectiveTargets);
           break;
         case 'GatherObjective':
-          job = new GatherObjective(this, specificData.target, specificData.checkBank, specificData.includeInventory);
+          job = new GatherObjective(
+            this, 
+            specificData.target as ObjectiveTargets, 
+            specificData.checkBank as boolean, 
+            specificData.includeInventory as boolean
+          );
           break;
         case 'FightObjective':
-          job = new FightObjective(this, specificData.target);
+          job = new FightObjective(this, specificData.target as ObjectiveTargets);
           break;
         case 'DepositObjective':
-          job = new DepositObjective(this, specificData.target);
+          job = new DepositObjective(this, specificData.target as ObjectiveTargets);
           break;
         case 'WithdrawObjective':
-          job = new WithdrawObjective(this, specificData.target);
+          job = new WithdrawObjective(this, specificData.target as ObjectiveTargets);
           break;
         case 'EquipObjective':
-          job = new EquipObjective(this, specificData.itemCode, specificData.itemSlot, specificData.quantity);
+          job = new EquipObjective(
+            this, 
+            specificData.itemCode as string, 
+            specificData.itemSlot as ItemSlot, 
+            specificData.quantity as number
+          );
           break;
         case 'UnequipObjective':
-          job = new UnequipObjective(this, specificData.itemSlot, specificData.quantity);
+          job = new UnequipObjective(
+            this, 
+            specificData.itemSlot as ItemSlot, 
+            specificData.quantity as number
+          );
           break;
         case 'ItemTaskObjective':
-          job = new ItemTaskObjective(this, specificData.quantity);
+          job = new ItemTaskObjective(this, specificData.quantity as number);
           break;
         case 'MonsterTaskObjective':
           job = new MonsterTaskObjective(this);
           break;
         case 'TrainGatheringSkillObjective':
-          job = new TrainGatheringSkillObjective(this, specificData.skill, specificData.targetLevel);
+          job = new TrainGatheringSkillObjective(
+            this, 
+            specificData.skill as GatheringSkill, 
+            specificData.targetLevel as number
+          );
           break;
         case 'TidyBankObjective':
           job = new TidyBankObjective(this);
@@ -365,7 +384,7 @@ export class Character {
 
       // Restore job properties
       job.objectiveId = objectiveId;
-      job.status = status;
+      job.status = status as ObjectiveStatus;
       job.progress = progress;
       job.parentId = parentId;
       job.childId = childId;
