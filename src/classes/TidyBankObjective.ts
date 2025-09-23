@@ -4,6 +4,7 @@ import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { CraftObjective } from './CraftObjective.js';
 
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API
@@ -61,7 +62,15 @@ export class TidyBankObjective extends Objective {
           numInBank / itemToCraftSchema.craft.items[0].quantity,
         );
 
-        return await this.character.craftNow(numToCraft, item);
+        return await this.character.executeJobNow(
+          new CraftObjective(
+            this.character,
+            {
+              code: item,
+              quantity: numToCraft,
+            }
+          )
+        );
       }
     }
     logger.info(`Found no fish in the bank to clean up`);

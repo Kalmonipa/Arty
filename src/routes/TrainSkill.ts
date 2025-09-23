@@ -13,8 +13,6 @@ export default function TrainSkillRouter(char: Character) {
       const skill: GatheringSkill = req.body.skill;
 
       if (isNaN(targetLevel) || !skill) {
-        logger.info(targetLevel);
-        logger.info(skill);
         return res
           .status(400)
           .json({ error: 'Invalid target level or skill.' });

@@ -151,6 +151,37 @@ export class Character {
   }
 
   /**
+   * Adds a job to the jobList and executes it immediately
+   * This ensures all jobs go through the jobList system for tracking
+   * @param obj The objective to add and execute
+   * @param prepend If true, adds to beginning of jobList, otherwise adds to end
+   * @param trackInQueue If true, adds to jobList for tracking. If false, executes without queue tracking
+   * @returns Promise<boolean> The result of the job execution
+   */
+  async executeJobNow(obj: Objective, prepend: boolean = true, trackInQueue: boolean = true): Promise<boolean> {
+    if (trackInQueue) {
+      // Add to the beginning of the queue so it gets priority
+      if (prepend) {
+        this.prependJob(obj);
+      } else {
+        this.appendJob(obj);
+      }
+      
+      logger.info(`Executing job ${obj.objectiveId} immediately (added to position ${prepend ? 0 : this.jobList.length - 1})`);
+      const result = await obj.execute();
+      
+      // Remove the job from the list after execution
+      this.removeJob(obj.objectiveId);
+      
+      return result;
+    } else {
+      // Execute without adding to queue (for sub-jobs that shouldn't disrupt main queue)
+      logger.info(`Executing sub-job ${obj.objectiveId} without queue tracking`);
+      return await obj.execute();
+    }
+  }
+
+  /**
    * Remove job from jobList
    */
   removeJob(objectiveId: string): boolean {
@@ -337,7 +368,7 @@ export class Character {
       code: 'all',
       quantity: 0,
     });
-    await job.execute();
+    await this.executeJobNow(job);
   }
 
   /**
@@ -563,7 +594,7 @@ export class Character {
     }
 
     // Check to make sure we have enough preferred food in the bank. If there's none, set a new preferred food
-    let numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+    const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
     if (numInBank === 0) {
       this.setPreferredFood();
     }
@@ -847,7 +878,7 @@ export class Character {
       code: code,
       quantity: quantity,
     });
-    return await craftJob.execute();
+    return await this.executeJobNow(craftJob);
   }
 
   /**
@@ -890,7 +921,7 @@ export class Character {
       quantity: quantity,
     });
 
-    return await depositJob.execute();
+    return await this.executeJobNow(depositJob);
   }
 
   /**
@@ -910,7 +941,7 @@ export class Character {
     quantity?: number,
   ): Promise<boolean> {
     const equipJob = new EquipObjective(this, itemName, itemSlot, quantity);
-    return await equipJob.execute();
+    return await this.executeJobNow(equipJob);
   }
 
   /**
@@ -925,7 +956,7 @@ export class Character {
    */
   async unequipNow(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
     const unequipJob = new UnequipObjective(this, itemSlot, quantity);
-    return await unequipJob.execute();
+    return await this.executeJobNow(unequipJob);
   }
 
   /**
@@ -946,7 +977,7 @@ export class Character {
       quantity: quantity,
     });
 
-    return await fightJob.execute();
+    return await this.executeJobNow(fightJob);
   }
 
   /**
@@ -990,7 +1021,7 @@ export class Character {
       includeInventory,
     );
 
-    return await gatherJob.execute();
+    return await this.executeJobNow(gatherJob);
   }
 
   /**
@@ -1018,7 +1049,7 @@ export class Character {
    */
   async tidyUpBank() {
     const job = new TidyBankObjective(this);
-    await job.execute();
+    await this.executeJobNow(job);
   }
 
   /**
@@ -1038,7 +1069,7 @@ export class Character {
       code: itemCode,
       quantity: quantity,
     });
-    return await withdrawJob.execute();
+    return await this.executeJobNow(withdrawJob);
   }
 
   /**

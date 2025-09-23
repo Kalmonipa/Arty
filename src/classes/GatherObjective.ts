@@ -46,7 +46,7 @@ export class GatherObjective extends Objective {
    */
   async run(): Promise<boolean> {
     let result = false;
-    let numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
     let numInBank = 0;
 
     // Sometimes we want to collect a bunch of the resource so we should skip checking the bank
@@ -102,10 +102,10 @@ export class GatherObjective extends Objective {
         this.character.itemsToKeep.push(code)
       }
 
-      var numHeld = this.character.checkQuantityOfItemInInv(code);
+      const numHeld = this.character.checkQuantityOfItemInInv(code);
 
       // Check our equipment to see if we can equip something useful
-      var resourceDetails: ItemSchema | ApiError =
+      const resourceDetails: ItemSchema | ApiError =
         await getItemInformation(code);
       if (resourceDetails instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(resourceDetails);
@@ -164,7 +164,7 @@ export class GatherObjective extends Objective {
     exceptions?: string[],
   ): Promise<boolean> {
     // Loop that does the gather requests
-    for (var count = 0; count < target.quantity; count++) {
+    for (let count = 0; count < target.quantity; count++) {
       if (this.progress % 5 === 0) {
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${target.code}`,

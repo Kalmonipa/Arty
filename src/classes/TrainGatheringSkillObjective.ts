@@ -4,6 +4,8 @@ import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { GatherObjective } from './GatherObjective.js';
+import { CraftObjective } from './CraftObjective.js';
 
 /**
  * @todo
@@ -49,10 +51,15 @@ export class TrainGatheringSkillObjective extends Objective {
       const resourceToGather =
         resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;
 
-      await this.character.gatherNow(
-        Math.round(this.character.data.inventory_max_items * 0.8),
-        resourceToGather,
-        false,
+      await this.character.executeJobNow(
+        new GatherObjective(
+          this.character,
+          {
+            code: resourceToGather,
+            quantity: Math.round(this.character.data.inventory_max_items * 0.8),
+          },
+          false
+        )
       );
 
       const numGathered =
@@ -60,9 +67,14 @@ export class TrainGatheringSkillObjective extends Objective {
 
       // ToDo: Make this actually check for the type to craft instead of hardcoding 'cooked_'
       if (this.skill === 'fishing') {
-        await this.character.craftNow(
-          numGathered,
-          `cooked_${resourceToGather}`,
+        await this.character.executeJobNow(
+          new CraftObjective(
+            this.character,
+            {
+              code: `cooked_${resourceToGather}`,
+              quantity: numGathered,
+            }
+          )
         );
       }
 
