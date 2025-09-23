@@ -6,8 +6,6 @@ import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { actionRecycle } from '../api_calls/Recycling.js';
-import { WithdrawObjective } from './WithdrawObjective.js';
-import { DepositObjective } from './DepositObjective.js';
 
 /**
  * @description Recycles the specified items and deposits the results into the bank
@@ -55,14 +53,9 @@ export class RecycleObjective extends Objective {
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 
     if (
-      !(await this.character.executeJobNow(
-        new WithdrawObjective(
-          this.character,
-          {
-            code: this.target.code,
-            quantity: this.target.quantity - numInInv,
-          }
-        )
+      !(await this.character.withdrawNow(
+        this.target.quantity - numInInv,
+        this.target.code,
       ))
     ) {
       logger.warn(
@@ -105,15 +98,7 @@ export class RecycleObjective extends Objective {
         this.character.data = recycleResult.data.character;
 
         for (const item of recycleResult.data.details.items) {
-          result = await this.character.executeJobNow(
-            new DepositObjective(
-              this.character,
-              {
-                code: item.code,
-                quantity: item.quantity,
-              }
-            )
-          );
+          result = await this.character.depositNow(item.quantity, item.code);
         }
         return result;
       }

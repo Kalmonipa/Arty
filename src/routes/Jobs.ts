@@ -33,6 +33,65 @@ export default function JobsRouter(char: Character) {
   });
 
   /**
+   * @description a list of all objectives with their parent-child relationships
+   * @param char
+   * @returns {Array<{id: string, parentId?: string, childId?: string, status: string}>}
+   */
+  router.get('/list/with-parents', async (req: Request, res: Response) => {
+    try {
+      if (typeof char === 'undefined' || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      let jobs = char.listObjectivesWithParents();
+
+      return res.status(201).json({
+        message: `${char.data.name} has ${jobs.length} jobs in queue`,
+        character: char.data.name,
+        jobs: jobs,
+        num_jobs: jobs.length,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
+   * @description Gets the complete job chain starting from a root job
+   * @param char
+   * @returns {string[]} Array of job IDs in the chain order
+   */
+  router.get('/chain/:rootJobId', async (req: Request, res: Response) => {
+    try {
+      const rootJobId = req.params.rootJobId;
+
+      if (typeof char === 'undefined' || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      const jobChain = char.getJobChain(rootJobId);
+
+      return res.status(200).json({
+        message: `Job chain for ${rootJobId}`,
+        character: char.data.name,
+        rootJobId: rootJobId,
+        chain: jobChain,
+        chainLength: jobChain.length,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
    * @description Cancels the given job, removing it from the job queue
    * If the cancelled job is active, we must wait until an isCancelled check happens so the job
    * may not cancel immediately
