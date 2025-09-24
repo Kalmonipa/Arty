@@ -1,5 +1,5 @@
 import { ApiError } from '../classes/Error.js';
-import { ApiUrl, MyHeaders, sleep } from '../utils.js';
+import { ApiUrl, getRequestOptions, MyHeaders, sleep } from '../utils.js';
 import {
   CharacterSchema,
   DataPageItemSchema,
@@ -210,16 +210,7 @@ export async function actionUse(
 export async function getAllItemInformation(
   data: GetAllItemsItemsGetParams,
 ): Promise<DataPageItemSchema | ApiError> {
-<<<<<<< HEAD
   const apiUrl = new URL(`${ApiUrl}/items`);
-=======
-  var requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
-  var apiUrl = new URL(`${ApiUrl}/items`);
->>>>>>> main
 
   if (data?.craft_material) {
     apiUrl.searchParams.set('craft_material', data.craft_material);

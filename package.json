@@ -39,5 +39,9 @@
   "prettier": {
     "singleQuote": true,
     "semi": true
+  },
+  "nodemonConfig": {
+    "ignore": ["data/*.json"],
+    "delay": 2500
   }
 }

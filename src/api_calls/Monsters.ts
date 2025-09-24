@@ -1,23 +1,14 @@
 import { ApiError } from '../classes/Error.js';
 import {
-<<<<<<< HEAD
-  GetAllMonstersMonstersGetParams,
-  DataPageMonsterSchema,
-=======
   DataPageMonsterSchema,
   GetAllMonstersMonstersGetParams,
->>>>>>> main
 } from '../types/types.js';
 import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getMonsterInformation(
   data: GetAllMonstersMonstersGetParams,
 ): Promise<DataPageMonsterSchema | ApiError> {
-<<<<<<< HEAD
-  const requestOptions = {
-=======
-  var requestOptions = {
->>>>>>> main
+  let requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };

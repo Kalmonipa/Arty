@@ -128,9 +128,10 @@ export class FightObjective extends Objective {
           }
           continue;
         } else {
+          //const charData = response.data.character.find(char => char.name === this.character.data.name)
           if (response.data.fight.result === 'loss') {
             logger.warn(
-              `Fight was a ${response.data.fight.result}. Returned to ${response.data.characters[0].x},${response.data.characters[0].y}`,
+              `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
             );
             // ToDo: This is here with the intention of failing the fight job after 3 losses but not sure if that's right. Need to test
             //break;
@@ -140,7 +141,7 @@ export class FightObjective extends Objective {
             );
           }
 
-          this.character.data = response.data.characters.find(char => char.name === this.character.name);
+          this.character.data = response.data.character;
 
           // Check amount of food in inventory to use after battles
           if (

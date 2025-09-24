@@ -1,12 +1,7 @@
 import winston from 'winston';
-import { SeqTransport } from '@datalust/winston-seq';
 import {
   DataPageItemSchema,
   GatheringSkill,
-<<<<<<< HEAD
-=======
-  DataPageItemSchema,
->>>>>>> main
   ItemSchema,
   ItemType,
 } from './types/types.js';
@@ -28,17 +23,11 @@ export const MyHeaders = new Headers({
   Authorization: `Bearer ${ApiToken}`,
 });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 export const getRequestOptions = {
   method: 'GET',
   headers: MyHeaders,
 };
 
-=======
->>>>>>> origin/main
-export const logger = pino({
-=======
 const customFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YYYYTHH:mm:ss.SSSZ' }),
   winston.format.errors({ stack: true }),
@@ -65,7 +54,6 @@ const consoleFormat = winston.format.combine(
 );
 
 export const logger = winston.createLogger({
->>>>>>> main
   level: logLevel,
   defaultMeta: {
     character: CharName,
@@ -138,18 +126,9 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  const allWeapons: ApiError | DataPageItemSchema =
-=======
-  const allWeapons: ApiError | GetAllItemsItemsGetResponse =
->>>>>>> origin/main
-    await getAllItemInformation({ type: 'weapon' });
-=======
   const allWeapons: ApiError | DataPageItemSchema = await getAllItemInformation(
     { type: 'weapon' },
   );
->>>>>>> main
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
@@ -231,14 +210,9 @@ export async function buildListOf(
 
   const itemMap: Record<string, ItemSchema[]> = {};
 
-<<<<<<< HEAD
-  const allItems: ApiError | DataPageItemSchema =
-    await getAllItemInformation({ type: itemType });
-=======
   const allItems: ApiError | DataPageItemSchema = await getAllItemInformation({
     type: itemType,
   });
->>>>>>> main
   if (allItems instanceof ApiError) {
     logger.error(`Failed to build list of useful ${itemType}: ${allItems}`);
     return {};
