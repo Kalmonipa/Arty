@@ -183,8 +183,14 @@ export class GatherObjective extends Objective {
 
         return false;
       } else {
-        this.character.data = response.data.character;
-        this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
+        // Ensure response has the expected structure before accessing nested properties
+        if (response && response.data && response.data.character) {
+          this.character.data = response.data.character;
+          this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
+        } else {
+          logger.error('Invalid response structure from actionGather:', response);
+          return false;
+        }
       }
 
       if (this.isCancelled()) {
