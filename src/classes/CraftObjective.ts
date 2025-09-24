@@ -278,8 +278,8 @@ export class CraftObjective extends Objective {
         if (numInInv < totalIngredNeededToCraft && numInBank >= (totalIngredNeededToCraft - numInInv)) {
           await this.character.withdrawNow(totalIngredNeededToCraft - numInInv, craftingItem.code)
         } else {
-          logger.info(`Need ${totalIngredNeededToCraft - numInInv} but only carrying ${numInInv} and ${numInBank} in the bank`)
-          return false
+          logger.info(`Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`)
+          
         }
     
       }

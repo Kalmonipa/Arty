@@ -23,7 +23,8 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "start:debug": "LOG_LEVEL=debug node dist/main.js",
-    "prettier:fix": "npx prettier . --write --log-level silent"
+    "prettier:fix": "npx prettier . --write --log-level silent",
+    "create-characters": "tsx scripts/create-characters.ts"
   },
   "dependencies": {
     "@datalust/winston-seq": "^3.0.1",
