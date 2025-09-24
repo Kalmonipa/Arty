@@ -310,9 +310,13 @@ export async function actionGather(
       });
     }
 
-    logger.info(`Gathering at x: ${character.x}, y: ${character.y}`);
-
     const result: SkillResponseSchema = await response.json();
+
+    for (const item of result.data.details.items) {
+      logger.info(
+        `Gathered ${item.quantity} ${item.code} at x: ${character.x}, y: ${character.y}`,
+      );
+    }
 
     await sleep(
       result.data.cooldown.remaining_seconds,
@@ -321,7 +325,13 @@ export async function actionGather(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    if (error instanceof ApiError) {
+      return error;
+    }
+    return new ApiError({
+      code: 500,
+      message: `Unexpected error in actionGather: ${error instanceof Error ? error.message : String(error)}`,
+    });
   }
 }
 

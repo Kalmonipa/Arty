@@ -64,7 +64,6 @@ export class CraftObjective extends Objective {
       } else {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
-          this.character.removeJob(this.objectiveId);
           return false;
         }
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
@@ -79,9 +78,6 @@ export class CraftObjective extends Objective {
           return true;
         }
 
-<<<<<<< HEAD
-        const maps = (await getMaps({content_code: targetItem.craft.skill, content_type: 'workshop'})).data;
-=======
         const maps = await getMaps({
           content_code: targetItem.craft.skill,
           content_type: 'workshop',
@@ -89,7 +85,6 @@ export class CraftObjective extends Objective {
         if (maps instanceof ApiError) {
           return this.character.handleErrors(maps);
         }
->>>>>>> main
 
         if (maps.data.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
@@ -103,7 +98,7 @@ export class CraftObjective extends Objective {
 
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
-            this.character.removeJob(this.objectiveId);
+            //this.character.removeJob(this.objectiveId);
             return false;
           }
 
@@ -111,6 +106,11 @@ export class CraftObjective extends Objective {
             targetItem.craft.items,
             batchInfo.numPerBatch,
           );
+
+          if (this.isCancelled()) {
+            logger.info(`${this.objectiveId} has been cancelled`);
+            return false;
+          }
 
           await this.character.move({
             x: contentLocation.x,
@@ -178,6 +178,10 @@ export class CraftObjective extends Objective {
       logger.debug(
         `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
       );
+      // ToDo: get the items to keep thing to work properly
+      //logger.debug(`Adding ${craftingItem.code} to exceptions list`)
+      //this.character.itemsToKeep.push(craftingItem.code)
+
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
         craftingItem.code,
       );
@@ -189,13 +193,13 @@ export class CraftObjective extends Objective {
           craftingItem.code,
         );
 
-        const numInBank = await this.character.checkQuantityOfItemInBank(
+        let numInBank = await this.character.checkQuantityOfItemInBank(
           craftingItem.code,
         );
 
-        const totalNumNeededToCraft = craftingItem.quantity * itemsPerBatch;
+        const totalIngredNeededToCraft = craftingItem.quantity * itemsPerBatch;
 
-        if (numInInv >= totalNumNeededToCraft) {
+        if (numInInv >= totalIngredNeededToCraft) {
           logger.info(
             `${numInInv} ${craftingItem.code} in inventory already. No need to collect more`,
           );
@@ -205,22 +209,22 @@ export class CraftObjective extends Objective {
             `${numInInv} ${craftingItem.code} in inventory already. Finding more`,
           );
         }
-        if (numInBank >= totalNumNeededToCraft - numInInv) {
+        if (numInBank >= totalIngredNeededToCraft - numInInv) {
           logger.info(
-            `Found ${numInBank} ${craftingItem.code} in the bank. Withdrawing ${totalNumNeededToCraft - numInInv}`,
+            `Found ${numInBank} ${craftingItem.code} in the bank`,
           );
           await this.character.withdrawNow(
-            totalNumNeededToCraft - numInInv,
+            totalIngredNeededToCraft - numInInv,
             craftingItem.code,
           );
 
           numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
         }
 
-        if (numInInv < totalNumNeededToCraft) {
+        if (numInInv < totalIngredNeededToCraft) {
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
-            this.character.removeJob(this.objectiveId);
+            //this.character.removeJob(this.objectiveId);
             return false;
           }
 
@@ -228,27 +232,57 @@ export class CraftObjective extends Objective {
             logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
 
             await this.character.gatherNow(
-              totalNumNeededToCraft - numInInv,
+              totalIngredNeededToCraft - numInInv,
               craftingItem.code,
             );
+
+            if (this.isCancelled()) {
+              logger.info(`${this.objectiveId} has been cancelled`);
+              return false;
+            }
+            
           } else if (craftingItemInfo.craft !== null) {
             logger.debug(
               `Resource ${craftingItemInfo.code} is a craftable item`,
             );
 
             await this.character.craftNow(
-              totalNumNeededToCraft - numInInv,
+              totalIngredNeededToCraft - numInInv,
               craftingItem.code,
             );
+
+            if (this.isCancelled()) {
+              logger.info(`${this.objectiveId} has been cancelled`);
+              return false;
+            }
+
           } else {
             logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
             await this.character.gatherNow(
-              totalNumNeededToCraft - numInInv,
+              totalIngredNeededToCraft - numInInv,
               craftingItem.code,
             );
+
+            if (this.isCancelled()) {
+              logger.info(`${this.objectiveId} has been cancelled`);
+              return false;
+            }
           }
         }
+
+        this.character.removeItemFromItemsToKeep(craftingItem.code)
+        
+        // Ensure that we're carrying the correct amount of ingredients. They may have been deposited into bank
+        numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code)
+        numInBank = await this.character.checkQuantityOfItemInBank(craftingItem.code)
+        if (numInInv < totalIngredNeededToCraft && numInBank >= (totalIngredNeededToCraft - numInInv)) {
+          await this.character.withdrawNow(totalIngredNeededToCraft - numInInv, craftingItem.code)
+        } else {
+          logger.info(`Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`)
+          
+        }
+    
       }
     }
   }

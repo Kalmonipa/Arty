@@ -40,7 +40,7 @@ export const getRequestOptions = {
 export const logger = pino({
 =======
 const customFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
+  winston.format.timestamp({ format: 'DD-MM-YYYYTHH:mm:ss.SSSZ' }),
   winston.format.errors({ stack: true }),
   winston.format.json(),
   winston.format.printf(({ timestamp, level, message, character, ...meta }) => {
@@ -56,7 +56,7 @@ const customFormat = winston.format.combine(
 );
 
 const consoleFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.printf(({ timestamp, level, message, character }) => {
     const char = character || CharName;
@@ -80,15 +80,6 @@ export const logger = winston.createLogger({
     new winston.transports.Console({
       level: logLevel,
       format: consoleFormat,
-    }),
-
-    new SeqTransport({
-      serverUrl: process.env.SEQ_SERVER_URL || 'http://seq:5341',
-      apiKey: getEnv('SEQ_API_KEY'),
-      level: logLevel,
-      onError: (err) => {
-        console.error('Seq transport error:', err.message);
-      },
     }),
   ],
 });

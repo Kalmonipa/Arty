@@ -18,11 +18,14 @@ import {
   Skill,
 } from '../types/types.js';
 import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils.js';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { CraftObjective } from './CraftObjective.js';
 import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
 import { Objective } from './Objective.js';
+import { ObjectiveTargets, ObjectiveStatus } from '../types/ObjectiveData.js';
 import { FightObjective } from './FightObjective.js';
 import { EquipObjective } from './EquipObjective.js';
 import { UnequipObjective } from './UnequipObjective.js';
@@ -34,6 +37,18 @@ import { UtilityEffects, WeaponFlavours } from '../types/ItemData.js';
 import { SimpleMapSchema } from '../types/MapData.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
+import { actionBuyItem, actionSellItem } from '../api_calls/NPC.js';
+
+interface SerializedJob {
+  type: string;
+  objectiveId: string;
+  status: string;
+  progress: number;
+  parentId?: string;
+  childId?: string;
+  maxRetries: number;
+  [key: string]: unknown;
+}
 
 export class Character {
   data: CharacterSchema;
@@ -46,6 +61,15 @@ export class Character {
    * The list of jobs that have not been started yet
    */
   jobList: Objective[] = [];
+  /**
+   * The currently executing job (for tracking parent-child relationships)
+   */
+  currentExecutingJob?: Objective;
+
+  /**
+   * Path to the job queue persistence file
+   */
+  private jobQueueFilePath: string;
 
   /**
    * Game state that we can refer to without API calls
@@ -78,7 +102,7 @@ export class Character {
    * The code of the food we're currently using. Saving it as a var so
    * I don't have to search my inv to figure out what to use
    */
-  preferredFood: string = '';
+  preferredFood: string;
   /**
    * Desired number of food in inventory
    */
@@ -86,7 +110,7 @@ export class Character {
   /**
    *  Minimum food in inventory when going into a fight
    */
-  minFood = 10;
+  minFood = 15;
 
   /**
    * List of items to keep when doing a deposit all
@@ -95,6 +119,7 @@ export class Character {
 
   constructor(data: CharacterSchema) {
     this.data = data;
+    this.jobQueueFilePath = path.join(process.cwd(), 'data', `job_queue_${data.name}.json`);
   }
 
   /**
@@ -104,6 +129,8 @@ export class Character {
     this.weaponMap = await buildListOfWeapons();
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
+    
+    await this.loadJobQueue();
   }
 
   /********
@@ -111,19 +138,10 @@ export class Character {
    ********/
 
   /**
-   * @description Cancels the currently active job
-   * @todo Implement some cancel logic
-   */
-  cancelJob(obj: Objective): boolean {
-    obj.status = 'cancelled';
-    return true;
-  }
-
-  /**
    * @description Lists the names of all the objectivs in the queue
    */
   listObjectives(): string[] {
-    let objNames: string[] = [];
+    const objNames: string[] = [];
     for (const obj of this.jobList) {
       objNames.push(obj.objectiveId);
     }
@@ -131,36 +149,346 @@ export class Character {
   }
 
   /**
+   * @description Lists all objectives with their parent-child relationships
+   */
+  listObjectivesWithParents(): Array<{
+    id: string;
+    parentId?: string;
+    childId?: string;
+    status: string;
+  }> {
+    const objectives = [];
+    for (const obj of this.jobList) {
+      objectives.push({
+        id: obj.objectiveId,
+        parentId: obj.parentId,
+        childId: obj.childId,
+        status: obj.status,
+      });
+    }
+    return objectives;
+  }
+
+  /**
+   * @description Gets the complete job chain starting from a root job
+   * @param rootJobId The objectiveId of the root job to start the chain from
+   * @returns Array of job IDs in the chain order
+   */
+  getJobChain(rootJobId: string): string[] {
+    const chain = [rootJobId];
+
+    // Find the job in the current jobList or currentExecutingJob
+    let currentJob = this.jobList.find((job) => job.objectiveId === rootJobId);
+    if (
+      !currentJob &&
+      this.currentExecutingJob &&
+      this.currentExecutingJob.objectiveId === rootJobId
+    ) {
+      currentJob = this.currentExecutingJob;
+    }
+
+    // Follow the child chain
+    while (currentJob && currentJob.childId) {
+      chain.push(currentJob.childId);
+      currentJob = this.jobList.find(
+        (job) => job.objectiveId === currentJob.childId,
+      );
+      if (
+        !currentJob &&
+        this.currentExecutingJob &&
+        this.currentExecutingJob.objectiveId === currentJob.childId
+      ) {
+        currentJob = this.currentExecutingJob;
+      }
+    }
+
+    return chain;
+  }
+
+  /**
+   * @description Gets all cancelled jobs in the queue
+   * @returns Array of cancelled job IDs
+   */
+  getCancelledJobs(): string[] {
+    return this.jobList
+      .filter((job) => job.status === 'cancelled')
+      .map((job) => job.objectiveId);
+  }
+
+  /**
+   * @description Saves the current job queue to a file
+   */
+  async saveJobQueue(): Promise<void> {
+    try {
+      const dataDir = path.dirname(this.jobQueueFilePath);
+      await fs.mkdir(dataDir, { recursive: true });
+
+      const jobQueueData = {
+        characterName: this.data.name,
+        timestamp: new Date().toISOString(),
+        jobs: this.jobList.map((job) => this.serializeJob(job)),
+      };
+
+      await fs.writeFile(this.jobQueueFilePath, JSON.stringify(jobQueueData, null, 2));
+      logger.debug(`Saved ${this.jobList.length} jobs to ${this.jobQueueFilePath}`);
+    } catch (error) {
+      logger.error(`Failed to save job queue: ${error.message}`);
+    }
+  }
+
+  /**
+   * @description Loads the job queue from a file
+   */
+  async loadJobQueue(): Promise<void> {
+    try {
+      const fileContent = await fs.readFile(this.jobQueueFilePath, 'utf-8');
+      const jobQueueData = JSON.parse(fileContent);
+
+      // Clear current job list
+      this.jobList = [];
+
+      // Deserialize and add jobs
+      for (const jobData of jobQueueData.jobs) {
+        const job = this.deserializeJob(jobData);
+        if (job) {
+          this.jobList.push(job);
+        }
+      }
+
+      logger.info(`Loaded ${this.jobList.length} jobs from ${this.jobQueueFilePath}`);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        logger.info(`No saved job queue found for ${this.data.name}`);
+      } else {
+        logger.error(`Failed to load job queue: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * @description Serializes a job to a plain object for persistence
+   */
+  private serializeJob(job: Objective): SerializedJob {
+    return {
+      type: job.constructor.name,
+      objectiveId: job.objectiveId,
+      status: job.status,
+      progress: job.progress,
+      parentId: job.parentId,
+      childId: job.childId,
+      maxRetries: job.maxRetries,
+      // Add type-specific data
+      ...this.getJobSpecificData(job),
+    };
+  }
+
+  /**
+   * @description Gets type-specific data for job serialization
+   */
+  private getJobSpecificData(job: Objective): Record<string, unknown> {
+    if (job instanceof CraftObjective) {
+      return { target: job.target };
+    } else if (job instanceof GatherObjective) {
+      return { target: job.target, checkBank: job.checkBank, includeInventory: job.includeInventory };
+    } else if (job instanceof FightObjective) {
+      return { target: job.target };
+    } else if (job instanceof DepositObjective) {
+      return { target: job.target };
+    } else if (job instanceof WithdrawObjective) {
+      return { target: job.target };
+    } else if (job instanceof EquipObjective) {
+      return { itemCode: job.itemCode, itemSlot: job.itemSlot, quantity: job.quantity };
+    } else if (job instanceof UnequipObjective) {
+      return { itemSlot: job.itemSlot, quantity: job.quantity };
+    } else if (job instanceof ItemTaskObjective) {
+      return { quantity: job.quantity };
+    } else if (job instanceof MonsterTaskObjective) {
+      return {};
+    } else if (job instanceof TrainGatheringSkillObjective) {
+      return { skill: job.skill, targetLevel: job.targetLevel };
+    } else if (job instanceof TidyBankObjective) {
+      return {};
+    }
+    return {};
+  }
+
+  /**
+   * @description Deserializes a job from a plain object
+   */
+  private deserializeJob(jobData: SerializedJob): Objective | null {
+    try {
+      const { type, objectiveId, status, progress, parentId, childId, maxRetries, ...specificData } = jobData;
+
+      let job: Objective;
+
+      switch (type) {
+        case 'CraftObjective':
+          job = new CraftObjective(this, specificData.target as ObjectiveTargets);
+          break;
+        case 'GatherObjective':
+          job = new GatherObjective(
+            this, 
+            specificData.target as ObjectiveTargets, 
+            specificData.checkBank as boolean, 
+            specificData.includeInventory as boolean
+          );
+          break;
+        case 'FightObjective':
+          job = new FightObjective(this, specificData.target as ObjectiveTargets);
+          break;
+        case 'DepositObjective':
+          job = new DepositObjective(this, specificData.target as ObjectiveTargets);
+          break;
+        case 'WithdrawObjective':
+          job = new WithdrawObjective(this, specificData.target as ObjectiveTargets);
+          break;
+        case 'EquipObjective':
+          job = new EquipObjective(
+            this, 
+            specificData.itemCode as string, 
+            specificData.itemSlot as ItemSlot, 
+            specificData.quantity as number
+          );
+          break;
+        case 'UnequipObjective':
+          job = new UnequipObjective(
+            this, 
+            specificData.itemSlot as ItemSlot, 
+            specificData.quantity as number
+          );
+          break;
+        case 'ItemTaskObjective':
+          job = new ItemTaskObjective(this, specificData.quantity as number);
+          break;
+        case 'MonsterTaskObjective':
+          job = new MonsterTaskObjective(this);
+          break;
+        case 'TrainGatheringSkillObjective':
+          job = new TrainGatheringSkillObjective(
+            this, 
+            specificData.skill as GatheringSkill, 
+            specificData.targetLevel as number
+          );
+          break;
+        case 'TidyBankObjective':
+          job = new TidyBankObjective(this);
+          break;
+        default:
+          logger.warn(`Unknown job type: ${type}`);
+          return null;
+      }
+
+      // Restore job properties
+      job.objectiveId = objectiveId;
+      job.status = status as ObjectiveStatus;
+      job.progress = progress;
+      job.parentId = parentId;
+      job.childId = childId;
+      job.maxRetries = maxRetries;
+
+      return job;
+    } catch (error) {
+      logger.error(`Failed to deserialize job: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
    * Adds an objective to the end of the job list
    * @param obj
    */
-  appendJob(obj: Objective) {
+  async appendJob(obj: Objective) {
     this.jobList.push(obj);
     logger.info(
       `Added ${obj.objectiveId} to position ${this.jobList.length} in job list`,
     );
+    await this.saveJobQueue();
   }
 
   /**
    * Adds an objective to the beginning of the job list
    */
-  prependJob(obj: Objective) {
+  async prependJob(obj: Objective) {
     this.jobList.unshift(obj);
     logger.info(`Added ${obj.objectiveId} to beginning of job list`);
+    await this.saveJobQueue();
   }
 
   /**
    * Inserts an objective into the specified position in the array
    */
-  insertJob(obj: Objective, index: number) {
+  async insertJob(obj: Objective, index: number) {
     this.jobList.splice(index, 0, obj);
     logger.info(`Inserted ${obj.objectiveId} into position ${index}`);
+    await this.saveJobQueue();
+  }
+
+  /**
+   * Adds a job to the jobList and executes it immediately
+   * This ensures all jobs go through the jobList system for tracking
+   * @param obj The objective to add and execute
+   * @param prepend If true, adds to beginning of jobList, otherwise adds to end
+   * @param trackInQueue If true, adds to jobList for tracking. If false, executes without queue tracking
+   * @param parentId The objectiveId of the parent job that spawned this job
+   * @returns Promise<boolean> The result of the job execution
+   */
+  async executeJobNow(
+    obj: Objective,
+    prepend: boolean = true,
+    trackInQueue: boolean = true,
+    parentId?: string,
+  ): Promise<boolean> {
+    // Set the parentId if provided
+    if (parentId) {
+      obj.parentId = parentId;
+      logger.debug(`Set parentId ${parentId} for job ${obj.objectiveId}`);
+    }
+
+    if (trackInQueue) {
+      if (prepend) {
+        this.prependJob(obj);
+      } else {
+        this.appendJob(obj);
+      }
+
+      logger.info(
+        `Added job ${obj.objectiveId} to position ${prepend ? 0 : this.jobList.length - 1})${parentId ? `, parent: ${parentId}` : ''}`,
+      );
+      
+      // Set this job as the currently executing job during its execution
+      const previousExecutingJob = this.currentExecutingJob;
+      this.currentExecutingJob = obj;
+      
+      const result = await obj.execute();
+      
+      // Restore the previous executing job
+      this.currentExecutingJob = previousExecutingJob;
+
+      await this.removeJob(obj.objectiveId);
+
+      return result;
+    } else {
+      logger.info(
+        `Executing sub-job ${obj.objectiveId} without queue tracking${parentId ? `, parent: ${parentId}` : ''}`,
+      );
+      
+      // Set this job as the currently executing job during its execution
+      const previousExecutingJob = this.currentExecutingJob;
+      this.currentExecutingJob = obj;
+      
+      const result = await obj.execute();
+      
+      // Restore the previous executing job
+      this.currentExecutingJob = previousExecutingJob;
+      
+      return result;
+    }
   }
 
   /**
    * Remove job from jobList
    */
-  removeJob(objectiveId: string): boolean {
+  async removeJob(objectiveId: string): Promise<boolean> {
     const ind = this.jobList.indexOf(
       this.jobList.find((obj) => objectiveId === obj.objectiveId),
     );
@@ -179,7 +507,49 @@ export class Character {
         logger.debug(`   - ${obj.objectiveId} - ${obj.status}`);
       }
     }
+    await this.saveJobQueue();
     return true;
+  }
+
+  /**
+   * Cancels a job and all its child jobs recursively
+   * @param objectiveId The ID of the job to cancel
+   * @returns Array of cancelled job IDs
+   */
+  async cancelJobAndChildren(objectiveId: string): Promise<string[]> {
+    const cancelledJobs: string[] = [];
+    
+    // Find the job to cancel
+    const jobToCancel = this.jobList.find((job) => job.objectiveId === objectiveId);
+    if (!jobToCancel) {
+      logger.warn(`Job ${objectiveId} not found in job list`);
+      return cancelledJobs;
+    }
+
+    // Cancel the job itself
+    jobToCancel.cancelJob();
+    cancelledJobs.push(objectiveId);
+    logger.info(`Cancelled job ${objectiveId}`);
+
+    // Recursively cancel all child jobs
+    const cancelChildren = (parentJobId: string) => {
+      const childJobs = this.jobList.filter((job) => job.parentId === parentJobId);
+      
+      for (const childJob of childJobs) {
+        childJob.cancelJob();
+        cancelledJobs.push(childJob.objectiveId);
+        logger.info(`Cancelled child job ${childJob.objectiveId} of parent ${parentJobId}`);
+        
+        // Recursively cancel grandchildren
+        cancelChildren(childJob.objectiveId);
+      }
+    };
+
+    cancelChildren(objectiveId);
+    
+    logger.info(`Cancelled ${cancelledJobs.length} jobs total: ${cancelledJobs.join(', ')}`);
+    await this.saveJobQueue();
+    return cancelledJobs;
   }
 
   /**
@@ -216,12 +586,19 @@ export class Character {
       if (this.jobList.length === 0) {
         await sleep(10, 'no more jobs', false);
       } else if (this.jobList.length > 0) {
-        logger.info(`Executing job ${this.jobList[0].objectiveId}`);
-        await this.jobList[0].execute();
-        this.removeJob(this.jobList[0].objectiveId);
+        const currentJob = this.jobList[0];
+        this.currentExecutingJob = currentJob;
+        logger.info(`Executing job ${currentJob.objectiveId}`);
+        await currentJob.execute();
+        await this.removeJob(currentJob.objectiveId);
+        this.currentExecutingJob = undefined;
       }
     }
   }
+
+  /********
+   * Character activity functions
+   ********/
 
   /********
    * Character detail functions
@@ -337,7 +714,12 @@ export class Character {
       code: 'all',
       quantity: 0,
     });
-    await job.execute();
+    await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -366,6 +748,18 @@ export class Character {
     }
 
     return closestMap;
+  }
+
+  /**
+   * @description Remove an item from the itemsToKeep list
+   */
+  removeItemFromItemsToKeep(itemCode: string) {
+    if (this.itemsToKeep.includes(itemCode)) {
+      logger.info(`Removing ${itemCode} from exceptions list`)
+      this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1)
+    } else {
+      logger.warn(`Can't remove item code ${itemCode} from itemsToKeep list`)
+    }
   }
 
   /********
@@ -433,13 +827,21 @@ export class Character {
   async eatFood() {
     const healthStatus: HealthStatus = this.checkHealth();
 
-    const preferredFoodInfo = this.consumablesMap.heal
+    const preferredFoodHealValue = this.consumablesMap.heal
       .find((food) => food.code === this.preferredFood)
       .effects.find((effect) => effect.code === 'heal').value;
 
-    const amountNeededToEat = Math.ceil(
-      healthStatus.difference / preferredFoodInfo,
+    let amountNeededToEat = Math.ceil(
+      healthStatus.difference / preferredFoodHealValue,
     );
+
+    const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+    if (amountNeededToEat > numInInv) {
+      logger.info(
+        `Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`,
+      );
+      amountNeededToEat = numInInv;
+    }
 
     logger.info(
       `Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`,
@@ -469,8 +871,8 @@ export class Character {
     const utility = this.utilitiesMap[utilityType];
 
     for (let ind = utility.length - 1; ind >= 0; ind--) {
-      let numNeeded: number = 0
       if (utility[ind].level <= this.getCharacterLevel()) {
+        let numNeeded: number
         if (slot === 'utility1') {
           numNeeded =
             this.maxEquippedUtilities - this.data.utility1_slot_quantity;
@@ -551,16 +953,87 @@ export class Character {
   async topUpFood(priorLocation?: DestinationSchema) {
     if (!this.preferredFood) {
       logger.debug(`No preferred food set to top up`);
+      this.setPreferredFood();
       return;
     }
 
-    const numNeeded =
-      this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood);
+    // Check to make sure we have enough preferred food in the bank. If there's none, set a new preferred food
+    const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+    if (numInBank === 0) {
+      this.setPreferredFood();
+    }
+
+    const numNeeded = Math.min(
+      numInBank,
+      this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood),
+    );
 
     await this.withdrawNow(numNeeded, this.preferredFood);
 
     if (priorLocation) {
       await this.move(priorLocation);
+    }
+  }
+
+  /**
+   * @description Find the NPC and buy from them
+   */
+  async buyFromNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
+    // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
+    // Make it into it's own function and just call it
+    const maps = await getMaps({
+      content_code: npcCode,
+      content_type: 'npc',
+    });
+    if (maps instanceof ApiError) {
+      return await this.handleErrors(maps);
+    }
+
+    if (maps.data.length === 0) {
+      logger.error(`Cannot find any maps for ${npcCode}`);
+      return false;
+    }
+
+    const traderLocation = this.evaluateClosestMap(maps.data);
+
+    await this.move(traderLocation);
+
+    const buyResponse = await actionBuyItem(this.data, items);
+    if (buyResponse instanceof ApiError) {
+      return this.handleErrors(buyResponse);
+    } else {
+      this.data = buyResponse.character;
+      return true;
+    }
+  }
+
+  /**
+   * @description Find the NPC and sell to them
+   */
+  async sellToNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
+    const maps = await getMaps({
+      content_code: npcCode,
+      content_type: 'npc',
+    });
+    if (maps instanceof ApiError) {
+      return await this.handleErrors(maps);
+    }
+
+    if (maps.data.length === 0) {
+      logger.error(`Cannot find any maps for ${npcCode}`);
+      return false;
+    }
+
+    const traderLocation = this.evaluateClosestMap(maps.data);
+
+    await this.move(traderLocation);
+
+    const sellResponse = await actionSellItem(this.data, items);
+    if (sellResponse instanceof ApiError) {
+      return this.handleErrors(sellResponse);
+    } else {
+      this.data = sellResponse.character;
+      return true;
     }
   }
 
@@ -585,16 +1058,16 @@ export class Character {
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
     const usedInventorySpace = this.getInventoryFullness();
-    if (usedInventorySpace >= 90 || makeSpaceForOtherItems) {
+    if (
+      usedInventorySpace >= this.data.inventory_max_items * 0.9 ||
+      makeSpaceForOtherItems
+    ) {
       logger.warn(`Inventory is almost full. Depositing items`);
-<<<<<<< HEAD
-      const maps = (await getMaps({content_type: 'bank'})).data;
-=======
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
+        logger.warn(`Failed to get bank map`);
         return this.handleErrors(maps);
       }
->>>>>>> main
 
       const contentLocation = this.evaluateClosestMap(maps.data);
 
@@ -604,7 +1077,7 @@ export class Character {
       for (const item of this.data.inventory) {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
-          break;
+          continue;
         } else if (exceptions && exceptions.includes(item.code)) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
@@ -656,46 +1129,53 @@ export class Character {
       }
     } else {
       logger.debug(`No preferred food. Finding one`);
+      return await this.setPreferredFood();
+    }
+  }
 
-      const foundItem = this.data.inventory.find((invItem) => {
+  /**
+   * @description Preferred food is used to withdraw from the bank without having to figure out what food is available
+   * @returns true if successful, false otherwise
+   */
+  async setPreferredFood(): Promise<boolean> {
+    const foundItem = this.data.inventory.find((invItem) => {
+      return this.consumablesMap.heal.find(
+        (item) => invItem.code === item.code,
+      );
+    });
+
+    if (foundItem && foundItem.quantity > this.minFood) {
+      logger.debug(
+        `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
+      );
+      this.preferredFood = foundItem.code;
+
+      if (foundItem.quantity <= this.minFood) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+    logger.debug(`Not enough food in inventory. Checking bank to find some`);
+    const bankItems = await getBankItems();
+    if (bankItems instanceof ApiError) {
+      this.handleErrors(bankItems);
+    } else if (!bankItems) {
+      logger.info(`No food items in the bank`);
+      return true;
+    } else {
+      const foundItem = bankItems.data.find((bankItem) => {
         return this.consumablesMap.heal.find(
-          (item) => invItem.code === item.code,
+          (item) => bankItem.code === item.code,
         );
       });
 
       if (foundItem) {
         logger.debug(
-          `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
+          `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
         );
         this.preferredFood = foundItem.code;
-
-        if (foundItem.quantity <= this.minFood) {
-          return false;
-        } else {
-          return true;
-        }
-      }
-      logger.debug(`No food in inventory. Checking bank to find some`);
-      const bankItems = await getBankItems();
-      if (bankItems instanceof ApiError) {
-        this.handleErrors(bankItems);
-      } else if (!bankItems) {
-        logger.info(`No food items in the bank`);
         return true;
-      } else {
-        const foundItem = bankItems.data.find((bankItem) => {
-          return this.consumablesMap.heal.find(
-            (item) => bankItem.code === item.code,
-          );
-        });
-
-        if (foundItem) {
-          logger.debug(
-            `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
-          );
-          this.preferredFood = foundItem.code;
-          return true;
-        }
       }
     }
   }
@@ -762,7 +1242,12 @@ export class Character {
       code: code,
       quantity: quantity,
     });
-    return await craftJob.execute();
+    return await this.executeJobNow(
+      craftJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -805,7 +1290,12 @@ export class Character {
       quantity: quantity,
     });
 
-    return await depositJob.execute();
+    return await this.executeJobNow(
+      depositJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -825,7 +1315,12 @@ export class Character {
     quantity?: number,
   ): Promise<boolean> {
     const equipJob = new EquipObjective(this, itemName, itemSlot, quantity);
-    return await equipJob.execute();
+    return await this.executeJobNow(
+      equipJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -840,7 +1335,12 @@ export class Character {
    */
   async unequipNow(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
     const unequipJob = new UnequipObjective(this, itemSlot, quantity);
-    return await unequipJob.execute();
+    return await this.executeJobNow(
+      unequipJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -861,7 +1361,12 @@ export class Character {
       quantity: quantity,
     });
 
-    return await fightJob.execute();
+    return await this.executeJobNow(
+      fightJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -905,7 +1410,12 @@ export class Character {
       includeInventory,
     );
 
-    return await gatherJob.execute();
+    return await this.executeJobNow(
+      gatherJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -913,9 +1423,9 @@ export class Character {
    * @param targetSkill skill to train
    * @param targetLevel level to train too. Must be less than the max level 45
    */
-  async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
-    logger.warn(`Levelling ${targetSkill} to ${targetLevel} isn't implemented yet`);
-  }
+  // async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
+  //   logger.warn(`Levelling craft skills isn't implemented yet`);
+  // }
 
   /**
    * @description levels the specified gathering skill to the target level
@@ -933,22 +1443,37 @@ export class Character {
    */
   async tidyUpBank() {
     const job = new TidyBankObjective(this);
-    await job.execute();
+    await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
    * @description withdraw the specified items from the bank
    */
   async withdraw(quantity: number, itemCode: string) {
-    this.appendJob(new WithdrawObjective(this, itemCode, quantity));
+    this.appendJob(
+      new WithdrawObjective(this, { code: itemCode, quantity: quantity }),
+    );
   }
 
   /**
    * @description withdraw the specified items from the bank
    */
   async withdrawNow(quantity: number, itemCode: string): Promise<boolean> {
-    const withdrawJob = new WithdrawObjective(this, itemCode, quantity);
-    return await withdrawJob.execute();
+    const withdrawJob = new WithdrawObjective(this, {
+      code: itemCode,
+      quantity: quantity,
+    });
+    return await this.executeJobNow(
+      withdrawJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
   }
 
   /**
@@ -973,13 +1498,15 @@ export class Character {
         return true;
       case 488: // Character has not completed the task. Should not retry completing task
         return false;
+      case 493: // Character's level is too low
+        // ToDo: Maybe train the skill to the required level?
+        return false;
       case 497: // The character's inventory is full.
         await this.evaluateDepositItemsInBank(
           this.itemsToKeep,
           { x: this.data.x, y: this.data.y },
           true,
         );
-        //await this.depositAllItems();
         return true;
       case 499:
         await sleep(this.data.cooldown, 'cooldown');

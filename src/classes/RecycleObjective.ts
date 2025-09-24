@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-import { getMaps } from '../api_calls/Maps';
-import { logger } from '../utils.js';
-import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
-import { ObjectiveTargets } from '../types/ObjectiveData';
-import { getItemInformation } from '../api_calls/Items';
-import { actionRecycle } from '../api_calls/Recycling';
-=======
 import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
@@ -16,7 +6,6 @@ import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { actionRecycle } from '../api_calls/Recycling.js';
->>>>>>> main
 
 /**
  * @description Recycles the specified items and deposits the results into the bank
@@ -57,7 +46,7 @@ export class RecycleObjective extends Objective {
 
     if (this.isCancelled()) {
       logger.info(`${this.objectiveId} has been cancelled`);
-      this.character.removeJob(this.objectiveId);
+      //this.character.removeJob(this.objectiveId);
       return false;
     }
 
@@ -79,9 +68,6 @@ export class RecycleObjective extends Objective {
     if (itemInfo instanceof ApiError) {
       this.character.handleErrors(itemInfo);
     } else {
-<<<<<<< HEAD
-      const maps = (await getMaps({content_code: itemInfo.craft.skill, content_type: 'workshop'})).data;
-=======
       const maps = await getMaps({
         content_code: itemInfo.craft.skill,
         content_type: 'workshop',
@@ -89,7 +75,6 @@ export class RecycleObjective extends Objective {
       if (maps instanceof ApiError) {
         return this.character.handleErrors(maps);
       }
->>>>>>> main
 
       if (maps.data.length === 0) {
         logger.error(`Cannot find any maps to recycle ${this.target.code}`);

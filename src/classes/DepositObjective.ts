@@ -37,7 +37,7 @@ export class DepositObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        this.character.removeJob(this.objectiveId);
+        //this.character.removeJob(this.objectiveId);
         return false;
       }
 
@@ -45,14 +45,10 @@ export class DepositObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
-<<<<<<< HEAD
-      const maps = (await getMaps({content_type: 'bank'})).data;
-=======
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
         return this.character.handleErrors(maps);
       }
->>>>>>> main
 
       if (maps.data.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);

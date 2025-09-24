@@ -12,12 +12,16 @@ import EquipRouter from './routes/Equip.js';
 import FightRouter from './routes/Fight.js';
 import RecycleRouter from './routes/Recycle.js';
 import { ApiError } from './classes/Error.js';
+import WithdrawRouter from './routes/Withdraw.js';
+import ItemsRouter from './routes/Items.js';
 
 async function main() {
   const charData = await getCharacter(CharName);
   if (charData instanceof ApiError) {
     logger.error(`Failed to get character data`);
     return;
+  } else {
+    logger.debug(`Gathered data for ${charData.name}`);
   }
   const char = new Character(charData);
   await char.init();
@@ -35,10 +39,12 @@ async function main() {
   app.use('/equip', EquipRouter(char));
   app.use('/fight', FightRouter(char));
   app.use('/gather', GatherRouter(char));
+  app.use('/items', ItemsRouter(char));
   app.use('/jobs', JobsRouter(char));
   app.use('/recycle', RecycleRouter(char));
   app.use('/task', TaskRouter(char));
   app.use('/train', TrainSkillRouter(char));
+  app.use('/withdraw', WithdrawRouter(char));
 
   app.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);

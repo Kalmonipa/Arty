@@ -27,9 +27,6 @@ export class MonsterTaskObjective extends Objective {
       this.startNewTask('monsters');
     }
 
-<<<<<<< HEAD
-    const maps = (await getMaps({content_code: this.character.data.task, content_type: 'monster'})).data;
-=======
     const maps = await getMaps({
       content_code: this.character.data.task,
       content_type: 'monster',
@@ -37,7 +34,6 @@ export class MonsterTaskObjective extends Objective {
     if (maps instanceof ApiError) {
       return this.character.handleErrors(maps);
     }
->>>>>>> main
 
     if (maps.data.length === 0) {
       logger.error(`Cannot find the task target. This shouldn't happen ??`);

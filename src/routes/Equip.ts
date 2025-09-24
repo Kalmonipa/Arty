@@ -23,7 +23,7 @@ export default function EquipRouter(char: Character) {
 
       const job = new EquipObjective(char, itemCode, itemSlot, quantity);
 
-      char.appendJob(job);
+      await char.appendJob(job);
 
       return res.status(201).json({
         message: `Gather job ${job.objectiveId} added to queue.`,

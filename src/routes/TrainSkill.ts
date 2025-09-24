@@ -13,8 +13,6 @@ export default function TrainSkillRouter(char: Character) {
       const skill: GatheringSkill = req.body.skill;
 
       if (isNaN(targetLevel) || !skill) {
-        logger.info(targetLevel);
-        logger.info(skill);
         return res
           .status(400)
           .json({ error: 'Invalid target level or skill.' });
@@ -32,9 +30,9 @@ export default function TrainSkillRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      var job = new TrainGatheringSkillObjective(char, skill, targetLevel);
+      const job = new TrainGatheringSkillObjective(char, skill, targetLevel);
 
-      char.appendJob(job);
+      await char.appendJob(job);
 
       return res.status(201).json({
         message: `Train ${skill} skill job added to queue.`,

@@ -60,7 +60,6 @@ export class FightObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        this.character.removeJob(this.objectiveId);
         return false;
       }
 
@@ -68,14 +67,10 @@ export class FightObjective extends Objective {
 
       logger.info(`Finding location of ${this.target.code}`);
 
-<<<<<<< HEAD
-      const maps = (await getMaps({content_code: this.target.code})).data;
-=======
       const maps = await getMaps({ content_code: this.target.code });
       if (maps instanceof ApiError) {
         return this.character.handleErrors(maps);
       }
->>>>>>> main
 
       if (maps.data.length === 0) {
         logger.error(`Cannot find any maps for ${this.target.code}`);
@@ -86,15 +81,14 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (var count = 0; count < this.target.quantity; count++) {
+      for (this.progress; this.progress < this.target.quantity; this.progress++) {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
-          this.character.removeJob(this.objectiveId);
           return false;
         }
 
         logger.info(
-          `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
+          `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
         );
 
         await this.character.evaluateDepositItemsInBank(
@@ -123,14 +117,6 @@ export class FightObjective extends Objective {
           }
         }
 
-        // Check amount of food in inventory to use after battles
-        if (
-          this.character.preferredFood &&
-          !(await this.character.checkFoodLevels())
-        ) {
-          await this.character.topUpFood(contentLocation);
-        }
-
         const response = await actionFight(this.character.data);
 
         if (response instanceof ApiError) {
@@ -146,14 +132,26 @@ export class FightObjective extends Objective {
             logger.warn(
               `Fight was a ${response.data.fight.result}. Returned to ${response.data.characters[0].x},${response.data.characters[0].y}`,
             );
+            // ToDo: This is here with the intention of failing the fight job after 3 losses but not sure if that's right. Need to test
+            //break;
           } else if (response.data.fight.result === 'win') {
             logger.info(
               `Fight was a ${response.data.fight.result}`,
             );
           }
-          // ToDo: Need to handle multi-char fights somehow. Currently this is just pulling the first char data
-          this.character.data = response.data.characters[0];
+
+          this.character.data = response.data.characters.find(char => char.name === this.character.name);
+
+          // Check amount of food in inventory to use after battles
+          if (
+            this.character.preferredFood &&
+            !(await this.character.checkFoodLevels())
+          ) {
+            await this.character.topUpFood(contentLocation);
+          }
         }
+
+        await this.character.saveJobQueue()
       }
 
       logger.debug(

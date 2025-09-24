@@ -33,25 +33,17 @@ export class TrainGatheringSkillObjective extends Objective {
     while (charLevel < this.targetLevel) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        this.character.removeJob(this.objectiveId);
         return false;
       }
 
       const resourceTypes: DataPageResourceSchema | ApiError =
         await getResourceInformation({
-<<<<<<< HEAD
-            skill: this.skill,
-            max_level: charLevel,
-          },
-          );
-=======
           skill: this.skill,
           max_level: charLevel,
         });
       if (resourceTypes instanceof ApiError) {
         return this.character.handleErrors(resourceTypes);
       }
->>>>>>> main
 
       const resourceToGather =
         resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;

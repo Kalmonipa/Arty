@@ -1,25 +1,15 @@
 import * as crypto from 'node:crypto';
-<<<<<<< HEAD
-import { ObjectiveStatus } from '../types/ObjectiveData';
-import { Character } from './Character';
-<<<<<<< HEAD
-import { logger } from '../utils';
-=======
-import { logger, sleep } from '../utils.js';
->>>>>>> main
-import { getMaps } from '../api_calls/Maps';
-import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks';
-import { ApiError } from './Error';
-import { TaskType } from '../types/types';
-=======
 import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
-import { logger, sleep } from '../utils.js';
+import { logger } from '../utils.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { actionAcceptNewTask, actionCompleteTask } from '../api_calls/Tasks.js';
+import {
+  actionAcceptNewTask,
+  actionCancelTask,
+  actionCompleteTask,
+} from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { TaskType } from '../types/types.js';
->>>>>>> main
 
 export abstract class Objective {
   character: Character;
@@ -27,11 +17,15 @@ export abstract class Objective {
   progress: number;
   status: ObjectiveStatus;
   maxRetries: number = 3;
+  parentId?: string;
+  childId?: string;
 
   constructor(
     character: Character,
     objectiveId: string,
     status: ObjectiveStatus,
+    parentId?: string,
+    childId?: string,
   ) {
     this.character = character;
     // appending a random string to the objectiveId to ensure uniqueness
@@ -40,10 +34,21 @@ export abstract class Objective {
     this.status = status;
 
     this.progress = 0;
+    this.parentId = parentId;
+    this.childId = childId;
   }
 
   async execute(): Promise<boolean> {
     this.character.isIdle = false;
+    if (this.status === 'cancelled') {
+      return false;
+    }
+    
+    // Check if parent job has been cancelled
+    if (this.cancelIfParentIsCancelled()) {
+      return false;
+    }
+    
     this.startJob();
 
     await this.runSharedPrereqChecks();
@@ -73,6 +78,31 @@ export abstract class Objective {
   }
 
   /**
+   * @description Cancels the currently active job
+   */
+  cancelJob(): boolean {
+    logger.info(`Setting status of ${this.objectiveId} to 'cancelled'`);
+    this.status = 'cancelled';
+    return true;
+  }
+
+  /**
+   * @description If the parent job has been cancelled we should cancel any child jobs
+   */
+  cancelIfParentIsCancelled(): boolean {
+    if (this.parentId) {
+      // Find the parent job in the character's job list
+      const parentJob = this.character.jobList.find((job) => job.objectiveId === this.parentId);
+      if (parentJob && parentJob.status === 'cancelled') {
+        logger.info(`Parent job ${this.parentId} is cancelled, cancelling child job ${this.objectiveId}`);
+        this.cancelJob();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * @description Sets the status of the job to 'in_progress'
    */
   startJob() {
@@ -88,8 +118,12 @@ export abstract class Objective {
       logger.info(`Setting status of ${this.objectiveId} to 'complete'`);
       this.status = 'complete';
     } else {
-      logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
-      this.status = 'failed';
+      if (this.status === 'cancelled') {
+        return;
+      } else {
+        logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
+        this.status = 'failed';
+      }
     }
   }
 
@@ -106,13 +140,34 @@ export abstract class Objective {
     }
   }
 
+  /********
+   * Task functions
+   ********/
+
+  /**
+   * @description Withdraws a task coin, moves to the task master and cancels the current task
+   */
+  async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
+    if (this.character.checkQuantityOfItemInInv('tasks_coin') < 1) {
+      if (!(await this.character.withdrawNow(1, 'tasks_coin'))) {
+        return false;
+      }
+    }
+
+    await this.moveToTaskMaster(taskType);
+
+    const response = await actionCancelTask(this.character.data);
+    if (response instanceof ApiError) {
+      await this.character.handleErrors(response);
+    } else {
+      this.character.data = response.character;
+    }
+  }
+
   /**
    * @description Moves to the nearest task master
    */
   async moveToTaskMaster(taskType: TaskType) {
-<<<<<<< HEAD
-    const maps = (await getMaps({content_code: taskType, content_type: 'tasks_master'})).data;
-=======
     const maps = await getMaps({
       content_code: taskType,
       content_type: 'tasks_master',
@@ -120,7 +175,6 @@ export abstract class Objective {
     if (maps instanceof ApiError) {
       return this.character.handleErrors(maps);
     }
->>>>>>> main
 
     if (maps.data.length === 0) {
       logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
@@ -161,9 +215,6 @@ export abstract class Objective {
         `Collected ${this.character.data.task_total} items. Handing in task`,
       );
     }
-<<<<<<< HEAD
-    const maps = (await getMaps({content_code: taskType, content_type: 'tasks_master'})).data;
-=======
     const maps = await getMaps({
       content_code: taskType,
       content_type: 'tasks_master',
@@ -171,7 +222,6 @@ export abstract class Objective {
     if (maps instanceof ApiError) {
       return this.character.handleErrors(maps);
     }
->>>>>>> main
 
     if (maps.data.length === 0) {
       logger.error(`Cannot find the tasks master. This shouldn't happen ??`);

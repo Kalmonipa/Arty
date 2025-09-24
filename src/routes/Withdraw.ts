@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { CraftObjective } from '../classes/CraftObjective.js';
 import { Character } from '../classes/Character.js';
+import { WithdrawObjective } from '../classes/WithdrawObjective.js';
 
-export default function CraftRouter(char: Character) {
+export default function WithdrawRouter(char: Character) {
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {
@@ -25,13 +25,14 @@ export default function CraftRouter(char: Character) {
         quantity: quantity,
       };
 
-      const job = new CraftObjective(char, target);
+      const job = new WithdrawObjective(char, target);
 
       await char.appendJob(job);
 
       return res.status(201).json({
-        message: `Craft job ${job.objectiveId} added to queue.`,
+        message: `Withdraw ${quantity} ${itemCode} job added to queue.`,
         character: char.data.name,
+
         job: {
           id: job.objectiveId,
           target: job.target,

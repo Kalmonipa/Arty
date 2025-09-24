@@ -3,6 +3,7 @@ import {
   CharacterSchema,
   RewardDataResponseSchema,
   SimpleItemSchema,
+  TaskCancelledSchema,
   TaskResponseSchema,
   TaskTradeResponseSchema,
 } from '../types/types.js';
@@ -68,6 +69,56 @@ export async function actionAcceptNewTask(
       result.data.cooldown.remaining_seconds,
       result.data.cooldown.reason,
     );
+
+    return result;
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+export async function actionCancelTask(
+  character: CharacterSchema,
+): Promise<TaskCancelledSchema | ApiError> {
+  var requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+  };
+
+  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/cancel`);
+
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+
+    if (!response.ok) {
+      var message: string;
+      switch (response.status) {
+        case 478:
+          message = 'Missing item or insufficient quantity.';
+          break;
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 499:
+          message = 'The character is in cooldown.';
+          break;
+        case 598:
+          message = 'Tasks Master not found on this map.';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: TaskCancelledSchema = await response.json();
+
+    logger.info(`Cancelled current task.`);
+
+    await sleep(result.cooldown.remaining_seconds, result.cooldown.reason);
 
     return result;
   } catch (error) {

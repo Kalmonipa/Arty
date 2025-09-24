@@ -1,35 +1,22 @@
-<<<<<<< HEAD
-import { actionWithdrawItem } from '../api_calls/Actions';
-import { getMaps } from '../api_calls/Maps';
-<<<<<<< HEAD
-import { logger } from '../utils';
-=======
-import { ItemSlot, UnequipSchema } from '../types/types';
-import { logger, sleep } from '../utils.js';
->>>>>>> main
-import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
-=======
 import { actionWithdrawItem } from '../api_calls/Actions.js';
-import { actionUnequipItem } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { ItemSlot, UnequipSchema } from '../types/types.js';
-import { logger, sleep } from '../utils.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
->>>>>>> main
 
 export class WithdrawObjective extends Objective {
-  itemCode: string;
-  quantity: number;
+  target: ObjectiveTargets;
 
-  constructor(character: Character, itemCode: string, quantity: number) {
-    super(character, `withdraw_${quantity}_${itemCode}`, 'not_started');
+  constructor(character: Character, target: ObjectiveTargets) {
+    super(
+      character,
+      `withdraw_${target.quantity}_${target.code}`,
+      'not_started',
+    );
     this.character = character;
-    this.itemCode = itemCode;
-    this.quantity = quantity;
+    this.target = target;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -43,7 +30,7 @@ export class WithdrawObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        this.character.removeJob(this.objectiveId);
+        //this.character.removeJob(this.objectiveId);
         return false;
       }
 
@@ -51,14 +38,10 @@ export class WithdrawObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
-<<<<<<< HEAD
-      const maps = (await getMaps({content_type: 'bank'})).data;
-=======
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
         return this.character.handleErrors(maps);
       }
->>>>>>> main
 
       if (maps.data.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
@@ -70,7 +53,7 @@ export class WithdrawObjective extends Objective {
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
       const response = await actionWithdrawItem(this.character.data, [
-        { quantity: this.quantity, code: this.itemCode },
+        { quantity: this.target.quantity, code: this.target.code },
       ]);
 
       if (response instanceof ApiError) {

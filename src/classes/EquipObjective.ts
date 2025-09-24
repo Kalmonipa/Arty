@@ -1,23 +1,9 @@
-<<<<<<< HEAD
-import { actionEquipItem } from '../api_calls/Items';
-import { EquipSchema, ItemSlot } from '../types/types';
-<<<<<<< HEAD
-import { logger } from '../utils';
-=======
-import { logger, sleep } from '../utils.js';
->>>>>>> main
-import { Character } from './Character';
-import { ApiError } from './Error';
-import { Objective } from './Objective';
-=======
 import { actionEquipItem } from '../api_calls/Items.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { EquipSchema, ItemSlot } from '../types/types.js';
-import { logger, sleep } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
->>>>>>> main
 
 export class EquipObjective extends Objective {
   itemCode: string;
@@ -48,7 +34,7 @@ export class EquipObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        this.character.removeJob(this.objectiveId);
+        //this.character.removeJob(this.objectiveId);
         return false;
       }
 
