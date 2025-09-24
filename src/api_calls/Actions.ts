@@ -345,7 +345,7 @@ export async function actionMove(
   character: CharacterSchema,
   destination: DestinationSchema,
 ): Promise<CharacterMovementResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(destination),
@@ -358,7 +358,7 @@ export async function actionMove(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Map not found';
@@ -401,7 +401,7 @@ export async function actionMove(
 export async function actionRest(
   character: CharacterSchema,
 ): Promise<CharacterRestResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
@@ -413,7 +413,7 @@ export async function actionRest(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 486:
           message = 'An action is already in progress for this character.';
@@ -457,7 +457,7 @@ export async function actionWithdrawItem(
   character: CharacterSchema,
   items: SimpleItemSchema[],
 ): Promise<BankItemTransactionResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(items),
@@ -470,7 +470,7 @@ export async function actionWithdrawItem(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';
