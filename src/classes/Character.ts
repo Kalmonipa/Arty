@@ -755,6 +755,7 @@ export class Character {
    */
   removeItemFromItemsToKeep(itemCode: string) {
     if (this.itemsToKeep.includes(itemCode)) {
+      logger.info(`Removing ${itemCode} from exceptions list`)
       this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1)
     } else {
       logger.warn(`Can't remove item code ${itemCode} from itemsToKeep list`)

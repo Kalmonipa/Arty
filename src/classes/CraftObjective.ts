@@ -178,8 +178,9 @@ export class CraftObjective extends Objective {
       logger.debug(
         `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
       );
-      logger.debug(`Adding ${craftingItem.code} to exceptions list`)
-      this.character.itemsToKeep.push(craftingItem.code)
+      // ToDo: get the items to keep thing to work properly
+      //logger.debug(`Adding ${craftingItem.code} to exceptions list`)
+      //this.character.itemsToKeep.push(craftingItem.code)
 
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
         craftingItem.code,
