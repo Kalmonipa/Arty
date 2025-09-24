@@ -130,7 +130,6 @@ export class Character {
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
     
-    // Load saved job queue
     await this.loadJobQueue();
   }
 
@@ -221,20 +220,17 @@ export class Character {
    */
   async saveJobQueue(): Promise<void> {
     try {
-      // Ensure the data directory exists
       const dataDir = path.dirname(this.jobQueueFilePath);
       await fs.mkdir(dataDir, { recursive: true });
 
-      // Serialize the job queue
       const jobQueueData = {
         characterName: this.data.name,
         timestamp: new Date().toISOString(),
         jobs: this.jobList.map((job) => this.serializeJob(job)),
       };
 
-      // Write to file
       await fs.writeFile(this.jobQueueFilePath, JSON.stringify(jobQueueData, null, 2));
-      logger.info(`Saved ${this.jobList.length} jobs to ${this.jobQueueFilePath}`);
+      logger.debug(`Saved ${this.jobList.length} jobs to ${this.jobQueueFilePath}`);
     } catch (error) {
       logger.error(`Failed to save job queue: ${error.message}`);
     }
@@ -456,7 +452,7 @@ export class Character {
       }
 
       logger.info(
-        `Executing job ${obj.objectiveId} immediately (added to position ${prepend ? 0 : this.jobList.length - 1})${parentId ? `, parent: ${parentId}` : ''}`,
+        `Added job ${obj.objectiveId} to position ${prepend ? 0 : this.jobList.length - 1})${parentId ? `, parent: ${parentId}` : ''}`,
       );
       
       // Set this job as the currently executing job during its execution
@@ -594,9 +590,6 @@ export class Character {
         this.currentExecutingJob = currentJob;
         logger.info(`Executing job ${currentJob.objectiveId}`);
         await currentJob.execute();
-        // ToDo: cancelling the active job then makes this fail because we already remove the job
-        // in the cancelled job check so there are no jobs to remove
-        // Find a better way to handle this
         await this.removeJob(currentJob.objectiveId);
         this.currentExecutingJob = undefined;
       }
@@ -755,6 +748,17 @@ export class Character {
     }
 
     return closestMap;
+  }
+
+  /**
+   * @description Remove an item from the itemsToKeep list
+   */
+  removeItemFromItemsToKeep(itemCode: string) {
+    if (this.itemsToKeep.includes(itemCode)) {
+      this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1)
+    } else {
+      logger.warn(`Can't remove item code ${itemCode} from itemsToKeep list`)
+    }
   }
 
   /********

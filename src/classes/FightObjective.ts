@@ -60,7 +60,6 @@ export class FightObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        //this.character.removeJob(this.objectiveId);
         return false;
       }
 
@@ -82,14 +81,14 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (let count = 0; count < this.target.quantity; count++) {
+      for (this.progress; this.progress < this.target.quantity; this.progress++) {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
           return false;
         }
 
         logger.info(
-          `Fought ${count}/${this.target.quantity} ${this.target.code}s`,
+          `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
         );
 
         await this.character.evaluateDepositItemsInBank(
@@ -133,6 +132,8 @@ export class FightObjective extends Objective {
             logger.warn(
               `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
             );
+            // ToDo: This is here with the intention of failing the fight job after 3 losses but not sure if that's right. Need to test
+            //break;
           } else if (response.data.fight.result === 'win') {
             logger.info(
               `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp and ${response.data.fight.gold} gold`,
@@ -149,6 +150,8 @@ export class FightObjective extends Objective {
             await this.character.topUpFood(contentLocation);
           }
         }
+
+        await this.character.saveJobQueue()
       }
 
       logger.debug(

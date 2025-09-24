@@ -99,10 +99,6 @@ export class ItemTaskObjective extends Objective {
             this.character.data.task,
           );
 
-          logger.debug(
-            `Num gathered: ${numGathered}, Num remaining: ${numToGather}`,
-          );
-
           if (numToGather <= numGathered) {
             logger.debug(
               `Handing in ${numToGather} ${this.character.data.task}`,
@@ -158,6 +154,8 @@ export class ItemTaskObjective extends Objective {
               return this.cancelCurrentTask('items');
             }
           }
+
+          await this.character.saveJobQueue()
         }
       }
 

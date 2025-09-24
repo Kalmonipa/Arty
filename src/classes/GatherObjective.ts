@@ -32,7 +32,7 @@ export class GatherObjective extends Objective {
     this.character = character;
     this.target = target;
     this.checkBank = checkBank;
-    this.includeInventory = includeInventory;
+    this.includeInventory = includeInventory || true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -89,6 +89,13 @@ export class GatherObjective extends Objective {
     return result;
   }
 
+  /**
+   * @description Holds the logic for finding the resource map and gathering the resource
+   * @param quantity target number to gather
+   * @param code item code of the resource to gather
+   * @param maxRetries number of retires before failing the job. Defaults to 3
+   * @returns true if successful, false if not
+   */
   async gather(
     quantity: number,
     code: string,
@@ -198,6 +205,8 @@ export class GatherObjective extends Objective {
         //this.character.removeJob(this.objectiveId);
         return false;
       }
+
+      await this.character.saveJobQueue()
     }
     return true;
   }
@@ -236,6 +245,8 @@ export class GatherObjective extends Objective {
           //this.character.removeJob(this.objectiveId);
           return false;
         }
+
+        await this.character.saveJobQueue()
       }
       return true;
     }

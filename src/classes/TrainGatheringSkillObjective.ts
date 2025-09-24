@@ -33,7 +33,6 @@ export class TrainGatheringSkillObjective extends Objective {
     while (charLevel < this.targetLevel) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        //this.character.removeJob(this.objectiveId);
         return false;
       }
 
