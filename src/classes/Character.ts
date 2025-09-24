@@ -1501,9 +1501,9 @@ export class Character {
       case 493: // Character's level is too low
         // ToDo: Maybe train the skill to the required level?
         return false;
-      case 497: // The character's inventory is full.
+      case 497: // The character's inventory is full. Dump everything
         await this.evaluateDepositItemsInBank(
-          this.itemsToKeep,
+          undefined,
           { x: this.data.x, y: this.data.y },
           true,
         );
