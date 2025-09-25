@@ -100,7 +100,11 @@ export class DepositObjective extends Objective {
         }
         continue;
       } else {
-        this.character.data = response.data.character;
+        if (response.data.character) {
+          this.character.data = response.data.character;
+        } else {
+          logger.error('Deposit response missing character data');
+        }
       }
       return true;
     }

@@ -65,7 +65,11 @@ export class WithdrawObjective extends Objective {
         }
         continue;
       } else {
-        this.character.data = response.data.character;
+        if (response.data.character) {
+          this.character.data = response.data.character;
+        } else {
+          logger.error('Withdraw response missing character data');
+        }
         return true;
       }
     }

@@ -8,7 +8,6 @@ import { getMaps } from '../api_calls/Maps.js';
 import { HealthStatus } from '../types/CharacterData.js';
 import {
   CharacterSchema,
-  CraftSkill,
   DestinationSchema,
   GatheringSkill,
   ItemSchema,
@@ -620,6 +619,9 @@ export class Character {
    * @returns the amount found in inventory
    */
   checkQuantityOfItemInInv(contentCode: string): number {
+    if (!this.data || !this.data.inventory) {
+      return 0;
+    }
     const foundItem = this.data.inventory.find(
       (item) => item.code === contentCode,
     );
@@ -854,7 +856,11 @@ export class Character {
     if (useResponse instanceof ApiError) {
       this.handleErrors(useResponse);
     } else {
-      this.data = useResponse.data.character;
+      if (useResponse.data.character) {
+        this.data = useResponse.data.character;
+      } else {
+        logger.error('Use item response missing character data');
+      }
     }
   }
 
@@ -1092,7 +1098,11 @@ export class Character {
         this.handleErrors(response);
         await this.evaluateDepositItemsInBank(exceptions, priorLocation);
       } else {
-        this.data = response.data.character;
+        if (response.data.character) {
+          this.data = response.data.character;
+        } else {
+          logger.error('Deposit item response missing character data');
+        }
         await this.move(priorLocation);
       }
       return true;
@@ -1104,6 +1114,9 @@ export class Character {
    * @returns what percentage of the backpack is full
    */
   getInventoryFullness(): number {
+    if (!this.data || !this.data.inventory) {
+      return 0;
+    }
     let usedSpace = 0;
     this.data.inventory.forEach((invSlot) => {
       usedSpace += invSlot.quantity;
@@ -1138,6 +1151,9 @@ export class Character {
    * @returns true if successful, false otherwise
    */
   async setPreferredFood(): Promise<boolean> {
+    if (!this.data || !this.data.inventory) {
+      return false;
+    }
     const foundItem = this.data.inventory.find((invItem) => {
       return this.consumablesMap.heal.find(
         (item) => invItem.code === item.code,
@@ -1198,7 +1214,11 @@ export class Character {
     if (moveResponse instanceof ApiError) {
       this.handleErrors(moveResponse);
     } else {
-      this.data = moveResponse.data.character;
+      if (moveResponse.data.character) {
+        this.data = moveResponse.data.character;
+      } else {
+        logger.error('Move response missing character data');
+      }
     }
   }
 
@@ -1214,7 +1234,11 @@ export class Character {
       logger.info(
         `Recovered ${restResponse.data.hp_restored} health from resting`,
       );
-      this.data = restResponse.data.character;
+      if (restResponse.data.character) {
+        this.data = restResponse.data.character;
+      } else {
+        logger.error('Rest response missing character data');
+      }
     }
   }
 

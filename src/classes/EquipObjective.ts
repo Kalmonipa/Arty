@@ -81,7 +81,11 @@ export class EquipObjective extends Objective {
         }
         continue;
       } else {
-        this.character.data = response.data.character;
+        if (response.data.character) {
+          this.character.data = response.data.character;
+        } else {
+          logger.error('Equip response missing character data');
+        }
         return true;
       }
     }

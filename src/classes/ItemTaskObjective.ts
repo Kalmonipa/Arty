@@ -79,12 +79,12 @@ export class ItemTaskObjective extends Objective {
           }
 
           // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
-          var numToGather = Math.min(
+          const numToGather = Math.min(
             this.character.data.task_total - this.character.data.task_progress,
             Math.ceil(this.character.data.inventory_max_items * 0.9),
           );
 
-          var numInBank = await this.character.checkQuantityOfItemInBank(
+          const numInBank = await this.character.checkQuantityOfItemInBank(
             this.character.data.task,
           );
 
@@ -95,7 +95,7 @@ export class ItemTaskObjective extends Objective {
             );
           }
 
-          var numGathered = this.character.checkQuantityOfItemInInv(
+          const numGathered = this.character.checkQuantityOfItemInInv(
             this.character.data.task,
           );
 
@@ -121,7 +121,11 @@ export class ItemTaskObjective extends Objective {
               }
               continue;
             } else {
-              this.character.data = taskTradeResponse.data.character;
+              if (taskTradeResponse.data.character) {
+                this.character.data = taskTradeResponse.data.character;
+              } else {
+                logger.error('Task trade response missing character data');
+              }
             }
           } else if (taskInfo.craft) {
             logger.debug(`${taskInfo.code} is a crafted item. Crafting...`);

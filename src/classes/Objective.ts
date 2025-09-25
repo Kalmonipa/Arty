@@ -198,7 +198,11 @@ export abstract class Objective {
     if (response instanceof ApiError) {
       await this.character.handleErrors(response);
     } else {
-      this.character.data = response.data.character;
+      if (response.data.character) {
+        this.character.data = response.data.character;
+      } else {
+        logger.error('Task response missing character data');
+      }
     }
   }
 
@@ -238,7 +242,11 @@ export abstract class Objective {
       await this.character.handleErrors(response);
       // ToDo: handle complete task errors
     } else {
-      this.character.data = response.data.character;
+      if (response.data.character) {
+        this.character.data = response.data.character;
+      } else {
+        logger.error('Complete task response missing character data');
+      }
     }
 
     return true;

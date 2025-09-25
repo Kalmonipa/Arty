@@ -135,7 +135,11 @@ export class CraftObjective extends Objective {
             }
             continue;
           } else {
-            this.character.data = response.data.character;
+            if (response.data.character) {
+              this.character.data = response.data.character;
+            } else {
+              logger.error('Craft response missing character data');
+            }
 
             if (this.numBatches > 1) {
               logger.debug(`Depositing items from batch ${batch}`);

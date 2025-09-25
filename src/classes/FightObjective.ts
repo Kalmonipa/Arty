@@ -141,7 +141,12 @@ export class FightObjective extends Objective {
             );
           }
 
-          this.character.data = response.data.character;
+          if (response.data.character) {
+            this.character.data = response.data.character;
+          } else {
+            logger.error('Fight response missing character data');
+            return false;
+          }
 
           // Check amount of food in inventory to use after battles
           if (
