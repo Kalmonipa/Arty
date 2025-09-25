@@ -745,7 +745,7 @@ export class Character {
 
     if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
       logger.info(
-        `Closest ${closestMap.content} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+        `Closest ${closestMap.skin} is at x: ${closestMap.x}, y: ${closestMap.y}`,
       );
     }
 

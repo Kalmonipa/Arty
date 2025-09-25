@@ -128,21 +128,21 @@ export class FightObjective extends Objective {
           }
           continue;
         } else {
-          //const charData = response.data.character.find(char => char.name === this.character.data.name)
-          if (response.data.fight.result === 'loss') {
-            logger.warn(
-              `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
-            );
-            // ToDo: This is here with the intention of failing the fight job after 3 losses but not sure if that's right. Need to test
-            //break;
-          } else if (response.data.fight.result === 'win') {
-            logger.info(
-              `Fight was a ${response.data.fight.result}`,
-            );
-          }
-
-          if (response.data.character) {
-            this.character.data = response.data.character;
+          if (response.data.characters) {
+            const charData = response.data.characters.find(char => char.name === this.character.data.name)
+            if (response.data.fight.result === 'loss') {
+              logger.warn(
+                `Fight was a ${response.data.fight.result}. Returned to ${charData.x},${charData.y}`,
+              );
+              // ToDo: This break is here with the intention of failing the fight job after 3 losses but not sure if that's right. Need to test
+              //break;
+            } else if (response.data.fight.result === 'win') {
+              logger.info(
+                `Fight was a ${response.data.fight.result}`,
+              );
+            }
+            
+            this.character.data = charData;
           } else {
             logger.error('Fight response missing character data');
             return false;
