@@ -15,7 +15,7 @@ import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { SimpleMapSchema } from '../types/MapData.js'
+import { SimpleMapSchema } from '../types/MapData.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -129,7 +129,7 @@ export class GatherObjective extends Objective {
             resourceDetails.subtype as GatheringSkill,
           ))
         ) {
-          await this.character.equipBestWeapon(
+          await this.character.evaluateGear(
             resourceDetails.subtype as WeaponFlavours,
           );
         }
@@ -160,7 +160,7 @@ export class GatherObjective extends Objective {
       }
     }
     // Remove the gathered item if it's in the exclusion list
-    this.character.removeItemFromItemsToKeep(this.target.code)
+    this.character.removeItemFromItemsToKeep(this.target.code);
   }
 
   async gatherItemLoop(
@@ -190,7 +190,10 @@ export class GatherObjective extends Objective {
           this.character.data = response.data.character;
           this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
         } else {
-          logger.error('Invalid response structure from actionGather:', response);
+          logger.error(
+            'Invalid response structure from actionGather:',
+            response,
+          );
           return false;
         }
       }
@@ -201,13 +204,12 @@ export class GatherObjective extends Objective {
         return false;
       }
 
-      await this.character.saveJobQueue()
+      await this.character.saveJobQueue();
     }
     return true;
   }
 
   async gatherMobDrop(target: SimpleItemSchema) {
-    // ToDo: change this with new types in season-6-changes branch
     const mobInfo: DataPageMonsterSchema | ApiError =
       await getMonsterInformation({
         drop: target.code,
@@ -215,6 +217,8 @@ export class GatherObjective extends Objective {
       });
     if (mobInfo instanceof ApiError) {
       return await this.character.handleErrors(mobInfo);
+    } else if (!mobInfo.data) {
+      logger.error(`Found no mobs for drop ${target.code}`);
     } else {
       let numHeld = 0;
 
@@ -241,7 +245,7 @@ export class GatherObjective extends Objective {
           return false;
         }
 
-        await this.character.saveJobQueue()
+        await this.character.saveJobQueue();
       }
       return true;
     }

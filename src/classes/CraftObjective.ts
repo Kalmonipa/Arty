@@ -214,9 +214,7 @@ export class CraftObjective extends Objective {
           );
         }
         if (numInBank >= totalIngredNeededToCraft - numInInv) {
-          logger.info(
-            `Found ${numInBank} ${craftingItem.code} in the bank`,
-          );
+          logger.info(`Found ${numInBank} ${craftingItem.code} in the bank`);
           await this.character.withdrawNow(
             totalIngredNeededToCraft - numInInv,
             craftingItem.code,
@@ -244,7 +242,6 @@ export class CraftObjective extends Objective {
               logger.info(`${this.objectiveId} has been cancelled`);
               return false;
             }
-            
           } else if (craftingItemInfo.craft !== null) {
             logger.debug(
               `Resource ${craftingItemInfo.code} is a craftable item`,
@@ -259,7 +256,6 @@ export class CraftObjective extends Objective {
               logger.info(`${this.objectiveId} has been cancelled`);
               return false;
             }
-
           } else {
             logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
@@ -275,18 +271,26 @@ export class CraftObjective extends Objective {
           }
         }
 
-        this.character.removeItemFromItemsToKeep(craftingItem.code)
-        
+        this.character.removeItemFromItemsToKeep(craftingItem.code);
+
         // Ensure that we're carrying the correct amount of ingredients. They may have been deposited into bank
-        numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code)
-        numInBank = await this.character.checkQuantityOfItemInBank(craftingItem.code)
-        if (numInInv < totalIngredNeededToCraft && numInBank >= (totalIngredNeededToCraft - numInInv)) {
-          await this.character.withdrawNow(totalIngredNeededToCraft - numInInv, craftingItem.code)
+        numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
+        numInBank = await this.character.checkQuantityOfItemInBank(
+          craftingItem.code,
+        );
+        if (
+          numInInv < totalIngredNeededToCraft &&
+          numInBank >= totalIngredNeededToCraft - numInInv
+        ) {
+          await this.character.withdrawNow(
+            totalIngredNeededToCraft - numInInv,
+            craftingItem.code,
+          );
         } else {
-          logger.info(`Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`)
-          
+          logger.info(
+            `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
+          );
         }
-    
       }
     }
   }

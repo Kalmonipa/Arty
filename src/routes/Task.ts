@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { GatherObjective } from '../classes/GatherObjective.js';
 import { Character } from '../classes/Character.js';
 import { Objective } from '../classes/Objective.js';
 import { MonsterTaskObjective } from '../classes/MonsterTaskObjective.js';
@@ -23,9 +22,9 @@ export default function TaskRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      var job: Objective;
+      let job: Objective;
       if (taskType === 'monsters') {
-        job = new MonsterTaskObjective(char);
+        job = new MonsterTaskObjective(char, quantity);
       } else if (taskType === 'items') {
         job = new ItemTaskObjective(char, quantity);
       } else

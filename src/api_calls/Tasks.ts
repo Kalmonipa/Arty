@@ -44,7 +44,7 @@ export async function actionAcceptNewTask(
           message = 'Tasks Master not found on this map.';
           break;
         default:
-          message = 'Unknown error from /action/task/new'
+          message = 'Unknown error from /action/task/new';
       }
       throw new ApiError({
         code: response.status,
@@ -79,18 +79,18 @@ export async function actionAcceptNewTask(
 export async function actionCancelTask(
   character: CharacterSchema,
 ): Promise<TaskCancelledSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/cancel`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/cancel`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 478:
           message = 'Missing item or insufficient quantity.';
@@ -161,7 +161,7 @@ export async function actionCompleteTask(
           message = 'Tasks Master not found on this map.';
           break;
         default:
-          message = 'Unknown error from /action/task/complete'
+          message = 'Unknown error from /action/task/complete';
       }
       throw new ApiError({
         code: response.status,
@@ -229,7 +229,7 @@ export async function actionTasksTrade(
           message = 'Tasks Master not found on this map.';
           break;
         default:
-          message = 'Unknown error from /action/task/trade'
+          message = 'Unknown error from /action/task/trade';
       }
       throw new ApiError({
         code: response.status,

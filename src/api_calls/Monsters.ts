@@ -8,7 +8,7 @@ import { ApiUrl, MyHeaders } from '../utils.js';
 export async function getMonsterInformation(
   data: GetAllMonstersMonstersGetParams,
 ): Promise<DataPageMonsterSchema | ApiError> {
-  let requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };

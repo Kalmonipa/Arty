@@ -258,6 +258,10 @@ export async function actionFight(
 
     const result: CharacterFightResponseSchema = await response.json();
 
+    logger.info(
+      `Fight against ${result.data.fight.opponent} was a ${result.data.fight.result} after ${result.data.fight.turns} turns.`,
+    );
+
     await sleep(
       result.data.cooldown.remaining_seconds,
       result.data.cooldown.reason,

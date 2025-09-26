@@ -143,7 +143,7 @@ export async function buildListOfWeapons(): Promise<
         !combatArray.includes(weapon) &&
         weapon.code !== 'wooden_stick'
       ) {
-        logger.debug(`Adding ${weapon.code} object to combat map`);
+        //logger.debug(`Adding ${weapon.code} object to combat map`);
         combatArray.push(weapon);
       }
     } else if (weapon.effects) {
@@ -151,7 +151,7 @@ export async function buildListOfWeapons(): Promise<
         if (gatherSkills.includes(effect.code as GatheringSkill)) {
           const skillArray = weaponMap[effect.code as GatheringSkill];
           if (skillArray && !skillArray.includes(weapon)) {
-            logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
+            //logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
             skillArray.push(weapon);
           }
         }
@@ -162,46 +162,19 @@ export async function buildListOfWeapons(): Promise<
   return weaponMap;
 }
 
+/**
+ * @description checks to see if we're working with a gathering skill
+ * @param value the skill to check
+ * @returns true if the provided skill is a gathering skill
+ */
 export function isGatheringSkill(value: string): value is GatheringSkill {
   return ['fishing', 'woodcutting', 'mining', 'alchemy'].includes(value);
 }
 
 /**
  * @description Builds a map of all the utilities
- */
-export async function buildListOfUtilities(): Promise<
-  Record<string, ItemSchema[]>
-> {
-  logger.info(`Building map of utilities`);
-
-  const utilitiesMap: Record<string, ItemSchema[]> = {};
-
-  const allUtilities: ApiError | DataPageItemSchema =
-    await getAllItemInformation({ type: 'utility' });
-  if (allUtilities instanceof ApiError) {
-    logger.error(`Failed to build list of useful utility: ${allUtilities}`);
-    return {};
-  }
-
-  allUtilities.data.forEach((utility) => {
-    if (utility.effects) {
-      utility.effects.forEach((effect) => {
-        if (utilitiesMap[effect.code]) {
-          logger.debug(`Adding ${utility.code} to ${effect.code} map`);
-          utilitiesMap[effect.code].push(utility);
-        } else {
-          logger.debug(`Adding ${effect.code} to utilities map`);
-          utilitiesMap[effect.code] = [utility];
-        }
-      });
-    }
-  });
-
-  return utilitiesMap;
-}
-
-/**
- * @description Builds a map of all the utilities
+ * The key being the effect (restore, res_fire, fire_damage, etc)
+ * The value being an array of the items that have the key effect
  */
 export async function buildListOf(
   itemType: ItemType,
@@ -218,15 +191,15 @@ export async function buildListOf(
     return {};
   }
 
-  allItems.data.forEach((utility) => {
-    if (utility.effects) {
-      utility.effects.forEach((effect) => {
+  allItems.data.forEach((item) => {
+    if (item.effects) {
+      item.effects.forEach((effect) => {
         if (itemMap[effect.code]) {
-          logger.debug(`Adding ${utility.code} to ${effect.code} map`);
-          itemMap[effect.code].push(utility);
+          //logger.debug(`Adding ${item.code} to ${effect.code} map`);
+          itemMap[effect.code].push(item);
         } else {
-          logger.debug(`Adding ${effect.code} to ${itemType} map`);
-          itemMap[effect.code] = [utility];
+          //logger.debug(`Adding ${effect.code} to ${itemType} map`);
+          itemMap[effect.code] = [item];
         }
       });
     }

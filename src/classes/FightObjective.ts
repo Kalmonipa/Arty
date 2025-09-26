@@ -7,13 +7,6 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 
-/**
- * @todo
- * - Check boost potions in utility slot 2, compare to monster we're fighting, equip better ones if we have any
- * - Check weapon to see if we can equip a better one
- * - Check each armor slot to see if we can equip better stuff
- */
-
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
 
@@ -38,10 +31,7 @@ export class FightObjective extends Objective {
       await this.character.equipUtility('restore', 'utility1');
     }
 
-    // Check weapon and equip a suitable one if current isn't good
-    if (!(await this.character.checkWeaponForEffects('combat'))) {
-      await this.character.equipBestWeapon('combat');
-    }
+    await this.character.evaluateGear('combat');
 
     // ToDo: Check all armor to see if it's good
 
@@ -81,7 +71,11 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (this.progress; this.progress < this.target.quantity; this.progress++) {
+      for (
+        this.progress;
+        this.progress < this.target.quantity;
+        this.progress++
+      ) {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
           return false;
@@ -129,19 +123,10 @@ export class FightObjective extends Objective {
           continue;
         } else {
           if (response.data.characters) {
-            const charData = response.data.characters.find(char => char.name === this.character.data.name)
-            if (response.data.fight.result === 'loss') {
-              logger.warn(
-                `Fight was a ${response.data.fight.result}. Returned to ${charData.x},${charData.y}`,
-              );
-              // ToDo: This break is here with the intention of failing the fight job after 3 losses but not sure if that's right. Need to test
-              //break;
-            } else if (response.data.fight.result === 'win') {
-              logger.info(
-                `Fight was a ${response.data.fight.result}`,
-              );
-            }
-            
+            const charData = response.data.characters.find(
+              (char) => char.name === this.character.data.name,
+            );
+
             this.character.data = charData;
           } else {
             logger.error('Fight response missing character data');
@@ -157,7 +142,7 @@ export class FightObjective extends Objective {
           }
         }
 
-        await this.character.saveJobQueue()
+        await this.character.saveJobQueue();
       }
 
       logger.debug(

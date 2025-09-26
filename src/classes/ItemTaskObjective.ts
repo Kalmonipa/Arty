@@ -159,7 +159,7 @@ export class ItemTaskObjective extends Objective {
             }
           }
 
-          await this.character.saveJobQueue()
+          await this.character.saveJobQueue();
         }
       }
 

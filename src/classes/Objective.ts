@@ -43,12 +43,12 @@ export abstract class Objective {
     if (this.status === 'cancelled') {
       return false;
     }
-    
+
     // Check if parent job has been cancelled
     if (this.cancelIfParentIsCancelled()) {
       return false;
     }
-    
+
     this.startJob();
 
     await this.runSharedPrereqChecks();
@@ -92,9 +92,13 @@ export abstract class Objective {
   cancelIfParentIsCancelled(): boolean {
     if (this.parentId) {
       // Find the parent job in the character's job list
-      const parentJob = this.character.jobList.find((job) => job.objectiveId === this.parentId);
+      const parentJob = this.character.jobList.find(
+        (job) => job.objectiveId === this.parentId,
+      );
       if (parentJob && parentJob.status === 'cancelled') {
-        logger.info(`Parent job ${this.parentId} is cancelled, cancelling child job ${this.objectiveId}`);
+        logger.info(
+          `Parent job ${this.parentId} is cancelled, cancelling child job ${this.objectiveId}`,
+        );
         this.cancelJob();
         return true;
       }

@@ -21,21 +21,21 @@ export async function getCharacter(
       requestOptions,
     );
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
         message: `Failed to get character data: ${response.statusText}`,
       });
     }
-    
+
     if (!data.data) {
       throw new ApiError({
         code: 500,
         message: 'Character API response missing data field',
       });
     }
-    
+
     return data.data;
   } catch (error) {
     if (error instanceof ApiError) {
