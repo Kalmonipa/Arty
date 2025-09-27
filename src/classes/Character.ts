@@ -46,8 +46,9 @@ import {
 import { SimpleMapSchema } from '../types/MapData.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
-import { actionBuyItem, actionSellItem } from '../api_calls/NPC.js';
 import { EvaluateGearObjective } from './EvaluateGearObjective.js';
+import { TradeObjective } from './TradeWithNPCObjective.js';
+import { TradeType } from '../types/NPCData.js';
 
 export class Character {
   data: CharacterSchema;
@@ -1013,68 +1014,6 @@ export class Character {
     }
   }
 
-  /**
-   * @description Find the NPC and buy from them
-   */
-  async buyFromNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
-    // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
-    // Make it into it's own function and just call it
-    const maps = await getMaps({
-      content_code: npcCode,
-      content_type: 'npc',
-    });
-    if (maps instanceof ApiError) {
-      return await this.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
-      logger.error(`Cannot find any maps for ${npcCode}`);
-      return false;
-    }
-
-    const traderLocation = this.evaluateClosestMap(maps.data);
-
-    await this.move(traderLocation);
-
-    const buyResponse = await actionBuyItem(this.data, items);
-    if (buyResponse instanceof ApiError) {
-      return this.handleErrors(buyResponse);
-    } else {
-      this.data = buyResponse.character;
-      return true;
-    }
-  }
-
-  /**
-   * @description Find the NPC and sell to them
-   */
-  async sellToNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
-    const maps = await getMaps({
-      content_code: npcCode,
-      content_type: 'npc',
-    });
-    if (maps instanceof ApiError) {
-      return await this.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
-      logger.error(`Cannot find any maps for ${npcCode}`);
-      return false;
-    }
-
-    const traderLocation = this.evaluateClosestMap(maps.data);
-
-    await this.move(traderLocation);
-
-    const sellResponse = await actionSellItem(this.data, items);
-    if (sellResponse instanceof ApiError) {
-      return this.handleErrors(sellResponse);
-    } else {
-      this.data = sellResponse.character;
-      return true;
-    }
-  }
-
   /********
    * Inventory functions
    ********/
@@ -1230,6 +1169,7 @@ export class Character {
 
   /**
    * @description moves the character to the destination if they are not already there
+   * @todo Take in a map_id as an alternative to x,y coords
    */
   async move(destination: DestinationSchema) {
     if (this.data.x === destination.x && this.data.y === destination.y) {
@@ -1506,6 +1446,34 @@ export class Character {
   async levelGatheringSkill(targetSkill: GatheringSkill, targetLevel: number) {
     this.appendJob(
       new TrainGatheringSkillObjective(this, targetSkill, targetLevel),
+    );
+  }
+
+  /**
+   * @description Trade with an NPC
+   */
+  async tradeWithNpc(
+    tradeType: TradeType,
+    quantity: number,
+    itemCode: string,
+  ) {
+    this.appendJob(new TradeObjective(this, tradeType, quantity, itemCode));
+  }
+
+  /**
+   * @description trade with an NPC now
+   */
+  async tradeWithNpcNow(
+    tradeType: TradeType,
+    quantity: number,
+    itemCode: string,
+  ) {
+    const job = new TradeObjective(this, tradeType, quantity, itemCode);
+    return await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
     );
   }
 

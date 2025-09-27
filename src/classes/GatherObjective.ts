@@ -32,7 +32,8 @@ export class GatherObjective extends Objective {
     this.character = character;
     this.target = target;
     this.checkBank = checkBank;
-    this.includeInventory = includeInventory !== undefined ? includeInventory : true;
+    this.includeInventory =
+      includeInventory !== undefined ? includeInventory : true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -153,6 +154,12 @@ export class GatherObjective extends Objective {
           code: resourceDetails.code,
           quantity: quantity,
         });
+      } else if (resourceDetails.subtype === 'task') {
+        return await this.character.tradeWithNpcNow(
+          'buy',
+          quantity,
+          resourceDetails.code,
+        );
       } else if (resourceDetails.craft) {
         await this.character.craftNow(quantity, resourceDetails.code);
       } else {
@@ -229,7 +236,7 @@ export class GatherObjective extends Objective {
           `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
         );
 
-        logger.info(`Mob info for ${mobInfo.data.length} mobs`)
+        logger.info(`Mob info for ${mobInfo.data.length} mobs`);
 
         // ToDo: make this check all mobs in case multiple drop the item
         await this.character.fightNow(1, mobInfo.data[0].code);

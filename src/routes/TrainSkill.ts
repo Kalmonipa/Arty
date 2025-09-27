@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../classes/Character.js';
 import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObjective.js';
-import { isGatheringSkill, logger } from '../utils.js';
-import { GatheringSkill } from '../types/types.js';
+import { isGatheringSkill } from '../utils.js';
+import { CraftSkill } from '../types/types.js';
+import { TrainCraftingSkillObjective } from '../classes/TrainCraftingSkillObjective.js';
 
 export default function TrainSkillRouter(char: Character) {
   const router = Router();
@@ -10,18 +11,12 @@ export default function TrainSkillRouter(char: Character) {
   router.post('/', async (req: Request, res: Response) => {
     try {
       const targetLevel = parseInt(req.body.targetLevel, 10);
-      const skill: GatheringSkill = req.body.skill;
+      const skill: CraftSkill = req.body.skill;
 
       if (isNaN(targetLevel) || !skill) {
         return res
           .status(400)
           .json({ error: 'Invalid target level or skill.' });
-      }
-
-      if (!isGatheringSkill(skill)) {
-        return res
-          .status(400)
-          .json({ error: 'Skill must be a gathering skill' });
       }
 
       if (typeof char === 'undefined' || !char) {
@@ -30,7 +25,13 @@ export default function TrainSkillRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      const job = new TrainGatheringSkillObjective(char, skill, targetLevel);
+      let job: TrainGatheringSkillObjective | TrainCraftingSkillObjective;
+
+      if (isGatheringSkill(skill)) {
+        job = new TrainGatheringSkillObjective(char, skill, targetLevel);
+      } else {
+        job = new TrainCraftingSkillObjective(char, skill, targetLevel);
+      }
 
       await char.appendJob(job);
 

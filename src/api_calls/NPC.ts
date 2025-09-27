@@ -22,19 +22,19 @@ export async function actionBuyItem(
   character: CharacterSchema,
   items: SimpleItemSchema,
 ): Promise<NpcMerchantTransactionSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(items),
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}}/action/npc/buy`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}}/action/npc/buy`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';
@@ -81,19 +81,19 @@ export async function actionSellItem(
   character: CharacterSchema,
   items: SimpleItemSchema,
 ): Promise<NpcMerchantTransactionSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(items),
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}}/action/npc/sell`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}}/action/npc/sell`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';
@@ -133,12 +133,12 @@ export async function actionSellItem(
 export async function getAllNpcs(
   params: GetAllNpcsNpcsDetailsGetParams,
 ): Promise<ApiError | DataPageNPCSchema> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/npcs/details`);
+  const apiUrl = new URL(`${ApiUrl}/npcs/details`);
 
   if (params.name) {
     apiUrl.searchParams.set('name', params.name);
@@ -172,12 +172,12 @@ export async function getAllNpcs(
 }
 
 export async function getNpc(code: string): Promise<ApiError | NPCSchema> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/npcs/details/${code}`);
+  const apiUrl = new URL(`${ApiUrl}/npcs/details/${code}`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
@@ -208,12 +208,12 @@ export async function getNpcItems(
   code: string,
   params: GetNpcItemsNpcsItemsCodeGetParams,
 ): Promise<ApiError | DataPageNPCItem> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/npcs/items/${code}`);
+  const apiUrl = new URL(`${ApiUrl}/npcs/items`);
 
   if (params.page) {
     apiUrl.searchParams.set('page', params.page.toString());
@@ -248,15 +248,14 @@ export async function getNpcItems(
 }
 
 export async function getAllNpcItems(
-  character: CharacterSchema,
   params: GetAllNpcsItemsNpcsItemsGetParams,
 ): Promise<ApiError | DataPageNPCItem> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/npcs/items`);
+  const apiUrl = new URL(`${ApiUrl}/npcs/items`);
 
   if (params.code) {
     apiUrl.searchParams.set('code', params.code);

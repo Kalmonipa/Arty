@@ -373,6 +373,9 @@ export async function actionMove(
         case 490:
           message = 'The character is already at the destination.';
           break;
+        case 496:
+          message = 'Conditions not met.';
+          break;
         case 498:
           message = 'Character not found.';
           break;
