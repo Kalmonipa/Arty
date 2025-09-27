@@ -861,7 +861,7 @@ export class Character {
       }
       if (isEffective) {
         logger.info(`Current weapon is suitable for ${typeOfActivity}`);
-        return false;
+        return true;
       } else {
         logger.info(`Current weapon is NOT suitable for ${typeOfActivity}`);
         return false;

@@ -18,7 +18,7 @@ export class EvaluateGearObjective extends Objective {
     activityType: WeaponFlavours,
     targetMob?: MonsterSchema,
   ) {
-    super(character, `prepare_for_fight`, 'not_started');
+    super(character, `evaluate_${activityType}_gear`, 'not_started');
 
     this.character = character;
     this.activityType = activityType;

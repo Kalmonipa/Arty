@@ -12,6 +12,7 @@ export class MonsterTaskObjective extends Objective {
     super(character, `task_${quantity}_monstertask`, 'not_started');
 
     this.character = character;
+    this.quantity = quantity;
   }
 
   // ToDo:

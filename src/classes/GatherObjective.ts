@@ -32,7 +32,7 @@ export class GatherObjective extends Objective {
     this.character = character;
     this.target = target;
     this.checkBank = checkBank;
-    this.includeInventory = includeInventory || true;
+    this.includeInventory = includeInventory !== undefined ? includeInventory : true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -217,8 +217,9 @@ export class GatherObjective extends Objective {
       });
     if (mobInfo instanceof ApiError) {
       return await this.character.handleErrors(mobInfo);
-    } else if (!mobInfo.data) {
+    } else if (mobInfo.data.length === 0) {
       logger.error(`Found no mobs for drop ${target.code}`);
+      return false;
     } else {
       let numHeld = 0;
 
@@ -227,6 +228,8 @@ export class GatherObjective extends Objective {
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
         );
+
+        logger.info(`Mob info for ${mobInfo.data.length} mobs`)
 
         // ToDo: make this check all mobs in case multiple drop the item
         await this.character.fightNow(1, mobInfo.data[0].code);
