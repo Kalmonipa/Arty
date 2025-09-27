@@ -1,0 +1,68 @@
+import { getAllItemInformation } from '../api_calls/Items.js';
+import { CraftSkill, GetAllItemsItemsGetParams } from '../types/types.js';
+import { logger } from '../utils.js';
+import { Character } from './Character.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+
+/**
+ * @description Trains the desired crafting skill until reaching the desired level
+ * Crafts 1 item at a time
+ */
+export class TrainCraftingSkillObjective extends Objective {
+  skill: CraftSkill;
+  targetLevel: number;
+
+  constructor(character: Character, skill: CraftSkill, targetLevel: number) {
+    super(character, `train_${targetLevel}_${skill}`, 'not_started');
+    this.character = character;
+    this.targetLevel = targetLevel;
+    this.skill = skill;
+  }
+
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
+  }
+
+  async run(): Promise<boolean> {
+    let charLevel = this.character.getCharacterLevel(this.skill);
+    while (charLevel < this.targetLevel) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        return false;
+      }
+
+      // Steps:
+      // Find items to craft that are within 10 (?) levels
+      // Pick a random item to craft from the list
+      // Craft that item, one at a time
+      // Deposit into the bank
+
+      const payload: GetAllItemsItemsGetParams = {
+        craft_skill: this.skill,
+        max_level: charLevel,
+        min_level: Math.max(charLevel - 10, 0),
+      };
+
+      const craftableItemsListData = await getAllItemInformation(payload);
+      if (craftableItemsListData instanceof ApiError) {
+        return await this.character.handleErrors(craftableItemsListData);
+      }
+
+      const craftableItemsList = craftableItemsListData.data;
+      if (craftableItemsList.length === 0) {
+        logger.error(`No craftable items found. This shouldn't happen?`);
+        return false;
+      }
+
+      const randInd = Math.floor(Math.random() * craftableItemsList.length);
+
+      const itemToCraft = craftableItemsList[randInd];
+
+      await this.character.craftNow(1, itemToCraft.code);
+
+      charLevel = this.character.getCharacterLevel(this.skill);
+    }
+    return true;
+  }
+}
