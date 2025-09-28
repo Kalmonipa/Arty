@@ -1,3 +1,8 @@
 export type AttackTypes = 'air' | 'earth' | 'fire' | 'water';
 
-export type AttackTurns = { attackType: AttackTypes; dmg: number, criticalChance: number }[];
+export type TurnsDetails = {
+  attackType: AttackTypes;
+  dmg: number;
+  criticalChance: number;
+  victimResistance: number
+}[];
