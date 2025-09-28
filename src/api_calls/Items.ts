@@ -162,7 +162,7 @@ export async function actionUse(
       requestOptions,
     );
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';

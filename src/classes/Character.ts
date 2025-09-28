@@ -79,6 +79,7 @@ export class Character {
   bootsMap?: Record<GearEffects, ItemSchema[]>;
   helmetMap?: Record<GearEffects, ItemSchema[]>;
   legsArmorMap?: Record<GearEffects, ItemSchema[]>;
+  ringsMap?: Record<GearEffects, ItemSchema[]>;
   shieldMap?: Record<GearEffects, ItemSchema[]>;
 
   consumablesMap?: Record<ConsumableEffects, ItemSchema[]>;
@@ -142,6 +143,7 @@ export class Character {
     this.bootsMap = await buildListOf('boots');
     this.helmetMap = await buildListOf('helmet');
     this.legsArmorMap = await buildListOf('leg_armor');
+    this.ringsMap = await buildListOf('ring');
     this.shieldMap = await buildListOf('shield');
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');

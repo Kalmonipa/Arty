@@ -90,6 +90,13 @@ export class EvaluateGearObjective extends Objective {
 
         // Check boots
         await this.checkGearOfType('boots', 'hp', charLevel);
+
+        // Check rings
+        await this.checkGearOfType('ring1', 'dmg', charLevel)
+        await this.checkGearOfType('ring2', 'dmg', charLevel)
+
+        // Check amulet
+        await this.checkGearOfType('amulet', 'hp', charLevel)
       }
       return true;
     }
