@@ -724,6 +724,37 @@ export class Character {
   }
 
   /**
+   * @description Checks what gear is in the provided slot
+   */
+  getCharacterGearIn(itemSlot: ItemSlot): string {
+    switch (itemSlot) {
+      case 'amulet':
+        return this.data.amulet_slot
+      case 'body_armor':
+        return this.data.body_armor_slot
+      case 'boots':
+        return this.data.boots_slot
+      case 'helmet':
+        return this.data.helmet_slot
+      case 'leg_armor':
+        return this.data.leg_armor_slot
+      case 'shield':
+        return this.data.shield_slot
+      case 'utility1':
+        return this.data.utility1_slot
+      case 'utility2':
+        return this.data.utility2_slot
+      case 'weapon':
+        return this.data.weapon_slot
+      default:
+        logger.warn(
+          `Checking gear in slot ${itemSlot} is unavailable right now`,
+        );
+        return '';
+    }
+  }
+
+  /**
    * @description Check bank for a specific item
    * @returns the amount found in the bank
    */

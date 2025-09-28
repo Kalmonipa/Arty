@@ -185,6 +185,11 @@ export class EvaluateGearObjective extends Objective {
 
     for (let ind = map.length - 1; ind >= 0; ind--) {
       if (map[ind].level <= charLevel) {
+        if (this.character.getCharacterGearIn(gearType) === map[ind].code) {
+          logger.info(`${map[ind].code} already equipped`)
+          return true
+        }
+
         logger.debug(`Attempting to equip ${map[ind].name}`);
         if (this.character.checkQuantityOfItemInInv(map[ind].code) > 0) {
           return await this.character.equipNow(map[ind].code, gearType);
