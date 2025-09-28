@@ -75,6 +75,7 @@ export class Character {
   /**
    * Game state that we can refer to without API calls
    */
+  amuletMap?: Record<GearEffects, ItemSchema[]>;
   armorMap?: Record<GearEffects, ItemSchema[]>;
   bootsMap?: Record<GearEffects, ItemSchema[]>;
   helmetMap?: Record<GearEffects, ItemSchema[]>;

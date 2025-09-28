@@ -168,6 +168,9 @@ export class EvaluateGearObjective extends Objective {
   ): Promise<boolean> {
     let map: ItemSchema[];
     switch (gearType) {
+      case 'amulet':
+        map = this.character.amuletMap[targetEffect];
+        break
       case 'body_armor':
         map = this.character.armorMap[targetEffect];
         break;
@@ -179,6 +182,12 @@ export class EvaluateGearObjective extends Objective {
         break;
       case 'leg_armor':
         map = this.character.legsArmorMap[targetEffect];
+        break;
+      case 'ring1':
+        map = this.character.ringsMap[targetEffect];
+        break;
+      case 'ring2':
+        map = this.character.ringsMap[targetEffect];
         break;
       case 'shield':
         map = this.character.shieldMap[targetEffect];
