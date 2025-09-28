@@ -31,6 +31,8 @@ export class FightObjective extends Objective {
       return simResult;
     }
 
+    return false
+
     // Check health potions in utility slot 1 before we start
     if (
       this.character.data.utility1_slot_quantity <=

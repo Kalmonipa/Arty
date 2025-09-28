@@ -1,11 +1,18 @@
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { AttackTurns } from '../types/FightData.js';
 import { CharacterSchema } from '../types/types.js';
-import { logger } from '../utils.js';
+import { CRITICAL_MODIFIER, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
+/**
+ * @description Simulates fights against the target mob. Can take in mock schemas to decide what gear we should equip
+ * @todo
+ * - Factor in resistances
+ * - Factor in initiative to decide turn order
+ * @returns true if the sim was a win, false if it was a loss
+ */
 export class FightSimulator extends Objective {
   mockCharacter: CharacterSchema;
   targetMob: string;
@@ -49,16 +56,16 @@ export class FightSimulator extends Objective {
 
     const mobAttacks: AttackTurns = [];
     if (mob.attack_air > 0) {
-      mobAttacks.push({ attackType: 'air', dmg: mob.attack_air });
+      mobAttacks.push({ attackType: 'air', dmg: this.calculateMobDamage(mob.attack_air), criticalChance: mob.critical_strike });
     }
     if (mob.attack_earth > 0) {
-      mobAttacks.push({ attackType: 'earth', dmg: mob.attack_earth });
+      mobAttacks.push({ attackType: 'earth', dmg: this.calculateMobDamage(mob.attack_earth), criticalChance: mob.critical_strike });
     }
     if (mob.attack_fire > 0) {
-      mobAttacks.push({ attackType: 'fire', dmg: mob.attack_fire });
+      mobAttacks.push({ attackType: 'fire', dmg: this.calculateMobDamage(mob.attack_fire), criticalChance: mob.critical_strike });
     }
     if (mob.attack_water > 0) {
-      mobAttacks.push({ attackType: 'water', dmg: mob.attack_water });
+      mobAttacks.push({ attackType: 'water', dmg: this.calculateMobDamage(mob.attack_water), criticalChance: mob.critical_strike });
     }
     if (this.debugLogs) {
       for (const attack of mobAttacks) {
@@ -71,36 +78,36 @@ export class FightSimulator extends Objective {
     const charAttacks: AttackTurns = [];
     // Round(Attack * Round(Damage * 0.01))
     if (this.mockCharacter.attack_air > 0) {
-      const dmg = this.calculateDamage(
+      const dmg = this.calculatePlayerDamage(
         this.mockCharacter.attack_air,
         this.mockCharacter.dmg_air,
         this.mockCharacter.dmg,
       );
-      charAttacks.push({ attackType: 'air', dmg: dmg });
+      charAttacks.push({ attackType: 'air', dmg: dmg, criticalChance: this.mockCharacter.critical_strike });
     }
     if (this.mockCharacter.attack_earth > 0) {
-      const dmg = this.calculateDamage(
+      const dmg = this.calculatePlayerDamage(
         this.mockCharacter.attack_earth,
         this.mockCharacter.dmg_earth,
         this.mockCharacter.dmg,
       );
-      charAttacks.push({ attackType: 'earth', dmg: dmg });
+      charAttacks.push({ attackType: 'earth', dmg: dmg, criticalChance: this.mockCharacter.critical_strike });
     }
     if (this.mockCharacter.attack_fire > 0) {
-      const dmg = this.calculateDamage(
+      const dmg = this.calculatePlayerDamage(
         this.mockCharacter.attack_fire,
         this.mockCharacter.dmg_fire,
         this.mockCharacter.dmg,
       );
-      charAttacks.push({ attackType: 'fire', dmg: dmg });
+      charAttacks.push({ attackType: 'fire', dmg: dmg, criticalChance: this.mockCharacter.critical_strike });
     }
     if (this.mockCharacter.attack_water > 0) {
-      const dmg = this.calculateDamage(
+      const dmg = this.calculatePlayerDamage(
         this.mockCharacter.attack_water,
         this.mockCharacter.dmg_water,
         this.mockCharacter.dmg,
       );
-      charAttacks.push({ attackType: 'water', dmg: dmg });
+      charAttacks.push({ attackType: 'water', dmg: dmg, criticalChance: this.mockCharacter.critical_strike });
     }
     if (this.debugLogs) {
       for (const attack of charAttacks) {
@@ -150,7 +157,15 @@ export class FightSimulator extends Objective {
     return fightResult;
   }
 
-  turn(
+  /**
+   * @description simulates the turn
+   * @param attacker the attacking entity (either character or mob)
+   * @param attacks an array of the attacks to perform. Will be multiple if the attacker uses multiple elements
+   * @param victimHealth the targets health
+   * @param fightSimDebugLogs true to display logs for each turn
+   * @returns the health of the target after the attacks
+   */
+  private turn(
     attacker: string,
     attacks: AttackTurns,
     victimHealth: number,
@@ -158,17 +173,44 @@ export class FightSimulator extends Objective {
   ): number {
     let health = victimHealth;
     for (const attack of attacks) {
-      health = victimHealth - attack.dmg;
+
+        let dmg = attack.dmg
+
+        const randomRoll = Math.random() * 100;
+        if (randomRoll <= attack.criticalChance) {
+          dmg = dmg * (1 + CRITICAL_MODIFIER);
+        }
+
+      health = victimHealth - dmg;
       if (fightSimDebugLogs === true) {
         logger.debug(
-          `${attacker} did ${attack.dmg} ${attack.attackType} damage`,
+          `${attacker} did ${dmg} ${attack.attackType} damage`,
         );
       }
     }
     return health;
   }
 
-  calculateDamage(baseAttack: number, elementalDmg: number, dmg: number) {
-    return Math.round(baseAttack + baseAttack * (elementalDmg + dmg) * 0.01);
-  }
+  /**
+   * Calculates the damage that a mob will do each turn
+   * @param baseAttack The base damage that the mob does
+   * @param elementalDmg The elemental multiplier
+   * @param criticalStrike The percentage (0-100) chance of a critical strike occurring
+   * @returns the damage value
+   */
+  private calculateMobDamage(baseAttack: number): number {
+    return Math.round(baseAttack + baseAttack * 0.01);
+    }
+
+  /**
+   * Calculates the damage that the player will do each turn
+   * @param baseAttack Base attack that the player does
+   * @param elementalDmg Elemental multiplier
+   * @param dmg Damage multiplier
+   * @param criticalStrike The percentage (0-100) chance of a critical strike occurring
+   * @returns The damage value
+   */
+  private calculatePlayerDamage(baseAttack: number, elementalDmg: number, damage: number): number {
+    return Math.round(baseAttack + baseAttack * (elementalDmg + damage) * 0.01);
+      }
 }

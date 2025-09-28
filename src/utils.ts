@@ -18,6 +18,7 @@ export const ApiToken = getEnv('API_TOKEN');
 
 export const MAX_COMBAT_LEVEL = 50;
 export const MAX_SKILL_LEVEL = 50;
+export const CRITICAL_MODIFIER = 0.5;
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 
