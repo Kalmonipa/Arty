@@ -8,7 +8,7 @@ export default function TradeRouter(char: Character) {
 
   router.post('/:tradeType', async (req: Request, res: Response) => {
     try {
-        const { quantity, itemCode } = req.body;
+      const { quantity, itemCode } = req.body;
       const tradeType: TradeType = req.params.tradeType as TradeType;
 
       if (!tradeType || isNaN(quantity) || !itemCode) {
@@ -23,7 +23,7 @@ export default function TradeRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      const job = new TradeObjective(char, tradeType, quantity, itemCode)
+      const job = new TradeObjective(char, tradeType, quantity, itemCode);
 
       await char.appendJob(job);
 

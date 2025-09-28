@@ -44,7 +44,7 @@ async function main() {
   app.use('/jobs', JobsRouter(char));
   app.use('/recycle', RecycleRouter(char));
   app.use('/task', TaskRouter(char));
-  app.use('/trade', TradeRouter(char))
+  app.use('/trade', TradeRouter(char));
   app.use('/train', TrainSkillRouter(char));
   app.use('/withdraw', WithdrawRouter(char));
 

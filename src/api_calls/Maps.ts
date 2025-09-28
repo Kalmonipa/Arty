@@ -19,7 +19,10 @@ export async function getMaps(
     apiUrl.searchParams.set('content_type', params.content_type);
   }
   if (params.hide_blocked_maps) {
-    apiUrl.searchParams.set('hide_blocked_maps', String(params.hide_blocked_maps));
+    apiUrl.searchParams.set(
+      'hide_blocked_maps',
+      String(params.hide_blocked_maps),
+    );
   }
   if (params.layer) {
     apiUrl.searchParams.set('layer', params.layer);

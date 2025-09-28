@@ -1,7 +1,7 @@
 import { actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { getMonsterInformation } from '../api_calls/Monsters.js';
+import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
 import { WeaponFlavours } from '../types/ItemData.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
@@ -218,7 +218,7 @@ export class GatherObjective extends Objective {
 
   async gatherMobDrop(target: SimpleItemSchema) {
     const mobInfo: DataPageMonsterSchema | ApiError =
-      await getMonsterInformation({
+      await getAllMonsterInformation({
         drop: target.code,
         max_level: this.character.data.level,
       });

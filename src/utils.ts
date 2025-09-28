@@ -15,6 +15,10 @@ dotenv.config({ quiet: true });
 export const CharName = getEnv('CHARACTER_NAME');
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 export const ApiToken = getEnv('API_TOKEN');
+
+export const MAX_COMBAT_LEVEL = 50;
+export const MAX_SKILL_LEVEL = 50;
+
 const logLevel = process.env.LOG_LEVEL || 'info';
 
 export const MyHeaders = new Headers({

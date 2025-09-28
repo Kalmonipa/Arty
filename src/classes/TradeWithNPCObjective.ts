@@ -132,8 +132,7 @@ export class TradeObjective extends Objective {
    * @description Find and move to NPC
    */
   async findNpc(npcCode: string) {
-
-    logger.warn(`Finding location of ${npcCode}`)
+    logger.warn(`Finding location of ${npcCode}`);
     // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
     // Make it into it's own function and just call it
     const maps = await getMaps({
@@ -151,6 +150,6 @@ export class TradeObjective extends Objective {
 
     const traderLocation = this.character.evaluateClosestMap(maps.data);
 
-    await this.character.move({x: traderLocation.x, y: traderLocation.y});
+    await this.character.move({ x: traderLocation.x, y: traderLocation.y });
   }
 }

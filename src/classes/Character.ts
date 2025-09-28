@@ -49,6 +49,7 @@ import { TidyBankObjective } from './TidyBankObjective.js';
 import { EvaluateGearObjective } from './EvaluateGearObjective.js';
 import { TradeObjective } from './TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
+import { FightSimulator } from './FightSimulator.js';
 
 export class Character {
   data: CharacterSchema;
@@ -462,7 +463,6 @@ export class Character {
    */
   async prependJob(obj: Objective) {
     this.jobList.unshift(obj);
-    logger.info(`Added ${obj.objectiveId} to beginning of job list`);
     await this.saveJobQueue();
   }
 
@@ -1450,13 +1450,34 @@ export class Character {
   }
 
   /**
+   * @description Adds a fight simulation job to see if we'll win a fight
+   */
+  async simulateFightNow(
+    mockCharacter: CharacterSchema,
+    targetMob: string,
+    iterations?: number,
+    debugLogs?: boolean,
+  ) {
+    const job = new FightSimulator(
+      this,
+      mockCharacter,
+      targetMob,
+      iterations,
+      debugLogs,
+    );
+
+    return await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
+  }
+
+  /**
    * @description Trade with an NPC
    */
-  async tradeWithNpc(
-    tradeType: TradeType,
-    quantity: number,
-    itemCode: string,
-  ) {
+  async tradeWithNpc(tradeType: TradeType, quantity: number, itemCode: string) {
     this.appendJob(new TradeObjective(this, tradeType, quantity, itemCode));
   }
 

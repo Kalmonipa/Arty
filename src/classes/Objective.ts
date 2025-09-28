@@ -52,9 +52,15 @@ export abstract class Objective {
     this.startJob();
 
     await this.runSharedPrereqChecks();
-    await this.runPrerequisiteChecks();
-
-    const result = await this.run();
+    let result = await this.runPrerequisiteChecks();
+    // If prerequisite checks fail then we should stop the job
+    if (result) {
+      result = await this.run();
+    } else {
+      logger.warn(
+        `Prerequisite checks for ${this.objectiveId} failed. Stopping job`,
+      );
+    }
 
     this.completeJob(result);
     this.character.isIdle = true;

@@ -46,7 +46,7 @@ export class MonsterTaskObjective extends Objective {
 
   private async doTask(): Promise<boolean> {
     if (this.character.data.task === '') {
-      this.startNewTask('monsters');
+      await this.startNewTask('monsters');
     }
 
     const maps = await getMaps({

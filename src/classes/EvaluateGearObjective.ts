@@ -131,15 +131,13 @@ export class EvaluateGearObjective extends Objective {
       if (weapons[ind].level <= charLevel) {
         logger.debug(`Attempting to equip ${weapons[ind].name}`);
         if (this.character.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
-          await this.character.equipNow(weapons[ind].code, 'weapon');
-          return true;
+          return await this.character.equipNow(weapons[ind].code, 'weapon');
         } else if (
           (await this.character.checkQuantityOfItemInBank(weapons[ind].code)) >
           0
         ) {
           await this.character.withdrawNow(1, weapons[ind].code);
-          await this.character.equipNow(weapons[ind].code, 'weapon');
-          return true;
+          return await this.character.equipNow(weapons[ind].code, 'weapon');
         } else {
           logger.debug(`Can't find any ${weapons[ind].name}`);
         }
@@ -189,14 +187,12 @@ export class EvaluateGearObjective extends Objective {
       if (map[ind].level <= charLevel) {
         logger.debug(`Attempting to equip ${map[ind].name}`);
         if (this.character.checkQuantityOfItemInInv(map[ind].code) > 0) {
-          await this.character.equipNow(map[ind].code, gearType);
-          return true;
+          return await this.character.equipNow(map[ind].code, gearType);
         } else if (
           (await this.character.checkQuantityOfItemInBank(map[ind].code)) > 0
         ) {
           await this.character.withdrawNow(1, map[ind].code);
-          await this.character.equipNow(map[ind].code, gearType);
-          return true;
+          return await this.character.equipNow(map[ind].code, gearType);
         } else {
           logger.debug(`Can't find any ${map[ind].name}`);
         }

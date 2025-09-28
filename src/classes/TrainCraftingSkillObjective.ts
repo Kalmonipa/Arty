@@ -61,6 +61,8 @@ export class TrainCraftingSkillObjective extends Objective {
 
       await this.character.craftNow(1, itemToCraft.code);
 
+      await this.character.depositNow(1, itemToCraft.code);
+
       charLevel = this.character.getCharacterLevel(this.skill);
     }
     return true;

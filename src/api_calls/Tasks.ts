@@ -174,7 +174,7 @@ export async function actionCompleteTask(
     logger.info(`Completed task successfully`);
     let rewards: string = '';
     for (const reward of result.data.rewards.items) {
-      rewards += `${reward.quantity} ${reward.code}, `;
+      rewards += `${reward.quantity} ${reward.code},`;
     }
     logger.info(`Received ${rewards} and ${result.data.rewards.gold} gold`);
 
