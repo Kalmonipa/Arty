@@ -4,3 +4,5 @@ jobs:
     runs-on: docker
     steps:
       - run: echo All good!
+      - uses: actions/checkout@v4
+      - run: docker build -t forgejo.kalmonipa.net/kalmonipa/arty:test-2
