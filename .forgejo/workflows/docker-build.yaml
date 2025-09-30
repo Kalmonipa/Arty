@@ -13,7 +13,7 @@ jobs:
   build-and-push:
     runs-on: docker
     container:
-      image: docker:latest
+      image: catthehacker/ubuntu:act-latest
       options: --privileged
     
     steps:
