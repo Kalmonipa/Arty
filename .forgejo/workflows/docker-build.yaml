@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: forgejo.kalmonipa.net
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: arty
   DOCKER_HOST: tcp://dind:2375
 
 jobs:
