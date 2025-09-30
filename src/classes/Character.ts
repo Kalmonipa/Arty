@@ -751,6 +751,10 @@ export class Character {
         return this.data.helmet_slot;
       case 'leg_armor':
         return this.data.leg_armor_slot;
+      case 'ring1':
+        return this.data.ring1_slot;
+      case 'ring2':
+        return this.data.ring2_slot;
       case 'shield':
         return this.data.shield_slot;
       case 'utility1':
