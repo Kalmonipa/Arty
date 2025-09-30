@@ -5,6 +5,10 @@ on:
 jobs:
   build:
     runs-on: docker
+    container:
+      image: data.forgejo.org/oci/node:20-bullseye
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Install Docker CLI
         run: |
