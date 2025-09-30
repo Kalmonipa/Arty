@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - v*.*.*
-      - test-*
 
 env:
   REGISTRY: forgejo.kalmonipa.net
@@ -16,7 +15,7 @@ jobs:
     runs-on: docker
     container:
       image: catthehacker/ubuntu:act-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

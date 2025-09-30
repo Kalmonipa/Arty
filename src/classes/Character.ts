@@ -5,7 +5,7 @@ import {
 } from '../api_calls/Actions.js';
 import { actionUse, getItemInformation } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { HealthStatus } from '../types/CharacterData.js';
+import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
   CharacterSchema,
   DestinationSchema,
@@ -17,7 +17,13 @@ import {
   SimpleItemSchema,
   Skill,
 } from '../types/types.js';
-import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils.js';
+import {
+  buildListOf,
+  buildListOfWeapons,
+  CharRole,
+  logger,
+  sleep,
+} from '../utils.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { CraftObjective } from './CraftObjective.js';
@@ -50,6 +56,7 @@ import { EvaluateGearObjective } from './EvaluateGearObjective.js';
 import { TradeObjective } from './TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from './FightSimulator.js';
+import { IdleObjective } from './IdleObjective.js';
 
 export class Character {
   data: CharacterSchema;
@@ -93,12 +100,10 @@ export class Character {
    * To be used when we implement idle tasks
    */
   isIdle: boolean = true;
-
   /**
    * Max default number of slots. Can be increased with a backpack
    */
   maxInventorySlots = 20;
-
   /**
    * Maximum number of potions that can be equipped
    */
@@ -107,7 +112,6 @@ export class Character {
    * Minimum number of potions to equip
    */
   minEquippedUtilities = 20;
-
   /**
    * The code of the food we're currently using. Saving it as a var so
    * I don't have to search my inv to figure out what to use
@@ -121,11 +125,14 @@ export class Character {
    *  Minimum food in inventory when going into a fight
    */
   minFood = 15;
-
   /**
    * List of items to keep when doing a deposit all
    */
   itemsToKeep: string[] = [];
+  /**
+   * Role of the character. One of Alchemist, Fighter, Fisherman, Lumberjack, Miner
+   */
+  role: Role;
 
   constructor(data: CharacterSchema) {
     this.data = data;
@@ -149,6 +156,8 @@ export class Character {
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
     this.weaponMap = await buildListOfWeapons();
+
+    this.role = CharRole;
 
     await this.loadJobQueue();
   }
@@ -482,8 +491,8 @@ export class Character {
    * Adds a job to the jobList and executes it immediately
    * This ensures all jobs go through the jobList system for tracking
    * @param obj The objective to add and execute
-   * @param prepend If true, adds to beginning of jobList, otherwise adds to end
-   * @param trackInQueue If true, adds to jobList for tracking. If false, executes without queue tracking
+   * @param prepend If true, adds to beginning of jobList, otherwise adds to end. Defaults to true
+   * @param trackInQueue If true, adds to jobList for tracking. If false, executes without queue tracking. Defaults to true
    * @param parentId The objectiveId of the parent job that spawned this job
    * @returns Promise<boolean> The result of the job execution
    */
@@ -648,6 +657,7 @@ export class Character {
     while (true) {
       if (this.jobList.length === 0) {
         await sleep(10, 'no more jobs', false);
+        await this.appendJob(new IdleObjective(this, this.role));
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];
         this.currentExecutingJob = currentJob;
@@ -732,23 +742,23 @@ export class Character {
   getCharacterGearIn(itemSlot: ItemSlot): string {
     switch (itemSlot) {
       case 'amulet':
-        return this.data.amulet_slot
+        return this.data.amulet_slot;
       case 'body_armor':
-        return this.data.body_armor_slot
+        return this.data.body_armor_slot;
       case 'boots':
-        return this.data.boots_slot
+        return this.data.boots_slot;
       case 'helmet':
-        return this.data.helmet_slot
+        return this.data.helmet_slot;
       case 'leg_armor':
-        return this.data.leg_armor_slot
+        return this.data.leg_armor_slot;
       case 'shield':
-        return this.data.shield_slot
+        return this.data.shield_slot;
       case 'utility1':
-        return this.data.utility1_slot
+        return this.data.utility1_slot;
       case 'utility2':
-        return this.data.utility2_slot
+        return this.data.utility2_slot;
       case 'weapon':
-        return this.data.weapon_slot
+        return this.data.weapon_slot;
       default:
         logger.warn(
           `Checking gear in slot ${itemSlot} is unavailable right now`,

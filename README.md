@@ -26,6 +26,7 @@ services:
     environment:
       API_TOKEN: $API_TOKEN
       CHARACTER_NAME: 'MyCharacter'
+      ROLE: 'fighter'
 ```
 
 ### To run locally:

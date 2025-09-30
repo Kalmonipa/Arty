@@ -9,13 +9,15 @@ import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './classes/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import dotenv from 'dotenv';
+import { Role } from './types/CharacterData.js';
 
 dotenv.config({ quiet: true });
 
-export const CharName = getEnv('CHARACTER_NAME');
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 export const ApiToken = getEnv('API_TOKEN');
 
+export const CharName = getEnv('CHARACTER_NAME');
+export const CharRole = getEnv('ROLE').toLowerCase() as Role;
 export const MAX_COMBAT_LEVEL = 50;
 export const MAX_SKILL_LEVEL = 50;
 export const CRITICAL_MODIFIER = 0.5;

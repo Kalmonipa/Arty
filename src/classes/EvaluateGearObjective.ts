@@ -92,11 +92,11 @@ export class EvaluateGearObjective extends Objective {
         await this.checkGearOfType('boots', 'hp', charLevel);
 
         // Check rings
-        await this.checkGearOfType('ring1', 'dmg', charLevel)
-        await this.checkGearOfType('ring2', 'dmg', charLevel)
+        await this.checkGearOfType('ring1', 'dmg', charLevel);
+        await this.checkGearOfType('ring2', 'dmg', charLevel);
 
         // Check amulet
-        await this.checkGearOfType('amulet', 'hp', charLevel)
+        await this.checkGearOfType('amulet', 'hp', charLevel);
       }
       return true;
     }
@@ -170,7 +170,7 @@ export class EvaluateGearObjective extends Objective {
     switch (gearType) {
       case 'amulet':
         map = this.character.amuletMap[targetEffect];
-        break
+        break;
       case 'body_armor':
         map = this.character.armorMap[targetEffect];
         break;
@@ -202,8 +202,8 @@ export class EvaluateGearObjective extends Objective {
     for (let ind = map.length - 1; ind >= 0; ind--) {
       if (map[ind].level <= charLevel) {
         if (this.character.getCharacterGearIn(gearType) === map[ind].code) {
-          logger.info(`${map[ind].code} already equipped`)
-          return true
+          logger.info(`${map[ind].code} already equipped`);
+          return true;
         }
 
         logger.debug(`Attempting to equip ${map[ind].name}`);

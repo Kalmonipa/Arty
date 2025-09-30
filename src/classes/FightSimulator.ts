@@ -61,7 +61,7 @@ export class FightSimulator extends Objective {
         attackType: 'air',
         dmg: this.calculateMobDamage(mob.attack_air),
         criticalChance: mob.critical_strike,
-        victimResistance: this.mockCharacter.res_air
+        victimResistance: this.mockCharacter.res_air,
       });
     }
     if (mob.attack_earth > 0) {
@@ -69,7 +69,7 @@ export class FightSimulator extends Objective {
         attackType: 'earth',
         dmg: this.calculateMobDamage(mob.attack_earth),
         criticalChance: mob.critical_strike,
-        victimResistance: this.mockCharacter.res_earth
+        victimResistance: this.mockCharacter.res_earth,
       });
     }
     if (mob.attack_fire > 0) {
@@ -77,7 +77,7 @@ export class FightSimulator extends Objective {
         attackType: 'fire',
         dmg: this.calculateMobDamage(mob.attack_fire),
         criticalChance: mob.critical_strike,
-        victimResistance: this.mockCharacter.res_fire
+        victimResistance: this.mockCharacter.res_fire,
       });
     }
     if (mob.attack_water > 0) {
@@ -85,7 +85,7 @@ export class FightSimulator extends Objective {
         attackType: 'water',
         dmg: this.calculateMobDamage(mob.attack_water),
         criticalChance: mob.critical_strike,
-        victimResistance: this.mockCharacter.res_water
+        victimResistance: this.mockCharacter.res_water,
       });
     }
     if (this.debugLogs) {
@@ -108,7 +108,7 @@ export class FightSimulator extends Objective {
         attackType: 'air',
         dmg: dmg,
         criticalChance: this.mockCharacter.critical_strike,
-        victimResistance: mob.res_air
+        victimResistance: mob.res_air,
       });
     }
     if (this.mockCharacter.attack_earth > 0) {
@@ -121,7 +121,7 @@ export class FightSimulator extends Objective {
         attackType: 'earth',
         dmg: dmg,
         criticalChance: this.mockCharacter.critical_strike,
-        victimResistance: mob.res_earth
+        victimResistance: mob.res_earth,
       });
     }
     if (this.mockCharacter.attack_fire > 0) {
@@ -134,7 +134,7 @@ export class FightSimulator extends Objective {
         attackType: 'fire',
         dmg: dmg,
         criticalChance: this.mockCharacter.critical_strike,
-        victimResistance: mob.res_fire
+        victimResistance: mob.res_fire,
       });
     }
     if (this.mockCharacter.attack_water > 0) {
@@ -147,7 +147,7 @@ export class FightSimulator extends Objective {
         attackType: 'water',
         dmg: dmg,
         criticalChance: this.mockCharacter.critical_strike,
-        victimResistance: mob.res_water
+        victimResistance: mob.res_water,
       });
     }
     if (this.debugLogs) {
@@ -223,7 +223,7 @@ export class FightSimulator extends Objective {
       }
 
       // Remove resistances to the damage
-      dmg = Math.round(dmg - (attack.victimResistance * 0.01))
+      dmg = Math.round(dmg - attack.victimResistance * 0.01);
 
       health = victimHealth - dmg;
       if (fightSimDebugLogs === true) {

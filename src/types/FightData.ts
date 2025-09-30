@@ -4,5 +4,5 @@ export type TurnsDetails = {
   attackType: AttackTypes;
   dmg: number;
   criticalChance: number;
-  victimResistance: number
+  victimResistance: number;
 }[];
