@@ -4,23 +4,31 @@ on:
   push:
     branches:
       - main
+      - master
+  workflow_dispatch:
 
 env:
   REGISTRY: forgejo.kalmonipa.net
   IMAGE_NAME: ${{ github.repository }}
+  DOCKER_HOST: tcp://dind:2375
 
 jobs:
   build-and-push:
-    runs-on: docker
+    runs-on: ubuntu-latest
     container:
       image: catthehacker/ubuntu:act-latest
-      options: --privileged
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Log in to Registry
+      - name: Verify Docker connection
+        run: |
+          echo "Docker host: $DOCKER_HOST"
+          docker version
+          docker info
+      
+      - name: Log in to Container Registry
         run: |
           echo "${{ secrets.FORGEJO_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
       
