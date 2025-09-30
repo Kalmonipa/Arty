@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: forgejo.kalmonipa.net
-  IMAGE_NAME: arty
+  IMAGE_NAME: kalmonipa/arty
   DOCKER_HOST: tcp://dind:2375
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
       
       - name: Log in to Container Registry
         run: |
-          echo "${{ secrets.FORGEJO_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+          echo "${{ secrets.PACKAGE_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
       
       - name: Build Docker image
         run: |
