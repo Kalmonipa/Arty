@@ -3,6 +3,7 @@ import { Skill } from '../types/types.js';
 import { isGatheringSkill } from '../utils.js';
 import { Character } from './Character.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
+import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { Objective } from './Objective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
 import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
@@ -31,7 +32,11 @@ export class IdleObjective extends Objective {
 
     await this.topUpBank();
 
-    await this.doItemTask();
+    if (this.role === 'fighter') {
+        await this.doMonsterTask()
+    } else {
+        await this.doItemTask();
+    }
 
     // ToDo: Add in gearcrafting and jewelrycrafting. Maybe use sub-roles for those?
     switch (this.role) {
@@ -86,6 +91,19 @@ export class IdleObjective extends Objective {
       this.objectiveId,
     );
   }
+
+    /**
+   * Completes an item task
+   * @returns true if successful, false if not
+   */
+    private async doMonsterTask(): Promise<boolean> {
+        return this.character.executeJobNow(
+          new MonsterTaskObjective(this.character, 1),
+          true,
+          true,
+          this.objectiveId,
+        );
+      }
 
   /**
    * Increase the level of a skill by 1
