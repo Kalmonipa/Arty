@@ -7,7 +7,7 @@ jobs:
     runs-on: docker
     steps:
       - name: ls
-        run: ls /var/
+        run: ls /var/run
       - name: Install Docker CLI
         run: |
           apt-get update
