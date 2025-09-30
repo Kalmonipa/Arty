@@ -5,15 +5,15 @@ on:
 jobs:
   build:
     runs-on: docker
-    container:
-      image: data.forgejo.org/oci/node:20-bullseye
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Install Docker CLI
         run: |
           apt-get update
           apt-get install -y docker.io
+      - name: Check Docker
+        run: |
+          ls -l /var/run/docker.sock
+          docker version
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Checkout code
