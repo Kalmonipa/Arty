@@ -951,6 +951,8 @@ export class Character {
    * @description Eat the required amount of preferred food to recover fully
    */
   async eatFood() {
+    await this.setPreferredFood()
+
     const healthStatus: HealthStatus = this.checkHealth();
 
     const preferredFoodHealValue = this.consumablesMap.heal
