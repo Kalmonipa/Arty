@@ -447,7 +447,7 @@ export class Character {
           );
           break;
         case 'TidyBankObjective':
-          job = new TidyBankObjective(this);
+          job = new TidyBankObjective(this, this.role);
           break;
         case 'IdleObjective':
           job = new IdleObjective(this, specificData.role as Role)
@@ -1566,7 +1566,7 @@ export class Character {
    * @description Tidy up the bank. Will be moved to be part of the idle tasks
    */
   async tidyUpBank() {
-    const job = new TidyBankObjective(this);
+    const job = new TidyBankObjective(this, this.role);
     await this.executeJobNow(
       job,
       true,
