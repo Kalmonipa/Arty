@@ -148,6 +148,7 @@ export class Character {
    */
   async init() {
     this.armorMap = await buildListOf('body_armor');
+    this.amuletMap = await buildListOf('amulet');
     this.bootsMap = await buildListOf('boots');
     this.helmetMap = await buildListOf('helmet');
     this.legsArmorMap = await buildListOf('leg_armor');
