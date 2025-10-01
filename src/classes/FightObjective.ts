@@ -31,6 +31,11 @@ export class FightObjective extends Objective {
       await this.character.equipUtility('restore', 'utility1');
     }
 
+    // Check amount of food in inventory to use after battles
+    if (!(await this.character.checkFoodLevels())) {
+      await this.character.topUpFood();
+    }
+
     await this.character.evaluateGear('combat');
 
     const simResult = await this.character.simulateFightNow(
@@ -39,11 +44,6 @@ export class FightObjective extends Objective {
     );
     if (simResult === false) {
       return simResult;
-    }
-
-    // Check amount of food in inventory to use after battles
-    if (!(await this.character.checkFoodLevels())) {
-      await this.character.topUpFood();
     }
 
     return true;
