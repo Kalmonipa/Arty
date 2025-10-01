@@ -30,6 +30,8 @@ export class IdleObjective extends Objective {
   async run(): Promise<boolean> {
     await this.cleanUpBank();
 
+    await this.depositGoldIntoBank();
+
     await this.topUpBank();
 
     if (this.role === 'fighter') {
@@ -70,12 +72,27 @@ export class IdleObjective extends Objective {
   }
 
   /**
+   * @description Deposits gold into the bank if they have more than 1k
+   * @returns 
+   */
+  private async depositGoldIntoBank(): Promise<boolean> {
+    const numGoldInInv = this.character.data.gold
+
+    if (numGoldInInv > 1000) {
+      return await this.character.depositNow(numGoldInInv - 1000, 'gold')
+    }
+
+    return true
+  }
+
+  /**
    * Ensure that we have a minimum amount of certain items in the bank
    * - 1k Health potions of varying levels
    * - 1k Food of varying levels
    * - x Task coins (maybe?)
    */
   private async topUpBank(): Promise<boolean> {
+    
     return true;
   }
 

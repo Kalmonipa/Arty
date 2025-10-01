@@ -6,9 +6,11 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
+  BankGoldTransactionResponseSchema,
   BankItemTransactionResponseSchema,
   SimpleItemSchema,
 } from '../types/types.js';
+import { actionDepositGold } from '../api_calls/Bank.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;
@@ -59,10 +61,10 @@ export class DepositObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      let response: ApiError | BankItemTransactionResponseSchema;
+      let response: ApiError | BankItemTransactionResponseSchema | BankGoldTransactionResponseSchema;
+
       if (this.target.code === 'gold') {
-        logger.warn(`Deposit gold has not been implemented yet`);
-        // deposit gold
+        response = await actionDepositGold(this.character.data, this.target.quantity)
       } else if (this.target.code === 'all') {
         const itemsToDeposit: SimpleItemSchema[] = [];
 

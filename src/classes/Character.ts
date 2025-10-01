@@ -325,6 +325,11 @@ export class Character {
   private getJobSpecificData(job: Objective): Record<string, unknown> {
     if (job instanceof CraftObjective) {
       return { target: job.target };
+    } else if (job instanceof EvaluateGearObjective) {
+      return {
+        activityType: job.activityType,
+        targetMob: job.targetMob,
+      };
     } else if (job instanceof GatherObjective) {
       return {
         target: job.target,
@@ -353,6 +358,8 @@ export class Character {
       return { skill: job.skill, targetLevel: job.targetLevel };
     } else if (job instanceof TidyBankObjective) {
       return {};
+    } else if (job instanceof IdleObjective) {
+      return { role: job.role }
     }
     return {};
   }
@@ -381,6 +388,9 @@ export class Character {
             this,
             specificData.target as ObjectiveTargets,
           );
+          break;
+        case 'EvaluateGearObjective':
+          job = new EvaluateGearObjective(this, specificData.activityType as WeaponFlavours, specificData.targetMob as MonsterSchema)
           break;
         case 'GatherObjective':
           job = new GatherObjective(
@@ -438,6 +448,9 @@ export class Character {
           break;
         case 'TidyBankObjective':
           job = new TidyBankObjective(this);
+          break;
+        case 'IdleObjective':
+          job = new IdleObjective(this, specificData.role as Role)
           break;
         default:
           logger.warn(`Unknown job type: ${type}`);
