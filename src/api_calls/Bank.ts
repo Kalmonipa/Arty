@@ -1,6 +1,10 @@
 import { ApiError } from '../classes/Error.js';
 import { ApiUrl, getRequestOptions, logger, MyHeaders } from '../utils.js';
-import { BankGoldTransactionResponseSchema, CharacterSchema, DataPageSimpleItemSchema } from '../types/types.js';
+import {
+  BankGoldTransactionResponseSchema,
+  CharacterSchema,
+  DataPageSimpleItemSchema,
+} from '../types/types.js';
 
 export async function getBankItems(
   item_code?: string,

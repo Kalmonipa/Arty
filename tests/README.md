@@ -5,12 +5,14 @@ This directory contains integration tests for the Arty MMO bot, specifically des
 ## Test Structure
 
 ### `/mocks/`
+
 Contains mock implementations for external dependencies:
 
 - **`apiMocks.ts`**: Mock implementations of API calls based on the OpenAPI specification
 - **`characterMock.ts`**: Mock implementation of the Character class with all necessary methods
 
 ### `/integration/`
+
 Contains integration test files:
 
 - **`GatherObjective.test.ts`**: Comprehensive integration tests for the GatherObjective class
@@ -18,6 +20,7 @@ Contains integration test files:
 ## Test Features
 
 ### API Mocking
+
 All external API calls are mocked based on the OpenAPI specification at `https://api-test.artifactsmmo.com/docs/#/`:
 
 - `actionGather`: Mock gathering actions
@@ -27,6 +30,7 @@ All external API calls are mocked based on the OpenAPI specification at `https:/
 - `getResourceInformation`: Mock resource data retrieval
 
 ### Character Mocking
+
 The Character class is mocked with all methods used by GatherObjective:
 
 - Inventory and bank management
@@ -35,6 +39,7 @@ The Character class is mocked with all methods used by GatherObjective:
 - Error handling
 
 ### Test Coverage
+
 The integration tests cover:
 
 1. **Basic gathering scenarios**:

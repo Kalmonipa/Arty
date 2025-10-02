@@ -359,7 +359,7 @@ export class Character {
     } else if (job instanceof TidyBankObjective) {
       return {};
     } else if (job instanceof IdleObjective) {
-      return { role: job.role }
+      return { role: job.role };
     }
     return {};
   }
@@ -390,7 +390,11 @@ export class Character {
           );
           break;
         case 'EvaluateGearObjective':
-          job = new EvaluateGearObjective(this, specificData.activityType as WeaponFlavours, specificData.targetMob as MonsterSchema)
+          job = new EvaluateGearObjective(
+            this,
+            specificData.activityType as WeaponFlavours,
+            specificData.targetMob as MonsterSchema,
+          );
           break;
         case 'GatherObjective':
           job = new GatherObjective(
@@ -450,7 +454,7 @@ export class Character {
           job = new TidyBankObjective(this, this.role);
           break;
         case 'IdleObjective':
-          job = new IdleObjective(this, specificData.role as Role)
+          job = new IdleObjective(this, specificData.role as Role);
           break;
         default:
           logger.warn(`Unknown job type: ${type}`);
@@ -670,7 +674,6 @@ export class Character {
   async executeJobList() {
     while (true) {
       if (this.jobList.length === 0) {
-        await sleep(10, 'no more jobs', false);
         await this.appendJob(new IdleObjective(this, this.role));
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];
@@ -951,7 +954,7 @@ export class Character {
    * @description Eat the required amount of preferred food to recover fully
    */
   async eatFood() {
-    await this.setPreferredFood()
+    await this.setPreferredFood();
 
     const healthStatus: HealthStatus = this.checkHealth();
 

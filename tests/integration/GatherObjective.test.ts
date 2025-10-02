@@ -31,7 +31,9 @@ class SimpleMockCharacter {
   data = mockCharacterData;
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
-    const item = this.data.inventory.find((item: InventorySlot) => item.code === code);
+    const item = this.data.inventory.find(
+      (item: InventorySlot) => item.code === code,
+    );
     return item ? item.quantity : 0;
   });
 
@@ -67,14 +69,18 @@ class SimpleMockCharacter {
     return true;
   });
 
-  move = jest.fn(async (destination: { x: number; y: number }): Promise<void> => {
-    this.data.x = destination.x;
-    this.data.y = destination.y;
-  });
+  move = jest.fn(
+    async (destination: { x: number; y: number }): Promise<void> => {
+      this.data.x = destination.x;
+      this.data.y = destination.y;
+    },
+  );
 
-  evaluateClosestMap = jest.fn((maps: MapSchema[]): { x: number; y: number } => {
-    return { x: maps[0].x, y: maps[0].y };
-  });
+  evaluateClosestMap = jest.fn(
+    (maps: MapSchema[]): { x: number; y: number } => {
+      return { x: maps[0].x, y: maps[0].y };
+    },
+  );
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -89,7 +95,9 @@ class SimpleMockCharacter {
   });
 
   addItemToInventory = (code: string, quantity: number): void => {
-    const item = this.data.inventory.find((item: InventorySlot) => item.code === code);
+    const item = this.data.inventory.find(
+      (item: InventorySlot) => item.code === code,
+    );
     if (item) {
       item.quantity += quantity;
     } else {
@@ -106,16 +114,16 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Create fresh mock character
     mockCharacter = new SimpleMockCharacter();
-    
+
     // Set up default target
     target = {
       code: 'iron_ore',
       quantity: 10,
     };
-    
+
     // Create fresh gather objective
     gatherObjective = new GatherObjective(mockCharacter as any, target);
   });
@@ -130,7 +138,9 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.checkQuantityOfItemInInv).toHaveBeenCalledWith('iron_ore');
+      expect(mockCharacter.checkQuantityOfItemInInv).toHaveBeenCalledWith(
+        'iron_ore',
+      );
     });
 
     it('should withdraw from bank when sufficient quantity is available', async () => {
@@ -138,11 +148,11 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(5);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(20);
       mockCharacter.withdrawNow.mockResolvedValue(true);
-      
+
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
         target,
-        true // checkBank = true
+        true, // checkBank = true
       );
 
       // Act

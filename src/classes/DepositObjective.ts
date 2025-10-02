@@ -61,10 +61,16 @@ export class DepositObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      let response: ApiError | BankItemTransactionResponseSchema | BankGoldTransactionResponseSchema;
+      let response:
+        | ApiError
+        | BankItemTransactionResponseSchema
+        | BankGoldTransactionResponseSchema;
 
       if (this.target.code === 'gold') {
-        response = await actionDepositGold(this.character.data, this.target.quantity)
+        response = await actionDepositGold(
+          this.character.data,
+          this.target.quantity,
+        );
       } else if (this.target.code === 'all') {
         const itemsToDeposit: SimpleItemSchema[] = [];
 

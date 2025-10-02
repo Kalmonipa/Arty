@@ -20,13 +20,13 @@ export class TidyBankObjective extends Objective {
     'topaz_stone',
   ];
 
-  role: Role
+  role: Role;
 
   constructor(character: Character, role: Role) {
     super(character, `tidy_bank`, 'not_started');
 
     this.character = character;
-    this.role = role
+    this.role = role;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -58,7 +58,6 @@ export class TidyBankObjective extends Objective {
     }
 
     return true;
-
   }
 
   /**

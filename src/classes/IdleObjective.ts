@@ -28,7 +28,13 @@ export class IdleObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
-    const idleObjectives = ['cleanUpBank', 'depositGoldIntoBank', 'topUpBank', 'doTask', 'trainSkill'];
+    const idleObjectives = [
+      'cleanUpBank',
+      'depositGoldIntoBank',
+      'topUpBank',
+      'doTask',
+      'trainSkill',
+    ];
 
     const randomObjective =
       idleObjectives[Math.floor(Math.random() * idleObjectives.length)];
@@ -36,16 +42,20 @@ export class IdleObjective extends Objective {
     switch (randomObjective) {
       case 'cleanUpBank':
         return await this.cleanUpBank();
+
       case 'depositGoldIntoBank':
         return await this.depositGoldIntoBank();
+
       case 'topUpBank':
         return await this.topUpBank(this.role);
+
       case 'doTask':
         if (this.role === 'fighter') {
           return await this.doMonsterTask();
         } else {
           return await this.doItemTask();
         }
+
       case 'trainSkill':
         // ToDo: Add in gearcrafting and jewelrycrafting. Maybe use sub-roles for those?
         switch (this.role) {
@@ -78,16 +88,16 @@ export class IdleObjective extends Objective {
 
   /**
    * @description Deposits gold into the bank if they have more than 1k
-   * @returns 
+   * @returns
    */
   private async depositGoldIntoBank(): Promise<boolean> {
-    const numGoldInInv = this.character.data.gold
+    const numGoldInInv = this.character.data.gold;
 
     if (numGoldInInv > 1000) {
-      return await this.character.depositNow(numGoldInInv - 1000, 'gold')
+      return await this.character.depositNow(numGoldInInv - 1000, 'gold');
     }
 
-    return true
+    return true;
   }
 
   /**
@@ -98,29 +108,44 @@ export class IdleObjective extends Objective {
    */
   private async topUpBank(role: Role): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
-    const minimumInBank = 100
-    const listOfFish = ['cooked_gudgeon', 'cooked_shrimp', 'cooked_trout', 'cooked_bass', 'cooked_salmon']
+    const minimumInBank = 100;
+    const listOfFish = [
+      'cooked_gudgeon',
+      'cooked_shrimp',
+      'cooked_trout',
+      'cooked_bass',
+      'cooked_salmon',
+    ];
 
     if (role === 'alchemist') {
       for (const potion of this.character.utilitiesMap['restore']) {
         // Check if we can craft the potion
         if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
-          // If we can craft the potion, get the number in the bank 
-          const numInBank = await this.character.checkQuantityOfItemInBank(potion.code)
+          // If we can craft the potion, get the number in the bank
+          const numInBank = await this.character.checkQuantityOfItemInBank(
+            potion.code,
+          );
           // Ensure quantity is greater than 1k
           if (numInBank < minimumInBank) {
-            await this.character.craftNow(minimumInBank - numInBank, potion.code)
+            await this.character.craftNow(
+              minimumInBank - numInBank,
+              potion.code,
+            );
           }
         }
       }
     } else if (role === 'fisherman') {
-      for (const fish of this.character.consumablesMap['heal'].filter((consumable) => listOfFish.includes(consumable.code))) {
+      for (const fish of this.character.consumablesMap['heal'].filter(
+        (consumable) => listOfFish.includes(consumable.code),
+      )) {
         if (fish.craft.level < this.character.getCharacterLevel('fishing')) {
-          // If we can cook the fish, get the number in the bank 
-          const numInBank = await this.character.checkQuantityOfItemInBank(fish.code)
+          // If we can cook the fish, get the number in the bank
+          const numInBank = await this.character.checkQuantityOfItemInBank(
+            fish.code,
+          );
           // Ensure quantity is greater than 1k
           if (numInBank < minimumInBank) {
-            await this.character.craftNow(minimumInBank - numInBank, fish.code)
+            await this.character.craftNow(minimumInBank - numInBank, fish.code);
           }
         }
       }
