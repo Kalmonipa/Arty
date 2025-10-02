@@ -1,6 +1,6 @@
 import { ApiError } from '../classes/Error.js';
-import { ApiUrl, getRequestOptions, MyHeaders } from '../utils.js';
-import { DataPageSimpleItemSchema } from '../types/types.js';
+import { ApiUrl, getRequestOptions, logger, MyHeaders } from '../utils.js';
+import { BankGoldTransactionResponseSchema, CharacterSchema, DataPageSimpleItemSchema } from '../types/types.js';
 
 export async function getBankItems(
   item_code?: string,
@@ -28,6 +28,67 @@ export async function getBankItems(
       });
     }
     return await response.json();
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+/**
+ * @description deposit gold into the bank. Character must be at the bank map
+ * @param character
+ * @param craftData
+ * @returns {SkillResponseSchema}
+ */
+export async function actionDepositGold(
+  character: CharacterSchema,
+  quantity: number,
+): Promise<BankGoldTransactionResponseSchema | ApiError> {
+  const requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+    body: JSON.stringify({ quantity: quantity }),
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/bank/deposit/gold`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 461:
+          message =
+            'Some of your items or your gold in the bank are already part of an ongoing transaction.';
+          break;
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 492:
+          message = 'The character does not have enough gold.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 499:
+          message = 'The character is in cooldown.';
+          break;
+        default:
+          message = 'Unknown error from /action/bank/deposit/gold';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: BankGoldTransactionResponseSchema = await response.json();
+    logger.info(
+      `Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
+    );
+    return result;
   } catch (error) {
     return error as ApiError;
   }

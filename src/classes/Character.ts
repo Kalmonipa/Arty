@@ -148,6 +148,7 @@ export class Character {
    */
   async init() {
     this.armorMap = await buildListOf('body_armor');
+    this.amuletMap = await buildListOf('amulet');
     this.bootsMap = await buildListOf('boots');
     this.helmetMap = await buildListOf('helmet');
     this.legsArmorMap = await buildListOf('leg_armor');
@@ -324,6 +325,11 @@ export class Character {
   private getJobSpecificData(job: Objective): Record<string, unknown> {
     if (job instanceof CraftObjective) {
       return { target: job.target };
+    } else if (job instanceof EvaluateGearObjective) {
+      return {
+        activityType: job.activityType,
+        targetMob: job.targetMob,
+      };
     } else if (job instanceof GatherObjective) {
       return {
         target: job.target,
@@ -352,6 +358,8 @@ export class Character {
       return { skill: job.skill, targetLevel: job.targetLevel };
     } else if (job instanceof TidyBankObjective) {
       return {};
+    } else if (job instanceof IdleObjective) {
+      return { role: job.role }
     }
     return {};
   }
@@ -380,6 +388,9 @@ export class Character {
             this,
             specificData.target as ObjectiveTargets,
           );
+          break;
+        case 'EvaluateGearObjective':
+          job = new EvaluateGearObjective(this, specificData.activityType as WeaponFlavours, specificData.targetMob as MonsterSchema)
           break;
         case 'GatherObjective':
           job = new GatherObjective(
@@ -436,7 +447,10 @@ export class Character {
           );
           break;
         case 'TidyBankObjective':
-          job = new TidyBankObjective(this);
+          job = new TidyBankObjective(this, this.role);
+          break;
+        case 'IdleObjective':
+          job = new IdleObjective(this, specificData.role as Role)
           break;
         default:
           logger.warn(`Unknown job type: ${type}`);
@@ -937,6 +951,8 @@ export class Character {
    * @description Eat the required amount of preferred food to recover fully
    */
   async eatFood() {
+    await this.setPreferredFood()
+
     const healthStatus: HealthStatus = this.checkHealth();
 
     const preferredFoodHealValue = this.consumablesMap.heal
@@ -1550,7 +1566,7 @@ export class Character {
    * @description Tidy up the bank. Will be moved to be part of the idle tasks
    */
   async tidyUpBank() {
-    const job = new TidyBankObjective(this);
+    const job = new TidyBankObjective(this, this.role);
     await this.executeJobNow(
       job,
       true,
