@@ -24,40 +24,45 @@ export class IdleObjective extends Objective {
   }
 
   /**
-   * @description Queues up some tasks to do when there's nothing else in the job queue
+   * @description Picks a random idle task from the list
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
-    await this.cleanUpBank();
+    const idleObjectives = ['cleanUpBank', 'topUpBank', 'doTask', 'trainSkill'];
 
-    await this.topUpBank();
+    const randomObjective =
+      idleObjectives[Math.floor(Math.random() * idleObjectives.length)];
 
-    if (this.role === 'fighter') {
-        await this.doMonsterTask()
-    } else {
-        await this.doItemTask();
+    switch (randomObjective) {
+      case 'cleanUpBank':
+        return await this.cleanUpBank();
+      case 'topUpBank':
+        return await this.topUpBank();
+      case 'doTask':
+        if (this.role === 'fighter') {
+          return await this.doMonsterTask();
+        } else {
+          return await this.doItemTask();
+        }
+      case 'trainSkill':
+        // ToDo: Add in gearcrafting and jewelrycrafting. Maybe use sub-roles for those?
+        switch (this.role) {
+          case 'alchemist':
+            return await this.trainSkill('alchemy');
+
+          case 'fighter':
+            return await this.trainSkill('weaponcrafting');
+
+          case 'fisherman':
+            return await this.trainSkill('fishing');
+
+          case 'lumberjack':
+            return await this.trainSkill('woodcutting');
+
+          case 'miner':
+            return await this.trainSkill('mining');
+        }
     }
-
-    // ToDo: Add in gearcrafting and jewelrycrafting. Maybe use sub-roles for those?
-    switch (this.role) {
-      case 'alchemist':
-        await this.trainSkill('alchemy');
-        break;
-      case 'fighter':
-        await this.trainSkill('weaponcrafting');
-        break;
-      case 'fisherman':
-        await this.trainSkill('fishing');
-        break;
-      case 'lumberjack':
-        await this.trainSkill('woodcutting');
-        break;
-      case 'miner':
-        await this.trainSkill('mining');
-        break;
-    }
-
-    return true;
   }
 
   /**
@@ -92,18 +97,18 @@ export class IdleObjective extends Objective {
     );
   }
 
-    /**
+  /**
    * Completes an item task
    * @returns true if successful, false if not
    */
-    private async doMonsterTask(): Promise<boolean> {
-        return this.character.executeJobNow(
-          new MonsterTaskObjective(this.character, 1),
-          true,
-          true,
-          this.objectiveId,
-        );
-      }
+  private async doMonsterTask(): Promise<boolean> {
+    return this.character.executeJobNow(
+      new MonsterTaskObjective(this.character, 1),
+      true,
+      true,
+      this.objectiveId,
+    );
+  }
 
   /**
    * Increase the level of a skill by 1
