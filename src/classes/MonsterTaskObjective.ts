@@ -26,7 +26,17 @@ export class MonsterTaskObjective extends Objective {
     let result = false;
 
     while (this.progress < this.quantity) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        return false;
+      }
+
       for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+        if (this.isCancelled()) {
+          logger.info(`${this.objectiveId} has been cancelled`);
+          return false;
+        }
+
         logger.info(`Monster task attempt ${attempt}/${this.maxRetries}`);
 
         result = await this.doTask();

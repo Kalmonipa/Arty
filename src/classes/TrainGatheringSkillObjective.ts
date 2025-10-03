@@ -1,3 +1,4 @@
+import { getAllItemInformation } from '../api_calls/Items.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
 import { DataPageResourceSchema, GatheringSkill } from '../types/types.js';
 import { logger } from '../utils.js';
@@ -57,18 +58,57 @@ export class TrainGatheringSkillObjective extends Objective {
       const numGathered =
         this.character.checkQuantityOfItemInInv(resourceToGather);
 
-      // ToDo: Make this actually check for the type to craft instead of hardcoding 'cooked_'
-      if (this.skill === 'fishing') {
-        await this.character.craftNow(
-          numGathered,
-          `cooked_${resourceToGather}`,
-        );
-      }
+      await this.craftItem(resourceToGather, numGathered);
 
       await this.character.depositAllItems();
 
       charLevel = this.character.getCharacterLevel(this.skill);
     }
     return true;
+  }
+
+  /**
+   * @description If the ingredient only has 1 potential item to craft it into, and the item only needs this 1 ingredient, craft it
+   * This is primarily for fish, potions, early ore and early wood
+   * @param ingredientCode The code of the ingredient we have
+   * @param ingredientQuantity The amount of the ingredient we have
+   * @returns true if successful
+   */
+  private async craftItem(
+    ingredientCode: string,
+    ingredientQuantity: number,
+  ): Promise<boolean> {
+    const potentialCraftableItems = await getAllItemInformation({
+      craft_material: ingredientCode,
+    });
+    if (potentialCraftableItems instanceof ApiError) {
+      this.character.handleErrors(potentialCraftableItems);
+      return false;
+    }
+
+    if (
+      potentialCraftableItems.data.length === 1 &&
+      potentialCraftableItems.data[0].craft.items.length === 1
+    ) {
+      const skillNeeded = potentialCraftableItems.data[0].craft.skill;
+      const levelNeeded = potentialCraftableItems.data[0].craft.level;
+      const charLevel = this.character.getCharacterLevel(skillNeeded);
+      if (charLevel > potentialCraftableItems.data[0].craft.level) {
+        const craftableQuantity = Math.floor(
+          ingredientQuantity /
+            potentialCraftableItems.data[0].craft.items[0].quantity,
+        );
+
+        return await this.character.craftNow(
+          craftableQuantity,
+          potentialCraftableItems.data[0].code,
+        );
+      } else {
+        logger.debug(
+          `${skillNeeded} level not high enough to craft ${potentialCraftableItems.data[0].code}. Need ${levelNeeded} but chars is ${charLevel}`,
+        );
+        return false;
+      }
+    }
   }
 }

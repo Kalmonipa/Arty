@@ -8,6 +8,7 @@ import { getMaps } from '../api_calls/Maps.js';
 import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
   CharacterSchema,
+  CraftSkill,
   DestinationSchema,
   GatheringSkill,
   ItemSchema,
@@ -57,6 +58,8 @@ import { TradeObjective } from './TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from './FightSimulator.js';
 import { IdleObjective } from './IdleObjective.js';
+import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
+import { TrainCombatObjective } from './TrainCombatObjective.js';
 
 export class Character {
   data: CharacterSchema;
@@ -354,6 +357,10 @@ export class Character {
       return { quantity: job.quantity };
     } else if (job instanceof MonsterTaskObjective) {
       return {};
+    } else if (job instanceof TrainCombatObjective) {
+      return { targetLevel: job.targetLevel };
+    } else if (job instanceof TrainCraftingSkillObjective) {
+      return { skill: job.skill, targetLevel: job.targetLevel };
     } else if (job instanceof TrainGatheringSkillObjective) {
       return { skill: job.skill, targetLevel: job.targetLevel };
     } else if (job instanceof TidyBankObjective) {
@@ -442,6 +449,19 @@ export class Character {
           break;
         case 'MonsterTaskObjective':
           job = new MonsterTaskObjective(this, specificData.quantity as number);
+          break;
+        case 'TrainCombatObjective':
+          job = new TrainCombatObjective(
+            this,
+            specificData.targetLevel as number,
+          );
+          break;
+        case 'TrainCraftingSkillObjective':
+          job = new TrainCraftingSkillObjective(
+            this,
+            specificData.skill as CraftSkill,
+            specificData.targetLevel as number,
+          );
           break;
         case 'TrainGatheringSkillObjective':
           job = new TrainGatheringSkillObjective(
@@ -674,6 +694,7 @@ export class Character {
   async executeJobList() {
     while (true) {
       if (this.jobList.length === 0) {
+        await sleep(5, 'no-more-jobs', false);
         await this.appendJob(new IdleObjective(this, this.role));
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];
@@ -1521,14 +1542,22 @@ export class Character {
    */
   async simulateFightNow(
     mockCharacter: CharacterSchema,
-    targetMob: string,
+    targetMobName?: string,
+    targetMobSchema?: MonsterSchema,
     iterations?: number,
     debugLogs?: boolean,
   ) {
+    if (!targetMobName && !targetMobSchema) {
+      logger.error(
+        `One of targetMobName or targetMobSchema must be passed in to simulateFightNow()`,
+      );
+      return false;
+    }
     const job = new FightSimulator(
       this,
       mockCharacter,
-      targetMob,
+      targetMobName,
+      targetMobSchema,
       iterations,
       debugLogs,
     );

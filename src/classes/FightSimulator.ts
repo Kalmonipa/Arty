@@ -1,6 +1,6 @@
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { TurnsDetails } from '../types/FightData.js';
-import { CharacterSchema } from '../types/types.js';
+import { CharacterSchema, MonsterSchema } from '../types/types.js';
 import { CRITICAL_MODIFIER, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -16,44 +16,64 @@ import { Objective } from './Objective.js';
  */
 export class FightSimulator extends Objective {
   mockCharacter: CharacterSchema;
-  targetMob: string;
+  targetMobCode?: string;
+  targetMobSchema?: MonsterSchema;
   iterations: number;
   debugLogs: boolean = true;
 
   constructor(
     character: Character,
     mockCharacter: CharacterSchema,
-    targetMob: string,
+    targetMobName?: string,
+    targetMobSchema?: MonsterSchema,
     iterations?: number,
     debugLogs?: boolean,
   ) {
-    super(character, `fight_sim_${targetMob}`, 'not_started');
+    super(
+      character,
+      `fight_sim_${targetMobName || targetMobSchema.code}`,
+      'not_started',
+    );
     this.mockCharacter = mockCharacter;
-    this.targetMob = targetMob;
+    this.targetMobCode = targetMobName;
+    this.targetMobSchema = targetMobSchema;
     this.iterations = iterations !== undefined ? iterations : 10;
     this.debugLogs = debugLogs;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+    if (!this.targetMobCode && !this.targetMobSchema) {
+      logger.error(
+        `One of targetMobName or targetMobSchema must be passed into the fightSimulator`,
+      );
+      return false;
+    }
+
     return true;
   }
 
   async run(): Promise<boolean> {
     let fightResult = false;
     let numTurns = 0;
+    const mobName = this.targetMobCode || this.targetMobSchema.code;
     // Get mob info
     // Initiative should factor in to decide turn order
     // Iterate through the fight turn by turn, calculating damage taken and given
     // Calculate when health pots will be used
     // Return true if fight is a win (greater than 90% win rate), otherwise false
 
-    logger.debug(`Getting info on ${this.targetMob}`);
-    const mobInfo = await getMonsterInformation(this.targetMob);
-    if (mobInfo instanceof ApiError) {
-      return this.character.handleErrors(mobInfo);
-    }
+    let mob: MonsterSchema;
+    if (this.targetMobCode) {
+      logger.debug(`Getting info on ${mobName}`);
+      const mobInfo = await getMonsterInformation(this.targetMobCode);
+      if (mobInfo instanceof ApiError) {
+        return this.character.handleErrors(mobInfo);
+      }
 
-    const mob = mobInfo.data;
+      mob = mobInfo.data;
+    } else {
+      mob = this.targetMobSchema;
+    }
 
     const mobAttacks: TurnsDetails = [];
     if (mob.attack_air > 0) {

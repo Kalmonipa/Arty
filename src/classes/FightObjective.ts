@@ -39,7 +39,7 @@ export class FightObjective extends Objective {
     await this.character.evaluateGear('combat');
 
     const simResult = await this.character.simulateFightNow(
-      this.character.data,
+      structuredClone(this.character.data),
       this.target.code,
     );
     if (simResult === false) {

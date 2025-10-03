@@ -17,5 +17,8 @@ export type Role =
   | 'alchemist'
   | 'fighter'
   | 'fisherman'
+  | 'gearcrafter'
+  | 'jewelrycrafter'
   | 'lumberjack'
-  | 'miner';
+  | 'miner'
+  | 'weaponcrafter';

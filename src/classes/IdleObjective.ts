@@ -6,6 +6,7 @@ import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { Objective } from './Objective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
+import { TrainCombatObjective } from './TrainCombatObjective.js';
 import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 
@@ -50,29 +51,53 @@ export class IdleObjective extends Objective {
         return await this.topUpBank(this.role);
 
       case 'doTask':
-        if (this.role === 'fighter') {
+        if (this.role === 'fighter' || this.role === 'gearcrafter') {
           return await this.doMonsterTask();
         } else {
           return await this.doItemTask();
         }
 
       case 'trainSkill':
-        // ToDo: Add in gearcrafting and jewelrycrafting. Maybe use sub-roles for those?
         switch (this.role) {
           case 'alchemist':
             return await this.trainSkill('alchemy');
 
           case 'fighter':
-            return await this.trainSkill('weaponcrafting');
-
+            // We want our weaponcrafting to be at least our character level (if not above??)
+            if (
+              this.character.getCharacterLevel('weaponcrafting') <
+              this.character.getCharacterLevel()
+            ) {
+              return await this.trainSkill('weaponcrafting');
+            } else {
+              return await this.trainSkill();
+            }
           case 'fisherman':
             return await this.trainSkill('fishing');
+
+          case 'gearcrafter':
+            // We want our gearcrafter to be able to craft gear for our fighter so ideally we'd craft stuff above our level
+            // ToDo: This might run into issues with gathering mob drops if the gearcrafter isn't high enough to fight them
+            if (
+              this.character.getCharacterLevel('gearcrafting') <
+              this.character.getCharacterLevel() + 5
+            ) {
+              return await this.trainSkill('gearcrafting');
+            } else {
+              return await this.trainSkill();
+            }
+
+          case 'jewelrycrafter':
+            return await this.trainSkill('jewelrycrafting');
 
           case 'lumberjack':
             return await this.trainSkill('woodcutting');
 
           case 'miner':
             return await this.trainSkill('mining');
+
+          case 'weaponcrafter':
+            return await this.trainSkill('weaponcrafting');
         }
     }
   }
@@ -181,17 +206,22 @@ export class IdleObjective extends Objective {
   }
 
   /**
-   * Increase the level of a skill by 1
+   * Increase the level of a skill by 1, or combat level if no skill passed in
    * @todo Change this so that it only gets a set amount of an item at a time so that the idle task doesn't take a long time.
    *        I would like to have characters check for events and prioritise events over leveling skills so if we spend ~5 hours
    *        leveling a skill then we might miss some important events
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainSkill(skill: Skill): Promise<boolean> {
+  private async trainSkill(skill?: Skill): Promise<boolean> {
     let job: Objective;
 
-    if (isGatheringSkill(skill)) {
+    if (!skill) {
+      job = new TrainCombatObjective(
+        this.character,
+        this.character.data.level + 1,
+      );
+    } else if (isGatheringSkill(skill)) {
       job = new TrainGatheringSkillObjective(
         this.character,
         skill,
