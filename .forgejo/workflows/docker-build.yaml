@@ -19,6 +19,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          npm run build
+          npm run test
       - name: Verify Docker connection
         run: |
           echo "Docker host: $DOCKER_HOST"

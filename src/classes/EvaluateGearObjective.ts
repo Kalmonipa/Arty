@@ -376,22 +376,21 @@ export class EvaluateGearObjective extends Objective {
         if (bestGear === undefined) {
           logger.debug(`bestGear not set yet. Setting to ${map[ind].code}`);
           bestGear = map[ind];
-        } else if ( // The new item to check doesn't have the target effect, skip it
+        } else if (
+          // The new item to check doesn't have the target effect, skip it
           !map[ind].effects.find((effect) => effect.code === targetEffect)
         ) {
           continue;
-        // If bestGear doesn't have the target effect, set the new item to bestGear
-        // OR if the new item has a better effect, set that to bestGear
-        } else if ( 
+          // If bestGear doesn't have the target effect, set the new item to bestGear
+          // OR if the new item has a better effect, set that to bestGear
+        } else if (
           !bestGear.effects.find((effect) => effect.code === targetEffect) ||
           bestGear.effects.find((effect) => effect.code === targetEffect)
             .value <
             map[ind].effects.find((effect) => effect.code === targetEffect)
               .value
         ) {
-          logger.info(
-            `Found ${map[ind].code} is better than ${bestGear.code}`,
-          );
+          logger.info(`Found ${map[ind].code} is better than ${bestGear.code}`);
           bestGear = map[ind];
         }
       }
