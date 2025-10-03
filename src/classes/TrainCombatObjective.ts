@@ -30,11 +30,6 @@ export class TrainCombatObjective extends Objective {
       return false;
     }
 
-    const evalGearResult = await this.character.evaluateGear('combat');
-    if (!evalGearResult) {
-      return evalGearResult;
-    }
-
     const mobs = await getAllMonsterInformation({
       max_level: charLevel,
       min_level: Math.max(charLevel - 10, 0),

@@ -400,7 +400,7 @@ export class Character {
           job = new EvaluateGearObjective(
             this,
             specificData.activityType as WeaponFlavours,
-            specificData.targetMob as MonsterSchema,
+            specificData.targetMob as string,
           );
           break;
         case 'GatherObjective':
@@ -1015,9 +1015,9 @@ export class Character {
   }
 
   /**
-   * @description Equips a utility into the specified slot
-   * Calculates how many potions we need to reach max number
-   * Checks inventory and bank for the amount we need
+   * @description Equips a utility into the specified slot.
+   * Calculates how many potions we need to reach max number.
+   * Checks inventory and bank for the amount we need.
    * @returns a boolean stating whether we need to move back to our original location
    */
   async equipUtility(
@@ -1382,7 +1382,7 @@ export class Character {
     );
   }
 
-  async evaluateGear(activityType: WeaponFlavours, targetMob?: MonsterSchema) {
+  async evaluateGear(activityType: WeaponFlavours, targetMob?: string) {
     const evaluateGearJob = new EvaluateGearObjective(
       this,
       activityType,

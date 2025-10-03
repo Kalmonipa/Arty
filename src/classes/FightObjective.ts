@@ -23,20 +23,12 @@ export class FightObjective extends Objective {
       { x: this.character.data.x, y: this.character.data.y },
     );
 
-    // Check health potions in utility slot 1 before we start
-    if (
-      this.character.data.utility1_slot_quantity <=
-      this.character.minEquippedUtilities
-    ) {
-      await this.character.equipUtility('restore', 'utility1');
-    }
-
     // Check amount of food in inventory to use after battles
     if (!(await this.character.checkFoodLevels())) {
       await this.character.topUpFood();
     }
 
-    await this.character.evaluateGear('combat');
+    await this.character.evaluateGear('combat', this.target.code);
 
     const simResult = await this.character.simulateFightNow(
       structuredClone(this.character.data),
