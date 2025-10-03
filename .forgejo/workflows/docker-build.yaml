@@ -9,6 +9,9 @@ env:
   REGISTRY: forgejo.kalmonipa.net
   IMAGE_NAME: kalmonipa/arty
   DOCKER_HOST: tcp://dind:2375
+  API_TOKEN: some-test-token
+  CHARACTER_NAME: some-character
+  ROLE: some-role
 
 jobs:
   build-and-push:
