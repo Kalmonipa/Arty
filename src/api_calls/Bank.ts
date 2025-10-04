@@ -1,7 +1,9 @@
 import { ApiError } from '../classes/Error.js';
 import { ApiUrl, getRequestOptions, logger, MyHeaders } from '../utils.js';
 import {
+  BankExtensionTransactionSchema,
   BankGoldTransactionResponseSchema,
+  BankResponseSchema,
   CharacterSchema,
   DataPageSimpleItemSchema,
 } from '../types/types.js';
@@ -96,4 +98,81 @@ export async function actionDepositGold(
   } catch (error) {
     return error as ApiError;
   }
+}
+
+export async function purchaseBankExpansion(
+  character: CharacterSchema,
+): Promise<BankExtensionTransactionSchema | ApiError> {
+  const requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+    body: JSON.stringify({ name: character.name }),
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/bank/buy_expansion`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 492:
+          message = 'The character does not have enough gold.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 499:
+          message = 'The character is in cooldown.';
+          break;
+        case 598:
+          message = 'Bank not found on this map.';
+          break;
+        default:
+          message = 'Unknown error from /action/bank/deposit/gold';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: BankExtensionTransactionSchema = await response.json();
+
+    logger.info(`Bank expansion purchased for ${result.transaction.price} gold`)
+
+    return result;
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+export async function getBankDetails()
+  : Promise<BankResponseSchema | ApiError> {
+  
+    try {
+      const response = await fetch(
+        `${ApiUrl}/my/bank`,
+        getRequestOptions,
+      );
+  
+      if (!response.ok) {
+        throw new ApiError({
+          code: response.status,
+          message: 'Unknown error from /my/bank',
+        });
+      }
+  
+      const result: BankResponseSchema = await response.json();
+  
+      return result;
+    } catch (error) {
+      return error as ApiError;
+    }
 }
