@@ -663,6 +663,9 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('iron_ore', 10);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's handInTask method to prevent real API calls
+      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
