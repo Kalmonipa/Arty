@@ -3,7 +3,6 @@ import { ItemTaskObjective } from '../../src/classes/ItemTaskObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/classes/Error.js';
-import { SimpleItemSchema, CharacterSchema } from '../../src/types/types.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Items', () => ({

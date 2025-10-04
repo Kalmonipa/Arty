@@ -3,7 +3,6 @@ import { ApiUrl, getRequestOptions, logger, MyHeaders } from '../utils.js';
 import {
   BankExtensionTransactionSchema,
   BankGoldTransactionResponseSchema,
-  BankGoldTransactionSchema,
   BankResponseSchema,
   CharacterSchema,
   DataPageSimpleItemSchema,
