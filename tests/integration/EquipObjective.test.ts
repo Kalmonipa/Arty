@@ -27,18 +27,20 @@ class SimpleMockCharacter {
   checkQuantityOfItemInBank = jest.fn(async (code: string): Promise<number> => {
     // Mock bank has some items
     const bankItems: { [key: string]: number } = {
-      'iron_sword': 1,
-      'health_potion': 50,
-      'magic_ring': 1,
+      iron_sword: 1,
+      health_potion: 50,
+      magic_ring: 1,
     };
     return bankItems[code] || 0;
   });
 
-  withdrawNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
-    // Mock successful withdrawal
-    this.addItemToInventory(code, quantity);
-    return true;
-  });
+  withdrawNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Mock successful withdrawal
+      this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -154,9 +156,9 @@ describe('EquipObjective Integration Tests', () => {
     mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
 
     // Set up default mock responses
-    (actionEquipItem as jest.MockedFunction<typeof actionEquipItem>).mockResolvedValue(
-      mockEquipResponse,
-    );
+    (
+      actionEquipItem as jest.MockedFunction<typeof actionEquipItem>
+    ).mockResolvedValue(mockEquipResponse);
   });
 
   describe('Basic functionality', () => {
@@ -172,7 +174,9 @@ describe('EquipObjective Integration Tests', () => {
       expect(objective.itemCode).toBe('iron_sword');
       expect(objective.itemSlot).toBe('weapon');
       expect(objective.character).toBe(mockCharacter);
-      expect(objective.objectiveId).toMatch(/^equip_iron_sword_weapon_[a-f0-9]+$/);
+      expect(objective.objectiveId).toMatch(
+        /^equip_iron_sword_weapon_[a-f0-9]+$/,
+      );
       expect(objective.status).toBe('not_started');
     });
 
@@ -241,9 +245,9 @@ describe('EquipObjective Integration Tests', () => {
       );
 
       // Set up mock response for utility item
-      (actionEquipItem as jest.MockedFunction<typeof actionEquipItem>).mockResolvedValue(
-        mockUtilityEquipResponse,
-      );
+      (
+        actionEquipItem as jest.MockedFunction<typeof actionEquipItem>
+      ).mockResolvedValue(mockUtilityEquipResponse);
 
       // Act
       const result = await objective.run();
@@ -309,7 +313,9 @@ describe('EquipObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith('iron_sword');
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
+        'iron_sword',
+      );
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(1, 'iron_sword');
       expect(actionEquipItem).toHaveBeenCalled();
     });
@@ -387,9 +393,9 @@ describe('EquipObjective Integration Tests', () => {
     it('should return false when max retries exceeded', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Server error' });
-      (actionEquipItem as jest.MockedFunction<typeof actionEquipItem>).mockResolvedValue(
-        apiError,
-      );
+      (
+        actionEquipItem as jest.MockedFunction<typeof actionEquipItem>
+      ).mockResolvedValue(apiError);
 
       mockCharacter.addItemToInventory('iron_sword', 1);
       mockCharacter.handleErrors.mockResolvedValue(true);
@@ -422,9 +428,9 @@ describe('EquipObjective Integration Tests', () => {
           },
         },
       };
-      (actionEquipItem as jest.MockedFunction<typeof actionEquipItem>).mockResolvedValue(
-        responseWithoutCharacter as any,
-      );
+      (
+        actionEquipItem as jest.MockedFunction<typeof actionEquipItem>
+      ).mockResolvedValue(responseWithoutCharacter as any);
 
       mockCharacter.addItemToInventory('iron_sword', 1);
 
@@ -444,10 +450,13 @@ describe('EquipObjective Integration Tests', () => {
 
     it('should handle specific API error codes', async () => {
       // Arrange
-      const itemNotFoundError = new ApiError({ code: 404, message: 'Item not found.' });
-      (actionEquipItem as jest.MockedFunction<typeof actionEquipItem>).mockResolvedValue(
-        itemNotFoundError,
-      );
+      const itemNotFoundError = new ApiError({
+        code: 404,
+        message: 'Item not found.',
+      });
+      (
+        actionEquipItem as jest.MockedFunction<typeof actionEquipItem>
+      ).mockResolvedValue(itemNotFoundError);
 
       mockCharacter.addItemToInventory('iron_sword', 1);
       mockCharacter.handleErrors.mockResolvedValue(false);
@@ -463,7 +472,9 @@ describe('EquipObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(itemNotFoundError);
+      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(
+        itemNotFoundError,
+      );
     });
   });
 
@@ -534,9 +545,9 @@ describe('EquipObjective Integration Tests', () => {
           },
         },
       };
-      (actionEquipItem as jest.MockedFunction<typeof actionEquipItem>).mockResolvedValue(
-        responseWithUpdatedCharacter as any,
-      );
+      (
+        actionEquipItem as jest.MockedFunction<typeof actionEquipItem>
+      ).mockResolvedValue(responseWithUpdatedCharacter as any);
 
       mockCharacter.addItemToInventory('iron_sword', 1);
 
@@ -601,9 +612,9 @@ describe('EquipObjective Integration Tests', () => {
 
         // Reset for next test
         jest.clearAllMocks();
-        (actionEquipItem as jest.MockedFunction<typeof actionEquipItem>).mockResolvedValue(
-          mockEquipResponse,
-        );
+        (
+          actionEquipItem as jest.MockedFunction<typeof actionEquipItem>
+        ).mockResolvedValue(mockEquipResponse);
       }
     });
   });

@@ -145,7 +145,9 @@ export async function purchaseBankExpansion(
 
     const result: BankExtensionTransactionSchema = await response.json();
 
-    logger.info(`Bank expansion purchased for ${result.transaction.price} gold`)
+    logger.info(
+      `Bank expansion purchased for ${result.transaction.price} gold`,
+    );
 
     return result;
   } catch (error) {
@@ -153,26 +155,21 @@ export async function purchaseBankExpansion(
   }
 }
 
-export async function getBankDetails()
-  : Promise<BankResponseSchema | ApiError> {
-  
-    try {
-      const response = await fetch(
-        `${ApiUrl}/my/bank`,
-        getRequestOptions,
-      );
-  
-      if (!response.ok) {
-        throw new ApiError({
-          code: response.status,
-          message: 'Unknown error from /my/bank',
-        });
-      }
-  
-      const result: BankResponseSchema = await response.json();
-  
-      return result;
-    } catch (error) {
-      return error as ApiError;
+export async function getBankDetails(): Promise<BankResponseSchema | ApiError> {
+  try {
+    const response = await fetch(`${ApiUrl}/my/bank`, getRequestOptions);
+
+    if (!response.ok) {
+      throw new ApiError({
+        code: response.status,
+        message: 'Unknown error from /my/bank',
+      });
     }
+
+    const result: BankResponseSchema = await response.json();
+
+    return result;
+  } catch (error) {
+    return error as ApiError;
+  }
 }
