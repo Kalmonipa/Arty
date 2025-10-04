@@ -132,6 +132,8 @@ export class ItemTaskObjective extends Objective {
               this.character.data = taskTradeResponse.data.character;
             } else {
               logger.error('Task trade response missing character data');
+              // Break out of the while loop to prevent infinite loop
+              break;
             }
           }
         } else if (taskInfo.craft) {

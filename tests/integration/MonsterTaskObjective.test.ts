@@ -29,22 +29,6 @@ class SimpleMockCharacter {
     return { x: maps[0].x, y: maps[0].y };
   });
 
-  startNewTask = jest.fn(async (taskType: string): Promise<void> => {
-    // Mock starting a new task
-    this.data.task = 'red_slime';
-    this.data.task_type = taskType;
-    this.data.task_progress = 0;
-    this.data.task_total = 5;
-  });
-
-  handInTask = jest.fn(async (): Promise<boolean> => {
-    // Mock handing in task - set progress to total to complete task
-    this.data.task = '';
-    this.data.task_type = '';
-    this.data.task_progress = this.data.task_total;
-    return true;
-  });
-
   fightNow = jest.fn(async (quantity: number): Promise<boolean> => {
     // Mock fighting monsters
     this.data.task_progress += quantity;
@@ -110,15 +94,17 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's handInTask method
+      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
 
-
       // Assert
       expect(result).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(5, 'red_slime');
-      expect(mockCharacter.handInTask).toHaveBeenCalledWith('monsters');
+      expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
     it('should start new task when no task is active', async () => {
@@ -126,13 +112,16 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task = '';
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's startNewTask method
+      const startNewTaskSpy = jest.spyOn(objective, 'startNewTask').mockResolvedValue(undefined);
 
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.startNewTask).toHaveBeenCalledWith('monsters');
+      expect(startNewTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
     it('should continue existing task when task is active', async () => {
@@ -143,13 +132,16 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's startNewTask method
+      const startNewTaskSpy = jest.spyOn(objective, 'startNewTask').mockResolvedValue(undefined);
 
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.startNewTask).not.toHaveBeenCalled();
+      expect(startNewTaskSpy).not.toHaveBeenCalled();
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(3, 'red_slime'); // 5 - 2 = 3 remaining
     });
 
@@ -161,6 +153,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 3;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 2);
+      
+      // Mock the Objective's handInTask method
+      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -169,7 +164,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(2);
       // For multiple tasks, handInTask should be called once per completed task
-      expect(mockCharacter.handInTask).toHaveBeenCalledTimes(1);
+      expect(handInTaskSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -368,13 +363,16 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's handInTask method
+      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.handInTask).toHaveBeenCalledWith('monsters');
+      expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
     it('should handle different monster types', async () => {
@@ -498,13 +496,16 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.fightNow.mockResolvedValue(false); // Fight fails
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's handInTask method
+      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(false);
-      expect(mockCharacter.handInTask).not.toHaveBeenCalled();
+      expect(handInTaskSpy).not.toHaveBeenCalled();
     });
 
     it('should hand in task when progress equals total', async () => {
@@ -515,13 +516,16 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's handInTask method
+      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.handInTask).toHaveBeenCalledWith('monsters');
+      expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
     it('should handle task hand-in failures', async () => {
@@ -530,16 +534,18 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_type = 'monsters';
       mockCharacter.data.task_progress = 5;
       mockCharacter.data.task_total = 5;
-      mockCharacter.handInTask.mockResolvedValue(false); // Hand-in fails
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      
+      // Mock the Objective's handInTask method to fail
+      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(false);
 
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(false);
-      expect(mockCharacter.handInTask).toHaveBeenCalledWith('monsters');
+      expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
   });
 });
