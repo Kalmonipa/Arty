@@ -1,4 +1,5 @@
 import {
+  actionWithdrawGold,
   getBankDetails,
   getBankItems,
   purchaseBankExpansion,
@@ -217,6 +218,7 @@ export class IdleObjective extends Objective {
 
   /**
    * Purchase a bank expansion if the bank is >90% full and we have at least 25k gold leftover after
+   * @todo Implement retry logic based on return values from the handleErrors() functions
    */
   private async checkBankExpansion(): Promise<boolean> {
     const maxBankFullness = 90;
@@ -224,12 +226,14 @@ export class IdleObjective extends Objective {
 
     const currentBankFullness = await getBankItems();
     if (currentBankFullness instanceof ApiError) {
-      return this.character.handleErrors(currentBankFullness);
+      await this.character.handleErrors(currentBankFullness);
+      return false;
     }
 
     const bankDetails = await getBankDetails();
     if (bankDetails instanceof ApiError) {
-      return this.character.handleErrors(bankDetails);
+      await this.character.handleErrors(bankDetails);
+      return false;
     }
 
     // Check if the bank is >90% full
@@ -253,9 +257,16 @@ export class IdleObjective extends Objective {
       return true;
     }
 
+    const withdrawGold = await actionWithdrawGold(this.character.data, bankDetails.data.next_expansion_cost)
+    if (withdrawGold instanceof ApiError) {
+      await this.character.handleErrors(withdrawGold)
+      return false;
+    }
+
     const upgradeBank = await purchaseBankExpansion(this.character.data);
     if (upgradeBank instanceof ApiError) {
-      return this.character.handleErrors(upgradeBank);
+      await this.character.handleErrors(upgradeBank);
+      return false;
     }
 
     return true;

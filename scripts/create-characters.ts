@@ -31,7 +31,7 @@ const characters = [
 ];
 
 // Set the API_URL if you want to use another endpoint (i.e. the test server)
-const API_BASE_URL = process.env.API_URL || 'https://api.artifactsmmo.com';
+const API_BASE_URL = 'https://api.artifactsmmo.com';
 
 interface CreateCharacterRequest {
   name: string;
