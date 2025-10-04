@@ -5,7 +5,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
 export class MonsterTaskObjective extends Objective {
-  type: 'monster';
+  type = 'monster' as const;
   quantity: number;
 
   constructor(character: Character, quantity: number) {
@@ -43,12 +43,19 @@ export class MonsterTaskObjective extends Objective {
 
         if (result) {
           this.progress++;
+          break; // Exit the retry loop on success
         }
+      }
+
+      // If we failed all retries, exit the main loop
+      if (!result) {
+        break;
       }
     }
 
+    // Check if task is completed and hand it in
     if (this.character.data.task_total === this.character.data.task_progress) {
-      result = await this.handInTask('monsters');
+      result = await this.character.handInTask('monsters');
     }
 
     return result;
@@ -56,7 +63,7 @@ export class MonsterTaskObjective extends Objective {
 
   private async doTask(): Promise<boolean> {
     if (this.character.data.task === '') {
-      await this.startNewTask('monsters');
+      await this.character.startNewTask('monsters');
     }
 
     const maps = await getMaps({

@@ -11,8 +11,8 @@ import {
 
 // Mock data based on OpenAPI spec
 export const mockCharacterData: CharacterSchema = {
-  name: 'LongLegLarry',
-  account: 'Kalmonipa',
+  name: 'TestCharacter',
+  account: 'TestAccount',
   skin: 'men1',
   level: 10,
   xp: 1489,

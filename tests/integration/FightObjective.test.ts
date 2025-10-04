@@ -152,7 +152,7 @@ const mockFightResponse = {
       logs: ['Character attacks', 'Monster attacks', 'Character wins'],
       characters: [
         {
-          character_name: 'LongLegLarry',
+          character_name: 'TestCharacter',
           xp: 50,
           gold: 10,
           drops: [],
@@ -589,7 +589,7 @@ describe('FightObjective Integration Tests', () => {
             logs: ['Character attacks', 'Monster attacks', 'Character wins'],
             characters: [
               {
-                character_name: 'LongLegLarry',
+                character_name: 'TestCharacter',
                 xp: 50,
                 gold: 10,
                 drops: [],

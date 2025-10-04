@@ -231,7 +231,7 @@ describe('DepositObjective Integration Tests', () => {
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
           gold: 1000,
         }),
@@ -258,7 +258,7 @@ describe('DepositObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         expect.arrayContaining([
@@ -289,7 +289,7 @@ describe('DepositObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         [{ quantity: 25, code: 'iron_ore' }],
@@ -313,7 +313,7 @@ describe('DepositObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionDepositGold).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
           gold: 1000,
         }),
@@ -436,7 +436,7 @@ describe('DepositObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         [], // Empty array for empty inventory
@@ -461,7 +461,7 @@ describe('DepositObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         expect.arrayContaining([

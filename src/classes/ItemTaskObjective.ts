@@ -7,7 +7,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
 export class ItemTaskObjective extends Objective {
-  type: 'items';
+  type = 'items' as const;
   quantity: number;
 
   constructor(character: Character, quantity: number) {
@@ -36,6 +36,10 @@ export class ItemTaskObjective extends Objective {
     return result;
   }
 
+  /**
+   * Executes the task loop
+   * @returns true if successful, false if not
+   */
   async doTask(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       logger.info(`Item task attempt ${attempt}/${this.maxRetries}`);
@@ -68,106 +72,112 @@ export class ItemTaskObjective extends Objective {
           return false;
         }
         continue;
-      } else {
-        while (
-          this.character.data.task_progress < this.character.data.task_total
-        ) {
-          if (this.isCancelled()) {
-            logger.info(`${this.objectiveId} has been cancelled`);
-            //this.character.removeJob(this.objectiveId);
-            return false;
-          }
+      }
 
-          // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
-          const numToGather = Math.min(
-            this.character.data.task_total - this.character.data.task_progress,
-            Math.ceil(this.character.data.inventory_max_items * 0.9),
-          );
-
-          const numInBank = await this.character.checkQuantityOfItemInBank(
-            this.character.data.task,
-          );
-
-          if (numInBank > 0) {
-            await this.character.withdrawNow(
-              Math.min(numInBank, numToGather),
-              this.character.data.task,
-            );
-          }
-
-          const numGathered = this.character.checkQuantityOfItemInInv(
-            this.character.data.task,
-          );
-
-          if (numToGather <= numGathered) {
-            logger.debug(
-              `Handing in ${numToGather} ${this.character.data.task}`,
-            );
-            await this.moveToTaskMaster('items');
-
-            const taskTradeResponse: ApiError | TaskTradeResponseSchema =
-              await actionTasksTrade(this.character.data, {
-                code: this.character.data.task,
-                quantity: numToGather,
-              });
-            if (taskTradeResponse instanceof ApiError) {
-              logger.warn(taskTradeResponse.message);
-              const shouldRetry =
-                await this.character.handleErrors(taskTradeResponse);
-
-              if (!shouldRetry || attempt === this.maxRetries) {
-                logger.error(`Item task failed after ${attempt} attempts`);
-                return false;
-              }
-              continue;
-            } else {
-              if (taskTradeResponse.data.character) {
-                this.character.data = taskTradeResponse.data.character;
-              } else {
-                logger.error('Task trade response missing character data');
-              }
-            }
-          } else if (taskInfo.craft) {
-            logger.debug(`${taskInfo.code} is a crafted item. Crafting...`);
-            if (
-              !(await this.character.craftNow(
-                numToGather,
-                this.character.data.task,
-              ))
-            ) {
-              if (attempt >= this.maxRetries) {
-                return this.cancelCurrentTask('items');
-              } else {
-                return false;
-              }
-            }
-          } else {
-            logger.debug(`${taskInfo.code} is a gather resource. Gathering...`);
-            // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
-            // This happens sometimes with fish when our cooking level is high
-            // but fishing might be too low to actually gather the required ingredient
-            if (
-              !(await this.character.gatherNow(
-                numToGather,
-                this.character.data.task,
-                true,
-                true,
-              ))
-            ) {
-              // Cancel the job and start a new one
-              return this.cancelCurrentTask('items');
-            }
-          }
-
-          await this.character.saveJobQueue();
+      // Process the task collection loop
+      while (
+        this.character.data.task_progress < this.character.data.task_total
+      ) {
+        if (this.isCancelled()) {
+          logger.info(`${this.objectiveId} has been cancelled`);
+          //this.character.removeJob(this.objectiveId);
+          return false;
         }
+
+        // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
+        const numToGather = Math.min(
+          this.character.data.task_total - this.character.data.task_progress,
+          Math.ceil(this.character.data.inventory_max_items * 0.9),
+        );
+
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          this.character.data.task,
+        );
+
+        if (numInBank > 0) {
+          await this.character.withdrawNow(
+            Math.min(numInBank, numToGather),
+            this.character.data.task,
+          );
+        }
+
+        const numGathered = this.character.checkQuantityOfItemInInv(
+          this.character.data.task,
+        );
+
+        if (numToGather <= numGathered) {
+          logger.debug(
+            `Handing in ${numToGather} ${this.character.data.task}`,
+          );
+          await this.moveToTaskMaster('items');
+
+          const taskTradeResponse: ApiError | TaskTradeResponseSchema =
+            await actionTasksTrade(this.character.data, {
+              code: this.character.data.task,
+              quantity: numToGather,
+            });
+          if (taskTradeResponse instanceof ApiError) {
+            logger.warn(taskTradeResponse.message);
+            const shouldRetry =
+              await this.character.handleErrors(taskTradeResponse);
+
+            if (!shouldRetry || attempt === this.maxRetries) {
+              logger.error(`Item task failed after ${attempt} attempts`);
+              return false;
+            }
+            // Break out of while loop to retry the entire attempt
+            break;
+          } else {
+            if (taskTradeResponse.data.character) {
+              this.character.data = taskTradeResponse.data.character;
+            } else {
+              logger.error('Task trade response missing character data');
+            }
+          }
+        } else if (taskInfo.craft) {
+          logger.debug(`${taskInfo.code} is a crafted item. Crafting...`);
+          if (
+            !(await this.character.craftNow(
+              numToGather,
+              this.character.data.task,
+            ))
+          ) {
+            if (attempt >= this.maxRetries) {
+              await this.cancelCurrentTask('items');
+              return false;
+            } else {
+              break;
+            }
+          }
+        } else {
+          logger.debug(`${taskInfo.code} is a gather resource. Gathering...`);
+          // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
+          // This happens sometimes with fish when our cooking level is high
+          // but fishing might be too low to actually gather the required ingredient
+          if (
+            !(await this.character.gatherNow(
+              numToGather,
+              this.character.data.task,
+              true,
+              true,
+            ))
+          ) {
+            if (attempt >= this.maxRetries) {
+              await this.cancelCurrentTask('items');
+              return false;
+            } else {
+              break;
+            }
+          }
+        }
+
+        await this.character.saveJobQueue();
       }
 
       if (
         this.character.data.task_total === this.character.data.task_progress
       ) {
         await this.handInTask('items');
-
         return true;
       }
     }

@@ -196,7 +196,7 @@ describe('EquipObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         {
@@ -223,7 +223,7 @@ describe('EquipObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         {
@@ -256,7 +256,7 @@ describe('EquipObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         {
@@ -283,7 +283,7 @@ describe('EquipObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         {
@@ -514,7 +514,7 @@ describe('EquipObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'LongLegLarry',
+          name: 'TestCharacter',
           level: 10,
         }),
         {
@@ -600,7 +600,7 @@ describe('EquipObjective Integration Tests', () => {
         expect(result).toBe(true);
         expect(actionEquipItem).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: 'LongLegLarry',
+            name: 'TestCharacter',
             level: 10,
           }),
           {
