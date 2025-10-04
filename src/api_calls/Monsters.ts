@@ -2,18 +2,19 @@ import { ApiError } from '../classes/Error.js';
 import {
   DataPageMonsterSchema,
   GetAllMonstersMonstersGetParams,
+  MonsterResponseSchema,
 } from '../types/types.js';
 import { ApiUrl, MyHeaders } from '../utils.js';
 
-export async function getMonsterInformation(
+export async function getAllMonsterInformation(
   data: GetAllMonstersMonstersGetParams,
 ): Promise<DataPageMonsterSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/monsters`);
+  const apiUrl = new URL(`${ApiUrl}/monsters`);
 
   if (data.drop) {
     apiUrl.searchParams.set('drop', data.drop);
@@ -42,6 +43,40 @@ export async function getMonsterInformation(
         message: `Unknown error from /monsters: ${response}`,
       });
     }
+    return await response.json();
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+export async function getMonsterInformation(
+  monsterCode: string,
+): Promise<MonsterResponseSchema | ApiError> {
+  const requestOptions = {
+    method: 'GET',
+    headers: MyHeaders,
+  };
+
+  const apiUrl = new URL(`${ApiUrl}/monsters/${monsterCode}`);
+
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 404:
+          message = 'Map not found';
+          break;
+        default:
+          message = `Unknown error from /monsters: ${response}`;
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
     return await response.json();
   } catch (error) {
     return error as ApiError;

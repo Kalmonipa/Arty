@@ -12,18 +12,18 @@ import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
 export async function actionAcceptNewTask(
   character: CharacterSchema,
 ): Promise<TaskResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/new`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/new`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 486:
           message = 'An action is already in progress for this character.';
@@ -43,6 +43,8 @@ export async function actionAcceptNewTask(
         case 598:
           message = 'Tasks Master not found on this map.';
           break;
+        default:
+          message = 'Unknown error from /action/task/new';
       }
       throw new ApiError({
         code: response.status,
@@ -55,7 +57,7 @@ export async function actionAcceptNewTask(
     logger.info(
       `Accepted task for ${result.data.task.total} ${result.data.task.code}`,
     );
-    var rewards: string = '';
+    let rewards: string = '';
     for (const reward of result.data.task.rewards.items) {
       rewards += `${reward.quantity} ${reward.code}, `;
     }
@@ -77,18 +79,18 @@ export async function actionAcceptNewTask(
 export async function actionCancelTask(
   character: CharacterSchema,
 ): Promise<TaskCancelledSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/cancel`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/cancel`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 478:
           message = 'Missing item or insufficient quantity.';
@@ -127,18 +129,18 @@ export async function actionCancelTask(
 export async function actionCompleteTask(
   character: CharacterSchema,
 ): Promise<RewardDataResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/complete`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/complete`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 486:
           message = 'An action is already in progress for this character.';
@@ -158,6 +160,8 @@ export async function actionCompleteTask(
         case 598:
           message = 'Tasks Master not found on this map.';
           break;
+        default:
+          message = 'Unknown error from /action/task/complete';
       }
       throw new ApiError({
         code: response.status,
@@ -168,9 +172,9 @@ export async function actionCompleteTask(
     const result: RewardDataResponseSchema = await response.json();
 
     logger.info(`Completed task successfully`);
-    var rewards: string = '';
+    let rewards: string = '';
     for (const reward of result.data.rewards.items) {
-      rewards += `${reward.quantity} ${reward.code}, `;
+      rewards += `${reward.quantity} ${reward.code},`;
     }
     logger.info(`Received ${rewards} and ${result.data.rewards.gold} gold`);
 
@@ -189,7 +193,7 @@ export async function actionTasksTrade(
   character: CharacterSchema,
   items: SimpleItemSchema,
 ): Promise<ApiError | TaskTradeResponseSchema> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify({
@@ -198,13 +202,13 @@ export async function actionTasksTrade(
     }),
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/trade`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/task/trade`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 474:
           message = 'The character does not have this task.';
@@ -224,6 +228,8 @@ export async function actionTasksTrade(
         case 598:
           message = 'Tasks Master not found on this map.';
           break;
+        default:
+          message = 'Unknown error from /action/task/trade';
       }
       throw new ApiError({
         code: response.status,

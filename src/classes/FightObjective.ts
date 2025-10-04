@@ -7,13 +7,6 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 
-/**
- * @todo
- * - Check boost potions in utility slot 2, compare to monster we're fighting, equip better ones if we have any
- * - Check weapon to see if we can equip a better one
- * - Check each armor slot to see if we can equip better stuff
- */
-
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
 
@@ -30,24 +23,19 @@ export class FightObjective extends Objective {
       { x: this.character.data.x, y: this.character.data.y },
     );
 
-    // Check health potions in utility slot 1 before we start
-    if (
-      this.character.data.utility1_slot_quantity <=
-      this.character.minEquippedUtilities
-    ) {
-      await this.character.equipUtility('restore', 'utility1');
-    }
-
-    // Check weapon and equip a suitable one if current isn't good
-    if (!(await this.character.checkWeaponForEffects('combat'))) {
-      await this.character.equipBestWeapon('combat');
-    }
-
-    // ToDo: Check all armor to see if it's good
-
     // Check amount of food in inventory to use after battles
     if (!(await this.character.checkFoodLevels())) {
       await this.character.topUpFood();
+    }
+
+    await this.character.evaluateGear('combat', this.target.code);
+
+    const simResult = await this.character.simulateFightNow(
+      structuredClone(this.character.data),
+      this.target.code,
+    );
+    if (simResult === false) {
+      return simResult;
     }
 
     return true;
@@ -81,7 +69,11 @@ export class FightObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      for (this.progress; this.progress < this.target.quantity; this.progress++) {
+      for (
+        this.progress;
+        this.progress < this.target.quantity;
+        this.progress++
+      ) {
         if (this.isCancelled()) {
           logger.info(`${this.objectiveId} has been cancelled`);
           return false;
@@ -126,21 +118,19 @@ export class FightObjective extends Objective {
             logger.error(`Fight failed after ${attempt} attempts`);
             return false;
           }
+          this.progress--;
           continue;
         } else {
-          if (response.data.fight.result === 'loss') {
-            logger.warn(
-              `Fight was a ${response.data.fight.result}. Returned to ${response.data.character.x},${response.data.character.y}`,
+          if (response.data.characters) {
+            const charData = response.data.characters.find(
+              (char) => char.name === this.character.data.name,
             );
-            // ToDo: This is here with the intention of failing the fight job after 3 losses but not sure if that's right. Need to test
-            //break;
-          } else if (response.data.fight.result === 'win') {
-            logger.info(
-              `Fight was a ${response.data.fight.result}. Gained ${response.data.fight.xp} exp and ${response.data.fight.gold} gold`,
-            );
-          }
 
-          this.character.data = response.data.character;
+            this.character.data = charData;
+          } else {
+            logger.error('Fight response missing character data');
+            return false;
+          }
 
           // Check amount of food in inventory to use after battles
           if (
@@ -151,7 +141,7 @@ export class FightObjective extends Objective {
           }
         }
 
-        await this.character.saveJobQueue()
+        await this.character.saveJobQueue();
       }
 
       logger.debug(

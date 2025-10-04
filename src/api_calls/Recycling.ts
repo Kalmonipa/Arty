@@ -7,7 +7,7 @@ export async function actionRecycle(
   itemCode: string,
   quantity: number,
 ): Promise<RecyclingResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify({
@@ -16,7 +16,7 @@ export async function actionRecycle(
     }),
   };
 
-  var apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/recycling`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/recycling`);
 
   logger.info(`Recycling ${quantity} ${itemCode}`);
 

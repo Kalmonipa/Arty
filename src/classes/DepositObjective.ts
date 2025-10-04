@@ -6,9 +6,11 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
+  BankGoldTransactionResponseSchema,
   BankItemTransactionResponseSchema,
   SimpleItemSchema,
 } from '../types/types.js';
+import { actionDepositGold } from '../api_calls/Bank.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;
@@ -59,14 +61,20 @@ export class DepositObjective extends Objective {
 
       await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-      var response: ApiError | BankItemTransactionResponseSchema;
-      if (this.target.code === 'gold') {
-        logger.warn(`Deposit gold has not been implemented yet`);
-        // deposit gold
-      } else if (this.target.code === 'all') {
-        var itemsToDeposit: SimpleItemSchema[] = [];
+      let response:
+        | ApiError
+        | BankItemTransactionResponseSchema
+        | BankGoldTransactionResponseSchema;
 
-        for (var i = 0; i < this.character.data.inventory.length; i++) {
+      if (this.target.code === 'gold') {
+        response = await actionDepositGold(
+          this.character.data,
+          this.target.quantity,
+        );
+      } else if (this.target.code === 'all') {
+        const itemsToDeposit: SimpleItemSchema[] = [];
+
+        for (let i = 0; i < this.character.data.inventory.length; i++) {
           if (this.character.data.inventory[i].code !== '') {
             itemsToDeposit.push({
               code: this.character.data.inventory[i].code,
@@ -100,7 +108,11 @@ export class DepositObjective extends Objective {
         }
         continue;
       } else {
-        this.character.data = response.data.character;
+        if (response.data.character) {
+          this.character.data = response.data.character;
+        } else {
+          logger.error('Deposit response missing character data');
+        }
       }
       return true;
     }

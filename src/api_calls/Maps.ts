@@ -5,18 +5,33 @@ import { ApiUrl, MyHeaders } from '../utils.js';
 export async function getMaps(
   params: GetAllMapsMapsGetParams,
 ): Promise<DataPageMapSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/maps`);
+  const apiUrl = new URL(`${ApiUrl}/maps`);
 
   if (params.content_code) {
     apiUrl.searchParams.set('content_code', params.content_code);
   }
   if (params.content_type) {
     apiUrl.searchParams.set('content_type', params.content_type);
+  }
+  if (params.hide_blocked_maps) {
+    apiUrl.searchParams.set(
+      'hide_blocked_maps',
+      String(params.hide_blocked_maps),
+    );
+  }
+  if (params.layer) {
+    apiUrl.searchParams.set('layer', params.layer);
+  }
+  if (params.page) {
+    apiUrl.searchParams.set('page', String(params.page));
+  }
+  if (params.size) {
+    apiUrl.searchParams.set('size', String(params.size));
   }
 
   try {

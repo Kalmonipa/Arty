@@ -3,13 +3,17 @@
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@types/express": "^5.0.3",
+    "@types/jest": "^29.5.12",
     "@types/node": "^24.2.1",
     "axios": "^1.12.2",
     "eslint": "^9.35.0",
     "globals": "^16.4.0",
     "jiti": "^2.5.1",
+    "jest": "^29.7.0",
     "nodemon": "^3.1.10",
+    "orval": "^7.11.2",
     "prettier": "3.6.2",
+    "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
@@ -24,7 +28,10 @@
     "start": "node dist/main.js",
     "start:debug": "LOG_LEVEL=debug node dist/main.js",
     "prettier:fix": "npx prettier . --write --log-level silent",
-    "create-characters": "tsx scripts/create-characters.ts"
+    "create-characters": "tsx scripts/create-characters.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@datalust/winston-seq": "^3.0.1",
@@ -38,5 +45,11 @@
   "prettier": {
     "singleQuote": true,
     "semi": true
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "data/*.json"
+    ],
+    "delay": 2500
   }
 }

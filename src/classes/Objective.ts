@@ -43,18 +43,24 @@ export abstract class Objective {
     if (this.status === 'cancelled') {
       return false;
     }
-    
+
     // Check if parent job has been cancelled
     if (this.cancelIfParentIsCancelled()) {
       return false;
     }
-    
+
     this.startJob();
 
     await this.runSharedPrereqChecks();
-    await this.runPrerequisiteChecks();
-
-    const result = await this.run();
+    let result = await this.runPrerequisiteChecks();
+    // If prerequisite checks fail then we should stop the job
+    if (result) {
+      result = await this.run();
+    } else {
+      logger.warn(
+        `Prerequisite checks for ${this.objectiveId} failed. Stopping job`,
+      );
+    }
 
     this.completeJob(result);
     this.character.isIdle = true;
@@ -92,9 +98,13 @@ export abstract class Objective {
   cancelIfParentIsCancelled(): boolean {
     if (this.parentId) {
       // Find the parent job in the character's job list
-      const parentJob = this.character.jobList.find((job) => job.objectiveId === this.parentId);
+      const parentJob = this.character.jobList.find(
+        (job) => job.objectiveId === this.parentId,
+      );
       if (parentJob && parentJob.status === 'cancelled') {
-        logger.info(`Parent job ${this.parentId} is cancelled, cancelling child job ${this.objectiveId}`);
+        logger.info(
+          `Parent job ${this.parentId} is cancelled, cancelling child job ${this.objectiveId}`,
+        );
         this.cancelJob();
         return true;
       }
@@ -198,7 +208,11 @@ export abstract class Objective {
     if (response instanceof ApiError) {
       await this.character.handleErrors(response);
     } else {
-      this.character.data = response.data.character;
+      if (response.data.character) {
+        this.character.data = response.data.character;
+      } else {
+        logger.error('Task response missing character data');
+      }
     }
   }
 
@@ -238,7 +252,11 @@ export abstract class Objective {
       await this.character.handleErrors(response);
       // ToDo: handle complete task errors
     } else {
-      this.character.data = response.data.character;
+      if (response.data.character) {
+        this.character.data = response.data.character;
+      } else {
+        logger.error('Complete task response missing character data');
+      }
     }
 
     return true;

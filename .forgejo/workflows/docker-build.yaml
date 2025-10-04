@@ -4,22 +4,29 @@ on:
   push:
     tags:
       - v*.*.*
-      - test-*
 
 env:
   REGISTRY: forgejo.kalmonipa.net
   IMAGE_NAME: kalmonipa/arty
   DOCKER_HOST: tcp://dind:2375
+  API_TOKEN: some-test-token
+  CHARACTER_NAME: some-character
+  ROLE: some-role
 
 jobs:
   build-and-push:
     runs-on: docker
     container:
       image: catthehacker/ubuntu:act-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      # - name: Run tests
+      #   run: |
+      #     npm ci
+      #     npm run build
+      #     npm run test
       - name: Verify Docker connection
         run: |
           echo "Docker host: $DOCKER_HOST"

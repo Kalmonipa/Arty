@@ -14,6 +14,7 @@ import RecycleRouter from './routes/Recycle.js';
 import { ApiError } from './classes/Error.js';
 import WithdrawRouter from './routes/Withdraw.js';
 import ItemsRouter from './routes/Items.js';
+import TradeRouter from './routes/Trade.js';
 
 async function main() {
   const charData = await getCharacter(CharName);
@@ -43,6 +44,7 @@ async function main() {
   app.use('/jobs', JobsRouter(char));
   app.use('/recycle', RecycleRouter(char));
   app.use('/task', TaskRouter(char));
+  app.use('/trade', TradeRouter(char));
   app.use('/train', TrainSkillRouter(char));
   app.use('/withdraw', WithdrawRouter(char));
 

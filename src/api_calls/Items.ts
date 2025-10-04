@@ -1,5 +1,5 @@
 import { ApiError } from '../classes/Error.js';
-import { ApiUrl, MyHeaders, sleep } from '../utils.js';
+import { ApiUrl, getRequestOptions, MyHeaders, sleep } from '../utils.js';
 import {
   CharacterSchema,
   DataPageItemSchema,
@@ -22,7 +22,7 @@ export async function actionEquipItem(
   character: CharacterSchema,
   equipment: EquipSchema,
 ): Promise<EquipmentResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(equipment),
@@ -35,7 +35,7 @@ export async function actionEquipItem(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';
@@ -89,7 +89,7 @@ export async function actionUnequipItem(
   character: CharacterSchema,
   equipment: UnequipSchema,
 ): Promise<EquipmentResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(equipment),
@@ -102,7 +102,7 @@ export async function actionUnequipItem(
     );
 
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';
@@ -150,7 +150,7 @@ export async function actionUse(
   character: CharacterSchema,
   data: SimpleItemSchema,
 ): Promise<UseItemResponseSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
     body: JSON.stringify(data),
@@ -162,7 +162,7 @@ export async function actionUse(
       requestOptions,
     );
     if (!response.ok) {
-      var message: string;
+      let message: string;
       switch (response.status) {
         case 404:
           message = 'Item not found.';
@@ -210,12 +210,7 @@ export async function actionUse(
 export async function getAllItemInformation(
   data: GetAllItemsItemsGetParams,
 ): Promise<DataPageItemSchema | ApiError> {
-  var requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
-  var apiUrl = new URL(`${ApiUrl}/items`);
+  const apiUrl = new URL(`${ApiUrl}/items`);
 
   if (data?.craft_material) {
     apiUrl.searchParams.set('craft_material', data.craft_material);
@@ -243,9 +238,9 @@ export async function getAllItemInformation(
   }
 
   try {
-    const response = await fetch(apiUrl, requestOptions);
+    const response = await fetch(apiUrl, getRequestOptions);
 
-    // ToDo: add more error handling into here
+    // ToDo: add more error handling
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
@@ -266,13 +261,8 @@ export async function getAllItemInformation(
 export async function getItemInformation(
   code: string,
 ): Promise<ItemSchema | ApiError> {
-  var requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   try {
-    const response = await fetch(`${ApiUrl}/items/${code}`, requestOptions);
+    const response = await fetch(`${ApiUrl}/items/${code}`, getRequestOptions);
 
     // ToDo: add more error handling into here
     if (response.status === 404) {

@@ -1,6 +1,6 @@
 import { actionUnequipItem } from '../api_calls/Items.js';
 import { ItemSlot, UnequipSchema } from '../types/types.js';
-import { logger, sleep } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
@@ -66,7 +66,11 @@ export class UnequipObjective extends Objective {
         }
         continue;
       } else {
-        this.character.data = response.data.character;
+        if (response.data.character) {
+          this.character.data = response.data.character;
+        } else {
+          logger.error('Unequip response missing character data');
+        }
       }
     }
   }
