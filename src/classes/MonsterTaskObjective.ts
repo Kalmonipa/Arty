@@ -55,7 +55,7 @@ export class MonsterTaskObjective extends Objective {
 
     // Check if task is completed and hand it in
     if (this.character.data.task_total === this.character.data.task_progress) {
-      result = await this.character.handInTask('monsters');
+      result = await this.handInTask('monsters');
     }
 
     return result;
@@ -63,7 +63,7 @@ export class MonsterTaskObjective extends Objective {
 
   private async doTask(): Promise<boolean> {
     if (this.character.data.task === '') {
-      await this.character.startNewTask('monsters');
+      await this.startNewTask('monsters');
     }
 
     const maps = await getMaps({
