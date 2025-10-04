@@ -1,7 +1,6 @@
 import { actionEquipItem } from '../api_calls/Items.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { EquipSchema, ItemSlot } from '../types/types.js';
-import { logger, sleep } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
@@ -82,7 +81,11 @@ export class EquipObjective extends Objective {
         }
         continue;
       } else {
-        this.character.data = response.data.character;
+        if (response.data.character) {
+          this.character.data = response.data.character;
+        } else {
+          logger.error('Equip response missing character data');
+        }
         return true;
       }
     }

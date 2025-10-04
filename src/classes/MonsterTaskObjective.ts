@@ -5,12 +5,14 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
 export class MonsterTaskObjective extends Objective {
-  type: 'monster';
+  type = 'monster' as const;
+  quantity: number;
 
-  constructor(character: Character) {
-    super(character, `task_1_monstertask`, 'not_started');
+  constructor(character: Character, quantity: number) {
+    super(character, `task_${quantity}_monstertask`, 'not_started');
 
     this.character = character;
+    this.quantity = quantity;
   }
 
   // ToDo:
@@ -21,10 +23,47 @@ export class MonsterTaskObjective extends Objective {
   }
 
   async run() {
-    var result = false;
+    let result = false;
 
+    while (this.progress < this.quantity) {
+      if (this.isCancelled()) {
+        logger.info(`${this.objectiveId} has been cancelled`);
+        return false;
+      }
+
+      for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+        if (this.isCancelled()) {
+          logger.info(`${this.objectiveId} has been cancelled`);
+          return false;
+        }
+
+        logger.info(`Monster task attempt ${attempt}/${this.maxRetries}`);
+
+        result = await this.doTask();
+
+        if (result) {
+          this.progress++;
+          break; // Exit the retry loop on success
+        }
+      }
+
+      // If we failed all retries, exit the main loop
+      if (!result) {
+        break;
+      }
+    }
+
+    // Check if task is completed and hand it in
+    if (this.character.data.task_total === this.character.data.task_progress) {
+      result = await this.character.handInTask('monsters');
+    }
+
+    return result;
+  }
+
+  private async doTask(): Promise<boolean> {
     if (this.character.data.task === '') {
-      this.startNewTask('monsters');
+      await this.character.startNewTask('monsters');
     }
 
     const maps = await getMaps({
@@ -37,21 +76,17 @@ export class MonsterTaskObjective extends Objective {
 
     if (maps.data.length === 0) {
       logger.error(`Cannot find the task target. This shouldn't happen ??`);
-      return;
+      return false;
     }
 
     const contentLocation = this.character.evaluateClosestMap(maps.data);
 
     await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
-    await this.character.fightNow(
+    const result = await this.character.fightNow(
       this.character.data.task_total - this.character.data.task_progress,
       this.character.data.task,
     );
-
-    if (this.character.data.task_total === this.character.data.task_progress) {
-      result = await this.handInTask('monsters');
-    }
 
     return result;
   }

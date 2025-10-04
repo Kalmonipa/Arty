@@ -1,6 +1,5 @@
 import { ApiError } from '../classes/Error.js';
 import {
-  BankGoldTransactionResponseSchema,
   BankItemTransactionResponseSchema,
   CharacterFightResponseSchema,
   CharacterMovementResponseSchema,
@@ -70,67 +69,6 @@ export async function actionCraft(
       result.data.cooldown.reason,
     );
 
-    return result;
-  } catch (error) {
-    return error as ApiError;
-  }
-}
-
-/**
- * @description deposit gold into the bank. Character must be at the bank map
- * @param character
- * @param craftData
- * @returns {SkillResponseSchema}
- */
-export async function actionDepositGold(
-  character: CharacterSchema,
-  quantity: number,
-): Promise<BankGoldTransactionResponseSchema | ApiError> {
-  const requestOptions = {
-    method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify({ quantity: quantity }),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/bank/deposit/gold`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 461:
-          message =
-            'Some of your items or your gold in the bank are already part of an ongoing transaction.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 492:
-          message = 'The character does not have enough gold.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        default:
-          message = 'Unknown error from /action/bank/deposit/gold';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: BankGoldTransactionResponseSchema = await response.json();
-    logger.info(
-      `Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
-    );
     return result;
   } catch (error) {
     return error as ApiError;
@@ -258,6 +196,10 @@ export async function actionFight(
 
     const result: CharacterFightResponseSchema = await response.json();
 
+    logger.info(
+      `Fight against ${result.data.fight.opponent} was a ${result.data.fight.result} after ${result.data.fight.turns} turns.`,
+    );
+
     await sleep(
       result.data.cooldown.remaining_seconds,
       result.data.cooldown.reason,
@@ -368,6 +310,9 @@ export async function actionMove(
           break;
         case 490:
           message = 'The character is already at the destination.';
+          break;
+        case 496:
+          message = 'Conditions not met.';
           break;
         case 498:
           message = 'Character not found.';

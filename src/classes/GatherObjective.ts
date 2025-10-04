@@ -1,13 +1,12 @@
 import { actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { getMonsterInformation } from '../api_calls/Monsters.js';
+import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
 import { WeaponFlavours } from '../types/ItemData.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
   DataPageMonsterSchema,
-  DestinationSchema,
   GatheringSkill,
   ItemSchema,
   SimpleItemSchema,
@@ -16,6 +15,7 @@ import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { SimpleMapSchema } from '../types/MapData.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -32,7 +32,8 @@ export class GatherObjective extends Objective {
     this.character = character;
     this.target = target;
     this.checkBank = checkBank;
-    this.includeInventory = includeInventory || true;
+    this.includeInventory =
+      includeInventory !== undefined ? includeInventory : true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -129,7 +130,7 @@ export class GatherObjective extends Objective {
             resourceDetails.subtype as GatheringSkill,
           ))
         ) {
-          await this.character.equipBestWeapon(
+          await this.character.evaluateGear(
             resourceDetails.subtype as WeaponFlavours,
           );
         }
@@ -153,6 +154,12 @@ export class GatherObjective extends Objective {
           code: resourceDetails.code,
           quantity: quantity,
         });
+      } else if (resourceDetails.subtype === 'task') {
+        return await this.character.tradeWithNpcNow(
+          'buy',
+          quantity,
+          resourceDetails.code,
+        );
       } else if (resourceDetails.craft) {
         await this.character.craftNow(quantity, resourceDetails.code);
       } else {
@@ -160,12 +167,12 @@ export class GatherObjective extends Objective {
       }
     }
     // Remove the gathered item if it's in the exclusion list
-    this.character.removeItemFromItemsToKeep(this.target.code)
+    this.character.removeItemFromItemsToKeep(this.target.code);
   }
 
   async gatherItemLoop(
     target: SimpleItemSchema,
-    location: DestinationSchema,
+    location: SimpleMapSchema,
     exceptions?: string[],
   ): Promise<boolean> {
     // Loop that does the gather requests
@@ -190,7 +197,10 @@ export class GatherObjective extends Objective {
           this.character.data = response.data.character;
           this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
         } else {
-          logger.error('Invalid response structure from actionGather:', response);
+          logger.error(
+            'Invalid response structure from actionGather:',
+            response,
+          );
           return false;
         }
       }
@@ -201,20 +211,22 @@ export class GatherObjective extends Objective {
         return false;
       }
 
-      await this.character.saveJobQueue()
+      await this.character.saveJobQueue();
     }
     return true;
   }
 
   async gatherMobDrop(target: SimpleItemSchema) {
-    // ToDo: change this with new types in season-6-changes branch
     const mobInfo: DataPageMonsterSchema | ApiError =
-      await getMonsterInformation({
+      await getAllMonsterInformation({
         drop: target.code,
         max_level: this.character.data.level,
       });
     if (mobInfo instanceof ApiError) {
       return await this.character.handleErrors(mobInfo);
+    } else if (mobInfo.data.length === 0) {
+      logger.error(`Found no mobs for drop ${target.code}`);
+      return false;
     } else {
       let numHeld = 0;
 
@@ -223,6 +235,8 @@ export class GatherObjective extends Objective {
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
         );
+
+        logger.info(`Mob info for ${mobInfo.data.length} mobs`);
 
         // ToDo: make this check all mobs in case multiple drop the item
         await this.character.fightNow(1, mobInfo.data[0].code);
@@ -241,7 +255,7 @@ export class GatherObjective extends Objective {
           return false;
         }
 
-        await this.character.saveJobQueue()
+        await this.character.saveJobQueue();
       }
       return true;
     }

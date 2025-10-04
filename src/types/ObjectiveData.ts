@@ -9,3 +9,14 @@ export type ObjectiveStatus =
   | 'in_progress'
   | 'complete'
   | 'failed';
+
+export interface SerializedJob {
+  type: string;
+  objectiveId: string;
+  status: string;
+  progress: number;
+  parentId?: string;
+  childId?: string;
+  maxRetries: number;
+  [key: string]: unknown;
+}

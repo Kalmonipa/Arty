@@ -5,7 +5,7 @@ import {
 } from '../api_calls/Actions.js';
 import { actionUse, getItemInformation } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { HealthStatus } from '../types/CharacterData.js';
+import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
   CharacterSchema,
   CraftSkill,
@@ -14,10 +14,17 @@ import {
   ItemSchema,
   ItemSlot,
   MapSchema,
+  MonsterSchema,
   SimpleItemSchema,
   Skill,
 } from '../types/types.js';
-import { buildListOf, buildListOfWeapons, logger, sleep } from '../utils.js';
+import {
+  buildListOf,
+  buildListOfWeapons,
+  CharRole,
+  logger,
+  sleep,
+} from '../utils.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { CraftObjective } from './CraftObjective.js';
@@ -25,7 +32,11 @@ import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
 import { Objective } from './Objective.js';
-import { ObjectiveTargets, ObjectiveStatus } from '../types/ObjectiveData.js';
+import {
+  ObjectiveTargets,
+  ObjectiveStatus,
+  SerializedJob,
+} from '../types/ObjectiveData.js';
 import { FightObjective } from './FightObjective.js';
 import { EquipObjective } from './EquipObjective.js';
 import { UnequipObjective } from './UnequipObjective.js';
@@ -33,22 +44,22 @@ import { WithdrawObjective } from './WithdrawObjective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { getBankItems } from '../api_calls/Bank.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
-import { UtilityEffects, WeaponFlavours } from '../types/ItemData.js';
+import {
+  UtilityEffects,
+  WeaponFlavours,
+  GearEffects,
+  ConsumableEffects,
+} from '../types/ItemData.js';
 import { SimpleMapSchema } from '../types/MapData.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
-import { actionBuyItem, actionSellItem } from '../api_calls/NPC.js';
-
-interface SerializedJob {
-  type: string;
-  objectiveId: string;
-  status: string;
-  progress: number;
-  parentId?: string;
-  childId?: string;
-  maxRetries: number;
-  [key: string]: unknown;
-}
+import { EvaluateGearObjective } from './EvaluateGearObjective.js';
+import { TradeObjective } from './TradeWithNPCObjective.js';
+import { TradeType } from '../types/NPCData.js';
+import { FightSimulator } from './FightSimulator.js';
+import { IdleObjective } from './IdleObjective.js';
+import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
+import { TrainCombatObjective } from './TrainCombatObjective.js';
 
 export class Character {
   data: CharacterSchema;
@@ -74,21 +85,28 @@ export class Character {
   /**
    * Game state that we can refer to without API calls
    */
+  amuletMap?: Record<GearEffects, ItemSchema[]>;
+  armorMap?: Record<GearEffects, ItemSchema[]>;
+  bootsMap?: Record<GearEffects, ItemSchema[]>;
+  helmetMap?: Record<GearEffects, ItemSchema[]>;
+  legsArmorMap?: Record<GearEffects, ItemSchema[]>;
+  ringsMap?: Record<GearEffects, ItemSchema[]>;
+  shieldMap?: Record<GearEffects, ItemSchema[]>;
+
+  consumablesMap?: Record<ConsumableEffects, ItemSchema[]>;
+  utilitiesMap?: Record<UtilityEffects, ItemSchema[]>;
+  // ToDo: build a map of gathering weapons and a map of combat weapons
   weaponMap?: Record<WeaponFlavours, ItemSchema[]>;
-  utilitiesMap?: Record<string, ItemSchema[]>;
-  consumablesMap?: Record<string, ItemSchema[]>;
 
   /**
    * True when character is not doing anything
    * To be used when we implement idle tasks
    */
   isIdle: boolean = true;
-
   /**
    * Max default number of slots. Can be increased with a backpack
    */
   maxInventorySlots = 20;
-
   /**
    * Maximum number of potions that can be equipped
    */
@@ -97,7 +115,6 @@ export class Character {
    * Minimum number of potions to equip
    */
   minEquippedUtilities = 20;
-
   /**
    * The code of the food we're currently using. Saving it as a var so
    * I don't have to search my inv to figure out what to use
@@ -111,25 +128,41 @@ export class Character {
    *  Minimum food in inventory when going into a fight
    */
   minFood = 15;
-
   /**
    * List of items to keep when doing a deposit all
    */
   itemsToKeep: string[] = [];
+  /**
+   * Role of the character. One of Alchemist, Fighter, Fisherman, Lumberjack, Miner
+   */
+  role: Role;
 
   constructor(data: CharacterSchema) {
     this.data = data;
-    this.jobQueueFilePath = path.join(process.cwd(), 'data', `job_queue_${data.name}.json`);
+    this.jobQueueFilePath = path.join(
+      process.cwd(),
+      'data',
+      `job_queue_${data.name}.json`,
+    );
   }
 
   /**
    * @description function that builds some data sets to use later on
    */
   async init() {
-    this.weaponMap = await buildListOfWeapons();
+    this.armorMap = await buildListOf('body_armor');
+    this.amuletMap = await buildListOf('amulet');
+    this.bootsMap = await buildListOf('boots');
+    this.helmetMap = await buildListOf('helmet');
+    this.legsArmorMap = await buildListOf('leg_armor');
+    this.ringsMap = await buildListOf('ring');
+    this.shieldMap = await buildListOf('shield');
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
-    
+    this.weaponMap = await buildListOfWeapons();
+
+    this.role = CharRole;
+
     await this.loadJobQueue();
   }
 
@@ -229,8 +262,13 @@ export class Character {
         jobs: this.jobList.map((job) => this.serializeJob(job)),
       };
 
-      await fs.writeFile(this.jobQueueFilePath, JSON.stringify(jobQueueData, null, 2));
-      logger.debug(`Saved ${this.jobList.length} jobs to ${this.jobQueueFilePath}`);
+      await fs.writeFile(
+        this.jobQueueFilePath,
+        JSON.stringify(jobQueueData, null, 2),
+      );
+      logger.debug(
+        `Saved ${this.jobList.length} jobs to ${this.jobQueueFilePath}`,
+      );
     } catch (error) {
       logger.error(`Failed to save job queue: ${error.message}`);
     }
@@ -255,7 +293,9 @@ export class Character {
         }
       }
 
-      logger.info(`Loaded ${this.jobList.length} jobs from ${this.jobQueueFilePath}`);
+      logger.info(
+        `Loaded ${this.jobList.length} jobs from ${this.jobQueueFilePath}`,
+      );
     } catch (error) {
       if (error.code === 'ENOENT') {
         logger.info(`No saved job queue found for ${this.data.name}`);
@@ -288,8 +328,17 @@ export class Character {
   private getJobSpecificData(job: Objective): Record<string, unknown> {
     if (job instanceof CraftObjective) {
       return { target: job.target };
+    } else if (job instanceof EvaluateGearObjective) {
+      return {
+        activityType: job.activityType,
+        targetMob: job.targetMob,
+      };
     } else if (job instanceof GatherObjective) {
-      return { target: job.target, checkBank: job.checkBank, includeInventory: job.includeInventory };
+      return {
+        target: job.target,
+        checkBank: job.checkBank,
+        includeInventory: job.includeInventory,
+      };
     } else if (job instanceof FightObjective) {
       return { target: job.target };
     } else if (job instanceof DepositObjective) {
@@ -297,17 +346,27 @@ export class Character {
     } else if (job instanceof WithdrawObjective) {
       return { target: job.target };
     } else if (job instanceof EquipObjective) {
-      return { itemCode: job.itemCode, itemSlot: job.itemSlot, quantity: job.quantity };
+      return {
+        itemCode: job.itemCode,
+        itemSlot: job.itemSlot,
+        quantity: job.quantity,
+      };
     } else if (job instanceof UnequipObjective) {
       return { itemSlot: job.itemSlot, quantity: job.quantity };
     } else if (job instanceof ItemTaskObjective) {
       return { quantity: job.quantity };
     } else if (job instanceof MonsterTaskObjective) {
       return {};
+    } else if (job instanceof TrainCombatObjective) {
+      return { targetLevel: job.targetLevel };
+    } else if (job instanceof TrainCraftingSkillObjective) {
+      return { skill: job.skill, targetLevel: job.targetLevel };
     } else if (job instanceof TrainGatheringSkillObjective) {
       return { skill: job.skill, targetLevel: job.targetLevel };
     } else if (job instanceof TidyBankObjective) {
       return {};
+    } else if (job instanceof IdleObjective) {
+      return { role: job.role };
     }
     return {};
   }
@@ -317,61 +376,105 @@ export class Character {
    */
   private deserializeJob(jobData: SerializedJob): Objective | null {
     try {
-      const { type, objectiveId, status, progress, parentId, childId, maxRetries, ...specificData } = jobData;
+      const {
+        type,
+        objectiveId,
+        status,
+        progress,
+        parentId,
+        childId,
+        maxRetries,
+        ...specificData
+      } = jobData;
 
       let job: Objective;
 
       switch (type) {
         case 'CraftObjective':
-          job = new CraftObjective(this, specificData.target as ObjectiveTargets);
+          job = new CraftObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
+          break;
+        case 'EvaluateGearObjective':
+          job = new EvaluateGearObjective(
+            this,
+            specificData.activityType as WeaponFlavours,
+            specificData.targetMob as string,
+          );
           break;
         case 'GatherObjective':
           job = new GatherObjective(
-            this, 
-            specificData.target as ObjectiveTargets, 
-            specificData.checkBank as boolean, 
-            specificData.includeInventory as boolean
+            this,
+            specificData.target as ObjectiveTargets,
+            specificData.checkBank as boolean,
+            specificData.includeInventory as boolean,
           );
           break;
         case 'FightObjective':
-          job = new FightObjective(this, specificData.target as ObjectiveTargets);
+          job = new FightObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
           break;
         case 'DepositObjective':
-          job = new DepositObjective(this, specificData.target as ObjectiveTargets);
+          job = new DepositObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
           break;
         case 'WithdrawObjective':
-          job = new WithdrawObjective(this, specificData.target as ObjectiveTargets);
+          job = new WithdrawObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
           break;
         case 'EquipObjective':
           job = new EquipObjective(
-            this, 
-            specificData.itemCode as string, 
-            specificData.itemSlot as ItemSlot, 
-            specificData.quantity as number
+            this,
+            specificData.itemCode as string,
+            specificData.itemSlot as ItemSlot,
+            specificData.quantity as number,
           );
           break;
         case 'UnequipObjective':
           job = new UnequipObjective(
-            this, 
-            specificData.itemSlot as ItemSlot, 
-            specificData.quantity as number
+            this,
+            specificData.itemSlot as ItemSlot,
+            specificData.quantity as number,
           );
           break;
         case 'ItemTaskObjective':
           job = new ItemTaskObjective(this, specificData.quantity as number);
           break;
         case 'MonsterTaskObjective':
-          job = new MonsterTaskObjective(this);
+          job = new MonsterTaskObjective(this, specificData.quantity as number);
+          break;
+        case 'TrainCombatObjective':
+          job = new TrainCombatObjective(
+            this,
+            specificData.targetLevel as number,
+          );
+          break;
+        case 'TrainCraftingSkillObjective':
+          job = new TrainCraftingSkillObjective(
+            this,
+            specificData.skill as CraftSkill,
+            specificData.targetLevel as number,
+          );
           break;
         case 'TrainGatheringSkillObjective':
           job = new TrainGatheringSkillObjective(
-            this, 
-            specificData.skill as GatheringSkill, 
-            specificData.targetLevel as number
+            this,
+            specificData.skill as GatheringSkill,
+            specificData.targetLevel as number,
           );
           break;
         case 'TidyBankObjective':
-          job = new TidyBankObjective(this);
+          job = new TidyBankObjective(this, this.role);
+          break;
+        case 'IdleObjective':
+          job = new IdleObjective(this, specificData.role as Role);
           break;
         default:
           logger.warn(`Unknown job type: ${type}`);
@@ -410,7 +513,6 @@ export class Character {
    */
   async prependJob(obj: Objective) {
     this.jobList.unshift(obj);
-    logger.info(`Added ${obj.objectiveId} to beginning of job list`);
     await this.saveJobQueue();
   }
 
@@ -427,8 +529,8 @@ export class Character {
    * Adds a job to the jobList and executes it immediately
    * This ensures all jobs go through the jobList system for tracking
    * @param obj The objective to add and execute
-   * @param prepend If true, adds to beginning of jobList, otherwise adds to end
-   * @param trackInQueue If true, adds to jobList for tracking. If false, executes without queue tracking
+   * @param prepend If true, adds to beginning of jobList, otherwise adds to end. Defaults to true
+   * @param trackInQueue If true, adds to jobList for tracking. If false, executes without queue tracking. Defaults to true
    * @param parentId The objectiveId of the parent job that spawned this job
    * @returns Promise<boolean> The result of the job execution
    */
@@ -452,15 +554,15 @@ export class Character {
       }
 
       logger.info(
-        `Added job ${obj.objectiveId} to position ${prepend ? 0 : this.jobList.length - 1})${parentId ? `, parent: ${parentId}` : ''}`,
+        `Added job ${obj.objectiveId} to position ${prepend ? 0 : this.jobList.length - 1}${parentId ? `, parent: ${parentId}` : ''}`,
       );
-      
+
       // Set this job as the currently executing job during its execution
       const previousExecutingJob = this.currentExecutingJob;
       this.currentExecutingJob = obj;
-      
+
       const result = await obj.execute();
-      
+
       // Restore the previous executing job
       this.currentExecutingJob = previousExecutingJob;
 
@@ -471,16 +573,16 @@ export class Character {
       logger.info(
         `Executing sub-job ${obj.objectiveId} without queue tracking${parentId ? `, parent: ${parentId}` : ''}`,
       );
-      
+
       // Set this job as the currently executing job during its execution
       const previousExecutingJob = this.currentExecutingJob;
       this.currentExecutingJob = obj;
-      
+
       const result = await obj.execute();
-      
+
       // Restore the previous executing job
       this.currentExecutingJob = previousExecutingJob;
-      
+
       return result;
     }
   }
@@ -518,9 +620,11 @@ export class Character {
    */
   async cancelJobAndChildren(objectiveId: string): Promise<string[]> {
     const cancelledJobs: string[] = [];
-    
+
     // Find the job to cancel
-    const jobToCancel = this.jobList.find((job) => job.objectiveId === objectiveId);
+    const jobToCancel = this.jobList.find(
+      (job) => job.objectiveId === objectiveId,
+    );
     if (!jobToCancel) {
       logger.warn(`Job ${objectiveId} not found in job list`);
       return cancelledJobs;
@@ -533,21 +637,27 @@ export class Character {
 
     // Recursively cancel all child jobs
     const cancelChildren = (parentJobId: string) => {
-      const childJobs = this.jobList.filter((job) => job.parentId === parentJobId);
-      
+      const childJobs = this.jobList.filter(
+        (job) => job.parentId === parentJobId,
+      );
+
       for (const childJob of childJobs) {
         childJob.cancelJob();
         cancelledJobs.push(childJob.objectiveId);
-        logger.info(`Cancelled child job ${childJob.objectiveId} of parent ${parentJobId}`);
-        
+        logger.info(
+          `Cancelled child job ${childJob.objectiveId} of parent ${parentJobId}`,
+        );
+
         // Recursively cancel grandchildren
         cancelChildren(childJob.objectiveId);
       }
     };
 
     cancelChildren(objectiveId);
-    
-    logger.info(`Cancelled ${cancelledJobs.length} jobs total: ${cancelledJobs.join(', ')}`);
+
+    logger.info(
+      `Cancelled ${cancelledJobs.length} jobs total: ${cancelledJobs.join(', ')}`,
+    );
     await this.saveJobQueue();
     return cancelledJobs;
   }
@@ -584,7 +694,8 @@ export class Character {
   async executeJobList() {
     while (true) {
       if (this.jobList.length === 0) {
-        await sleep(10, 'no more jobs', false);
+        await sleep(5, 'no-more-jobs', false);
+        await this.appendJob(new IdleObjective(this, this.role));
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];
         this.currentExecutingJob = currentJob;
@@ -620,6 +731,9 @@ export class Character {
    * @returns the amount found in inventory
    */
   checkQuantityOfItemInInv(contentCode: string): number {
+    if (!this.data || !this.data.inventory) {
+      return 0;
+    }
     const foundItem = this.data.inventory.find(
       (item) => item.code === contentCode,
     );
@@ -657,6 +771,41 @@ export class Character {
         return this.data.woodcutting_level;
       default:
         return this.data.level;
+    }
+  }
+
+  /**
+   * @description Checks what gear is in the provided slot
+   */
+  getCharacterGearIn(itemSlot: ItemSlot): string {
+    switch (itemSlot) {
+      case 'amulet':
+        return this.data.amulet_slot;
+      case 'body_armor':
+        return this.data.body_armor_slot;
+      case 'boots':
+        return this.data.boots_slot;
+      case 'helmet':
+        return this.data.helmet_slot;
+      case 'leg_armor':
+        return this.data.leg_armor_slot;
+      case 'ring1':
+        return this.data.ring1_slot;
+      case 'ring2':
+        return this.data.ring2_slot;
+      case 'shield':
+        return this.data.shield_slot;
+      case 'utility1':
+        return this.data.utility1_slot;
+      case 'utility2':
+        return this.data.utility2_slot;
+      case 'weapon':
+        return this.data.weapon_slot;
+      default:
+        logger.warn(
+          `Checking gear in slot ${itemSlot} is unavailable right now`,
+        );
+        return '';
     }
   }
 
@@ -734,7 +883,8 @@ export class Character {
     }
 
     maps.forEach((map) => {
-      const dist = Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
+      const dist =
+        Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
       if (dist < closestDistance) {
         closestDistance = dist;
         closestMap = map;
@@ -743,7 +893,7 @@ export class Character {
 
     if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
       logger.info(
-        `Closest ${closestMap.content.code} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+        `Closest ${closestMap.skin} is at x: ${closestMap.x}, y: ${closestMap.y}`,
       );
     }
 
@@ -755,10 +905,10 @@ export class Character {
    */
   removeItemFromItemsToKeep(itemCode: string) {
     if (this.itemsToKeep.includes(itemCode)) {
-      logger.info(`Removing ${itemCode} from exceptions list`)
-      this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1)
+      logger.info(`Removing ${itemCode} from exceptions list`);
+      this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1);
     } else {
-      logger.warn(`Can't remove item code ${itemCode} from itemsToKeep list`)
+      logger.warn(`Can't remove item code ${itemCode} from itemsToKeep list`);
     }
   }
 
@@ -825,6 +975,8 @@ export class Character {
    * @description Eat the required amount of preferred food to recover fully
    */
   async eatFood() {
+    await this.setPreferredFood();
+
     const healthStatus: HealthStatus = this.checkHealth();
 
     const preferredFoodHealValue = this.consumablesMap.heal
@@ -854,14 +1006,18 @@ export class Character {
     if (useResponse instanceof ApiError) {
       this.handleErrors(useResponse);
     } else {
-      this.data = useResponse.data.character;
+      if (useResponse.data.character) {
+        this.data = useResponse.data.character;
+      } else {
+        logger.error('Use item response missing character data');
+      }
     }
   }
 
   /**
-   * @description Equips a utility into the specified slot
-   * Calculates how many potions we need to reach max number
-   * Checks inventory and bank for the amount we need
+   * @description Equips a utility into the specified slot.
+   * Calculates how many potions we need to reach max number.
+   * Checks inventory and bank for the amount we need.
    * @returns a boolean stating whether we need to move back to our original location
    */
   async equipUtility(
@@ -872,7 +1028,7 @@ export class Character {
 
     for (let ind = utility.length - 1; ind >= 0; ind--) {
       if (utility[ind].level <= this.getCharacterLevel()) {
-        let numNeeded: number
+        let numNeeded: number;
         if (slot === 'utility1') {
           numNeeded =
             this.maxEquippedUtilities - this.data.utility1_slot_quantity;
@@ -918,35 +1074,6 @@ export class Character {
   }
 
   /**
-   * @description Equips the best available weapon for the task
-   */
-  async equipBestWeapon(activityType: WeaponFlavours) {
-    const weapons = this.weaponMap[activityType];
-    const charLevel =
-      activityType === 'combat'
-        ? this.getCharacterLevel()
-        : this.getCharacterLevel(activityType);
-
-    for (let ind = weapons.length - 1; ind >= 0; ind--) {
-      if (weapons[ind].level <= charLevel) {
-        logger.debug(`Attempting to equip ${weapons[ind].name}`);
-        if (this.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
-          await this.equipNow(weapons[ind].code, 'weapon');
-          return;
-        } else if (
-          (await this.checkQuantityOfItemInBank(weapons[ind].code)) > 0
-        ) {
-          await this.withdrawNow(1, weapons[ind].code);
-          await this.equipNow(weapons[ind].code, 'weapon');
-          return;
-        } else {
-          logger.debug(`Can't find any ${weapons[ind].name}`);
-        }
-      }
-    }
-  }
-
-  /**
    * @description top up the preferred food from the bank until we have the amount we want
    * Moves back to the previous location if one is provided
    */
@@ -972,68 +1099,6 @@ export class Character {
 
     if (priorLocation) {
       await this.move(priorLocation);
-    }
-  }
-
-  /**
-   * @description Find the NPC and buy from them
-   */
-  async buyFromNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
-    // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
-    // Make it into it's own function and just call it
-    const maps = await getMaps({
-      content_code: npcCode,
-      content_type: 'npc',
-    });
-    if (maps instanceof ApiError) {
-      return await this.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
-      logger.error(`Cannot find any maps for ${npcCode}`);
-      return false;
-    }
-
-    const traderLocation = this.evaluateClosestMap(maps.data);
-
-    await this.move(traderLocation);
-
-    const buyResponse = await actionBuyItem(this.data, items);
-    if (buyResponse instanceof ApiError) {
-      return this.handleErrors(buyResponse);
-    } else {
-      this.data = buyResponse.character;
-      return true;
-    }
-  }
-
-  /**
-   * @description Find the NPC and sell to them
-   */
-  async sellToNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
-    const maps = await getMaps({
-      content_code: npcCode,
-      content_type: 'npc',
-    });
-    if (maps instanceof ApiError) {
-      return await this.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
-      logger.error(`Cannot find any maps for ${npcCode}`);
-      return false;
-    }
-
-    const traderLocation = this.evaluateClosestMap(maps.data);
-
-    await this.move(traderLocation);
-
-    const sellResponse = await actionSellItem(this.data, items);
-    if (sellResponse instanceof ApiError) {
-      return this.handleErrors(sellResponse);
-    } else {
-      this.data = sellResponse.character;
-      return true;
     }
   }
 
@@ -1092,7 +1157,11 @@ export class Character {
         this.handleErrors(response);
         await this.evaluateDepositItemsInBank(exceptions, priorLocation);
       } else {
-        this.data = response.data.character;
+        if (response.data.character) {
+          this.data = response.data.character;
+        } else {
+          logger.error('Deposit item response missing character data');
+        }
         await this.move(priorLocation);
       }
       return true;
@@ -1104,6 +1173,9 @@ export class Character {
    * @returns what percentage of the backpack is full
    */
   getInventoryFullness(): number {
+    if (!this.data || !this.data.inventory) {
+      return 0;
+    }
     let usedSpace = 0;
     this.data.inventory.forEach((invSlot) => {
       usedSpace += invSlot.quantity;
@@ -1138,6 +1210,9 @@ export class Character {
    * @returns true if successful, false otherwise
    */
   async setPreferredFood(): Promise<boolean> {
+    if (!this.data || !this.data.inventory) {
+      return false;
+    }
     const foundItem = this.data.inventory.find((invItem) => {
       return this.consumablesMap.heal.find(
         (item) => invItem.code === item.code,
@@ -1182,6 +1257,7 @@ export class Character {
 
   /**
    * @description moves the character to the destination if they are not already there
+   * @todo Take in a map_id as an alternative to x,y coords
    */
   async move(destination: DestinationSchema) {
     if (this.data.x === destination.x && this.data.y === destination.y) {
@@ -1198,7 +1274,11 @@ export class Character {
     if (moveResponse instanceof ApiError) {
       this.handleErrors(moveResponse);
     } else {
-      this.data = moveResponse.data.character;
+      if (moveResponse.data.character) {
+        this.data = moveResponse.data.character;
+      } else {
+        logger.error('Move response missing character data');
+      }
     }
   }
 
@@ -1214,7 +1294,11 @@ export class Character {
       logger.info(
         `Recovered ${restResponse.data.hp_restored} health from resting`,
       );
-      this.data = restResponse.data.character;
+      if (restResponse.data.character) {
+        this.data = restResponse.data.character;
+      } else {
+        logger.error('Rest response missing character data');
+      }
     }
   }
 
@@ -1264,8 +1348,8 @@ export class Character {
    * If a task is already in progress, it will continue with the current task
    * Turns it in the task master when complete
    */
-  async doMonsterTask() {
-    this.appendJob(new MonsterTaskObjective(this));
+  async doMonsterTask(quantity: number) {
+    this.appendJob(new MonsterTaskObjective(this, quantity));
   }
 
   /**
@@ -1292,6 +1376,21 @@ export class Character {
 
     return await this.executeJobNow(
       depositJob,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
+  }
+
+  async evaluateGear(activityType: WeaponFlavours, targetMob?: string) {
+    const evaluateGearJob = new EvaluateGearObjective(
+      this,
+      activityType,
+      targetMob,
+    );
+
+    return await this.executeJobNow(
+      evaluateGearJob,
       true,
       true,
       this.currentExecutingJob?.objectiveId,
@@ -1439,10 +1538,67 @@ export class Character {
   }
 
   /**
+   * @description Adds a fight simulation job to see if we'll win a fight
+   */
+  async simulateFightNow(
+    mockCharacter: CharacterSchema,
+    targetMobName?: string,
+    targetMobSchema?: MonsterSchema,
+    iterations?: number,
+    debugLogs?: boolean,
+  ) {
+    if (!targetMobName && !targetMobSchema) {
+      logger.error(
+        `One of targetMobName or targetMobSchema must be passed in to simulateFightNow()`,
+      );
+      return false;
+    }
+    const job = new FightSimulator(
+      this,
+      mockCharacter,
+      targetMobName,
+      targetMobSchema,
+      iterations,
+      debugLogs,
+    );
+
+    return await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
+  }
+
+  /**
+   * @description Trade with an NPC
+   */
+  async tradeWithNpc(tradeType: TradeType, quantity: number, itemCode: string) {
+    this.appendJob(new TradeObjective(this, tradeType, quantity, itemCode));
+  }
+
+  /**
+   * @description trade with an NPC now
+   */
+  async tradeWithNpcNow(
+    tradeType: TradeType,
+    quantity: number,
+    itemCode: string,
+  ) {
+    const job = new TradeObjective(this, tradeType, quantity, itemCode);
+    return await this.executeJobNow(
+      job,
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
+    );
+  }
+
+  /**
    * @description Tidy up the bank. Will be moved to be part of the idle tasks
    */
   async tidyUpBank() {
-    const job = new TidyBankObjective(this);
+    const job = new TidyBankObjective(this, this.role);
     await this.executeJobNow(
       job,
       true,

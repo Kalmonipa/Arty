@@ -1,4 +1,5 @@
 import { getAllItemInformation } from '../api_calls/Items.js';
+import { Role } from '../types/CharacterData.js';
 import { CraftSkill, ItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
@@ -19,10 +20,13 @@ export class TidyBankObjective extends Objective {
     'topaz_stone',
   ];
 
-  constructor(character: Character) {
+  role: Role;
+
+  constructor(character: Character, role: Role) {
     super(character, `tidy_bank`, 'not_started');
 
     this.character = character;
+    this.role = role;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -36,20 +40,37 @@ export class TidyBankObjective extends Objective {
    * - Clean up resources based on the characters role (this is more of a role based thing but not actually necessary)
    */
   async run(): Promise<boolean> {
-    return this.cookFish();
+    switch (this.role) {
+      case 'alchemist':
+        break;
+      case 'fisherman':
+        await this.cookFish();
+        break;
+      case 'fighter':
+        break;
+      case 'lumberjack':
+        break;
+      case 'miner':
+        await this.craftBars();
+        break;
+      default:
+        break;
+    }
+
+    return true;
   }
 
   /**
    * Finds any raw fish in the bank and cooks it
    * @returns true if successful or false if it failed
    */
-  async cookFish(): Promise<boolean> {
+  private async cookFish(): Promise<boolean> {
     for (const item of this.rawFishList) {
-      let numInBank = await this.character.checkQuantityOfItemInBank(item);
+      const numInBank = await this.character.checkQuantityOfItemInBank(item);
       if (numInBank == 0) {
         break;
       } else {
-        let itemToCraftSchema = await this.identifyCraftedItemFrom(
+        const itemToCraftSchema = await this.identifyCraftedItemFrom(
           item,
           'cooking',
         );
@@ -57,7 +78,7 @@ export class TidyBankObjective extends Objective {
           break;
         }
 
-        let numToCraft = Math.floor(
+        const numToCraft = Math.floor(
           numInBank / itemToCraftSchema.craft.items[0].quantity,
         );
 
@@ -65,6 +86,31 @@ export class TidyBankObjective extends Objective {
       }
     }
     logger.info(`Found no fish in the bank to clean up`);
+    return true;
+  }
+
+  private async craftBars(): Promise<boolean> {
+    for (const item of this.rawOreList) {
+      const numInBank = await this.character.checkQuantityOfItemInBank(item);
+      if (numInBank == 0) {
+        break;
+      } else {
+        const itemToCraftSchema = await this.identifyCraftedItemFrom(
+          item,
+          'mining',
+        );
+        if (!itemToCraftSchema) {
+          break;
+        }
+
+        const numToCraft = Math.floor(
+          numInBank / itemToCraftSchema.craft.items[0].quantity,
+        );
+
+        return await this.character.craftNow(numToCraft, item);
+      }
+    }
+    logger.info(`Found no ore in the bank to clean up`);
     return true;
   }
 
@@ -77,7 +123,7 @@ export class TidyBankObjective extends Objective {
     ingredient: string,
     craftSkill: CraftSkill,
   ): Promise<ItemSchema> {
-    let craftedItemList = await getAllItemInformation({
+    const craftedItemList = await getAllItemInformation({
       craft_material: ingredient,
       craft_skill: craftSkill,
       max_level: this.character.getCharacterLevel(craftSkill),
@@ -94,7 +140,7 @@ export class TidyBankObjective extends Objective {
 
     // ToDo: we should make a better decision somehow if there are multiple options
     // Currently this just picks one that only requires 1 ingredient
-    for (let craftItem of craftedItemList.data) {
+    for (const craftItem of craftedItemList.data) {
       if (craftItem.craft.items.length > 1) {
         logger.debug(
           `${craftItem.code} requires more than 1 ingredient. Skipping`,

@@ -7,24 +7,24 @@ Artifacts is an API-based MMO game where you can manage 5 characters to explore,
 
 Website: https://artifactsmmo.com/
 
-Documentation: https://docs.artifactsmmo.com/
+Documentation: https://docs-test.artifactsmmo.com/
 
-OpenAPI Spec: https://api.artifactsmmo.com/openapi.json
+OpenAPI Spec: https://api-test.artifactsmmo.com/openapi.json
 
- * OpenAPI spec version: 5.0
+ * OpenAPI spec version: 6.0.0
  */
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 
-/**
- * Target of the achievement.
- */
-export type AccountAchievementSchemaTarget = string | null;
-
-/**
- * Completed at.
- */
-export type AccountAchievementSchemaCompletedAt = string | null;
+export interface AccessSchema {
+  /** Map access type determining movement and accessibility */
+  type: MapAccessType;
+  /**
+   * Access conditions for the map
+   * @nullable
+   */
+  conditions?: ConditionSchema[] | null;
+}
 
 export interface AccountAchievementSchema {
   /** Name of the achievement. */
@@ -37,16 +37,22 @@ export interface AccountAchievementSchema {
   points: number;
   /** Type of achievement. */
   type: AchievementType;
-  /** Target of the achievement. */
-  target: AccountAchievementSchemaTarget;
+  /**
+   * Target of the achievement.
+   * @nullable
+   */
+  target?: string | null;
   /** Total to do. */
   total: number;
   /** Rewards. */
   rewards: AchievementRewardsSchema;
   /** Current progress. */
   current: number;
-  /** Completed at. */
-  completed_at: AccountAchievementSchemaCompletedAt;
+  /**
+   * Completed at.
+   * @nullable
+   */
+  completed_at?: string | null;
 }
 
 export interface AccountDetails {
@@ -94,8 +100,6 @@ export const AccountLeaderboardType = {
   gold: 'gold',
 } as const;
 
-export type AccountLeaderboardTypeAZAZ09 = AccountLeaderboardType;
-
 export type AccountStatus = (typeof AccountStatus)[keyof typeof AccountStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -115,11 +119,6 @@ export interface AchievementRewardsSchema {
   gold: number;
 }
 
-/**
- * Target of the achievement.
- */
-export type AchievementSchemaTarget = string | null;
-
 export interface AchievementSchema {
   /** Name of the achievement. */
   name: string;
@@ -131,8 +130,11 @@ export interface AchievementSchema {
   points: number;
   /** Type of achievement. */
   type: AchievementType;
-  /** Target of the achievement. */
-  target: AchievementSchemaTarget;
+  /**
+   * Target of the achievement.
+   * @nullable
+   */
+  target?: string | null;
   /** Total to do. */
   total: number;
   /** Rewards. */
@@ -155,14 +157,13 @@ export const AchievementType = {
   use: 'use',
 } as const;
 
-export type AchievementTypeAZAZ09 = AchievementType;
-
 export type ActionType = (typeof ActionType)[keyof typeof ActionType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ActionType = {
   movement: 'movement',
   fight: 'fight',
+  multi_fight: 'multi_fight',
   crafting: 'crafting',
   gathering: 'gathering',
   buy_ge: 'buy_ge',
@@ -178,7 +179,6 @@ export const ActionType = {
   equip: 'equip',
   unequip: 'unequip',
   task: 'task',
-  christmas_exchange: 'christmas_exchange',
   recycling: 'recycling',
   rest: 'rest',
   use: 'use',
@@ -187,7 +187,29 @@ export const ActionType = {
   give_gold: 'give_gold',
   change_skin: 'change_skin',
   rename: 'rename',
+  transition: 'transition',
 } as const;
+
+export interface ActiveCharacterSchema {
+  /** Name of the character. */
+  name: string;
+  /** Account name. */
+  account: string;
+  /** Character skin code. */
+  skin: CharacterSkin;
+  /** Character x coordinate. */
+  x: number;
+  /** Character y coordinate. */
+  y: number;
+  /** Character current layer. */
+  layer: MapLayer;
+  /** Character current map ID. */
+  map_id: number;
+}
+
+export interface ActiveEventResponseSchema {
+  data: ActiveEventSchema;
+}
 
 export interface ActiveEventSchema {
   /** Name of the event. */
@@ -244,32 +266,28 @@ export interface AnnouncementSchema {
   created_at?: string;
 }
 
-/**
- * Quantity of the condition (if any).
- */
-export type BadgeConditionSchemaQuantity = number | null;
-
 export interface BadgeConditionSchema {
   /** Code of the condition. */
   code: string;
-  /** Quantity of the condition (if any). */
-  quantity: BadgeConditionSchemaQuantity;
+  /**
+   * Quantity of the condition (if any).
+   * @nullable
+   */
+  quantity?: number | null;
 }
 
 export interface BadgeResponseSchema {
   data: BadgeSchema;
 }
 
-/**
- * Season of the badge.
- */
-export type BadgeSchemaSeason = number | null;
-
 export interface BadgeSchema {
   /** Code of the badge. This is the badge's unique identifier (ID). */
   code: string;
-  /** Season of the badge. */
-  season?: BadgeSchemaSeason;
+  /**
+   * Season of the badge.
+   * @nullable
+   */
+  season?: number | null;
   /** Description of the badge. */
   description: string;
   /** Conditions to get the badge. */
@@ -390,14 +408,27 @@ export interface ChangeSkinResponseSchema {
 export interface CharacterFightDataSchema {
   /** Cooldown details. */
   cooldown: CooldownSchema;
-  /** Fight details. */
-  fight: FightSchema;
-  /** Player details. */
-  character: CharacterSchema;
+  /** Character fight details. */
+  fight: CharacterFightSchema;
+  /** All characters involved. */
+  characters: CharacterSchema[];
 }
 
 export interface CharacterFightResponseSchema {
   data: CharacterFightDataSchema;
+}
+
+export interface CharacterFightSchema {
+  /** The result of the fight. */
+  result: FightResult;
+  /** Numbers of the turns of the combat. */
+  turns: number;
+  /** The code of the monster fought. */
+  opponent: string;
+  /** The fight logs. */
+  logs: string[];
+  /** Results for each character. */
+  characters: CharacterMultiFightResultSchema[];
 }
 
 export interface CharacterLeaderboardSchema {
@@ -467,19 +498,32 @@ export const CharacterLeaderboardType = {
   alchemy: 'alchemy',
 } as const;
 
-export type CharacterLeaderboardTypeAZAZ09 = CharacterLeaderboardType;
-
 export interface CharacterMovementDataSchema {
   /** Cooldown details */
   cooldown: CooldownSchema;
   /** Destination details. */
   destination: MapSchema;
+  /** Path taken from start to destination (list of coordinates) */
+  path: [number, number][];
   /** Character details. */
   character: CharacterSchema;
 }
 
 export interface CharacterMovementResponseSchema {
   data: CharacterMovementDataSchema;
+}
+
+export interface CharacterMultiFightResultSchema {
+  /** Name of the character. */
+  character_name: string;
+  /** XP gained by this character. */
+  xp: number;
+  /** Gold gained by this character. */
+  gold: number;
+  /** Items dropped for this character. */
+  drops: DropSchema[];
+  /** Character's HP at the end of combat. */
+  final_hp: number;
 }
 
 export interface CharacterResponseSchema {
@@ -576,6 +620,10 @@ export interface CharacterSchema {
   wisdom: number;
   /** Prospecting increases the chances of getting drops from fights and skills (1% extra per 10 PP). */
   prospecting: number;
+  /** Initiative determines turn order in combat. Higher initiative goes first. */
+  initiative: number;
+  /** Threat level affects monster targeting in multi-character combat. */
+  threat: number;
   /** Fire attack. */
   attack_fire: number;
   /** Earth attack. */
@@ -602,10 +650,16 @@ export interface CharacterSchema {
   res_water: number;
   /** % Air resistance. Reduces air attack. */
   res_air: number;
+  /** List of active effects on the character. */
+  effects?: StorageEffectSchema[];
   /** Character x coordinate. */
   x: number;
   /** Character y coordinate. */
   y: number;
+  /** Character current layer. */
+  layer: MapLayer;
+  /** Character current map ID. */
+  map_id: number;
   /** Cooldown in seconds. */
   cooldown: number;
   /** Datetime Cooldown expiration. */
@@ -680,9 +734,73 @@ export const CharacterSkin = {
   zombie1: 'zombie1',
 } as const;
 
+export interface CharacterTransitionDataSchema {
+  /** Cooldown details */
+  cooldown: CooldownSchema;
+  /** Destination map details. */
+  destination: MapSchema;
+  /** Transition details. */
+  transition: TransitionSchema;
+  /** Character details. */
+  character: CharacterSchema;
+}
+
+export interface CharacterTransitionResponseSchema {
+  data: CharacterTransitionDataSchema;
+}
+
 export interface CharactersListSchema {
   /** List of your characters. */
   data: CharacterSchema[];
+}
+
+export type CombatResultSchemaCharacterResultsItem = { [key: string]: unknown };
+
+export interface CombatResultSchema {
+  /** Combat result: 'win' or 'loss'. */
+  result: string;
+  /** Number of turns the combat lasted. */
+  turns: number;
+  /** Combat logs. */
+  logs: string[];
+  /** Character results from combat. */
+  character_results: CombatResultSchemaCharacterResultsItem[];
+}
+
+export interface CombatSimulationDataSchema {
+  /** Results from each combat iteration. */
+  results: CombatResultSchema[];
+  /** Total number of victories. */
+  wins: number;
+  /** Total number of defeats. */
+  losses: number;
+  /** Win rate percentage (0-100). */
+  winrate: number;
+}
+
+export interface CombatSimulationRequestSchema {
+  /**
+   * List of fake characters (1-3).
+   * @minItems 1
+   * @maxItems 3
+   */
+  characters: FakeCharacterSchema[];
+  /**
+   * Monster code to fight against.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  monster: string;
+  /**
+   * Number of combat iterations to simulate.
+   * @minimum 1
+   * @maximum 100
+   */
+  iterations: number;
+}
+
+export interface CombatSimulationResponseSchema {
+  /** Combat simulation results. */
+  data: CombatSimulationDataSchema;
 }
 
 export type ConditionOperator =
@@ -694,6 +812,9 @@ export const ConditionOperator = {
   ne: 'ne',
   gt: 'gt',
   lt: 'lt',
+  cost: 'cost',
+  has_item: 'has_item',
+  achievement_unlocked: 'achievement_unlocked',
 } as const;
 
 export interface ConditionSchema {
@@ -702,7 +823,7 @@ export interface ConditionSchema {
   /** Condition operator. */
   operator: ConditionOperator;
   /** Condition value. */
-  value: number;
+  value: string;
 }
 
 export interface CooldownSchema {
@@ -742,8 +863,6 @@ export const CraftSkill = {
   alchemy: 'alchemy',
 } as const;
 
-export type CraftSkillAZAZ09 = CraftSkill;
-
 export interface CraftingSchema {
   /**
    * Craft code.
@@ -757,324 +876,508 @@ export interface CraftingSchema {
   quantity?: number;
 }
 
-export type DataPageAccountAchievementSchemaTotal = number | null;
-
-export type DataPageAccountAchievementSchemaPage = number | null;
-
-export type DataPageAccountAchievementSchemaSize = number | null;
-
-export type DataPageAccountAchievementSchemaPages = number | null;
-
 export interface DataPageAccountAchievementSchema {
   data: AccountAchievementSchema[];
-  total: DataPageAccountAchievementSchemaTotal;
-  page: DataPageAccountAchievementSchemaPage;
-  size: DataPageAccountAchievementSchemaSize;
-  pages?: DataPageAccountAchievementSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageAccountLeaderboardSchemaTotal = number | null;
-
-export type DataPageAccountLeaderboardSchemaPage = number | null;
-
-export type DataPageAccountLeaderboardSchemaSize = number | null;
-
-export type DataPageAccountLeaderboardSchemaPages = number | null;
 
 export interface DataPageAccountLeaderboardSchema {
   data: AccountLeaderboardSchema[];
-  total: DataPageAccountLeaderboardSchemaTotal;
-  page: DataPageAccountLeaderboardSchemaPage;
-  size: DataPageAccountLeaderboardSchemaSize;
-  pages?: DataPageAccountLeaderboardSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageAchievementSchemaTotal = number | null;
-
-export type DataPageAchievementSchemaPage = number | null;
-
-export type DataPageAchievementSchemaSize = number | null;
-
-export type DataPageAchievementSchemaPages = number | null;
 
 export interface DataPageAchievementSchema {
   data: AchievementSchema[];
-  total: DataPageAchievementSchemaTotal;
-  page: DataPageAchievementSchemaPage;
-  size: DataPageAchievementSchemaSize;
-  pages?: DataPageAchievementSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
 
-export type DataPageActiveEventSchemaTotal = number | null;
-
-export type DataPageActiveEventSchemaPage = number | null;
-
-export type DataPageActiveEventSchemaSize = number | null;
-
-export type DataPageActiveEventSchemaPages = number | null;
+export interface DataPageActiveCharacterSchema {
+  data: ActiveCharacterSchema[];
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
+}
 
 export interface DataPageActiveEventSchema {
   data: ActiveEventSchema[];
-  total: DataPageActiveEventSchemaTotal;
-  page: DataPageActiveEventSchemaPage;
-  size: DataPageActiveEventSchemaSize;
-  pages?: DataPageActiveEventSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageBadgeSchemaTotal = number | null;
-
-export type DataPageBadgeSchemaPage = number | null;
-
-export type DataPageBadgeSchemaSize = number | null;
-
-export type DataPageBadgeSchemaPages = number | null;
 
 export interface DataPageBadgeSchema {
   data: BadgeSchema[];
-  total: DataPageBadgeSchemaTotal;
-  page: DataPageBadgeSchemaPage;
-  size: DataPageBadgeSchemaSize;
-  pages?: DataPageBadgeSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageCharacterLeaderboardSchemaTotal = number | null;
-
-export type DataPageCharacterLeaderboardSchemaPage = number | null;
-
-export type DataPageCharacterLeaderboardSchemaSize = number | null;
-
-export type DataPageCharacterLeaderboardSchemaPages = number | null;
 
 export interface DataPageCharacterLeaderboardSchema {
   data: CharacterLeaderboardSchema[];
-  total: DataPageCharacterLeaderboardSchemaTotal;
-  page: DataPageCharacterLeaderboardSchemaPage;
-  size: DataPageCharacterLeaderboardSchemaSize;
-  pages?: DataPageCharacterLeaderboardSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageDropRateSchemaTotal = number | null;
-
-export type DataPageDropRateSchemaPage = number | null;
-
-export type DataPageDropRateSchemaSize = number | null;
-
-export type DataPageDropRateSchemaPages = number | null;
 
 export interface DataPageDropRateSchema {
   data: DropRateSchema[];
-  total: DataPageDropRateSchemaTotal;
-  page: DataPageDropRateSchemaPage;
-  size: DataPageDropRateSchemaSize;
-  pages?: DataPageDropRateSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageEffectSchemaTotal = number | null;
-
-export type DataPageEffectSchemaPage = number | null;
-
-export type DataPageEffectSchemaSize = number | null;
-
-export type DataPageEffectSchemaPages = number | null;
 
 export interface DataPageEffectSchema {
   data: EffectSchema[];
-  total: DataPageEffectSchemaTotal;
-  page: DataPageEffectSchemaPage;
-  size: DataPageEffectSchemaSize;
-  pages?: DataPageEffectSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageEventSchemaTotal = number | null;
-
-export type DataPageEventSchemaPage = number | null;
-
-export type DataPageEventSchemaSize = number | null;
-
-export type DataPageEventSchemaPages = number | null;
 
 export interface DataPageEventSchema {
   data: EventSchema[];
-  total: DataPageEventSchemaTotal;
-  page: DataPageEventSchemaPage;
-  size: DataPageEventSchemaSize;
-  pages?: DataPageEventSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageGEOrderSchemaTotal = number | null;
-
-export type DataPageGEOrderSchemaPage = number | null;
-
-export type DataPageGEOrderSchemaSize = number | null;
-
-export type DataPageGEOrderSchemaPages = number | null;
 
 export interface DataPageGEOrderSchema {
   data: GEOrderSchema[];
-  total: DataPageGEOrderSchemaTotal;
-  page: DataPageGEOrderSchemaPage;
-  size: DataPageGEOrderSchemaSize;
-  pages?: DataPageGEOrderSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageGeOrderHistorySchemaTotal = number | null;
-
-export type DataPageGeOrderHistorySchemaPage = number | null;
-
-export type DataPageGeOrderHistorySchemaSize = number | null;
-
-export type DataPageGeOrderHistorySchemaPages = number | null;
 
 export interface DataPageGeOrderHistorySchema {
   data: GeOrderHistorySchema[];
-  total: DataPageGeOrderHistorySchemaTotal;
-  page: DataPageGeOrderHistorySchemaPage;
-  size: DataPageGeOrderHistorySchemaSize;
-  pages?: DataPageGeOrderHistorySchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageItemSchemaTotal = number | null;
-
-export type DataPageItemSchemaPage = number | null;
-
-export type DataPageItemSchemaSize = number | null;
-
-export type DataPageItemSchemaPages = number | null;
 
 export interface DataPageItemSchema {
   data: ItemSchema[];
-  total: DataPageItemSchemaTotal;
-  page: DataPageItemSchemaPage;
-  size: DataPageItemSchemaSize;
-  pages?: DataPageItemSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageLogSchemaTotal = number | null;
-
-export type DataPageLogSchemaPage = number | null;
-
-export type DataPageLogSchemaSize = number | null;
-
-export type DataPageLogSchemaPages = number | null;
 
 export interface DataPageLogSchema {
   data: LogSchema[];
-  total: DataPageLogSchemaTotal;
-  page: DataPageLogSchemaPage;
-  size: DataPageLogSchemaSize;
-  pages?: DataPageLogSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageMapSchemaTotal = number | null;
-
-export type DataPageMapSchemaPage = number | null;
-
-export type DataPageMapSchemaSize = number | null;
-
-export type DataPageMapSchemaPages = number | null;
 
 export interface DataPageMapSchema {
   data: MapSchema[];
-  total: DataPageMapSchemaTotal;
-  page: DataPageMapSchemaPage;
-  size: DataPageMapSchemaSize;
-  pages?: DataPageMapSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageMonsterSchemaTotal = number | null;
-
-export type DataPageMonsterSchemaPage = number | null;
-
-export type DataPageMonsterSchemaSize = number | null;
-
-export type DataPageMonsterSchemaPages = number | null;
 
 export interface DataPageMonsterSchema {
   data: MonsterSchema[];
-  total: DataPageMonsterSchemaTotal;
-  page: DataPageMonsterSchemaPage;
-  size: DataPageMonsterSchemaSize;
-  pages?: DataPageMonsterSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageNPCItemTotal = number | null;
-
-export type DataPageNPCItemPage = number | null;
-
-export type DataPageNPCItemSize = number | null;
-
-export type DataPageNPCItemPages = number | null;
 
 export interface DataPageNPCItem {
   data: NPCItem[];
-  total: DataPageNPCItemTotal;
-  page: DataPageNPCItemPage;
-  size: DataPageNPCItemSize;
-  pages?: DataPageNPCItemPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageNPCSchemaTotal = number | null;
-
-export type DataPageNPCSchemaPage = number | null;
-
-export type DataPageNPCSchemaSize = number | null;
-
-export type DataPageNPCSchemaPages = number | null;
 
 export interface DataPageNPCSchema {
   data: NPCSchema[];
-  total: DataPageNPCSchemaTotal;
-  page: DataPageNPCSchemaPage;
-  size: DataPageNPCSchemaSize;
-  pages?: DataPageNPCSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageResourceSchemaTotal = number | null;
-
-export type DataPageResourceSchemaPage = number | null;
-
-export type DataPageResourceSchemaSize = number | null;
-
-export type DataPageResourceSchemaPages = number | null;
 
 export interface DataPageResourceSchema {
   data: ResourceSchema[];
-  total: DataPageResourceSchemaTotal;
-  page: DataPageResourceSchemaPage;
-  size: DataPageResourceSchemaSize;
-  pages?: DataPageResourceSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageSimpleItemSchemaTotal = number | null;
-
-export type DataPageSimpleItemSchemaPage = number | null;
-
-export type DataPageSimpleItemSchemaSize = number | null;
-
-export type DataPageSimpleItemSchemaPages = number | null;
 
 export interface DataPageSimpleItemSchema {
   data: SimpleItemSchema[];
-  total: DataPageSimpleItemSchemaTotal;
-  page: DataPageSimpleItemSchemaPage;
-  size: DataPageSimpleItemSchemaSize;
-  pages?: DataPageSimpleItemSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
-
-export type DataPageTaskFullSchemaTotal = number | null;
-
-export type DataPageTaskFullSchemaPage = number | null;
-
-export type DataPageTaskFullSchemaSize = number | null;
-
-export type DataPageTaskFullSchemaPages = number | null;
 
 export interface DataPageTaskFullSchema {
   data: TaskFullSchema[];
-  total: DataPageTaskFullSchemaTotal;
-  page: DataPageTaskFullSchemaPage;
-  size: DataPageTaskFullSchemaSize;
-  pages?: DataPageTaskFullSchemaPages;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  total?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  page?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  size?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  pages?: number | null;
 }
 
 export interface DeleteCharacterSchema {
@@ -1110,9 +1413,11 @@ export interface DepositWithdrawGoldSchema {
 
 export interface DestinationSchema {
   /** The x coordinate of the destination. */
-  x: number;
+  x?: number;
   /** The y coordinate of the destination. */
-  y: number;
+  y?: number;
+  /** The map ID of the destination. */
+  map_id?: number;
 }
 
 export interface DropRateSchema {
@@ -1225,10 +1530,14 @@ export interface EventContentSchema {
 }
 
 export interface EventMapSchema {
+  /** ID of the map. */
+  map_id: number;
   /** Position X of the map. */
   x: number;
   /** Position Y of the map. */
   y: number;
+  /** Layer of the map. */
+  layer: string;
   /** Map skin of the map */
   skin: string;
 }
@@ -1248,6 +1557,110 @@ export interface EventSchema {
   rate: number;
 }
 
+export interface FakeCharacterSchema {
+  /**
+   * Character level.
+   * @minimum 1
+   * @maximum 50
+   */
+  level: number;
+  /**
+   * Weapon slot item code.
+   * @nullable
+   */
+  weapon_slot?: string | null;
+  /**
+   * Rune slot item code.
+   * @nullable
+   */
+  rune_slot?: string | null;
+  /**
+   * Shield slot item code.
+   * @nullable
+   */
+  shield_slot?: string | null;
+  /**
+   * Helmet slot item code.
+   * @nullable
+   */
+  helmet_slot?: string | null;
+  /**
+   * Body armor slot item code.
+   * @nullable
+   */
+  body_armor_slot?: string | null;
+  /**
+   * Leg armor slot item code.
+   * @nullable
+   */
+  leg_armor_slot?: string | null;
+  /**
+   * Boots slot item code.
+   * @nullable
+   */
+  boots_slot?: string | null;
+  /**
+   * Ring 1 slot item code.
+   * @nullable
+   */
+  ring1_slot?: string | null;
+  /**
+   * Ring 2 slot item code.
+   * @nullable
+   */
+  ring2_slot?: string | null;
+  /**
+   * Amulet slot item code.
+   * @nullable
+   */
+  amulet_slot?: string | null;
+  /**
+   * Artifact 1 slot item code.
+   * @nullable
+   */
+  artifact1_slot?: string | null;
+  /**
+   * Artifact 2 slot item code.
+   * @nullable
+   */
+  artifact2_slot?: string | null;
+  /**
+   * Artifact 3 slot item code.
+   * @nullable
+   */
+  artifact3_slot?: string | null;
+  /**
+   * Utility 1 slot item code.
+   * @nullable
+   */
+  utility1_slot?: string | null;
+  /**
+   * Utility 1 quantity.
+   * @minimum 1
+   * @maximum 100
+   */
+  utility1_slot_quantity?: number;
+  /**
+   * Utility 2 slot item code.
+   * @nullable
+   */
+  utility2_slot?: string | null;
+  /**
+   * Utility 2 quantity.
+   * @minimum 1
+   * @maximum 100
+   */
+  utility2_slot_quantity?: number;
+}
+
+export interface FightRequestSchema {
+  /**
+   * Optional list of additional character names to include in the fight (max 2 additional characters).
+   * @maxItems 2
+   */
+  participants?: string[];
+}
+
 export type FightResult = (typeof FightResult)[keyof typeof FightResult];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -1255,21 +1668,6 @@ export const FightResult = {
   win: 'win',
   loss: 'loss',
 } as const;
-
-export interface FightSchema {
-  /** The amount of xp gained from the fight. */
-  xp: number;
-  /** The amount of gold gained from the fight. */
-  gold: number;
-  /** The items dropped from the fight. */
-  drops: DropSchema[];
-  /** Numbers of the turns of the combat. */
-  turns: number;
-  /** The fight logs. */
-  logs: string[];
-  /** The result of the fight. */
-  result: FightResult;
-}
 
 export interface GEBuyOrderSchema {
   /** Order id. */
@@ -1344,7 +1742,7 @@ export interface GEOrderCreationrSchema {
   price: number;
 }
 
-export interface GEOrderReponseSchema {
+export interface GEOrderResponseSchema {
   data: GEOrderSchema;
 }
 
@@ -1416,8 +1814,6 @@ export const GatheringSkill = {
   alchemy: 'alchemy',
 } as const;
 
-export type GatheringSkillAZAZ09 = GatheringSkill;
-
 export interface GeOrderHistorySchema {
   /** Order id. */
   order_id: string;
@@ -1457,7 +1853,7 @@ export interface GiveGoldDataSchema {
   character: CharacterSchema;
 }
 
-export interface GiveGoldReponseSchema {
+export interface GiveGoldResponseSchema {
   data: GiveGoldDataSchema;
 }
 
@@ -1485,7 +1881,7 @@ export interface GiveItemDataSchema {
   character: CharacterSchema;
 }
 
-export interface GiveItemReponseSchema {
+export interface GiveItemResponseSchema {
   data: GiveItemDataSchema;
 }
 
@@ -1515,6 +1911,19 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 
+export interface InteractionSchema {
+  /**
+   * Content of the map.
+   * @nullable
+   */
+  content?: MapContentSchema;
+  /**
+   * Transition to another map.
+   * @nullable
+   */
+  transition?: TransitionSchema;
+}
+
 export interface InventorySlot {
   /** Inventory slot identifier. */
   slot: number;
@@ -1527,11 +1936,6 @@ export interface InventorySlot {
 export interface ItemResponseSchema {
   data: ItemSchema;
 }
-
-/**
- * Craft information. If applicable.
- */
-export type ItemSchemaCraft = CraftSchema | null;
 
 export interface ItemSchema {
   /** Item name. */
@@ -1553,8 +1957,11 @@ export interface ItemSchema {
   conditions?: ConditionSchema[];
   /** List of object effects. For equipment, it will include item stats. */
   effects?: SimpleEffectSchema[];
-  /** Craft information. If applicable. */
-  craft?: ItemSchemaCraft;
+  /**
+   * Craft information. If applicable.
+   * @nullable
+   */
+  craft?: CraftSchema;
   /** Item tradeable status. A non-tradeable item cannot be exchanged or sold. */
   tradeable: boolean;
 }
@@ -1602,13 +2009,6 @@ export const ItemType = {
   bag: 'bag',
 } as const;
 
-export type ItemTypeAZAZ09 = ItemType;
-
-/**
- * Datetime of cooldown expiration.
- */
-export type LogSchemaCooldownExpiration = string | null;
-
 export interface LogSchema {
   /** Character name. */
   character: string;
@@ -1622,8 +2022,11 @@ export interface LogSchema {
   content: unknown;
   /** Cooldown in seconds. */
   cooldown: number;
-  /** Datetime of cooldown expiration. */
-  cooldown_expiration: LogSchemaCooldownExpiration;
+  /**
+   * Datetime of cooldown expiration.
+   * @nullable
+   */
+  cooldown_expiration?: string | null;
   /** Datetime of creation. */
   created_at: string;
 }
@@ -1635,6 +2038,7 @@ export const LogType = {
   spawn: 'spawn',
   movement: 'movement',
   fight: 'fight',
+  multi_fight: 'multi_fight',
   crafting: 'crafting',
   gathering: 'gathering',
   buy_ge: 'buy_ge',
@@ -1654,7 +2058,6 @@ export const LogType = {
   task_cancelled: 'task_cancelled',
   task_completed: 'task_completed',
   task_trade: 'task_trade',
-  christmas_exchange: 'christmas_exchange',
   recycling: 'recycling',
   rest: 'rest',
   use: 'use',
@@ -1666,6 +2069,17 @@ export const LogType = {
   receive_gold: 'receive_gold',
   change_skin: 'change_skin',
   rename: 'rename',
+  transition: 'transition',
+} as const;
+
+export type MapAccessType = (typeof MapAccessType)[keyof typeof MapAccessType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MapAccessType = {
+  standard: 'standard',
+  teleportation: 'teleportation',
+  conditional: 'conditional',
+  blocked: 'blocked',
 } as const;
 
 export interface MapContentSchema {
@@ -1689,18 +2103,22 @@ export const MapContentType = {
   npc: 'npc',
 } as const;
 
-export type MapContentTypeAZAZ09 = MapContentType;
+export type MapLayer = (typeof MapLayer)[keyof typeof MapLayer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MapLayer = {
+  interior: 'interior',
+  overworld: 'overworld',
+  underground: 'underground',
+} as const;
 
 export interface MapResponseSchema {
   data: MapSchema;
 }
 
-/**
- * Content of the map.
- */
-export type MapSchemaContent = MapContentSchema | null;
-
 export interface MapSchema {
+  /** ID of the map. */
+  map_id: number;
   /** Name of the map. */
   name: string;
   /** Skin of the map. */
@@ -1709,8 +2127,12 @@ export interface MapSchema {
   x: number;
   /** Position Y of the map. */
   y: number;
-  /** Content of the map. */
-  content: MapSchemaContent;
+  /** Layer of the map. */
+  layer: MapLayer;
+  /** Access information for the map */
+  access: AccessSchema;
+  /** Interactions available on this map. */
+  interactions: InteractionSchema;
 }
 
 export interface MonsterResponseSchema {
@@ -1724,6 +2146,8 @@ export interface MonsterSchema {
   code: string;
   /** Monster level. */
   level: number;
+  /** Monster type. */
+  type: MonsterType;
   /** Monster hit points. */
   hp: number;
   /** Monster fire attack. */
@@ -1744,6 +2168,8 @@ export interface MonsterSchema {
   res_air: number;
   /** Monster % critical strike. */
   critical_strike: number;
+  /** Monster initiative for turn order. */
+  initiative: number;
   /** List of effects. */
   effects?: SimpleEffectSchema[];
   /** Monster minimum gold drop.  */
@@ -1754,10 +2180,14 @@ export interface MonsterSchema {
   drops: DropRateSchema[];
 }
 
-/**
- * Member expiration date.
- */
-export type MyAccountDetailsMemberExpiration = string | null;
+export type MonsterType = (typeof MonsterType)[keyof typeof MonsterType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MonsterType = {
+  normal: 'normal',
+  elite: 'elite',
+  boss: 'boss',
+} as const;
 
 export interface MyAccountDetails {
   /** Username. */
@@ -1766,8 +2196,11 @@ export interface MyAccountDetails {
   email: string;
   /** Member status. */
   member: boolean;
-  /** Member expiration date. */
-  member_expiration?: MyAccountDetailsMemberExpiration;
+  /**
+   * Member expiration date.
+   * @nullable
+   */
+  member_expiration?: string | null;
   /** Account status. */
   status: AccountStatus;
   /** Account badges. */
@@ -1776,6 +2209,8 @@ export interface MyAccountDetails {
   skins: unknown[];
   /** Gems. */
   gems: number;
+  /** Event tokens for spawning events. */
+  event_token: number;
   /** Achievement points. */
   achievements_points: number;
   /** Banned. */
@@ -1793,16 +2228,6 @@ export interface MyCharactersListSchema {
   data: CharacterSchema[];
 }
 
-/**
- * Price to buy the item.
- */
-export type NPCItemBuyPrice = number | null;
-
-/**
- * Price to sell the item.
- */
-export type NPCItemSellPrice = number | null;
-
 export interface NPCItem {
   /** The code of the NPC. This is the NPC's unique identifier (ID). */
   code: string;
@@ -1810,10 +2235,16 @@ export interface NPCItem {
   npc: string;
   /** Currency used to buy/sell the item. If it's not gold, it's the item code. */
   currency: string;
-  /** Price to buy the item. */
-  buy_price: NPCItemBuyPrice;
-  /** Price to sell the item. */
-  sell_price: NPCItemSellPrice;
+  /**
+   * Price to buy the item.
+   * @nullable
+   */
+  buy_price?: number | null;
+  /**
+   * Price to sell the item.
+   * @nullable
+   */
+  sell_price?: number | null;
 }
 
 export interface NPCResponseSchema {
@@ -1838,8 +2269,6 @@ export const NPCType = {
   merchant: 'merchant',
   trader: 'trader',
 } as const;
-
-export type NPCTypeAZAZ09 = NPCType;
 
 export interface NpcItemTransactionSchema {
   /** Item code. */
@@ -1983,6 +2412,46 @@ export interface RewardsSchema {
   gold: number;
 }
 
+export interface SandboxGiveItemSchema {
+  /**
+   * Item code.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  code: string;
+  /**
+   * Item quantity.
+   * @minimum 1
+   */
+  quantity: number;
+  /**
+   * Character name. The name of the character who will receive the item.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  character: string;
+}
+
+export interface SandboxGiveXpSchema {
+  /** Type of XP to give (e.g., 'combat', 'woodcutting', 'mining', etc.). */
+  type: XPType;
+  /**
+   * Amount of XP to give to the character.
+   * @maximum 100000
+   */
+  amount: number;
+  /** Name of the character to receive the XP. */
+  character: string;
+}
+
+export interface SandboxResponseSchema {
+  /** Sandbox action data. */
+  data: SandboxSchema;
+}
+
+export interface SandboxSchema {
+  /** Character details. */
+  character: CharacterSchema;
+}
+
 export interface SeasonBadgeSchema {
   /** Badge code. */
   code: string;
@@ -2073,7 +2542,13 @@ export interface SkillResponseSchema {
   data: SkillDataSchema;
 }
 
-export type SkillAZAZ09 = Skill;
+/**
+ * Model for the request to spawn a specific event
+ */
+export interface SpawnEventRequest {
+  /** Code of the event to spawn */
+  code: string;
+}
 
 export interface StatusResponseSchema {
   data: StatusSchema;
@@ -2096,6 +2571,16 @@ export interface StatusSchema {
   announcements: AnnouncementSchema[];
   /** Rate limits. */
   rate_limits: RateLimitSchema[];
+}
+
+export interface StorageEffectSchema {
+  /**
+   * Effect code.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  code: string;
+  /** Effect value. */
+  value: number;
 }
 
 export interface TaskCancelledResponseSchema {
@@ -2122,11 +2607,6 @@ export interface TaskFullResponseSchema {
   data: TaskFullSchema;
 }
 
-/**
- * Skill required to complete the task.
- */
-export type TaskFullSchemaSkill = string | null;
-
 export interface TaskFullSchema {
   /** Task objective. */
   code: string;
@@ -2138,8 +2618,11 @@ export interface TaskFullSchema {
   min_quantity: number;
   /** Maximum amount of task. */
   max_quantity: number;
-  /** Skill required to complete the task. */
-  skill: TaskFullSchemaSkill;
+  /**
+   * Skill required to complete the task.
+   * @nullable
+   */
+  skill?: string | null;
   /** Rewards. */
   rewards: RewardsSchema;
 }
@@ -2187,10 +2670,24 @@ export const TaskType = {
   items: 'items',
 } as const;
 
-export type TaskTypeAZAZ09 = TaskType;
-
 export interface TokenResponseSchema {
   token: string;
+}
+
+export interface TransitionSchema {
+  /** ID of the destination map. */
+  map_id: number;
+  /** Position X of the destination. */
+  x: number;
+  /** Position Y of the destination. */
+  y: number;
+  /** Layer of the destination. */
+  layer: MapLayer;
+  /**
+   * Conditions for the transition.
+   * @nullable
+   */
+  conditions?: ConditionSchema[] | null;
 }
 
 export interface UnequipSchema {
@@ -2223,6 +2720,39 @@ export interface ValidationError {
   loc: ValidationErrorLocItem[];
   msg: string;
   type: string;
+}
+
+export type XPType = (typeof XPType)[keyof typeof XPType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const XPType = {
+  combat: 'combat',
+  weaponcrafting: 'weaponcrafting',
+  gearcrafting: 'gearcrafting',
+  jewelrycrafting: 'jewelrycrafting',
+  cooking: 'cooking',
+  woodcutting: 'woodcutting',
+  mining: 'mining',
+  alchemy: 'alchemy',
+  fishing: 'fishing',
+} as const;
+
+/**
+ * Additional error data (used primarily for validation errors)
+ */
+export type ErrorSchemaData = { [key: string]: unknown };
+
+export interface ErrorSchema {
+  /** Error code */
+  code: number;
+  /** Error message */
+  message: string;
+  /** Additional error data (used primarily for validation errors) */
+  data?: ErrorSchemaData;
+}
+
+export interface ErrorResponseSchema {
+  error: ErrorSchema;
 }
 
 export type GetBankItemsMyBankItemsGetParams = {
@@ -2369,6 +2899,20 @@ export type GetAllBadgesBadgesGetParams = {
   size?: number;
 };
 
+export type GetActiveCharactersCharactersActiveGetParams = {
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
 export type GetAllEffectsEffectsGetParams = {
   /**
    * Page number
@@ -2399,7 +2943,7 @@ export type GetAllActiveEventsEventsActiveGetParams = {
 
 export type GetAllEventsEventsGetParams = {
   /**
-   * Type of event.
+   * Type of events.
    */
   type?: MapContentType;
   /**
@@ -2470,12 +3014,12 @@ export type GetAllItemsItemsGetParams = {
    */
   name?: string;
   /**
-   * Minimum level items.
+   * Minimum level.
    * @minimum 0
    */
   min_level?: number;
   /**
-   * Maximum level items.
+   * Maximum level.
    * @minimum 0
    */
   max_level?: number;
@@ -2507,11 +3051,11 @@ export type GetAllItemsItemsGetParams = {
 
 export type GetCharactersLeaderboardLeaderboardCharactersGetParams = {
   /**
-   * Default sort by combat total XP.
+   * Sort of character leaderboards.
    */
   sort?: CharacterLeaderboardType;
   /**
-   * Find a character by name.
+   * Character name.
    * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
    */
   name?: string;
@@ -2530,11 +3074,11 @@ export type GetCharactersLeaderboardLeaderboardCharactersGetParams = {
 
 export type GetAccountsLeaderboardLeaderboardAccountsGetParams = {
   /**
-   * Default sort by achievements points.
+   * Sort of account leaderboards.
    */
   sort?: AccountLeaderboardType;
   /**
-   * Find a account by name.
+   * Account name.
    * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
    */
   name?: string;
@@ -2553,7 +3097,11 @@ export type GetAccountsLeaderboardLeaderboardAccountsGetParams = {
 
 export type GetAllMapsMapsGetParams = {
   /**
-   * Type of content on the map.
+   * Filter maps by layer.
+   */
+  layer?: MapLayer;
+  /**
+   * Type of maps.
    */
   content_type?: MapContentType;
   /**
@@ -2561,6 +3109,37 @@ export type GetAllMapsMapsGetParams = {
    * @pattern ^[a-zA-Z0-9_-]+$
    */
   content_code?: string;
+  /**
+   * When true, excludes maps with access_type 'blocked' from the results.
+   */
+  hide_blocked_maps?: boolean;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
+   */
+  size?: number;
+};
+
+export type GetLayerMapsMapsLayerGetParams = {
+  /**
+   * Type of maps.
+   */
+  content_type?: MapContentType;
+  /**
+   * Content code on the map.
+   * @pattern ^[a-zA-Z0-9_-]+$
+   */
+  content_code?: string;
+  /**
+   * When true, excludes maps with access_type 'blocked' from the results.
+   */
+  hide_blocked_maps?: boolean;
   /**
    * Page number
    * @minimum 1
@@ -2581,12 +3160,12 @@ export type GetAllMonstersMonstersGetParams = {
    */
   name?: string;
   /**
-   * Monster minimum level.
+   * Minimum level.
    * @minimum 0
    */
   min_level?: number;
   /**
-   * Monster maximum level.
+   * Maximum level.
    * @minimum 0
    */
   max_level?: number;
@@ -2610,12 +3189,12 @@ export type GetAllMonstersMonstersGetParams = {
 
 export type GetAllNpcsNpcsDetailsGetParams = {
   /**
-   * Name of the npc.
+   * NPC name.
    * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
    */
   name?: string;
   /**
-   * The type of the NPC.
+   * Type of NPCs.
    */
   type?: NPCType;
   /**
@@ -2647,17 +3226,17 @@ export type GetNpcItemsNpcsItemsCodeGetParams = {
 
 export type GetAllNpcsItemsNpcsItemsGetParams = {
   /**
-   * The code of the item.
+   * Item code.
    * @pattern ^[a-zA-Z0-9_-]+$
    */
   code?: string;
   /**
-   * The code of the npc.
+   * NPC code.
    * @pattern ^[a-zA-Z0-9_-]+$
    */
   npc?: string;
   /**
-   * The code of the currency.
+   * Currency code.
    * @pattern ^[a-zA-Z0-9_-]+$
    */
   currency?: string;
@@ -2676,17 +3255,17 @@ export type GetAllNpcsItemsNpcsItemsGetParams = {
 
 export type GetAllResourcesResourcesGetParams = {
   /**
-   * Skill minimum level.
+   * Minimum level.
    * @minimum 0
    */
   min_level?: number;
   /**
-   * Skill maximum level.
+   * Maximum level.
    * @minimum 0
    */
   max_level?: number;
   /**
-   * The code of the skill.
+   * Skill of resources.
    */
   skill?: GatheringSkill;
   /**
@@ -2719,11 +3298,11 @@ export type GetAllTasksTasksListGetParams = {
    */
   max_level?: number;
   /**
-   * The code of the skill.
+   * Skill of tasks.
    */
   skill?: Skill;
   /**
-   * The type of tasks.
+   * Type of tasks.
    */
   type?: TaskType;
   /**
@@ -2851,7 +3430,8 @@ export const changePasswordMyChangePasswordPost = <
 };
 
 /**
- * Moves a character on the map using the map's X and Y position.
+ * Moves a character on the map using either the map's ID or X and Y position.
+Provide either 'map_id' or both 'x' and 'y' coordinates in the request body.
  * @summary Action Move
  */
 export const actionMoveMyNameActionMovePost = <
@@ -2862,6 +3442,20 @@ export const actionMoveMyNameActionMovePost = <
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
   return axios.post(`/my/${name}/action/move`, destinationSchema, options);
+};
+
+/**
+ * Execute a transition from the current map to another layer.
+The character must be on a map that has a transition available.
+ * @summary Action Transition
+ */
+export const actionTransitionMyNameActionTransitionPost = <
+  TData = AxiosResponse<CharacterTransitionResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/${name}/action/transition`, undefined, options);
 };
 
 /**
@@ -2920,16 +3514,17 @@ export const actionUseItemMyNameActionUsePost = <
 };
 
 /**
- * Start a fight against a monster on the character's map.
+ * Start a fight against a monster on the character's map. Possibility of fighting with 2 other characters for boss fights.
  * @summary Action Fight
  */
 export const actionFightMyNameActionFightPost = <
   TData = AxiosResponse<CharacterFightResponseSchema>,
 >(
   name: string,
+  fightRequestSchema: FightRequestSchema,
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
-  return axios.post(`/my/${name}/action/fight`, undefined, options);
+  return axios.post(`/my/${name}/action/fight`, fightRequestSchema, options);
 };
 
 /**
@@ -2946,7 +3541,7 @@ export const actionGatheringMyNameActionGatheringPost = <
 };
 
 /**
- * Crafting an item. The character must be on a map with a workshop.
+ * Craft an item. The character must be on a map with a workshop.
  * @summary Action Crafting
  */
 export const actionCraftingMyNameActionCraftingPost = <
@@ -2979,7 +3574,7 @@ export const actionDepositBankGoldMyNameActionBankDepositGoldPost = <
 
 /**
  * Deposit multiple items in a bank on the character's map.
-The cooldown will be 3 seconds multiplied by the number of different items withdrawn.
+The cooldown will be 3 seconds multiplied by the number of different items deposited.
  * @summary Action Deposit Bank Item
  */
 export const actionDepositBankItemMyNameActionBankDepositItemPost = <
@@ -3034,7 +3629,7 @@ export const actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost = <
 };
 
 /**
- * Buy a 25 slots bank expansion.
+ * Buy a 20 slots bank expansion.
  * @summary Action Buy Bank Expansion
  */
 export const actionBuyBankExpansionMyNameActionBankBuyExpansionPost = <
@@ -3119,7 +3714,8 @@ export const actionGeBuyItemMyNameActionGrandexchangeBuyPost = <
 };
 
 /**
- * Create a sell order at the Grand Exchange on the character's map. Please note there is a 3% listing tax, charged at the time of posting, on the total price.
+ * Create a sell order at the Grand Exchange on the character's map. 
+Please note there is a 3% listing tax, charged at the time of posting, on the total price.
  * @summary Action Ge Create Sell Order
  */
 export const actionGeCreateSellOrderMyNameActionGrandexchangeSellPost = <
@@ -3225,7 +3821,7 @@ export const actionTaskCancelMyNameActionTaskCancelPost = <
  * @summary Action Give Gold
  */
 export const actionGiveGoldMyNameActionGiveGoldPost = <
-  TData = AxiosResponse<GiveGoldReponseSchema>,
+  TData = AxiosResponse<GiveGoldResponseSchema>,
 >(
   name: string,
   giveGoldSchema: GiveGoldSchema,
@@ -3240,7 +3836,7 @@ The cooldown will be 3 seconds multiplied by the number of different items given
  * @summary Action Give Items
  */
 export const actionGiveItemsMyNameActionGiveItemPost = <
-  TData = AxiosResponse<GiveItemReponseSchema>,
+  TData = AxiosResponse<GiveItemResponseSchema>,
 >(
   name: string,
   giveItemsSchema: GiveItemsSchema,
@@ -3403,7 +3999,7 @@ export const getAccountCharactersAccountsAccountCharactersGet = <
 };
 
 /**
- * Retrieve the details of a character.
+ * Retrieve the details of an account.
  * @summary Get Account
  */
 export const getAccountAccountsAccountGet = <
@@ -3432,7 +4028,7 @@ export const getAllAchievementsAchievementsGet = <
 };
 
 /**
- * Retrieve the details of a achievement.
+ * Retrieve the details of an achievement.
  * @summary Get Achievement
  */
 export const getAchievementAchievementsCodeGet = <
@@ -3500,6 +4096,22 @@ export const deleteCharacterCharactersDeletePost = <
 };
 
 /**
+ * Fetch active characters details.
+ * @summary Get Active Characters
+ */
+export const getActiveCharactersCharactersActiveGet = <
+  TData = AxiosResponse<DataPageActiveCharacterSchema>,
+>(
+  params?: GetActiveCharactersCharactersActiveGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/characters/active`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
  * Retrieve the details of a character.
  * @summary Get Character
  */
@@ -3529,7 +4141,7 @@ export const getAllEffectsEffectsGet = <
 };
 
 /**
- * Retrieve the details of a badge.
+ * Retrieve the details of an effect.
  * @summary Get Effect
  */
 export const getEffectEffectsCodeGet = <
@@ -3574,6 +4186,24 @@ export const getAllEventsEventsGet = <
 };
 
 /**
+ * Spawn a specific event by code consuming 1 event token.
+
+Rules:
+  - Maximum active events defined by utils.config.max_active_events().
+  - Event must not already be active.
+  - Member or founder account required.
+ * @summary Spawn Event
+ */
+export const spawnEventEventsSpawnPost = <
+  TData = AxiosResponse<ActiveEventResponseSchema>,
+>(
+  spawnEventRequest: SpawnEventRequest,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/events/spawn`, spawnEventRequest, options);
+};
+
+/**
  * Fetch the sales history of the item for the last 7 days.
  * @summary Get Ge Sell History
  */
@@ -3611,7 +4241,7 @@ export const getGeSellOrdersGrandexchangeOrdersGet = <
  * @summary Get Ge Sell Order
  */
 export const getGeSellOrderGrandexchangeOrdersIdGet = <
-  TData = AxiosResponse<GEOrderReponseSchema>,
+  TData = AxiosResponse<GEOrderResponseSchema>,
 >(
   id: string,
   options?: AxiosRequestConfig,
@@ -3691,15 +4321,48 @@ export const getAllMapsMapsGet = <TData = AxiosResponse<DataPageMapSchema>>(
 };
 
 /**
- * Retrieve the details of a map.
- * @summary Get Map
+ * Fetch maps details.
+ * @summary Get Layer Maps
  */
-export const getMapMapsXYGet = <TData = AxiosResponse<MapResponseSchema>>(
+export const getLayerMapsMapsLayerGet = <
+  TData = AxiosResponse<DataPageMapSchema>,
+>(
+  layer: MapLayer,
+  params?: GetLayerMapsMapsLayerGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/maps/${layer}`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
+ * Retrieve the details of a map by layer and coordinates.
+ * @summary Get Map By Position
+ */
+export const getMapByPositionMapsLayerXYGet = <
+  TData = AxiosResponse<MapResponseSchema>,
+>(
+  layer: MapLayer,
   x: number,
   y: number,
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
-  return axios.get(`/maps/${x}/${y}`, options);
+  return axios.get(`/maps/${layer}/${x}/${y}`, options);
+};
+
+/**
+ * Retrieve the details of a map by its unique ID.
+ * @summary Get Map By Id
+ */
+export const getMapByIdMapsIdMapIdGet = <
+  TData = AxiosResponse<MapResponseSchema>,
+>(
+  mapId: number,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/maps/id/${mapId}`, options);
 };
 
 /**
@@ -3881,6 +4544,80 @@ export const getTasksRewardTasksRewardsCodeGet = <
 };
 
 /**
+ * Simulate combat with fake characters against a monster multiple times.
+Member or founder account required.
+ * @summary Fight Simulation
+ */
+export const fightSimulationSimulationFightSimulationPost = <
+  TData = AxiosResponse<CombatSimulationResponseSchema>,
+>(
+  combatSimulationRequestSchema: CombatSimulationRequestSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/simulation/fight_simulation`,
+    combatSimulationRequestSchema,
+    options,
+  );
+};
+
+/**
+ * Give gold to one of your characters. This Sandbox feature is only available on the Sandbox server.
+ * @summary Give Gold
+ */
+export const giveGoldSandboxGiveGoldPost = <
+  TData = AxiosResponse<SandboxResponseSchema>,
+>(
+  giveGoldSchema: GiveGoldSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/sandbox/give_gold`, giveGoldSchema, options);
+};
+
+/**
+ * Give item to one of your characters. This Sandbox feature is only available on the Sandbox server.
+ * @summary Give Item
+ */
+export const giveItemSandboxGiveItemPost = <
+  TData = AxiosResponse<SandboxResponseSchema>,
+>(
+  sandboxGiveItemSchema: SandboxGiveItemSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/sandbox/give_item`, sandboxGiveItemSchema, options);
+};
+
+/**
+ * Give XP to one of your characters. This Sandbox feature is only available on the Sandbox server.
+ * @summary Give Xp
+ */
+export const giveXpSandboxGiveXpPost = <
+  TData = AxiosResponse<SandboxResponseSchema>,
+>(
+  sandboxGiveXpSchema: SandboxGiveXpSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/sandbox/give_xp`, sandboxGiveXpSchema, options);
+};
+
+/**
+ * Spawn a specific event by code (Sandbox only).
+
+Notes:
+  - 3 active events maximum.
+  - Fails if event already active or not found.
+ * @summary Spawn Event
+ */
+export const spawnEventSandboxSpawnEventPost = <
+  TData = AxiosResponse<ActiveEventResponseSchema>,
+>(
+  spawnEventRequest: SpawnEventRequest,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/sandbox/spawn_event`, spawnEventRequest, options);
+};
+
+/**
  * Use your account as HTTPBasic Auth to generate your token to use the API. You can also generate your token directly on the website.
  * @summary Generate Token
  */
@@ -3906,6 +4643,8 @@ export type ChangePasswordMyChangePasswordPostResult =
   AxiosResponse<ResponseSchema>;
 export type ActionMoveMyNameActionMovePostResult =
   AxiosResponse<CharacterMovementResponseSchema>;
+export type ActionTransitionMyNameActionTransitionPostResult =
+  AxiosResponse<CharacterTransitionResponseSchema>;
 export type ActionRestMyNameActionRestPostResult =
   AxiosResponse<CharacterRestResponseSchema>;
 export type ActionEquipItemMyNameActionEquipPostResult =
@@ -3953,9 +4692,9 @@ export type ActionTaskTradeMyNameActionTaskTradePostResult =
 export type ActionTaskCancelMyNameActionTaskCancelPostResult =
   AxiosResponse<TaskCancelledResponseSchema>;
 export type ActionGiveGoldMyNameActionGiveGoldPostResult =
-  AxiosResponse<GiveGoldReponseSchema>;
+  AxiosResponse<GiveGoldResponseSchema>;
 export type ActionGiveItemsMyNameActionGiveItemPostResult =
-  AxiosResponse<GiveItemReponseSchema>;
+  AxiosResponse<GiveItemResponseSchema>;
 export type ActionDeleteItemMyNameActionDeletePostResult =
   AxiosResponse<DeleteItemResponseSchema>;
 export type ActionChangeSkinMyNameActionChangeSkinPostResult =
@@ -3988,6 +4727,8 @@ export type CreateCharacterCharactersCreatePostResult =
   AxiosResponse<CharacterResponseSchema>;
 export type DeleteCharacterCharactersDeletePostResult =
   AxiosResponse<CharacterResponseSchema>;
+export type GetActiveCharactersCharactersActiveGetResult =
+  AxiosResponse<DataPageActiveCharacterSchema>;
 export type GetCharacterCharactersNameGetResult =
   AxiosResponse<CharacterResponseSchema>;
 export type GetAllEffectsEffectsGetResult = AxiosResponse<DataPageEffectSchema>;
@@ -3995,12 +4736,14 @@ export type GetEffectEffectsCodeGetResult = AxiosResponse<EffectResponseSchema>;
 export type GetAllActiveEventsEventsActiveGetResult =
   AxiosResponse<DataPageActiveEventSchema>;
 export type GetAllEventsEventsGetResult = AxiosResponse<DataPageEventSchema>;
+export type SpawnEventEventsSpawnPostResult =
+  AxiosResponse<ActiveEventResponseSchema>;
 export type GetGeSellHistoryGrandexchangeHistoryCodeGetResult =
   AxiosResponse<DataPageGeOrderHistorySchema>;
 export type GetGeSellOrdersGrandexchangeOrdersGetResult =
   AxiosResponse<DataPageGEOrderSchema>;
 export type GetGeSellOrderGrandexchangeOrdersIdGetResult =
-  AxiosResponse<GEOrderReponseSchema>;
+  AxiosResponse<GEOrderResponseSchema>;
 export type GetAllItemsItemsGetResult = AxiosResponse<DataPageItemSchema>;
 export type GetItemItemsCodeGetResult = AxiosResponse<ItemResponseSchema>;
 export type GetCharactersLeaderboardLeaderboardCharactersGetResult =
@@ -4008,7 +4751,10 @@ export type GetCharactersLeaderboardLeaderboardCharactersGetResult =
 export type GetAccountsLeaderboardLeaderboardAccountsGetResult =
   AxiosResponse<DataPageAccountLeaderboardSchema>;
 export type GetAllMapsMapsGetResult = AxiosResponse<DataPageMapSchema>;
-export type GetMapMapsXYGetResult = AxiosResponse<MapResponseSchema>;
+export type GetLayerMapsMapsLayerGetResult = AxiosResponse<DataPageMapSchema>;
+export type GetMapByPositionMapsLayerXYGetResult =
+  AxiosResponse<MapResponseSchema>;
+export type GetMapByIdMapsIdMapIdGetResult = AxiosResponse<MapResponseSchema>;
 export type GetAllMonstersMonstersGetResult =
   AxiosResponse<DataPageMonsterSchema>;
 export type GetMonsterMonstersCodeGetResult =
@@ -4029,4 +4775,14 @@ export type GetAllTasksRewardsTasksRewardsGetResult =
   AxiosResponse<DataPageDropRateSchema>;
 export type GetTasksRewardTasksRewardsCodeGetResult =
   AxiosResponse<RewardResponseSchema>;
+export type FightSimulationSimulationFightSimulationPostResult =
+  AxiosResponse<CombatSimulationResponseSchema>;
+export type GiveGoldSandboxGiveGoldPostResult =
+  AxiosResponse<SandboxResponseSchema>;
+export type GiveItemSandboxGiveItemPostResult =
+  AxiosResponse<SandboxResponseSchema>;
+export type GiveXpSandboxGiveXpPostResult =
+  AxiosResponse<SandboxResponseSchema>;
+export type SpawnEventSandboxSpawnEventPostResult =
+  AxiosResponse<ActiveEventResponseSchema>;
 export type GenerateTokenTokenPostResult = AxiosResponse<TokenResponseSchema>;

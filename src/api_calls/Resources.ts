@@ -8,12 +8,12 @@ import { ApiUrl, MyHeaders } from '../utils.js';
 export async function getResourceInformation(
   data: GetAllResourcesResourcesGetParams,
 ): Promise<DataPageResourceSchema | ApiError> {
-  var requestOptions = {
+  const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  var apiUrl = new URL(`${ApiUrl}/resources`);
+  const apiUrl = new URL(`${ApiUrl}/resources`);
 
   if (data.drop) {
     apiUrl.searchParams.set('drop', data.drop);

@@ -95,7 +95,12 @@ export class RecycleObjective extends Objective {
         await this.character.handleErrors(recycleResult);
         return false;
       } else {
-        this.character.data = recycleResult.data.character;
+        if (recycleResult.data.character) {
+          this.character.data = recycleResult.data.character;
+        } else {
+          logger.error('Recycle response missing character data');
+          return false;
+        }
 
         for (const item of recycleResult.data.details.items) {
           result = await this.character.depositNow(item.quantity, item.code);
