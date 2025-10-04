@@ -13,11 +13,12 @@ jest.mock('../../src/api_calls/Tasks', () => ({
   actionTasksTrade: jest.fn(),
   actionAcceptNewTask: jest.fn(),
   actionCancelTask: jest.fn(),
+  actionCompleteTask: jest.fn(),
 }));
 
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { actionTasksTrade, actionAcceptNewTask, actionCancelTask } from '../../src/api_calls/Tasks.js';
+import { actionTasksTrade, actionAcceptNewTask, actionCancelTask, actionCompleteTask } from '../../src/api_calls/Tasks.js';
 import { MapSchema } from '../../src/types/MapData.js';
 
 // Simple mock character
@@ -242,6 +243,28 @@ describe('ItemTaskObjective Integration Tests', () => {
         started_at: '2025-10-01T16:52:35.196Z',
         expiration: '2025-10-01T16:52:40.196Z',
         reason: 'task' as const,
+      },
+    });
+    (actionCompleteTask as jest.MockedFunction<typeof actionCompleteTask>).mockResolvedValue({
+      data: {
+        character: {
+          ...mockCharacterData,
+          task: '',
+          task_type: '',
+          task_progress: 0,
+          task_total: 0,
+        },
+        cooldown: {
+          total_seconds: 5,
+          remaining_seconds: 5,
+          started_at: '2025-10-01T16:52:35.196Z',
+          expiration: '2025-10-01T16:52:40.196Z',
+          reason: 'task' as const,
+        },
+        rewards: {
+          gold: 50,
+          items: [],
+        },
       },
     });
   });
