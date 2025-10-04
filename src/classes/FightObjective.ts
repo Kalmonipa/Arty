@@ -118,6 +118,7 @@ export class FightObjective extends Objective {
             logger.error(`Fight failed after ${attempt} attempts`);
             return false;
           }
+          this.progress--;
           continue;
         } else {
           if (response.data.characters) {
