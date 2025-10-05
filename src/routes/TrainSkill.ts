@@ -4,6 +4,7 @@ import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObje
 import { isGatheringSkill } from '../utils.js';
 import { CraftSkill } from '../types/types.js';
 import { TrainCraftingSkillObjective } from '../classes/TrainCraftingSkillObjective.js';
+import { TrainCombatObjective } from '../classes/TrainCombatObjective.js';
 
 export default function TrainSkillRouter(char: Character) {
   const router = Router();
@@ -11,12 +12,16 @@ export default function TrainSkillRouter(char: Character) {
   router.post('/', async (req: Request, res: Response) => {
     try {
       const targetLevel = parseInt(req.body.targetLevel, 10);
-      const skill: CraftSkill = req.body.skill;
+      const skill: CraftSkill | 'combat' = req.body.skill;
 
       if (isNaN(targetLevel) || !skill) {
         return res
           .status(400)
           .json({ error: 'Invalid target level or skill.' });
+      }
+
+      if (skill !== 'combat' && !Object.values(CraftSkill).includes(skill as CraftSkill)) {
+        return res.status(400).json({ error: 'Invalid skill type. Must be one of alchemy, mining, woodcutting, cooking, jewelrycrafting, weaponcrafting, gearcrafting or combat' });
       }
 
       if (typeof char === 'undefined' || !char) {
@@ -25,9 +30,11 @@ export default function TrainSkillRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let job: TrainGatheringSkillObjective | TrainCraftingSkillObjective;
+      let job: TrainGatheringSkillObjective | TrainCraftingSkillObjective | TrainCombatObjective;
 
-      if (isGatheringSkill(skill)) {
+      if (skill === 'combat') {
+        job = new TrainCombatObjective(char, targetLevel)
+      }else if (isGatheringSkill(skill)) {
         job = new TrainGatheringSkillObjective(char, skill, targetLevel);
       } else {
         job = new TrainCraftingSkillObjective(char, skill, targetLevel);

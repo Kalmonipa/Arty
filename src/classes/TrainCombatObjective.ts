@@ -10,11 +10,13 @@ import { Objective } from './Objective.js';
  */
 export class TrainCombatObjective extends Objective {
   targetLevel: number;
+  skill: string
 
   constructor(character: Character, targetLevel: number) {
     super(character, `train_combat_${targetLevel}`, 'not_started');
     this.character = character;
     this.targetLevel = targetLevel;
+    this.skill = 'combat'
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
