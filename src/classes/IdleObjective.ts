@@ -4,8 +4,9 @@ import {
   getBankItems,
   purchaseBankExpansion,
 } from '../api_calls/Bank.js';
+import { getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
-import { Skill } from '../types/types.js';
+import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -185,6 +186,8 @@ export class IdleObjective extends Objective {
           }
         }
       }
+    } else if (role === 'miner') {
+      await this.topUpMiningBars()
     }
 
     return true;
@@ -302,5 +305,39 @@ export class IdleObjective extends Objective {
       );
     }
     return this.character.executeJobNow(job, true, true, this.objectiveId);
+  }
+
+  /**
+   * @description Miner should make sure there are at least ~100 (maybe increase the value?) of each bar in the bank
+   * @todo Maybe make this raw ore instead of crafted bars? Or have another function to top up the ore
+   */
+  private async topUpMiningBars(): Promise<boolean> {
+    const minNumRequired = 100
+
+    const barResponse = await getAllItemInformation({craft_skill: 'mining', type: 'resource'})
+    if (barResponse instanceof ApiError) {
+      return this.character.handleErrors(barResponse)
+    }
+    const barInfo: ItemSchema[] = barResponse.data.filter((item) => item.subtype === 'bar');
+
+    for (const bar of barInfo) {
+      if (bar.craft.level > this.character.data.mining_level) {
+        logger.debug(`Not high enough level to craft ${bar.code}`)
+        break;
+      }
+
+      const numInBank = await this.character.checkQuantityOfItemInBank(bar.code)
+      if (numInBank > minNumRequired) {
+        logger.debug(`${numInBank}/${minNumRequired} ${bar.code} in bank already`)
+        break;
+      }
+
+      logger.info(`Crafting ${minNumRequired - numInBank} ${bar.code} to top up to 100`)
+
+      return await this.character.craftNow(minNumRequired - numInBank, bar.code)
+    }
+
+    logger.info(`Already have the minimum amount of each bar`)
+    return true
   }
 }
