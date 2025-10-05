@@ -13,7 +13,7 @@ export class TrainCombatObjective extends Objective {
   skill: string
 
   constructor(character: Character, targetLevel: number) {
-    super(character, `train_combat_${targetLevel}`, 'not_started');
+    super(character, `train_${targetLevel}_combat`, 'not_started');
     this.character = character;
     this.targetLevel = targetLevel;
     this.skill = 'combat'
