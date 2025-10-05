@@ -203,7 +203,7 @@ export class FightSimulator extends Objective {
       // Characters turn
       // ToDo: Adjust this to use the actual health restore value of the potion equipped
       if (this.mockCharacter.hp <= (this.mockCharacter.hp / 2) && this.mockCharacter.utility1_slot_quantity > 0) {
-        this.mockCharacter.hp += 20
+        this.mockCharacter.hp += 30
         this.mockCharacter.utility1_slot_quantity--
       }
       mob.hp = this.turn(this.mockCharacter.name, charAttacks, mob.hp, true);
