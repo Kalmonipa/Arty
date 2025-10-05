@@ -41,15 +41,17 @@ export class TrainCombatObjective extends Objective {
       return false;
     }
 
-    for (let ind = mobs.data.length - 1; ind > 0; ind--) {
-      const mob = mobs.data[ind];
-      const fightSimResult = await this.character.simulateFightNow(
-        structuredClone(this.character.data),
-        undefined,
-        mob,
-      );
-      if (fightSimResult) {
-        while (charLevel < this.targetLevel && attempts < this.maxRetries) {
+    while (charLevel < this.targetLevel && attempts < this.maxRetries) {
+
+      for (let ind = mobs.data.length - 1; ind > 0; ind--) {
+        const mob = mobs.data[ind];
+        const fightSimResult = await this.character.simulateFightNow(
+          structuredClone(this.character.data),
+          undefined,
+          mob,
+        );
+        
+        if (fightSimResult) {
           const fightResult = await this.character.fightNow(10, mob.code);
           if (!fightResult) {
             attempts++;
