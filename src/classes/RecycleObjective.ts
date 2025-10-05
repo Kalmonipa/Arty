@@ -85,6 +85,8 @@ export class RecycleObjective extends Objective {
 
       await this.character.move(contentLocation);
 
+      logger.info(`Recycling ${this.target.quantity} ${this.target.code}`)
+
       const recycleResult = await actionRecycle(
         this.character.data,
         this.target.code,

@@ -60,6 +60,7 @@ import { FightSimulator } from './FightSimulator.js';
 import { IdleObjective } from './IdleObjective.js';
 import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainCombatObjective } from './TrainCombatObjective.js';
+import { RecycleObjective } from './RecycleObjective.js';
 
 export class Character {
   data: CharacterSchema;
@@ -1535,6 +1536,20 @@ export class Character {
     this.appendJob(
       new TrainGatheringSkillObjective(this, targetSkill, targetLevel),
     );
+  }
+
+  /**
+   * @description Adds a recycle job to the end of the job queue
+   */
+  async recycleItem(itemCode: string, quantity: number) {
+    this.appendJob(new RecycleObjective(this, {code: itemCode, quantity: quantity}))
+  }
+
+  /**
+   * @description Adds a recycle job to the start of the job queue
+   */
+  async recycleItemNow(itemCode: string, quantity: number) {
+    return await this.executeJobNow(new RecycleObjective(this, {code: itemCode, quantity: quantity}))
   }
 
   /**

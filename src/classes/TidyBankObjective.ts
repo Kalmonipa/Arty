@@ -44,15 +44,16 @@ export class TidyBankObjective extends Objective {
       case 'alchemist':
         break;
       case 'fisherman':
-        await this.cookFish();
-        break;
+        return await this.cookFish();
+
       case 'fighter':
-        break;
+        return await this.recycleExcessWeapons()
+
       case 'lumberjack':
         break;
       case 'miner':
-        await this.craftBars();
-        break;
+        return await this.craftBars();
+
       default:
         break;
     }
@@ -89,6 +90,10 @@ export class TidyBankObjective extends Objective {
     return true;
   }
 
+  /**
+   * @description Finds any raw ore in the bank and crafts it into bars
+   * @returns 
+   */
   private async craftBars(): Promise<boolean> {
     for (const item of this.rawOreList) {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
@@ -151,5 +156,30 @@ export class TidyBankObjective extends Objective {
       }
     }
     return;
+  }
+
+  /**
+   * @description Recycle any weapons that we have more than 5 of in the bank
+   * @todo Do this for gear as well
+   */
+  private async recycleExcessWeapons() {
+    const maxNumberNeededInBank = 5
+    for (const weaponList of Object.values(this.character.weaponMap)) {
+      for (const weapon of weaponList) {
+        if (weapon.level > this.character.data.weaponcrafting_level) {
+          logger.debug(`Not high enough level to recycle ${weapon.code}`)
+          break;
+        }
+
+        const numInBank = await this.character.checkQuantityOfItemInBank(weapon.code)
+        if (numInBank < maxNumberNeededInBank) {
+          logger.debug(`Less than ${maxNumberNeededInBank} so no need to recycle`)
+          break;
+        } 
+
+        return await this.character.recycleItemNow(weapon.code, numInBank - maxNumberNeededInBank)
+      }
+    }
+    logger.info(`Found no weapons to recycle`)
   }
 }
