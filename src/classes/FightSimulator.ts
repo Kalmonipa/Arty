@@ -184,7 +184,6 @@ export class FightSimulator extends Objective {
         logger.debug(`Char hp: ${this.mockCharacter.hp}; Mob hp: ${mob.hp}`);
       }
 
-      // Player attacks
       if (this.mockCharacter.hp <= 0) {
         logger.warn(
           `Fight sim lost after ${numTurns} turns. ${this.mockCharacter.name} has reached 0 hp`,
@@ -202,6 +201,11 @@ export class FightSimulator extends Objective {
       }
 
       // Characters turn
+      // ToDo: Adjust this to use the actual health restore value of the potion equipped
+      if (this.mockCharacter.hp <= (this.mockCharacter.hp / 2) && this.mockCharacter.utility1_slot_quantity > 0) {
+        this.mockCharacter.hp += 20
+        this.mockCharacter.utility1_slot_quantity--
+      }
       mob.hp = this.turn(this.mockCharacter.name, charAttacks, mob.hp, true);
 
       // Mobs turn
