@@ -88,7 +88,7 @@ export class FightObjective extends Objective {
           contentLocation,
         );
 
-        const healthStatus: HealthStatus = this.character.checkHealth();
+        let healthStatus: HealthStatus = this.character.checkHealth();
 
         if (healthStatus.percentage !== 100) {
           if (healthStatus.difference < 150) {
@@ -130,6 +130,16 @@ export class FightObjective extends Objective {
           } else {
             logger.error('Fight response missing character data');
             return false;
+          }
+
+          healthStatus = this.character.checkHealth();
+
+          if (healthStatus.percentage !== 100) {
+            if (healthStatus.difference < 150) {
+              await this.character.rest();
+            } else {
+              await this.character.eatFood();
+            }
           }
 
           // Check amount of food in inventory to use after battles

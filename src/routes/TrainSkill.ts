@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Character } from '../classes/Character.js';
 import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObjective.js';
 import { isGatheringSkill } from '../utils.js';
-import { CraftSkill } from '../types/types.js';
+import { CraftSkill, Skill } from '../types/types.js';
 import { TrainCraftingSkillObjective } from '../classes/TrainCraftingSkillObjective.js';
 import { TrainCombatObjective } from '../classes/TrainCombatObjective.js';
 
@@ -20,8 +20,8 @@ export default function TrainSkillRouter(char: Character) {
           .json({ error: 'Invalid target level or skill.' });
       }
 
-      if (skill !== 'combat' && !Object.values(CraftSkill).includes(skill as CraftSkill)) {
-        return res.status(400).json({ error: 'Invalid skill type. Must be one of alchemy, mining, woodcutting, cooking, jewelrycrafting, weaponcrafting, gearcrafting or combat' });
+      if (skill !== 'combat' && !Object.values(Skill).includes(skill as Skill)) {
+        return res.status(400).json({ error: 'Invalid skill type. Must be one of alchemy, fishing, mining, woodcutting, cooking, jewelrycrafting, weaponcrafting, gearcrafting or combat' });
       }
 
       if (typeof char === 'undefined' || !char) {

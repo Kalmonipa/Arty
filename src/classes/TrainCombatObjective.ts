@@ -32,45 +32,72 @@ export class TrainCombatObjective extends Objective {
       return false;
     }
 
-    const mobs = await getAllMonsterInformation({
-      max_level: charLevel,
-      min_level: Math.max(charLevel - 10, 0),
-    });
-    if (mobs instanceof ApiError) {
-      this.character.handleErrors(mobs);
-      return false;
+    if (charLevel >= this.targetLevel) {
+      logger.info(`Already at target combat level ${this.targetLevel}`);
+      return true;
     }
 
     while (charLevel < this.targetLevel && attempts < this.maxRetries) {
+      // Get fresh monster data for each attempt
+      const mobs = await getAllMonsterInformation({
+        max_level: charLevel,
+        min_level: Math.max(charLevel - 10, 0),
+      });
+      if (mobs instanceof ApiError) {
+        this.character.handleErrors(mobs);
+        return false;
+      }
 
-      for (let ind = mobs.data.length - 1; ind > 0; ind--) {
+      let foundSuitableMob = false;
+      let fightSuccessful = false;
+
+      // Try to find and fight a suitable mob
+      for (let ind = mobs.data.length - 1; ind >= 0; ind--) {
         const mob = mobs.data[ind];
         const fightSimResult = await this.character.simulateFightNow(
           structuredClone(this.character.data),
           undefined,
           mob,
         );
-        
+
         if (fightSimResult) {
+          foundSuitableMob = true;
           const fightResult = await this.character.fightNow(10, mob.code);
-          if (!fightResult) {
-            attempts++;
+          
+          if (fightResult) {
+            fightSuccessful = true;
+            charLevel = this.character.getCharacterLevel();
+            
+            if (charLevel >= this.targetLevel) {
+              logger.info(`Train to combat level ${this.targetLevel} achieved`);
+              return true;
+            }
+            break; // Exit the for loop after a successful fight
           }
-          charLevel = this.character.getCharacterLevel();
         }
-        if (charLevel >= this.targetLevel) {
-          logger.info(`Train to combat level ${this.targetLevel} achieved`);
-          return true;
-        } else if (attempts === this.maxRetries) {
-          logger.warn(
-            `${attempts}/${this.maxRetries} attempts to fight ${mob.code} reached. Failing job`,
-          );
+      }
+
+      // If we didn't find a suitable mob or the fight failed, increment attempts
+      if (!foundSuitableMob || !fightSuccessful) {
+        attempts++;
+        if (attempts >= this.maxRetries) {
+          if (!foundSuitableMob) {
+            logger.warn(`Found no suitable mobs to fight after ${attempts} attempts. Failing job`);
+          } else {
+            logger.warn(`${attempts}/${this.maxRetries} attempts to fight reached. Failing job`);
+          }
           return false;
         }
+        // Continue the while loop to try again with fresh monster data
       }
     }
 
-    logger.warn(`Found no suitable mobs to fight. Failing job`);
+    if (charLevel >= this.targetLevel) {
+      logger.info(`Train to combat level ${this.targetLevel} achieved`);
+      return true;
+    }
+
+    logger.warn(`Training incomplete after ${attempts} attempts. Current level: ${charLevel}, Target: ${this.targetLevel}`);
     return false;
   }
 }

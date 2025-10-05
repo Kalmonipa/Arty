@@ -75,6 +75,10 @@ export class GatherObjective extends Objective {
       logger.info(
         `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`,
       );
+      return await this.character.withdrawNow(
+        numInBank,
+        this.target.code,
+      );
     }
 
     if (this.includeInventory) {
