@@ -76,11 +76,11 @@ export class GatherObjective extends Objective {
         this.target.quantity,
         this.target.code,
       );
-    } else if (numInBank > 0) {
+    } else if (numInBank < this.target.quantity) {
       logger.info(
-        `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`,
+        `Withdrawing ${numInBank} ${this.target.code} from the bank. Collecting ${this.target.quantity - numInBank} more`,
       );
-      return await this.character.withdrawNow(numInBank, this.target.code);
+      await this.character.withdrawNow(numInBank, this.target.code);
     }
 
     if (this.includeInventory) {
