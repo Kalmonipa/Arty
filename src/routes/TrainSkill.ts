@@ -20,8 +20,16 @@ export default function TrainSkillRouter(char: Character) {
           .json({ error: 'Invalid target level or skill.' });
       }
 
-      if (skill !== 'combat' && !Object.values(Skill).includes(skill as Skill)) {
-        return res.status(400).json({ error: 'Invalid skill type. Must be one of alchemy, fishing, mining, woodcutting, cooking, jewelrycrafting, weaponcrafting, gearcrafting or combat' });
+      if (
+        skill !== 'combat' &&
+        !Object.values(Skill).includes(skill as Skill)
+      ) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'Invalid skill type. Must be one of alchemy, fishing, mining, woodcutting, cooking, jewelrycrafting, weaponcrafting, gearcrafting or combat',
+          });
       }
 
       if (typeof char === 'undefined' || !char) {
@@ -30,11 +38,14 @@ export default function TrainSkillRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let job: TrainGatheringSkillObjective | TrainCraftingSkillObjective | TrainCombatObjective;
+      let job:
+        | TrainGatheringSkillObjective
+        | TrainCraftingSkillObjective
+        | TrainCombatObjective;
 
       if (skill === 'combat') {
-        job = new TrainCombatObjective(char, targetLevel)
-      }else if (isGatheringSkill(skill)) {
+        job = new TrainCombatObjective(char, targetLevel);
+      } else if (isGatheringSkill(skill)) {
         job = new TrainGatheringSkillObjective(char, skill, targetLevel);
       } else {
         job = new TrainCraftingSkillObjective(char, skill, targetLevel);

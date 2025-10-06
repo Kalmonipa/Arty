@@ -20,14 +20,18 @@ class SimpleMockCharacter {
     return true;
   });
 
-  move = jest.fn(async (destination: { x: number; y: number }): Promise<void> => {
-    this.data.x = destination.x;
-    this.data.y = destination.y;
-  });
+  move = jest.fn(
+    async (destination: { x: number; y: number }): Promise<void> => {
+      this.data.x = destination.x;
+      this.data.y = destination.y;
+    },
+  );
 
-  evaluateClosestMap = jest.fn((maps: MapSchema[]): { x: number; y: number } => {
-    return { x: maps[0].x, y: maps[0].y };
-  });
+  evaluateClosestMap = jest.fn(
+    (maps: MapSchema[]): { x: number; y: number } => {
+      return { x: maps[0].x, y: maps[0].y };
+    },
+  );
 
   fightNow = jest.fn(async (quantity: number): Promise<boolean> => {
     // Mock fighting monsters
@@ -70,7 +74,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
     mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
 
     // Set up default mock responses
-    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(mockMonsterMapData);
+    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+      mockMonsterMapData,
+    );
   });
 
   describe('Basic functionality', () => {
@@ -94,9 +100,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -112,9 +120,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task = '';
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's startNewTask method
-      const startNewTaskSpy = jest.spyOn(objective, 'startNewTask').mockResolvedValue(undefined);
+      const startNewTaskSpy = jest
+        .spyOn(objective, 'startNewTask')
+        .mockResolvedValue(undefined);
 
       // Act
       const result = await objective.run();
@@ -132,9 +142,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's startNewTask method
-      const startNewTaskSpy = jest.spyOn(objective, 'startNewTask').mockResolvedValue(undefined);
+      const startNewTaskSpy = jest
+        .spyOn(objective, 'startNewTask')
+        .mockResolvedValue(undefined);
 
       // Act
       const result = await objective.run();
@@ -153,9 +165,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 3;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 2);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -226,7 +240,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
     it('should handle getMaps API errors', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(apiError);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        apiError,
+      );
       mockCharacter.handleErrors.mockResolvedValue(false);
 
       mockCharacter.data.task = 'red_slime';
@@ -363,9 +379,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -407,7 +425,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
           page: 1,
           size: 50,
         };
-        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(testMapData);
+        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+          testMapData,
+        );
 
         const objective = new MonsterTaskObjective(mockCharacter as any, 1);
 
@@ -420,11 +440,16 @@ describe('MonsterTaskObjective Integration Tests', () => {
           content_code: test.task,
           content_type: 'monster',
         });
-        expect(mockCharacter.fightNow).toHaveBeenCalledWith(test.total, test.task);
+        expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+          test.total,
+          test.task,
+        );
 
         // Reset for next test
         jest.clearAllMocks();
-        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(testMapData);
+        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+          testMapData,
+        );
       }
     });
 
@@ -447,7 +472,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
         page: 1,
         size: 50,
       };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(customMapData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        customMapData,
+      );
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
 
       mockCharacter.data.task = 'red_slime';
@@ -496,9 +523,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.fightNow.mockResolvedValue(false); // Fight fails
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -516,9 +545,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -536,9 +567,11 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method to fail
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(false);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(false);
 
       // Act
       const result = await objective.run();

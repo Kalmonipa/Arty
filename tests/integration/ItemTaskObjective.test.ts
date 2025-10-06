@@ -18,7 +18,12 @@ jest.mock('../../src/api_calls/Tasks', () => ({
 
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { actionTasksTrade, actionAcceptNewTask, actionCancelTask, actionCompleteTask } from '../../src/api_calls/Tasks.js';
+import {
+  actionTasksTrade,
+  actionAcceptNewTask,
+  actionCancelTask,
+  actionCompleteTask,
+} from '../../src/api_calls/Tasks.js';
 import { MapSchema } from '../../src/types/MapData.js';
 
 // Simple mock character
@@ -35,18 +40,20 @@ class SimpleMockCharacter {
   checkQuantityOfItemInBank = jest.fn(async (code: string): Promise<number> => {
     // Mock bank has some items
     const bankItems: { [key: string]: number } = {
-      'iron_ore': 50,
-      'wood': 30,
-      'apple': 20,
+      iron_ore: 50,
+      wood: 30,
+      apple: 20,
     };
     return bankItems[code] || 0;
   });
 
-  withdrawNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
-    // Mock successful withdrawal
-    this.addItemToInventory(code, quantity);
-    return true;
-  });
+  withdrawNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Mock successful withdrawal
+      this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -56,14 +63,18 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  move = jest.fn(async (destination: { x: number; y: number }): Promise<void> => {
-    this.data.x = destination.x;
-    this.data.y = destination.y;
-  });
+  move = jest.fn(
+    async (destination: { x: number; y: number }): Promise<void> => {
+      this.data.x = destination.x;
+      this.data.y = destination.y;
+    },
+  );
 
-  evaluateClosestMap = jest.fn((maps: MapSchema[]): { x: number; y: number } => {
-    return { x: maps[0].x, y: maps[0].y };
-  });
+  evaluateClosestMap = jest.fn(
+    (maps: MapSchema[]): { x: number; y: number } => {
+      return { x: maps[0].x, y: maps[0].y };
+    },
+  );
 
   // startNewTask is a method of the Objective class, not Character
   // We'll mock it on the Objective instance instead
@@ -74,17 +85,21 @@ class SimpleMockCharacter {
   // moveToTaskMaster is a method of the Objective class, not Character
   // We'll mock it on the Objective instance instead
 
-  craftNow = jest.fn(async (quantity: number, itemCode: string): Promise<boolean> => {
-    // Mock crafting
-    this.addItemToInventory(itemCode, quantity);
-    return true;
-  });
+  craftNow = jest.fn(
+    async (quantity: number, itemCode: string): Promise<boolean> => {
+      // Mock crafting
+      this.addItemToInventory(itemCode, quantity);
+      return true;
+    },
+  );
 
-  gatherNow = jest.fn(async (quantity: number, itemCode: string): Promise<boolean> => {
-    // Mock gathering
-    this.addItemToInventory(itemCode, quantity);
-    return true;
-  });
+  gatherNow = jest.fn(
+    async (quantity: number, itemCode: string): Promise<boolean> => {
+      // Mock gathering
+      this.addItemToInventory(itemCode, quantity);
+      return true;
+    },
+  );
 
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
@@ -182,27 +197,29 @@ describe('ItemTaskObjective Integration Tests', () => {
     mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
 
     // Set up default mock responses
-    (getItemInformation as jest.MockedFunction<typeof getItemInformation>).mockResolvedValue(
-      mockItemInfo,
-    );
-    (actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>).mockImplementation(
-      async () => {
-        // Update the character's task progress to complete the task
-        mockCharacter.data.task_progress = mockCharacter.data.task_total;
-        return {
-          ...mockTaskTradeResponse,
-          data: {
-            ...mockTaskTradeResponse.data,
-            character: {
-              ...mockTaskTradeResponse.data.character,
-              task_progress: mockCharacter.data.task_progress,
-              task_total: mockCharacter.data.task_total,
-            },
+    (
+      getItemInformation as jest.MockedFunction<typeof getItemInformation>
+    ).mockResolvedValue(mockItemInfo);
+    (
+      actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>
+    ).mockImplementation(async () => {
+      // Update the character's task progress to complete the task
+      mockCharacter.data.task_progress = mockCharacter.data.task_total;
+      return {
+        ...mockTaskTradeResponse,
+        data: {
+          ...mockTaskTradeResponse.data,
+          character: {
+            ...mockTaskTradeResponse.data.character,
+            task_progress: mockCharacter.data.task_progress,
+            task_total: mockCharacter.data.task_total,
           },
-        };
-      },
-    );
-    (actionAcceptNewTask as jest.MockedFunction<typeof actionAcceptNewTask>).mockResolvedValue({
+        },
+      };
+    });
+    (
+      actionAcceptNewTask as jest.MockedFunction<typeof actionAcceptNewTask>
+    ).mockResolvedValue({
       data: {
         character: {
           ...mockCharacterData,
@@ -229,7 +246,9 @@ describe('ItemTaskObjective Integration Tests', () => {
         },
       },
     });
-    (actionCancelTask as jest.MockedFunction<typeof actionCancelTask>).mockResolvedValue({
+    (
+      actionCancelTask as jest.MockedFunction<typeof actionCancelTask>
+    ).mockResolvedValue({
       character: {
         ...mockCharacterData,
         task: '',
@@ -245,7 +264,9 @@ describe('ItemTaskObjective Integration Tests', () => {
         reason: 'task' as const,
       },
     });
-    (actionCompleteTask as jest.MockedFunction<typeof actionCompleteTask>).mockResolvedValue({
+    (
+      actionCompleteTask as jest.MockedFunction<typeof actionCompleteTask>
+    ).mockResolvedValue({
       data: {
         character: {
           ...mockCharacterData,
@@ -291,9 +312,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('iron_ore', 5); // Add items to inventory
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -309,9 +332,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('iron_ore', 5);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's startNewTask method
-      const startNewTaskSpy = jest.spyOn(objective, 'startNewTask').mockResolvedValue(undefined);
+      const startNewTaskSpy = jest
+        .spyOn(objective, 'startNewTask')
+        .mockResolvedValue(undefined);
 
       // Act
       const result = await objective.run();
@@ -330,9 +355,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('iron_ore', 7);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's startNewTask method
-      const startNewTaskSpy = jest.spyOn(objective, 'startNewTask').mockResolvedValue(undefined);
+      const startNewTaskSpy = jest
+        .spyOn(objective, 'startNewTask')
+        .mockResolvedValue(undefined);
 
       // Act
       const result = await objective.run();
@@ -359,15 +386,17 @@ describe('ItemTaskObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith('iron_ore');
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
+        'iron_ore',
+      );
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_ore');
     });
 
     it('should craft items when task item is craftable', async () => {
       // Arrange
-      (getItemInformation as jest.MockedFunction<typeof getItemInformation>).mockResolvedValue(
-        mockCraftableItemInfo,
-      );
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockCraftableItemInfo);
       mockCharacter.data.task = 'iron_sword';
       mockCharacter.data.task_type = 'items';
       mockCharacter.data.task_progress = 0;
@@ -451,9 +480,9 @@ describe('ItemTaskObjective Integration Tests', () => {
     it('should return false when max retries exceeded for getItemInformation', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Server error' });
-      (getItemInformation as jest.MockedFunction<typeof getItemInformation>).mockResolvedValue(
-        apiError,
-      );
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(apiError);
 
       mockCharacter.data.task = 'iron_ore';
       mockCharacter.data.task_type = 'items';
@@ -498,9 +527,9 @@ describe('ItemTaskObjective Integration Tests', () => {
 
     it('should handle crafting failures and cancel task', async () => {
       // Arrange
-      (getItemInformation as jest.MockedFunction<typeof getItemInformation>).mockResolvedValue(
-        mockCraftableItemInfo,
-      );
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockCraftableItemInfo);
       mockCharacter.data.task = 'iron_sword';
       mockCharacter.data.task_type = 'items';
       mockCharacter.data.task_progress = 0;
@@ -508,15 +537,17 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.craftNow.mockResolvedValue(false);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's cancelCurrentTask method
-      const cancelCurrentTaskSpy = jest.spyOn(objective, 'cancelCurrentTask').mockResolvedValue(false);
+      const cancelCurrentTaskSpy = jest
+        .spyOn(objective, 'cancelCurrentTask')
+        .mockResolvedValue(false);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false); 
+      expect(result).toBe(false);
       expect(cancelCurrentTaskSpy).toHaveBeenCalledWith('items');
     });
 
@@ -526,16 +557,22 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.data.task_type = 'items';
       mockCharacter.data.task_progress = 0;
       mockCharacter.data.task_total = 5;
-      
+
       // Ensure character doesn't have enough items to trigger gathering
-      (mockCharacter.checkQuantityOfItemInInv as jest.MockedFunction<any>).mockReturnValue(0);
-      (mockCharacter.checkQuantityOfItemInBank as jest.MockedFunction<any>).mockResolvedValue(0);
+      (
+        mockCharacter.checkQuantityOfItemInInv as jest.MockedFunction<any>
+      ).mockReturnValue(0);
+      (
+        mockCharacter.checkQuantityOfItemInBank as jest.MockedFunction<any>
+      ).mockResolvedValue(0);
       mockCharacter.gatherNow.mockResolvedValue(false);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's cancelCurrentTask method
-      const cancelCurrentTaskSpy = jest.spyOn(objective, 'cancelCurrentTask').mockResolvedValue(false);
+      const cancelCurrentTaskSpy = jest
+        .spyOn(objective, 'cancelCurrentTask')
+        .mockResolvedValue(false);
 
       // Act
       const result = await objective.run();
@@ -580,15 +617,15 @@ describe('ItemTaskObjective Integration Tests', () => {
 
       // Mock task trade to succeed once, then cancel
       let tradeCount = 0;
-      (actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>).mockImplementation(
-        async () => {
-          tradeCount++;
-          if (tradeCount === 1) {
-            objective.cancelJob();
-          }
-          return mockTaskTradeResponse;
-        },
-      );
+      (
+        actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>
+      ).mockImplementation(async () => {
+        tradeCount++;
+        if (tradeCount === 1) {
+          objective.cancelJob();
+        }
+        return mockTaskTradeResponse;
+      });
 
       // Act
       const result = await objective.run();
@@ -613,9 +650,9 @@ describe('ItemTaskObjective Integration Tests', () => {
           },
         },
       };
-      (actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>).mockResolvedValue(
-        responseWithoutCharacter as any,
-      );
+      (
+        actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>
+      ).mockResolvedValue(responseWithoutCharacter as any);
 
       mockCharacter.data.task = 'iron_ore';
       mockCharacter.data.task_type = 'items';
@@ -642,9 +679,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('iron_ore', 5);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 3);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -663,9 +702,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('iron_ore', 10);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method to prevent real API calls
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
@@ -687,9 +728,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('iron_ore', 5);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's moveToTaskMaster method
-      const moveToTaskMasterSpy = jest.spyOn(objective, 'moveToTaskMaster').mockResolvedValue(undefined);
+      const moveToTaskMasterSpy = jest
+        .spyOn(objective, 'moveToTaskMaster')
+        .mockResolvedValue(undefined);
 
       // Act
       const result = await objective.run();
@@ -725,9 +768,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
-      
+
       // Mock the Objective's handInTask method
-      const handInTaskSpy = jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();

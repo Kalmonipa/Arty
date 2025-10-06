@@ -1542,14 +1542,18 @@ export class Character {
    * @description Adds a recycle job to the end of the job queue
    */
   async recycleItem(itemCode: string, quantity: number) {
-    this.appendJob(new RecycleObjective(this, {code: itemCode, quantity: quantity}))
+    this.appendJob(
+      new RecycleObjective(this, { code: itemCode, quantity: quantity }),
+    );
   }
 
   /**
    * @description Adds a recycle job to the start of the job queue
    */
   async recycleItemNow(itemCode: string, quantity: number) {
-    return await this.executeJobNow(new RecycleObjective(this, {code: itemCode, quantity: quantity}))
+    return await this.executeJobNow(
+      new RecycleObjective(this, { code: itemCode, quantity: quantity }),
+    );
   }
 
   /**

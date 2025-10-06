@@ -125,11 +125,11 @@ export async function actionWithdrawGold(
     if (!response.ok) {
       let message: string;
       switch (response.status) {
-        case 422: 
-          message = 'Request could not be processed due to an invalid payload.'
+        case 422:
+          message = 'Request could not be processed due to an invalid payload.';
           break;
         case 460:
-          message = 'nsufficient gold in your bank.'
+          message = 'nsufficient gold in your bank.';
           break;
         case 461:
           message =

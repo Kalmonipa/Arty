@@ -234,7 +234,11 @@ export class EvaluateGearObjective extends Objective {
   ): Promise<boolean> {
     const weapons = this.character.weaponMap['combat'];
 
-    const bestWeapon = await this.identifyBestGear(weapons, targetEffect, charLevel);
+    const bestWeapon = await this.identifyBestGear(
+      weapons,
+      targetEffect,
+      charLevel,
+    );
     if (bestWeapon === undefined) {
       logger.warn(`Found no good weapon for ${targetEffect}`);
       return false;
@@ -375,10 +379,12 @@ export class EvaluateGearObjective extends Objective {
         // If bestGear isn't set, set it to the current item
         if (bestGear === undefined) {
           // Check inventory
-          let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code)
+          let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
           if (numHeld === 0) {
             // Check bank
-            numHeld = await this.character.checkQuantityOfItemInBank(map[ind].code)
+            numHeld = await this.character.checkQuantityOfItemInBank(
+              map[ind].code,
+            );
           }
 
           if (numHeld > 0) {
@@ -402,14 +408,18 @@ export class EvaluateGearObjective extends Objective {
               .value
         ) {
           // Check inventory
-          let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code)
+          let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
           if (numHeld === 0) {
             // Check bank
-            numHeld = await this.character.checkQuantityOfItemInBank(map[ind].code)
+            numHeld = await this.character.checkQuantityOfItemInBank(
+              map[ind].code,
+            );
           }
 
           if (numHeld > 0) {
-            logger.info(`Found ${map[ind].code} is better than ${bestGear.code}`);
+            logger.info(
+              `Found ${map[ind].code} is better than ${bestGear.code}`,
+            );
             bestGear = map[ind];
           }
         }

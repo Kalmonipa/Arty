@@ -187,7 +187,7 @@ export class IdleObjective extends Objective {
         }
       }
     } else if (role === 'miner') {
-      await this.topUpMiningBars()
+      await this.topUpMiningBars();
     }
 
     return true;
@@ -260,9 +260,12 @@ export class IdleObjective extends Objective {
       return true;
     }
 
-    const withdrawGold = await actionWithdrawGold(this.character.data, bankDetails.data.next_expansion_cost)
+    const withdrawGold = await actionWithdrawGold(
+      this.character.data,
+      bankDetails.data.next_expansion_cost,
+    );
     if (withdrawGold instanceof ApiError) {
-      await this.character.handleErrors(withdrawGold)
+      await this.character.handleErrors(withdrawGold);
       return false;
     }
 
@@ -312,32 +315,46 @@ export class IdleObjective extends Objective {
    * @todo Maybe make this raw ore instead of crafted bars? Or have another function to top up the ore
    */
   private async topUpMiningBars(): Promise<boolean> {
-    const minNumRequired = 100
+    const minNumRequired = 100;
 
-    const barResponse = await getAllItemInformation({craft_skill: 'mining', type: 'resource'})
+    const barResponse = await getAllItemInformation({
+      craft_skill: 'mining',
+      type: 'resource',
+    });
     if (barResponse instanceof ApiError) {
-      return this.character.handleErrors(barResponse)
+      return this.character.handleErrors(barResponse);
     }
-    const barInfo: ItemSchema[] = barResponse.data.filter((item) => item.subtype === 'bar');
+    const barInfo: ItemSchema[] = barResponse.data.filter(
+      (item) => item.subtype === 'bar',
+    );
 
     for (const bar of barInfo) {
       if (bar.craft.level > this.character.data.mining_level) {
-        logger.debug(`Not high enough level to craft ${bar.code}`)
+        logger.debug(`Not high enough level to craft ${bar.code}`);
         break;
       }
 
-      const numInBank = await this.character.checkQuantityOfItemInBank(bar.code)
+      const numInBank = await this.character.checkQuantityOfItemInBank(
+        bar.code,
+      );
       if (numInBank > minNumRequired) {
-        logger.debug(`${numInBank}/${minNumRequired} ${bar.code} in bank already`)
+        logger.debug(
+          `${numInBank}/${minNumRequired} ${bar.code} in bank already`,
+        );
         break;
       }
 
-      logger.info(`Crafting ${minNumRequired - numInBank} ${bar.code} to top up to 100`)
+      logger.info(
+        `Crafting ${minNumRequired - numInBank} ${bar.code} to top up to 100`,
+      );
 
-      return await this.character.craftNow(minNumRequired - numInBank, bar.code)
+      return await this.character.craftNow(
+        minNumRequired - numInBank,
+        bar.code,
+      );
     }
 
-    logger.info(`Already have the minimum amount of each bar`)
-    return true
+    logger.info(`Already have the minimum amount of each bar`);
+    return true;
   }
 }

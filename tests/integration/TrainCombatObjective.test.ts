@@ -151,9 +151,11 @@ describe('TrainCombatObjective Integration Tests', () => {
     trainCombatObjective = new TrainCombatObjective(mockCharacter as any, 15);
 
     // Set up default mock responses
-    (getAllMonsterInformation as jest.MockedFunction<typeof getAllMonsterInformation>).mockResolvedValue(
-      mockMonsterData,
-    );
+    (
+      getAllMonsterInformation as jest.MockedFunction<
+        typeof getAllMonsterInformation
+      >
+    ).mockResolvedValue(mockMonsterData);
   });
 
   describe('Basic functionality', () => {
@@ -164,7 +166,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Assert
       expect(objective.targetLevel).toBe(20);
       expect(objective.character).toBe(mockCharacter);
-      expect(objective.objectiveId).toMatch(/^train_combat_20_[a-f0-9]+$/);
+      expect(objective.objectiveId).toMatch(/^train_20_combat_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
       expect(objective.skill).toBe('combat');
     });
@@ -197,7 +199,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -222,7 +224,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -262,14 +264,18 @@ describe('TrainCombatObjective Integration Tests', () => {
     it('should handle API errors and retry', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Server error' });
-      (getAllMonsterInformation as jest.MockedFunction<typeof getAllMonsterInformation>)
+      (
+        getAllMonsterInformation as jest.MockedFunction<
+          typeof getAllMonsterInformation
+        >
+      )
         .mockResolvedValueOnce(apiError)
         .mockResolvedValueOnce(mockMonsterData);
 
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
       mockCharacter.handleErrors.mockResolvedValue(true);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -289,9 +295,11 @@ describe('TrainCombatObjective Integration Tests', () => {
     it('should return false when max retries exceeded', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Server error' });
-      (getAllMonsterInformation as jest.MockedFunction<typeof getAllMonsterInformation>).mockResolvedValue(
-        apiError,
-      );
+      (
+        getAllMonsterInformation as jest.MockedFunction<
+          typeof getAllMonsterInformation
+        >
+      ).mockResolvedValue(apiError);
 
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
@@ -313,9 +321,11 @@ describe('TrainCombatObjective Integration Tests', () => {
         page: 1,
         size: 50,
       };
-      (getAllMonsterInformation as jest.MockedFunction<typeof getAllMonsterInformation>).mockResolvedValue(
-        emptyMonsterData,
-      );
+      (
+        getAllMonsterInformation as jest.MockedFunction<
+          typeof getAllMonsterInformation
+        >
+      ).mockResolvedValue(emptyMonsterData);
 
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
@@ -331,7 +341,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Mock fight to always fail
       mockCharacter.fightNow.mockResolvedValue(false);
 
@@ -380,7 +390,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10; // Start below target level
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -389,7 +399,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       });
 
       // Act
-        await trainCombatObjective.run();
+      await trainCombatObjective.run();
 
       // Assert
       expect(getAllMonsterInformation).toHaveBeenCalledWith({
@@ -402,7 +412,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 0;
       mockCharacter.getCharacterLevel.mockReturnValue(0);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -424,7 +434,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -437,14 +447,17 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, expect.any(String));
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        10,
+        expect.any(String),
+      );
     });
 
     it('should handle structured clone of character data', async () => {
       // Arrange
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -473,12 +486,12 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10; // Start below target level
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Mock simulateFightNow to fail for higher level monsters, succeed for lower
       mockCharacter.simulateFightNow
         .mockResolvedValueOnce(false) // blue_slime (level 8)
         .mockResolvedValueOnce(true); // red_slime (level 5)
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
@@ -545,15 +558,17 @@ describe('TrainCombatObjective Integration Tests', () => {
       };
       mockCharacter.data.level = 10; // Start below target level
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      
+
       // Set up the custom monster data mock AFTER setting up the character
-      (getAllMonsterInformation as jest.MockedFunction<typeof getAllMonsterInformation>).mockImplementation(
-        async () => customMonsterData,
-      );
-      
+      (
+        getAllMonsterInformation as jest.MockedFunction<
+          typeof getAllMonsterInformation
+        >
+      ).mockImplementation(async () => customMonsterData);
+
       // Mock simulateFightNow to succeed for the ogre
       mockCharacter.simulateFightNow.mockResolvedValue(true);
-      
+
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;

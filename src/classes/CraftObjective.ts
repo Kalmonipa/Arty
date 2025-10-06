@@ -233,12 +233,19 @@ export class CraftObjective extends Objective {
           if (craftingItemInfo.subtype === 'mob') {
             logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
 
-            await this.character.gatherNow(
-              totalIngredNeededToCraft - numInInv,
-              craftingItem.code,
-              true,
-              false,
-            );
+            if (
+              !(await this.character.gatherNow(
+                totalIngredNeededToCraft - numInInv,
+                craftingItem.code,
+                true,
+                false,
+              ))
+            ) {
+              logger.warn(
+                `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
+              );
+              return false;
+            }
 
             if (this.isCancelled()) {
               logger.info(`${this.objectiveId} has been cancelled`);
@@ -249,10 +256,17 @@ export class CraftObjective extends Objective {
               `Resource ${craftingItemInfo.code} is a craftable item`,
             );
 
-            await this.character.craftNow(
-              totalIngredNeededToCraft - numInInv,
-              craftingItem.code,
-            );
+            if (
+              !(await this.character.craftNow(
+                totalIngredNeededToCraft - numInInv,
+                craftingItem.code,
+              ))
+            ) {
+              logger.warn(
+                `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
+              );
+              return false;
+            }
 
             if (this.isCancelled()) {
               logger.info(`${this.objectiveId} has been cancelled`);
@@ -262,12 +276,19 @@ export class CraftObjective extends Objective {
             logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
             // We don't want to include what's in our inventory. We want to collect new
-            await this.character.gatherNow(
-              totalIngredNeededToCraft - numInInv,
-              craftingItem.code,
-              true,
-              false,
-            );
+            if (
+              !(await this.character.gatherNow(
+                totalIngredNeededToCraft - numInInv,
+                craftingItem.code,
+                true,
+                false,
+              ))
+            ) {
+              logger.warn(
+                `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
+              );
+              return false;
+            }
 
             if (this.isCancelled()) {
               logger.info(`${this.objectiveId} has been cancelled`);

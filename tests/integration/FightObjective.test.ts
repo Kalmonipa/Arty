@@ -35,18 +35,20 @@ class SimpleMockCharacter {
   checkQuantityOfItemInBank = jest.fn(async (code: string): Promise<number> => {
     // Mock bank has some items
     const bankItems: { [key: string]: number } = {
-      'apple': 50,
-      'health_potion': 20,
-      'iron_sword': 1,
+      apple: 50,
+      health_potion: 20,
+      iron_sword: 1,
     };
     return bankItems[code] || 0;
   });
 
-  withdrawNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
-    // Mock successful withdrawal
-    this.addItemToInventory(code, quantity);
-    return true;
-  });
+  withdrawNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Mock successful withdrawal
+      this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -56,10 +58,12 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  move = jest.fn(async (destination: { x: number; y: number }): Promise<void> => {
-    this.data.x = destination.x;
-    this.data.y = destination.y;
-  });
+  move = jest.fn(
+    async (destination: { x: number; y: number }): Promise<void> => {
+      this.data.x = destination.x;
+      this.data.y = destination.y;
+    },
+  );
 
   evaluateClosestMap = jest.fn((maps: any[]): { x: number; y: number } => {
     return { x: maps[0].x, y: maps[0].y };
@@ -216,7 +220,9 @@ describe('FightObjective Integration Tests', () => {
     fightObjective = new FightObjective(mockCharacter as any, target);
 
     // Set up default mock responses
-    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(mockMapData);
+    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+      mockMapData,
+    );
     (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
       mockFightResponse,
     );
@@ -230,9 +236,7 @@ describe('FightObjective Integration Tests', () => {
       // Assert
       expect(objective.target).toEqual(target);
       expect(objective.character).toBe(mockCharacter);
-      expect(objective.objectiveId).toMatch(
-        /^fight_5_red_slime_[a-f0-9]+$/,
-      );
+      expect(objective.objectiveId).toMatch(/^fight_5_red_slime_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
     });
 
@@ -411,9 +415,9 @@ describe('FightObjective Integration Tests', () => {
     it('should return false when max retries exceeded', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Server error' });
-      (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
-        apiError,
-      );
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockResolvedValue(apiError);
 
       mockCharacter.addItemToInventory('apple', 20);
       mockCharacter.handleErrors.mockResolvedValue(false); // Don't retry
@@ -423,7 +427,10 @@ describe('FightObjective Integration Tests', () => {
         code: 'red_slime',
         quantity: 1,
       };
-      const smallObjective = new FightObjective(mockCharacter as any, smallTarget);
+      const smallObjective = new FightObjective(
+        mockCharacter as any,
+        smallTarget,
+      );
 
       // Act
       const result = await smallObjective.run();
@@ -436,7 +443,9 @@ describe('FightObjective Integration Tests', () => {
     it('should handle getMaps API error', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(apiError);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        apiError,
+      );
       mockCharacter.handleErrors.mockResolvedValue(false);
 
       // Act
@@ -487,9 +496,9 @@ describe('FightObjective Integration Tests', () => {
           // Missing characters array
         },
       };
-      (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
-        responseWithoutCharacter as any,
-      );
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockResolvedValue(responseWithoutCharacter as any);
 
       mockCharacter.addItemToInventory('apple', 20);
 
@@ -506,9 +515,9 @@ describe('FightObjective Integration Tests', () => {
         code: 497,
         message: 'The characters inventory is full.',
       });
-      (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
-        inventoryFullError,
-      );
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockResolvedValue(inventoryFullError);
 
       mockCharacter.addItemToInventory('apple', 20);
       mockCharacter.handleErrors.mockResolvedValue(false);
@@ -518,7 +527,9 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(inventoryFullError);
+      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(
+        inventoryFullError,
+      );
     });
   });
 
@@ -546,15 +557,15 @@ describe('FightObjective Integration Tests', () => {
 
       // Mock fight to succeed once, then cancel
       let fightCount = 0;
-      (actionFight as jest.MockedFunction<typeof actionFight>).mockImplementation(
-        async () => {
-          fightCount++;
-          if (fightCount === 2) {
-            objective.cancelJob();
-          }
-          return mockFightResponse;
-        },
-      );
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockImplementation(async () => {
+        fightCount++;
+        if (fightCount === 2) {
+          objective.cancelJob();
+        }
+        return mockFightResponse;
+      });
 
       // Act
       const result = await objective.run();
@@ -600,9 +611,9 @@ describe('FightObjective Integration Tests', () => {
           characters: [updatedCharacterData],
         },
       };
-      (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
-        responseWithUpdatedCharacter as any,
-      );
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockResolvedValue(responseWithUpdatedCharacter as any);
 
       mockCharacter.addItemToInventory('apple', 20);
 
@@ -641,7 +652,10 @@ describe('FightObjective Integration Tests', () => {
           code: test.code,
           quantity: test.quantity,
         };
-        const testObjective = new FightObjective(mockCharacter as any, testTarget);
+        const testObjective = new FightObjective(
+          mockCharacter as any,
+          testTarget,
+        );
 
         const testMapData = {
           data: [
@@ -660,7 +674,9 @@ describe('FightObjective Integration Tests', () => {
           page: 1,
           size: 50,
         };
-        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(testMapData);
+        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+          testMapData,
+        );
 
         mockCharacter.addItemToInventory('apple', 20);
 
@@ -674,9 +690,9 @@ describe('FightObjective Integration Tests', () => {
 
         // Reset for next test
         jest.clearAllMocks();
-        (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
-          mockFightResponse,
-        );
+        (
+          actionFight as jest.MockedFunction<typeof actionFight>
+        ).mockResolvedValue(mockFightResponse);
       }
     });
 
@@ -687,7 +703,10 @@ describe('FightObjective Integration Tests', () => {
         code: 'red_slime',
         quantity: 3,
       };
-      const progressObjective = new FightObjective(mockCharacter as any, progressTarget);
+      const progressObjective = new FightObjective(
+        mockCharacter as any,
+        progressTarget,
+      );
 
       // Act
       const result = await progressObjective.run();
@@ -719,7 +738,9 @@ describe('FightObjective Integration Tests', () => {
         page: 1,
         size: 50,
       };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(customMapData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        customMapData,
+      );
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
 
       mockCharacter.addItemToInventory('apple', 20);

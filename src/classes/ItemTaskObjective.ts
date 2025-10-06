@@ -106,9 +106,7 @@ export class ItemTaskObjective extends Objective {
         );
 
         if (numToGather <= numGathered) {
-          logger.debug(
-            `Handing in ${numToGather} ${this.character.data.task}`,
-          );
+          logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
           await this.moveToTaskMaster('items');
 
           const taskTradeResponse: ApiError | TaskTradeResponseSchema =

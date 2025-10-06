@@ -75,10 +75,7 @@ export class GatherObjective extends Objective {
       logger.info(
         `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${numInBank}`,
       );
-      return await this.character.withdrawNow(
-        numInBank,
-        this.target.code,
-      );
+      return await this.character.withdrawNow(numInBank, this.target.code);
     }
 
     if (this.includeInventory) {
@@ -154,20 +151,36 @@ export class GatherObjective extends Objective {
       });
 
       if (resourceDetails.subtype === 'mob') {
-        return await this.gatherMobDrop({
-          code: resourceDetails.code,
-          quantity: quantity,
-        });
+        if (
+          !(await this.gatherMobDrop({
+            code: resourceDetails.code,
+            quantity: quantity,
+          }))
+        ) {
+          attempt++;
+          continue;
+        }
       } else if (resourceDetails.subtype === 'task') {
-        return await this.character.tradeWithNpcNow(
-          'buy',
-          quantity,
-          resourceDetails.code,
-        );
+        if (
+          !(await this.character.tradeWithNpcNow(
+            'buy',
+            quantity,
+            resourceDetails.code,
+          ))
+        ) {
+          attempt++;
+          continue;
+        }
       } else if (resourceDetails.craft) {
-        await this.character.craftNow(quantity, resourceDetails.code);
+        if (!(await this.character.craftNow(quantity, resourceDetails.code))) {
+          attempt++;
+          continue;
+        }
       } else {
-        return await this.gatherResource(code, quantity, numHeld);
+        if (!(await this.gatherResource(code, quantity, numHeld))) {
+          attempt++;
+          continue;
+        }
       }
     }
     // Remove the gathered item if it's in the exclusion list

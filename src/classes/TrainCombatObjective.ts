@@ -10,13 +10,13 @@ import { Objective } from './Objective.js';
  */
 export class TrainCombatObjective extends Objective {
   targetLevel: number;
-  skill: string
+  skill: string;
 
   constructor(character: Character, targetLevel: number) {
     super(character, `train_${targetLevel}_combat`, 'not_started');
     this.character = character;
     this.targetLevel = targetLevel;
-    this.skill = 'combat'
+    this.skill = 'combat';
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -63,11 +63,11 @@ export class TrainCombatObjective extends Objective {
         if (fightSimResult) {
           foundSuitableMob = true;
           const fightResult = await this.character.fightNow(10, mob.code);
-          
+
           if (fightResult) {
             fightSuccessful = true;
             charLevel = this.character.getCharacterLevel();
-            
+
             if (charLevel >= this.targetLevel) {
               logger.info(`Train to combat level ${this.targetLevel} achieved`);
               return true;
@@ -82,9 +82,13 @@ export class TrainCombatObjective extends Objective {
         attempts++;
         if (attempts >= this.maxRetries) {
           if (!foundSuitableMob) {
-            logger.warn(`Found no suitable mobs to fight after ${attempts} attempts. Failing job`);
+            logger.warn(
+              `Found no suitable mobs to fight after ${attempts} attempts. Failing job`,
+            );
           } else {
-            logger.warn(`${attempts}/${this.maxRetries} attempts to fight reached. Failing job`);
+            logger.warn(
+              `${attempts}/${this.maxRetries} attempts to fight reached. Failing job`,
+            );
           }
           return false;
         }
@@ -97,7 +101,9 @@ export class TrainCombatObjective extends Objective {
       return true;
     }
 
-    logger.warn(`Training incomplete after ${attempts} attempts. Current level: ${charLevel}, Target: ${this.targetLevel}`);
+    logger.warn(
+      `Training incomplete after ${attempts} attempts. Current level: ${charLevel}, Target: ${this.targetLevel}`,
+    );
     return false;
   }
 }
