@@ -159,6 +159,8 @@ export class GatherObjective extends Objective {
         ) {
           attempt++;
           continue;
+        } else {
+          return true
         }
       } else if (resourceDetails.subtype === 'task') {
         if (
@@ -170,16 +172,22 @@ export class GatherObjective extends Objective {
         ) {
           attempt++;
           continue;
+        } else {
+          return true
         }
       } else if (resourceDetails.craft) {
         if (!(await this.character.craftNow(quantity, resourceDetails.code))) {
           attempt++;
           continue;
+        } else {
+          return true
         }
       } else {
         if (!(await this.gatherResource(code, quantity, numHeld))) {
           attempt++;
           continue;
+        } else {
+          return true
         }
       }
     }
