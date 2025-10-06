@@ -325,6 +325,7 @@ export class CraftObjective extends Objective {
         }
       }
     }
+    return true;
   }
 
   /**
