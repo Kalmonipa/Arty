@@ -309,7 +309,7 @@ export class CraftObjective extends Objective {
         );
         if (numInInv >= totalIngredNeededToCraft) {
           logger.info(`${numInInv} in inventory. Moving on to craft`)
-          return true;
+          continue;
         } else if (
           numInBank >= totalIngredNeededToCraft - numInInv
         ) {
