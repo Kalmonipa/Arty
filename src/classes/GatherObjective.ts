@@ -185,6 +185,7 @@ export class GatherObjective extends Objective {
     }
     // Remove the gathered item if it's in the exclusion list
     this.character.removeItemFromItemsToKeep(this.target.code);
+
   }
 
   async gatherItemLoop(
@@ -256,7 +257,10 @@ export class GatherObjective extends Objective {
         logger.info(`Mob info for ${mobInfo.data.length} mobs`);
 
         // ToDo: make this check all mobs in case multiple drop the item
-        await this.character.fightNow(1, mobInfo.data[0].code);
+        if (!await this.character.fightNow(1, mobInfo.data[0].code)) {
+          logger.warn(`Fight attempt against ${mobInfo.data[0].code} failed`)
+          return false;
+        }
 
         const newNumHeld = this.character.checkQuantityOfItemInInv(
           this.target.code,
