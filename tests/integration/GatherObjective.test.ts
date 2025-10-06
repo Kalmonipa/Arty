@@ -173,5 +173,19 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       expect(objective.objectiveId).toMatch(/^gather_10_iron_ore_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
     });
+
+    it('should return false if gathering item is wooden_stick', async () => {
+      const objectiveWithBankCheck = new GatherObjective(
+        mockCharacter as any,
+        {code: 'wooden_stick', quantity: 1},
+        true, // checkBank = true
+      );
+
+      // Act
+      const result = await objectiveWithBankCheck.run();
+
+      // Assert
+      expect(result).toBe(false);
+    });
   });
 });

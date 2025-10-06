@@ -102,13 +102,16 @@ export class CraftObjective extends Objective {
             return false;
           }
 
-          if (!await this.gatherIngredients(
+          const gathered = await this.gatherIngredients(
             targetItem.craft.items,
             batchInfo.numPerBatch,
-          )) {
-            logger.warn(`Gathering ingredients for ${targetItem.code} failed`)
-            return false;
+          );
+          if (!gathered) {
+            logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
+            batch--;
+            continue;
           }
+          
 
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
@@ -321,7 +324,6 @@ export class CraftObjective extends Objective {
           logger.info(
             `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
           );
-          return false;
         }
       }
     }
