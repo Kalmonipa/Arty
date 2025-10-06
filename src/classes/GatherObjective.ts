@@ -50,6 +50,11 @@ export class GatherObjective extends Objective {
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
     let numInBank = 0;
 
+    if (this.target.code === 'wooden_stick') {
+      logger.info(`${this.target.code} is not gatherable`)
+      return false;
+    }
+
     // Sometimes we want to collect a bunch of the resource so we should skip checking the bank
     // Other times we want to gather stuff to then craft so taking from the bank is OK
     if (this.checkBank) {
