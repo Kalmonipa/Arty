@@ -180,7 +180,7 @@ export class CraftObjective extends Objective {
   private async gatherIngredients(
     craftingItems: SimpleItemSchema[],
     itemsPerBatch: number,
-  ) {
+  ): Promise<boolean> {
     for (const craftingItem of craftingItems) {
       logger.debug(
         `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
@@ -307,11 +307,13 @@ export class CraftObjective extends Objective {
         numInBank = await this.character.checkQuantityOfItemInBank(
           craftingItem.code,
         );
-        if (
-          numInInv < totalIngredNeededToCraft &&
+        if (numInInv >= totalIngredNeededToCraft) {
+          logger.info(`${numInInv} in inventory. Moving on to craft`)
+          return true;
+        } else if (
           numInBank >= totalIngredNeededToCraft - numInInv
         ) {
-          await this.character.withdrawNow(
+          return await this.character.withdrawNow(
             totalIngredNeededToCraft - numInInv,
             craftingItem.code,
           );
@@ -319,6 +321,7 @@ export class CraftObjective extends Objective {
           logger.info(
             `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
           );
+          return false;
         }
       }
     }
