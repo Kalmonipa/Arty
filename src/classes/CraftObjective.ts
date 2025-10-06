@@ -29,8 +29,11 @@ export class CraftObjective extends Objective {
       this.target.code,
     );
 
-    if (quantyInInv <= this.target.quantity) {
-      // If we're carrying some then we don't need to collect the full requested amount
+    if (quantyInInv >= this.target.quantity) {
+      // Already have enough, set target to 0 so no crafting is needed
+      this.target.quantity = 0;
+    } else if (quantyInInv > 0) {
+      // Carrying some, so only need to craft the remainder
       this.target.quantity = this.target.quantity - quantyInInv;
     }
 
@@ -66,17 +69,18 @@ export class CraftObjective extends Objective {
           logger.info(`${this.objectiveId} has been cancelled`);
           return false;
         }
-        // Build shopping list so that we can ensure we have enough inventory space to collect everything
-        // If not enough inv space, split it into 2 jobs, craft half as much at once
-        // If still not enough, keep splitting in half until we have enough inv space
-        const batchInfo = this.calculateNumBatches(targetItem.craft.items);
-        this.numBatches = batchInfo.numBatches;
-        this.numItemsPerBatch = batchInfo.numPerBatch;
 
         if (!targetItem.craft) {
           logger.warn(`Item has no craft information`);
           return true;
         }
+        
+        // Build shopping list so that we can ensure we have enough inventory space to collect everything
+        // If not enough inv space, split it into 2 jobs, craft half as much at once
+        // If still not enough, keep splitting in half until we have enough inv space   
+        const batchInfo = this.calculateNumBatches(targetItem.craft.items);
+        this.numBatches = batchInfo.numBatches;
+        this.numItemsPerBatch = batchInfo.numPerBatch;
 
         const maps = await getMaps({
           content_code: targetItem.craft.skill,
@@ -108,8 +112,7 @@ export class CraftObjective extends Objective {
           );
           if (!gathered) {
             logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
-            batch--;
-            continue;
+            break;
           }
           
 
@@ -139,7 +142,7 @@ export class CraftObjective extends Objective {
               logger.error(`Craft failed after ${attempt} attempts`);
               return false;
             }
-            continue;
+            break;
           } else {
             if (response.data.character) {
               this.character.data = response.data.character;
@@ -324,6 +327,7 @@ export class CraftObjective extends Objective {
           logger.info(
             `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
           );
+          return false;
         }
       }
     }
