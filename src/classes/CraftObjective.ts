@@ -102,10 +102,13 @@ export class CraftObjective extends Objective {
             return false;
           }
 
-          await this.gatherIngredients(
+          if (!await this.gatherIngredients(
             targetItem.craft.items,
             batchInfo.numPerBatch,
-          );
+          )) {
+            logger.warn(`Gathering ingredients for ${targetItem.code} failed`)
+            return false;
+          }
 
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
