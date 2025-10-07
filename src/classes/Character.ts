@@ -36,6 +36,7 @@ import {
   ObjectiveTargets,
   ObjectiveStatus,
   SerializedJob,
+  SimpleObjectiveInfo,
 } from '../types/ObjectiveData.js';
 import { FightObjective } from './FightObjective.js';
 import { EquipObjective } from './EquipObjective.js';
@@ -185,12 +186,7 @@ export class Character {
   /**
    * @description Lists all objectives with their parent-child relationships
    */
-  listObjectivesWithParents(): Array<{
-    id: string;
-    parentId?: string;
-    childId?: string;
-    status: string;
-  }> {
+  listObjectivesWithParents(): Array<SimpleObjectiveInfo> {
     const objectives = [];
     for (const obj of this.jobList) {
       objectives.push({

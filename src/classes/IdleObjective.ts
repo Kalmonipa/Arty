@@ -220,12 +220,12 @@ export class IdleObjective extends Objective {
   }
 
   /**
-   * Purchase a bank expansion if the bank is >90% full and we have at least 25k gold leftover after
+   * Purchase a bank expansion if the bank is >90% full and we have at least 25% of our gold leftover
    * @todo Implement retry logic based on return values from the handleErrors() functions
    */
   private async checkBankExpansion(): Promise<boolean> {
     const maxBankFullness = 90;
-    const targetLeftoverCash = 25000;
+    const targetPercentageLeftoverCash = 25;
 
     const currentBankFullness = await getBankItems();
     if (currentBankFullness instanceof ApiError) {
@@ -250,12 +250,13 @@ export class IdleObjective extends Objective {
     }
 
     // Check if we have enough gold to purchase
+    const leftoverGold = bankDetails.data.gold - bankDetails.data.next_expansion_cost
     if (
-      bankDetails.data.gold <
-      bankDetails.data.next_expansion_cost + targetLeftoverCash
+      bankDetails.data.gold * (targetPercentageLeftoverCash / 100) <
+      leftoverGold
     ) {
       logger.debug(
-        `Purchasing an upgrade wouldn't leave us with ${targetLeftoverCash}. Not purchasing`,
+        `Purchasing an upgrade wouldn't leave us with ${leftoverGold}. Not purchasing`,
       );
       return true;
     }

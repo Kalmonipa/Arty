@@ -20,3 +20,5 @@ export interface SerializedJob {
   maxRetries: number;
   [key: string]: unknown;
 }
+
+export type SimpleObjectiveInfo = {id: string, status: string, parentId?: string, childId?: string}
