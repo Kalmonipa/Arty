@@ -158,7 +158,7 @@ export class EvaluateGearObjective extends Objective {
 
     for (const resistance of mobResistances) {
       logger.info(
-        `Finding best weapon against ${resistance.value} ${resistance.type} (${resistance.counterType})`,
+        `Finding best ${resistance.counterType} weapon against ${resistance.value} ${resistance.type}`,
       );
       equipResult = await this.checkCombatWeapon(
         resistance.counterType,
@@ -244,6 +244,11 @@ export class EvaluateGearObjective extends Objective {
       return false;
     }
 
+    if (this.character.data.weapon_slot === bestWeapon.code) {
+      logger.debug(`Already have ${bestWeapon.code} equipped`)
+      return true;
+    }
+
     logger.debug(`Attempting to equip ${bestWeapon.name} in weapon slot`);
     if (this.character.checkQuantityOfItemInInv(bestWeapon.code) > 0) {
       return await this.character.equipNow(bestWeapon.code, 'weapon');
@@ -254,6 +259,7 @@ export class EvaluateGearObjective extends Objective {
       return await this.character.equipNow(bestWeapon.code, 'weapon');
     } else {
       logger.debug(`Can't find any ${bestWeapon.name}`);
+      return false;
     }
   }
 
