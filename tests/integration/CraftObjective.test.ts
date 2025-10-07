@@ -152,16 +152,23 @@ const mockCraftResponse = {
 const mockWorkshopMapData = {
   data: [
     {
-      map_id: 1,
-      name: 'Weapon Workshop',
-      skin: 'workshop',
-      x: 100,
-      y: 100,
-      layer: 'overworld' as const,
+      map_id: 328,
+      name: "City",
+      skin: "forest_wcstation1",
+      x: 2,
+      y: 1,
+      layer: "overworld" as const,
       access: {
-        type: 'standard' as const,
+        type: "standard" as const,
+        conditions: []
       },
-      interactions: {},
+      interactions: {
+        content: {
+          type: "workshop" as const,
+          code: "weaponcrafting" as const
+        },
+        transition: null
+      }
     },
   ],
   total: 1,
@@ -215,17 +222,27 @@ const mockCraftableItemData: ItemSchema = {
 
 
 const mockIngredientItemData: ItemSchema = {
-  code: 'iron_bar',
-  name: 'Iron Bar',
-  level: 1,
-  type: 'resource',
-  subtype: 'metal',
-  description: 'Refined iron bar used for crafting',
-  craft: null,
-  tradeable: true,
+  name: "Iron Bar",
+  code: "iron_bar",
+  level: 10,
+  type: "resource",
+  subtype: "bar",
+  description: "A solid bar of refined iron, ready for crafting into weapons, armor, and tools.",
   conditions: [],
   effects: [],
-};
+  craft: {
+    skill: "mining",
+    level: 10,
+    items: [
+      {
+        code: "iron_ore",
+        quantity: 10
+      }
+    ],
+    quantity: 1
+  },
+  tradeable: true
+}
 
 const mockFeatherItemData: ItemSchema = {
   code: 'feather',
@@ -364,7 +381,7 @@ describe('CraftObjective Integration Tests', () => {
         content_code: 'weaponcrafting',
         content_type: 'workshop',
       });
-      expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
+      expect(mockCharacter.move).toHaveBeenCalledWith({ x: 2, y: 1 });
       expect(actionCraft).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -442,20 +459,23 @@ describe('CraftObjective Integration Tests', () => {
       
       // Mock the gathering to succeed and update inventory
       mockCharacter.gatherNow.mockImplementation(async (quantity: number, code: string) => {
-        if (code === 'iron_bar') {
-          ironBarInInv += quantity;
-        } else if (code === 'feather') {
+        if (code === 'feather') {
           featherInInv += quantity;
         }
         return true;
       });
+
+      mockCharacter.craftNow.mockImplementation(async (quantity: number) => {
+        ironBarInInv += quantity
+        return true;
+      })
 
       // Act
       const result = await craftObjective.run();
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(20, 'iron_bar', true, false);
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(20, 'iron_bar');
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(10, 'feather', true, false);
     });
 

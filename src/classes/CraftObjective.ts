@@ -114,6 +114,23 @@ export class CraftObjective extends Objective {
             logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
             break;
           }
+
+          for (const craftItem of targetItem.craft.items) {
+            const numInInvAfterGathering = this.character.checkQuantityOfItemInInv(craftItem.code)
+            logger.debug(`Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}`)
+            if (numInInvAfterGathering < (craftItem.quantity * this.numItemsPerBatch)) {
+              logger.warn(`Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}. Regathering`)
+
+              const gathered = await this.gatherIngredients(
+                targetItem.craft.items,
+                batchInfo.numPerBatch,
+              );
+              if (!gathered) {
+                logger.warn(`Reathering ingredients for ${targetItem.code} has failed`);
+                break;
+              }
+            }
+          }
           
 
           if (this.isCancelled()) {
