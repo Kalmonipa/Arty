@@ -335,7 +335,7 @@ export class EvaluateGearObjective extends Objective {
 
     const bestGear = await this.identifyBestGear(map, targetEffect, charLevel);
     if (bestGear === undefined) {
-      logger.warn(`Found no good gear for ${targetEffect}`);
+      logger.debug(`Found no good ${gearType} gear for ${targetEffect}`);
       return false;
     }
 

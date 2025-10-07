@@ -192,7 +192,7 @@ export class FightSimulator extends Objective {
         fightResult = false;
         break;
       } else if (mob.hp <= 0) {
-        logger.warn(
+        logger.info(
           `Fight sim won after ${numTurns} turns. ${mob.name} has reached 0 hp`,
         );
         fightContinues = false;
