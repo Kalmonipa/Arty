@@ -62,6 +62,7 @@ import { IdleObjective } from './IdleObjective.js';
 import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainCombatObjective } from './TrainCombatObjective.js';
 import { RecycleObjective } from './RecycleObjective.js';
+import { ExpandBankObjective } from './BankExpansion.js';
 
 export class Character {
   data: CharacterSchema;
@@ -1702,6 +1703,8 @@ export class Character {
       case 422: // Invalid payload
         logger.error(`Invalid payload [Code: ${response.error.code}]`);
         return false;
+      case 462:
+        return this.executeJobNow(new ExpandBankObjective(this))
       case 484: // The character cannot equip more than 100 utilities in the same slot.
         // ToDo: maybe do something here? Only equip enough to reach 100?
         return false;
