@@ -1519,21 +1519,62 @@ export class Character {
   }
 
   /**
+   * @description Increases the combat level to the target level
+   */
+  async trainCombatLevel(targetLevel: number) {
+    this.appendJob(new TrainCombatObjective(this, targetLevel));
+  }
+
+  /**
+   * @description Increases the combat level to the target level
+   */
+  async trainCombatLevelNow(targetLevel: number) {
+    return await this.executeJobNow(new TrainCombatObjective(this, targetLevel));
+  }
+
+  /**
    * @description levels the specified craft skill to the target level
    * @param targetSkill skill to train
    * @param targetLevel level to train too. Must be less than the max level 45
    */
-  // async levelCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
-  //   logger.warn(`Levelling craft skills isn't implemented yet`);
-  // }
+  async trainCraftingSkill(targetSkill: CraftSkill, targetLevel: number) {
+    this.appendJob(
+      new TrainCraftingSkillObjective(this, targetSkill, targetLevel),
+    );
+  }
+
+  /**
+   * @description levels the specified craft skill to the target level
+   * @param targetSkill skill to train
+   * @param targetLevel level to train too. Must be less than the max level 45
+   */
+  async trainCraftingSkillNow(targetSkill: CraftSkill, targetLevel: number) {
+    return await this.executeJobNow(
+      new TrainCraftingSkillObjective(this, targetSkill, targetLevel),
+    );
+  }
 
   /**
    * @description levels the specified gathering skill to the target level
    * @param targetSkill skill to train
    * @param targetLevel level to train too. Must be less than the max level 45
    */
-  async levelGatheringSkill(targetSkill: GatheringSkill, targetLevel: number) {
+  async trainGatheringSkill(targetSkill: GatheringSkill, targetLevel: number) {
     this.appendJob(
+      new TrainGatheringSkillObjective(this, targetSkill, targetLevel),
+    );
+  }
+
+  /**
+   * @description levels the specified gathering skill to the target level
+   * @param targetSkill skill to train
+   * @param targetLevel level to train too. Must be less than the max level 45
+   */
+  async trainGatheringSkillNow(
+    targetSkill: GatheringSkill,
+    targetLevel: number,
+  ) {
+    return await this.executeJobNow(
       new TrainGatheringSkillObjective(this, targetSkill, targetLevel),
     );
   }

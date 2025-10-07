@@ -24,12 +24,10 @@ export default function TrainSkillRouter(char: Character) {
         skill !== 'combat' &&
         !Object.values(Skill).includes(skill as Skill)
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              'Invalid skill type. Must be one of alchemy, fishing, mining, woodcutting, cooking, jewelrycrafting, weaponcrafting, gearcrafting or combat',
-          });
+        return res.status(400).json({
+          error:
+            'Invalid skill type. Must be one of alchemy, fishing, mining, woodcutting, cooking, jewelrycrafting, weaponcrafting, gearcrafting or combat',
+        });
       }
 
       if (typeof char === 'undefined' || !char) {

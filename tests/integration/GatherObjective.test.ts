@@ -17,7 +17,8 @@ const mockIronOreData: ItemSchema = {
   level: 10,
   type: 'resource',
   subtype: 'mining',
-  description: 'A chunk of raw iron ore. Can be smelted into iron bars for crafting many useful items.',
+  description:
+    'A chunk of raw iron ore. Can be smelted into iron bars for crafting many useful items.',
   conditions: [],
   effects: [],
   craft: null,
@@ -28,42 +29,42 @@ const mockIronOreData: ItemSchema = {
 const mockResourceData = {
   data: [
     {
-      name: "Iron Rocks",
-      code: "iron_rocks",
-      skill: "mining" as const,
+      name: 'Iron Rocks',
+      code: 'iron_rocks',
+      skill: 'mining' as const,
       level: 10,
       drops: [
         {
-          code: "iron_ore",
+          code: 'iron_ore',
           rate: 1,
           min_quantity: 1,
-          max_quantity: 1
+          max_quantity: 1,
         },
         {
-          code: "topaz_stone",
+          code: 'topaz_stone',
           rate: 200,
           min_quantity: 1,
-          max_quantity: 1
+          max_quantity: 1,
         },
         {
-          code: "emerald_stone",
+          code: 'emerald_stone',
           rate: 200,
           min_quantity: 1,
-          max_quantity: 1
+          max_quantity: 1,
         },
         {
-          code: "ruby_stone",
+          code: 'ruby_stone',
           rate: 200,
           min_quantity: 1,
-          max_quantity: 1
+          max_quantity: 1,
         },
         {
-          code: "sapphire_stone",
+          code: 'sapphire_stone',
           rate: 200,
           min_quantity: 1,
-          max_quantity: 1
-        }
-      ]
+          max_quantity: 1,
+        },
+      ],
     },
   ],
   total: 1,
@@ -262,7 +263,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
     it('should return false if gathering item is wooden_stick', async () => {
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
-        {code: 'wooden_stick', quantity: 1},
+        { code: 'wooden_stick', quantity: 1 },
         true, // checkBank = true
       );
 
@@ -273,20 +274,24 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       expect(result).toBe(false);
     });
 
-
     it('should gather all and not withdraw from bank when bank has 0', async () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
       mockCharacter.withdrawNow.mockResolvedValue(true);
-      
+
       // Mock the API calls
-      (getItemInformation as jest.MockedFunction<typeof getItemInformation>)
-        .mockResolvedValue(mockIronOreData);
-      (getResourceInformation as jest.MockedFunction<typeof getResourceInformation>)
-        .mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>)
-        .mockResolvedValue(mockMapData);
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getResourceInformation as jest.MockedFunction<
+          typeof getResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        mockMapData,
+      );
 
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,

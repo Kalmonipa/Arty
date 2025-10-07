@@ -1,7 +1,11 @@
 import { jest } from '@jest/globals';
 import { CraftObjective } from '../../src/classes/CraftObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
-import { MapSchema, ItemSchema, SimpleItemSchema } from '../../src/types/types.js';
+import {
+  MapSchema,
+  ItemSchema,
+  SimpleItemSchema,
+} from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/classes/Error.js';
@@ -40,29 +44,42 @@ class SimpleMockCharacter {
     return 0;
   });
 
-  withdrawNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
-    // Simulate successful withdrawal
-    this.addItemToInventory(code, quantity);
-    return true;
-  });
+  withdrawNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Simulate successful withdrawal
+      this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
 
-  depositNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
-    // Simulate successful deposit
-    this.removeItemFromInventory(code, quantity);
-    return true;
-  });
+  depositNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Simulate successful deposit
+      this.removeItemFromInventory(code, quantity);
+      return true;
+    },
+  );
 
-  gatherNow = jest.fn(async (quantity: number, code: string, checkBank: boolean, deposit: boolean): Promise<boolean> => {
-    // Simulate successful gathering
-    this.addItemToInventory(code, quantity);
-    return true;
-  });
+  gatherNow = jest.fn(
+    async (
+      quantity: number,
+      code: string,
+      checkBank: boolean,
+      deposit: boolean,
+    ): Promise<boolean> => {
+      // Simulate successful gathering
+      this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
 
-  craftNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
-    // Simulate successful crafting
-    this.addItemToInventory(code, quantity);
-    return true;
-  });
+  craftNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Simulate successful crafting
+      this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
 
   move = jest.fn(
     async (destination: { x: number; y: number }): Promise<void> => {
@@ -153,22 +170,22 @@ const mockWorkshopMapData = {
   data: [
     {
       map_id: 328,
-      name: "City",
-      skin: "forest_wcstation1",
+      name: 'City',
+      skin: 'forest_wcstation1',
       x: 2,
       y: 1,
-      layer: "overworld" as const,
+      layer: 'overworld' as const,
       access: {
-        type: "standard" as const,
-        conditions: []
+        type: 'standard' as const,
+        conditions: [],
       },
       interactions: {
         content: {
-          type: "workshop" as const,
-          code: "weaponcrafting" as const
+          type: 'workshop' as const,
+          code: 'weaponcrafting' as const,
         },
-        transition: null
-      }
+        transition: null,
+      },
     },
   ],
   total: 1,
@@ -177,41 +194,43 @@ const mockWorkshopMapData = {
 };
 
 const mockCraftableItemData: ItemSchema = {
-  name: "Iron Sword",
-  code: "iron_sword",
+  name: 'Iron Sword',
+  code: 'iron_sword',
   level: 10,
-  type: "weapon",
-  subtype: "",
-  description: "A reliable weapon for any adventurer. The weight of iron gives your strikes extra force.",
+  type: 'weapon',
+  subtype: '',
+  description:
+    'A reliable weapon for any adventurer. The weight of iron gives your strikes extra force.',
   conditions: [
     {
-      code: "level",
-      operator: "gt",
+      code: 'level',
+      operator: 'gt',
       value: '9',
     },
   ],
   effects: [
     {
-      code: "attack_earth",
+      code: 'attack_earth',
       value: 24,
-      description: "Adds 24 Earth Attack to its stats when equipped.",
+      description: 'Adds 24 Earth Attack to its stats when equipped.',
     },
     {
-      code: "critical_strike",
+      code: 'critical_strike',
       value: 5,
-      description: "Adds 5% Critical Strike to its stats when equipped. Critical strikes adds 50% extra damage to an attack (1.5x). ",
+      description:
+        'Adds 5% Critical Strike to its stats when equipped. Critical strikes adds 50% extra damage to an attack (1.5x). ',
     },
   ],
   craft: {
-    skill: "weaponcrafting",
+    skill: 'weaponcrafting',
     level: 10,
     items: [
       {
-        code: "iron_bar",
+        code: 'iron_bar',
         quantity: 6,
       },
       {
-        code: "feather",
+        code: 'feather',
         quantity: 2,
       },
     ],
@@ -220,29 +239,29 @@ const mockCraftableItemData: ItemSchema = {
   tradeable: true,
 };
 
-
 const mockIngredientItemData: ItemSchema = {
-  name: "Iron Bar",
-  code: "iron_bar",
+  name: 'Iron Bar',
+  code: 'iron_bar',
   level: 10,
-  type: "resource",
-  subtype: "bar",
-  description: "A solid bar of refined iron, ready for crafting into weapons, armor, and tools.",
+  type: 'resource',
+  subtype: 'bar',
+  description:
+    'A solid bar of refined iron, ready for crafting into weapons, armor, and tools.',
   conditions: [],
   effects: [],
   craft: {
-    skill: "mining",
+    skill: 'mining',
     level: 10,
     items: [
       {
-        code: "iron_ore",
-        quantity: 10
-      }
+        code: 'iron_ore',
+        quantity: 10,
+      },
     ],
-    quantity: 1
+    quantity: 1,
   },
-  tradeable: true
-}
+  tradeable: true,
+};
 
 const mockFeatherItemData: ItemSchema = {
   code: 'feather',
@@ -258,18 +277,18 @@ const mockFeatherItemData: ItemSchema = {
 };
 
 const mockMobDropData: ItemSchema = {
-      name: 'Cowhide',
-      code: 'cowhide',
-      level: 8,
-      type: 'resource',
-      subtype: 'mob',
-      description: "Tanned hide from a cow, used in many basic crafting recipes. Sturdy and versatile.",
-      conditions: [],
-      effects: [],
-      craft: null,
-      tradeable: true
-    }
-
+  name: 'Cowhide',
+  code: 'cowhide',
+  level: 8,
+  type: 'resource',
+  subtype: 'mob',
+  description:
+    'Tanned hide from a cow, used in many basic crafting recipes. Sturdy and versatile.',
+  conditions: [],
+  effects: [],
+  craft: null,
+  tradeable: true,
+};
 
 describe('CraftObjective Integration Tests', () => {
   let mockCharacter: SimpleMockCharacter;
@@ -359,18 +378,20 @@ describe('CraftObjective Integration Tests', () => {
       // Arrange
       mockCharacter.addItemToInventory('iron_bar', 30);
       mockCharacter.addItemToInventory('feather', 10);
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30;
-          case 'feather':
-            return 10;
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30;
+            case 'feather':
+              return 10;
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
 
       // Act
       const result = await craftObjective.run();
@@ -403,28 +424,32 @@ describe('CraftObjective Integration Tests', () => {
   describe('Ingredient gathering', () => {
     it('should withdraw ingredients from bank when available', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 10; // Need 30, have 10
-          case 'feather':
-            return 0; // Need 10, have 0
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
-      mockCharacter.checkQuantityOfItemInBank.mockImplementation(async (code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 40; // Have enough in bank
-          case 'feather':
-            return 20; // Have enough in bank
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 10; // Need 30, have 10
+            case 'feather':
+              return 0; // Need 10, have 0
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+        async (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 40; // Have enough in bank
+            case 'feather':
+              return 20; // Have enough in bank
+            default:
+              return 0;
+          }
+        },
+      );
 
       // Act
       const result = await craftObjective.run();
@@ -442,33 +467,37 @@ describe('CraftObjective Integration Tests', () => {
       // Track inventory state - after gathering, we should have the required amount
       let ironBarInInv = 10;
       let featherInInv = 0;
-      
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return ironBarInInv;
-          case 'feather':
-            return featherInInv;
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return ironBarInInv;
+            case 'feather':
+              return featherInInv;
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0); // No items in bank
-      
+
       // Mock the gathering to succeed and update inventory
-      mockCharacter.gatherNow.mockImplementation(async (quantity: number, code: string) => {
-        if (code === 'feather') {
-          featherInInv += quantity;
-        }
-        return true;
-      });
+      mockCharacter.gatherNow.mockImplementation(
+        async (quantity: number, code: string) => {
+          if (code === 'feather') {
+            featherInInv += quantity;
+          }
+          return true;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async (quantity: number) => {
-        ironBarInInv += quantity
+        ironBarInInv += quantity;
         return true;
-      })
+      });
 
       // Act
       const result = await craftObjective.run();
@@ -476,7 +505,12 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(20, 'iron_bar');
-      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(10, 'feather', true, false);
+      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
+        10,
+        'feather',
+        true,
+        false,
+      );
     });
 
     it('should craft sub-ingredients when they are craftable', async () => {
@@ -507,36 +541,42 @@ describe('CraftObjective Integration Tests', () => {
       // Track inventory state - after crafting/gathering, we should have the required amount
       let ironBarInInv = 10;
       let featherInInv = 0;
-      
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return ironBarInInv;
-          case 'feather':
-            return featherInInv;
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return ironBarInInv;
+            case 'feather':
+              return featherInInv;
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
-      
+
       // Mock the crafting to succeed and update inventory
-      mockCharacter.craftNow.mockImplementation(async (quantity: number, code: string) => {
-        if (code === 'iron_bar') {
-          ironBarInInv += quantity;
-        }
-        return true;
-      });
-      
+      mockCharacter.craftNow.mockImplementation(
+        async (quantity: number, code: string) => {
+          if (code === 'iron_bar') {
+            ironBarInInv += quantity;
+          }
+          return true;
+        },
+      );
+
       // Mock the gathering to succeed and update inventory
-      mockCharacter.gatherNow.mockImplementation(async (quantity: number, code: string) => {
-        if (code === 'feather') {
-          featherInInv += quantity;
-        }
-        return true;
-      });
+      mockCharacter.gatherNow.mockImplementation(
+        async (quantity: number, code: string) => {
+          if (code === 'feather') {
+            featherInInv += quantity;
+          }
+          return true;
+        },
+      );
 
       // Act
       const result = await craftObjective.run();
@@ -544,7 +584,12 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(20, 'iron_bar');
-      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(10, 'feather', true, false);
+      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
+        10,
+        'feather',
+        true,
+        false,
+      );
     });
 
     it('should handle mob drop ingredients', async () => {
@@ -579,38 +624,52 @@ describe('CraftObjective Integration Tests', () => {
       // Track inventory state - after gathering, we should have the required amount
       let cowhideInInv = 5;
       let featherInInv = 0;
-      
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'cowhide':
-            return cowhideInInv;
-          case 'feather':
-            return featherInInv;
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'cowhide':
+              return cowhideInInv;
+            case 'feather':
+              return featherInInv;
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
-      
+
       // Mock the gathering to succeed and update inventory
-      mockCharacter.gatherNow.mockImplementation(async (quantity: number, code: string) => {
-        if (code === 'cowhide') {
-          cowhideInInv += quantity;
-        } else if (code === 'feather') {
-          featherInInv += quantity;
-        }
-        return true;
-      });
+      mockCharacter.gatherNow.mockImplementation(
+        async (quantity: number, code: string) => {
+          if (code === 'cowhide') {
+            cowhideInInv += quantity;
+          } else if (code === 'feather') {
+            featherInInv += quantity;
+          }
+          return true;
+        },
+      );
 
       // Act
       const result = await craftObjective.run();
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(10, 'cowhide', true, false);
-      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(5, 'feather', true, false);
+      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
+        10,
+        'cowhide',
+        true,
+        false,
+      );
+      expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
+        5,
+        'feather',
+        true,
+        false,
+      );
       expect(mockCharacter.gatherNow).toHaveBeenCalledTimes(2);
     });
   });
@@ -620,19 +679,21 @@ describe('CraftObjective Integration Tests', () => {
       // Arrange
       // Set a high inventory limit to avoid batching
       mockCharacter.data.inventory_max_items = 100;
-      
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30;
-          case 'feather':
-            return 10;
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30;
+            case 'feather':
+              return 10;
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
 
       // Act
       const result = await craftObjective.run();
@@ -646,22 +707,27 @@ describe('CraftObjective Integration Tests', () => {
     it('should handle batch calculation for reasonable quantities', async () => {
       // Arrange
       const reasonableTarget = { code: 'iron_sword', quantity: 5 }; // Smaller quantity to avoid recursion
-      const reasonableCraftObjective = new CraftObjective(mockCharacter as any, reasonableTarget);
-      
+      const reasonableCraftObjective = new CraftObjective(
+        mockCharacter as any,
+        reasonableTarget,
+      );
+
       mockCharacter.data.inventory_max_items = 100; // High inventory to avoid batching issues
-      
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Need 30 for 5 swords
-          case 'feather':
-            return 10; // Need 10 for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Need 30 for 5 swords
+            case 'feather':
+              return 10; // Need 10 for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
 
       // Act
       const result = await reasonableCraftObjective.run();
@@ -683,18 +749,20 @@ describe('CraftObjective Integration Tests', () => {
 
       mockCharacter.handleErrors.mockResolvedValue(true);
       // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Have enough for 5 swords
-          case 'feather':
-            return 10; // Have enough for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Have enough for 5 swords
+            case 'feather':
+              return 10; // Have enough for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Act
@@ -710,24 +778,26 @@ describe('CraftObjective Integration Tests', () => {
     it('should return false when max retries exceeded', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Server error' });
-      (actionCraft as jest.MockedFunction<typeof actionCraft>).mockResolvedValue(
-        apiError,
-      );
+      (
+        actionCraft as jest.MockedFunction<typeof actionCraft>
+      ).mockResolvedValue(apiError);
 
       mockCharacter.handleErrors.mockResolvedValue(true);
       // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Have enough for 5 swords
-          case 'feather':
-            return 10; // Have enough for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Have enough for 5 swords
+            case 'feather':
+              return 10; // Have enough for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Act
@@ -760,21 +830,25 @@ describe('CraftObjective Integration Tests', () => {
     it('should handle getMaps API error', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(apiError);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        apiError,
+      );
       mockCharacter.handleErrors.mockResolvedValue(false);
       // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Have enough for 5 swords
-          case 'feather':
-            return 10; // Have enough for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Have enough for 5 swords
+            case 'feather':
+              return 10; // Have enough for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Act
@@ -794,18 +868,20 @@ describe('CraftObjective Integration Tests', () => {
         size: 50,
       });
       // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Have enough for 5 swords
-          case 'feather':
-            return 10; // Have enough for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Have enough for 5 swords
+            case 'feather':
+              return 10; // Have enough for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Act
@@ -823,22 +899,24 @@ describe('CraftObjective Integration Tests', () => {
           // Missing character data
         },
       };
-      (actionCraft as jest.MockedFunction<typeof actionCraft>).mockResolvedValue(
-        responseWithoutCharacter as any,
-      );
+      (
+        actionCraft as jest.MockedFunction<typeof actionCraft>
+      ).mockResolvedValue(responseWithoutCharacter as any);
       // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Have enough for 5 swords
-          case 'feather':
-            return 10; // Have enough for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Have enough for 5 swords
+            case 'feather':
+              return 10; // Have enough for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Act
@@ -855,18 +933,20 @@ describe('CraftObjective Integration Tests', () => {
       // Arrange
       mockCharacter.isCancelled.mockReturnValue(true);
       // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Have enough for 5 swords
-          case 'feather':
-            return 10; // Have enough for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Have enough for 5 swords
+            case 'feather':
+              return 10; // Have enough for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Act
@@ -913,18 +993,20 @@ describe('CraftObjective Integration Tests', () => {
       );
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
       // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30; // Have enough for 5 swords
-          case 'feather':
-            return 10; // Have enough for 5 swords
-          case 'iron_sword':
-            return 0;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30; // Have enough for 5 swords
+            case 'feather':
+              return 10; // Have enough for 5 swords
+            case 'iron_sword':
+              return 0;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Act

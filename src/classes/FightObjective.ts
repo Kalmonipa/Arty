@@ -30,15 +30,28 @@ export class FightObjective extends Objective {
 
     await this.character.evaluateGear('combat', this.target.code);
 
-    const simResult = await this.character.simulateFightNow(
-      structuredClone(this.character.data),
-      this.target.code,
-    );
-    if (simResult === false) {
-      return simResult;
-    }
+    for (
+      let fightSimAttempts = 1;
+      fightSimAttempts <= this.maxRetries;
+      fightSimAttempts++
+    ) {
+      logger.info(`Fight sim attempt ${fightSimAttempts}/${this.maxRetries}`);
+      const simResult = await this.character.simulateFightNow(
+        structuredClone(this.character.data),
+        this.target.code,
+      );
 
-    return true;
+      if (simResult === false) {
+        await this.character.trainCombatLevelNow(this.character.data.level + 1);
+        // If this was the last attempt, return false
+        if (fightSimAttempts === this.maxRetries) {
+          return false;
+        }
+        continue;
+      } else {
+        return true;
+      }
+    }
   }
 
   /**

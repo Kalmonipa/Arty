@@ -74,10 +74,10 @@ export class CraftObjective extends Objective {
           logger.warn(`Item has no craft information`);
           return true;
         }
-        
+
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
         // If not enough inv space, split it into 2 jobs, craft half as much at once
-        // If still not enough, keep splitting in half until we have enough inv space   
+        // If still not enough, keep splitting in half until we have enough inv space
         const batchInfo = this.calculateNumBatches(targetItem.craft.items);
         this.numBatches = batchInfo.numBatches;
         this.numItemsPerBatch = batchInfo.numPerBatch;
@@ -116,22 +116,31 @@ export class CraftObjective extends Objective {
           }
 
           for (const craftItem of targetItem.craft.items) {
-            const numInInvAfterGathering = this.character.checkQuantityOfItemInInv(craftItem.code)
-            logger.debug(`Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}`)
-            if (numInInvAfterGathering < (craftItem.quantity * this.numItemsPerBatch)) {
-              logger.warn(`Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}. Regathering`)
+            const numInInvAfterGathering =
+              this.character.checkQuantityOfItemInInv(craftItem.code);
+            logger.debug(
+              `Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}`,
+            );
+            if (
+              numInInvAfterGathering <
+              craftItem.quantity * this.numItemsPerBatch
+            ) {
+              logger.warn(
+                `Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}. Regathering`,
+              );
 
               const gathered = await this.gatherIngredients(
                 targetItem.craft.items,
                 batchInfo.numPerBatch,
               );
               if (!gathered) {
-                logger.warn(`Reathering ingredients for ${targetItem.code} has failed`);
+                logger.warn(
+                  `Reathering ingredients for ${targetItem.code} has failed`,
+                );
                 break;
               }
             }
           }
-          
 
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
@@ -331,11 +340,9 @@ export class CraftObjective extends Objective {
           craftingItem.code,
         );
         if (numInInv >= totalIngredNeededToCraft) {
-          logger.info(`${numInInv} in inventory. Moving on to craft`)
+          logger.info(`${numInInv} in inventory. Moving on to craft`);
           continue;
-        } else if (
-          numInBank >= totalIngredNeededToCraft - numInInv
-        ) {
+        } else if (numInBank >= totalIngredNeededToCraft - numInInv) {
           return await this.character.withdrawNow(
             totalIngredNeededToCraft - numInInv,
             craftingItem.code,

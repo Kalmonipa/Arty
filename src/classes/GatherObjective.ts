@@ -51,7 +51,7 @@ export class GatherObjective extends Objective {
     let numInBank = 0;
 
     if (this.target.code === 'wooden_stick') {
-      logger.info(`${this.target.code} is not gatherable`)
+      logger.info(`${this.target.code} is not gatherable`);
       return false;
     }
 
@@ -165,7 +165,7 @@ export class GatherObjective extends Objective {
           attempt++;
           continue;
         } else {
-          return true
+          return true;
         }
       } else if (resourceDetails.subtype === 'task') {
         if (
@@ -178,27 +178,26 @@ export class GatherObjective extends Objective {
           attempt++;
           continue;
         } else {
-          return true
+          return true;
         }
       } else if (resourceDetails.craft) {
         if (!(await this.character.craftNow(quantity, resourceDetails.code))) {
           attempt++;
           continue;
         } else {
-          return true
+          return true;
         }
       } else {
         if (!(await this.gatherResource(code, quantity, numHeld))) {
           attempt++;
           continue;
         } else {
-          return true
+          return true;
         }
       }
     }
     // Remove the gathered item if it's in the exclusion list
     this.character.removeItemFromItemsToKeep(this.target.code);
-
   }
 
   async gatherItemLoop(
@@ -270,8 +269,8 @@ export class GatherObjective extends Objective {
         logger.info(`Mob info for ${mobInfo.data.length} mobs`);
 
         // ToDo: make this check all mobs in case multiple drop the item
-        if (!await this.character.fightNow(1, mobInfo.data[0].code)) {
-          logger.warn(`Fight attempt against ${mobInfo.data[0].code} failed`)
+        if (!(await this.character.fightNow(1, mobInfo.data[0].code))) {
+          logger.warn(`Fight attempt against ${mobInfo.data[0].code} failed`);
           return false;
         }
 

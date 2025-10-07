@@ -22,7 +22,7 @@ export class IdleObjective extends Objective {
   role: Role;
 
   constructor(character: Character, role: Role) {
-    super(character, `idle_objective_${role}`, 'not_started');
+    super(character, `idle_${role}_objective`, 'not_started');
 
     this.character = character;
     this.role = role;

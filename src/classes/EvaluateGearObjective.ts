@@ -245,7 +245,7 @@ export class EvaluateGearObjective extends Objective {
     }
 
     if (this.character.data.weapon_slot === bestWeapon.code) {
-      logger.debug(`Already have ${bestWeapon.code} equipped`)
+      logger.debug(`Already have ${bestWeapon.code} equipped`);
       return true;
     }
 
