@@ -76,7 +76,7 @@ export class GatherObjective extends Objective {
         this.target.quantity,
         this.target.code,
       );
-    } else if (numInBank < this.target.quantity) {
+    } else if (numInBank > 0 && numInBank < this.target.quantity) {
       logger.info(
         `Withdrawing ${numInBank} ${this.target.code} from the bank. Collecting ${this.target.quantity - numInBank} more`,
       );

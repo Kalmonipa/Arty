@@ -1,9 +1,94 @@
 import { jest } from '@jest/globals';
 import { GatherObjective } from '../../src/classes/GatherObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
-import { MapSchema } from '../../src/types/types.js';
+import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
+
+// Import the mocked functions
+import { getItemInformation } from '../../src/api_calls/Items.js';
+import { getResourceInformation } from '../../src/api_calls/Resources.js';
+import { getMaps } from '../../src/api_calls/Maps.js';
+
+// Mock item data
+const mockIronOreData: ItemSchema = {
+  code: 'iron_ore',
+  name: 'Iron Ore',
+  level: 10,
+  type: 'resource',
+  subtype: 'mining',
+  description: 'A chunk of raw iron ore. Can be smelted into iron bars for crafting many useful items.',
+  conditions: [],
+  effects: [],
+  craft: null,
+  tradeable: true,
+};
+
+// Mock resource information data
+const mockResourceData = {
+  data: [
+    {
+      name: "Iron Rocks",
+      code: "iron_rocks",
+      skill: "mining" as const,
+      level: 10,
+      drops: [
+        {
+          code: "iron_ore",
+          rate: 1,
+          min_quantity: 1,
+          max_quantity: 1
+        },
+        {
+          code: "topaz_stone",
+          rate: 200,
+          min_quantity: 1,
+          max_quantity: 1
+        },
+        {
+          code: "emerald_stone",
+          rate: 200,
+          min_quantity: 1,
+          max_quantity: 1
+        },
+        {
+          code: "ruby_stone",
+          rate: 200,
+          min_quantity: 1,
+          max_quantity: 1
+        },
+        {
+          code: "sapphire_stone",
+          rate: 200,
+          min_quantity: 1,
+          max_quantity: 1
+        }
+      ]
+    },
+  ],
+  total: 1,
+  page: 1,
+  size: 50,
+};
+
+// Mock map data
+const mockMapData = {
+  data: [
+    {
+      map_id: 1,
+      name: 'Iron Mine',
+      skin: 'mine',
+      x: 100,
+      y: 100,
+      layer: 'overworld' as const,
+      access: { type: 'standard' as const },
+      interactions: {},
+    },
+  ],
+  total: 1,
+  page: 1,
+  size: 50,
+};
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Actions', () => ({
@@ -186,6 +271,35 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
       // Assert
       expect(result).toBe(false);
+    });
+
+
+    it('should gather all and not withdraw from bank when bank has 0', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.withdrawNow.mockResolvedValue(true);
+      
+      // Mock the API calls
+      (getItemInformation as jest.MockedFunction<typeof getItemInformation>)
+        .mockResolvedValue(mockIronOreData);
+      (getResourceInformation as jest.MockedFunction<typeof getResourceInformation>)
+        .mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>)
+        .mockResolvedValue(mockMapData);
+
+      const objectiveWithBankCheck = new GatherObjective(
+        mockCharacter as any,
+        target,
+        true, // checkBank = true
+      );
+
+      // Act
+      const result = await objectiveWithBankCheck.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
     });
   });
 });
