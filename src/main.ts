@@ -7,14 +7,13 @@ import TrainSkillRouter from './routes/TrainSkill.js';
 import { ApiUrl, CharName, logger } from './utils.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
-import DepositRouter from './routes/Deposit.js';
 import EquipRouter from './routes/Equip.js';
 import FightRouter from './routes/Fight.js';
 import RecycleRouter from './routes/Recycle.js';
 import { ApiError } from './classes/Error.js';
-import WithdrawRouter from './routes/Withdraw.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
+import BankRouter from './routes/Bank.js';
 
 async function main() {
   const charData = await getCharacter(CharName);
@@ -35,8 +34,8 @@ async function main() {
   const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
+  app.use('/bank', BankRouter(char));
   app.use('/craft', CraftRouter(char));
-  app.use('/deposit', DepositRouter(char));
   app.use('/equip', EquipRouter(char));
   app.use('/fight', FightRouter(char));
   app.use('/gather', GatherRouter(char));
@@ -46,7 +45,6 @@ async function main() {
   app.use('/task', TaskRouter(char));
   app.use('/trade', TradeRouter(char));
   app.use('/train', TrainSkillRouter(char));
-  app.use('/withdraw', WithdrawRouter(char));
 
   app.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);

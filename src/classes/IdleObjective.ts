@@ -1,13 +1,8 @@
-import {
-  actionWithdrawGold,
-  getBankDetails,
-  getBankItems,
-  purchaseBankExpansion,
-} from '../api_calls/Bank.js';
 import { getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
+import { ExpandBankObjective } from './BankExpansion.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
@@ -115,6 +110,15 @@ export class IdleObjective extends Objective {
   }
 
   /**
+   * @description Check if the bank can be expanded and do so if we have enough money leftover
+   * 
+   */
+  private async checkBankExpansion(): Promise<boolean> {
+    const job = new ExpandBankObjective(this.character)
+    return this.character.executeJobNow(job, true, true, this.objectiveId)
+  }
+
+  /**
    * Craft certain items and recycle items depending on role
    * @returns true if successful, false if not
    */
@@ -217,66 +221,6 @@ export class IdleObjective extends Objective {
       true,
       this.objectiveId,
     );
-  }
-
-  /**
-   * Purchase a bank expansion if the bank is >90% full and we have at least 25% of our gold leftover
-   * @todo Implement retry logic based on return values from the handleErrors() functions
-   */
-  private async checkBankExpansion(): Promise<boolean> {
-    const maxBankFullness = 90;
-    const targetPercentageLeftoverCash = 25;
-
-    const currentBankFullness = await getBankItems();
-    if (currentBankFullness instanceof ApiError) {
-      await this.character.handleErrors(currentBankFullness);
-      return false;
-    }
-
-    const bankDetails = await getBankDetails();
-    if (bankDetails instanceof ApiError) {
-      await this.character.handleErrors(bankDetails);
-      return false;
-    }
-
-    // Check if the bank is >90% full
-    if (
-      Math.floor(bankDetails.data.slots / currentBankFullness.total) * 100 <
-      maxBankFullness
-    ) {
-      logger.debug(`Bank is less than 90% full so no need to upgrade`);
-      // Returning true because technically the job completed
-      return true;
-    }
-
-    // Check if we have enough gold to purchase
-    const leftoverGold = bankDetails.data.gold - bankDetails.data.next_expansion_cost
-    if (
-      bankDetails.data.gold * (targetPercentageLeftoverCash / 100) <
-      leftoverGold
-    ) {
-      logger.debug(
-        `Purchasing an upgrade wouldn't leave us with ${leftoverGold}. Not purchasing`,
-      );
-      return true;
-    }
-
-    const withdrawGold = await actionWithdrawGold(
-      this.character.data,
-      bankDetails.data.next_expansion_cost,
-    );
-    if (withdrawGold instanceof ApiError) {
-      await this.character.handleErrors(withdrawGold);
-      return false;
-    }
-
-    const upgradeBank = await purchaseBankExpansion(this.character.data);
-    if (upgradeBank instanceof ApiError) {
-      await this.character.handleErrors(upgradeBank);
-      return false;
-    }
-
-    return true;
   }
 
   /**
