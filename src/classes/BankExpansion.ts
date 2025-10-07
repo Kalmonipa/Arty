@@ -55,7 +55,7 @@ export class ExpandBankObjective extends Objective {
     // Check if we have enough gold to purchase
     const leftoverGold = bankDetails.data.gold - bankDetails.data.next_expansion_cost
     if (
-      bankDetails.data.gold * (targetPercentageLeftoverCash / 100) <
+      bankDetails.data.gold * (targetPercentageLeftoverCash / 100) >
       leftoverGold
     ) {
       logger.debug(
