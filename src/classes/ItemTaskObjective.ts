@@ -143,7 +143,7 @@ export class ItemTaskObjective extends Objective {
             ))
           ) {
             if (attempt >= this.maxRetries) {
-              await this.cancelCurrentTask('items');
+              //await this.cancelCurrentTask('items');
               return false;
             } else {
               break;
@@ -163,7 +163,7 @@ export class ItemTaskObjective extends Objective {
             ))
           ) {
             if (attempt >= this.maxRetries) {
-              await this.cancelCurrentTask('items');
+              //await this.cancelCurrentTask('items');
               return false;
             } else {
               break;

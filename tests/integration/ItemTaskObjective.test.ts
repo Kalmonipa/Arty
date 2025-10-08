@@ -538,20 +538,14 @@ describe('ItemTaskObjective Integration Tests', () => {
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
 
-      // Mock the Objective's cancelCurrentTask method
-      const cancelCurrentTaskSpy = jest
-        .spyOn(objective, 'cancelCurrentTask')
-        .mockResolvedValue(false);
-
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(false);
-      expect(cancelCurrentTaskSpy).toHaveBeenCalledWith('items');
     });
 
-    it('should handle gathering failures and cancel task', async () => {
+    it('should handle gathering failures and return false', async () => {
       // Arrange
       mockCharacter.data.task = 'iron_ore';
       mockCharacter.data.task_type = 'items';
@@ -569,17 +563,11 @@ describe('ItemTaskObjective Integration Tests', () => {
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
 
-      // Mock the Objective's cancelCurrentTask method
-      const cancelCurrentTaskSpy = jest
-        .spyOn(objective, 'cancelCurrentTask')
-        .mockResolvedValue(false);
-
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(false);
-      expect(cancelCurrentTaskSpy).toHaveBeenCalledWith('items');
     });
   });
 
