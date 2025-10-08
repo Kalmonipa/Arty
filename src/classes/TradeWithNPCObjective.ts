@@ -105,8 +105,7 @@ export class TradeObjective extends Objective {
 
     const buyResponse = await actionBuyItem(this.character.data, items);
     if (buyResponse instanceof ApiError) {
-      this.character.handleErrors(buyResponse);
-      return false;
+      return this.character.handleErrors(buyResponse);
     } else {
       this.character.data = buyResponse.character;
       return true;

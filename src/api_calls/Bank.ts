@@ -118,7 +118,7 @@ export async function actionWithdrawGold(
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/bank/deposit/gold`,
+      `${ApiUrl}/my/${character.name}/action/bank/withdraw/gold`,
       requestOptions,
     );
 
@@ -145,7 +145,7 @@ export async function actionWithdrawGold(
           message = 'The character is in cooldown.';
           break;
         default:
-          message = 'Unknown error from /action/bank/deposit/gold';
+          message = 'Unknown error from /action/bank/withdraw/gold';
           break;
       }
       throw new ApiError({
@@ -198,7 +198,7 @@ export async function purchaseBankExpansion(
           message = 'Bank not found on this map.';
           break;
         default:
-          message = 'Unknown error from /action/bank/deposit/gold';
+          message = 'Unknown error from /action/bank/buy_expansion';
           break;
       }
       throw new ApiError({
