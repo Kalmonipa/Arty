@@ -2,16 +2,16 @@ import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { actionWithdrawGold, getBankDetails, getBankItems, purchaseBankExpansion } from '../api_calls/Bank.js';
+import {
+  actionWithdrawGold,
+  getBankDetails,
+  getBankItems,
+  purchaseBankExpansion,
+} from '../api_calls/Bank.js';
 
 export class ExpandBankObjective extends Objective {
-
   constructor(character: Character) {
-    super(
-      character,
-      `expand_bank`,
-      'not_started',
-    );
+    super(character, `expand_bank`, 'not_started');
 
     this.character = character;
   }
@@ -26,7 +26,6 @@ export class ExpandBankObjective extends Objective {
    * If 0 is entered, all of the specified item is deposited
    */
   async run(): Promise<boolean> {
-    
     const maxBankFullness = 90;
     const targetPercentageLeftoverCash = 25;
 
@@ -53,7 +52,8 @@ export class ExpandBankObjective extends Objective {
     }
 
     // Check if we have enough gold to purchase
-    const leftoverGold = bankDetails.data.gold - bankDetails.data.next_expansion_cost
+    const leftoverGold =
+      bankDetails.data.gold - bankDetails.data.next_expansion_cost;
     if (
       bankDetails.data.gold * (targetPercentageLeftoverCash / 100) >
       leftoverGold
@@ -80,5 +80,5 @@ export class ExpandBankObjective extends Objective {
     }
 
     return true;
-    }
+  }
 }

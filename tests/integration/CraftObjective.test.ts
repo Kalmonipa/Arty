@@ -504,7 +504,7 @@ describe('CraftObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.craftNow).toHaveBeenCalledWith(20, 'iron_bar');
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(20, 'iron_bar', true, false);
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
         10,
         'feather',
@@ -583,7 +583,7 @@ describe('CraftObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.craftNow).toHaveBeenCalledWith(20, 'iron_bar');
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(20, 'iron_bar', true, false);
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
         10,
         'feather',

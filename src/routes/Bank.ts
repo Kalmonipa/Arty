@@ -91,7 +91,6 @@ export default function BankRouter(char: Character) {
 
   router.post('/expand', async (req: Request, res: Response) => {
     try {
-      
       if (typeof char === 'undefined' || !char) {
         return res
           .status(500)

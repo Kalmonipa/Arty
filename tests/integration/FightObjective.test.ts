@@ -91,7 +91,7 @@ class SimpleMockCharacter {
 
   trainCombatLevelNow = jest.fn(async (): Promise<boolean> => {
     return true;
-  })
+  });
 
   checkHealth = jest.fn((): HealthStatus => {
     return {
@@ -288,7 +288,7 @@ describe('FightObjective Integration Tests', () => {
     it('should fail prerequisite checks if fight simulation fails', async () => {
       // Arrange
       mockCharacter.simulateFightNow.mockResolvedValue(false);
-      mockCharacter.trainCombatLevelNow.mockResolvedValue(true)
+      mockCharacter.trainCombatLevelNow.mockResolvedValue(true);
 
       // Act
       const result = await fightObjective.runPrerequisiteChecks();

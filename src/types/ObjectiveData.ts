@@ -21,4 +21,9 @@ export interface SerializedJob {
   [key: string]: unknown;
 }
 
-export type SimpleObjectiveInfo = {id: string, status: string, parentId?: string, childId?: string}
+export type SimpleObjectiveInfo = {
+  id: string;
+  status: string;
+  parentId?: string;
+  childId?: string;
+};

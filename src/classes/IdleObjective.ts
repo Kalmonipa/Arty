@@ -111,11 +111,11 @@ export class IdleObjective extends Objective {
 
   /**
    * @description Check if the bank can be expanded and do so if we have enough money leftover
-   * 
+   *
    */
   private async checkBankExpansion(): Promise<boolean> {
-    const job = new ExpandBankObjective(this.character)
-    return this.character.executeJobNow(job, true, true, this.objectiveId)
+    const job = new ExpandBankObjective(this.character);
+    return this.character.executeJobNow(job, true, true, this.objectiveId);
   }
 
   /**

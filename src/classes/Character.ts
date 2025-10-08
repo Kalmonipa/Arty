@@ -1307,23 +1307,43 @@ export class Character {
   /**
    * @description Craft the item. Character must be on the correct crafting map
    */
-  async craft(quantity: number, code: string) {
+  async craft(
+    quantity: number,
+    code: string,
+    checkBank?: boolean,
+    includeInventory?: boolean,
+  ) {
     this.appendJob(
-      new CraftObjective(this, {
-        code: code,
-        quantity: quantity,
-      }),
+      new CraftObjective(
+        this,
+        {
+          code: code,
+          quantity: quantity,
+        },
+        checkBank,
+        includeInventory,
+      ),
     );
   }
 
   /**
    * @description Craft the item. Character must be on the correct crafting map
    */
-  async craftNow(quantity: number, code: string): Promise<boolean> {
-    const craftJob = new CraftObjective(this, {
-      code: code,
-      quantity: quantity,
-    });
+  async craftNow(
+    quantity: number,
+    code: string,
+    checkBank?: boolean,
+    includeInventory?: boolean,
+  ): Promise<boolean> {
+    const craftJob = new CraftObjective(
+      this,
+      {
+        code: code,
+        quantity: quantity,
+      },
+      checkBank,
+      includeInventory,
+    );
     return await this.executeJobNow(
       craftJob,
       true,
@@ -1526,7 +1546,9 @@ export class Character {
    * @description Increases the combat level to the target level
    */
   async trainCombatLevelNow(targetLevel: number) {
-    return await this.executeJobNow(new TrainCombatObjective(this, targetLevel));
+    return await this.executeJobNow(
+      new TrainCombatObjective(this, targetLevel),
+    );
   }
 
   /**
@@ -1704,7 +1726,7 @@ export class Character {
         logger.error(`Invalid payload [Code: ${response.error.code}]`);
         return false;
       case 462:
-        return this.executeJobNow(new ExpandBankObjective(this))
+        return this.executeJobNow(new ExpandBankObjective(this));
       case 484: // The character cannot equip more than 100 utilities in the same slot.
         // ToDo: maybe do something here? Only equip enough to reach 100?
         return false;

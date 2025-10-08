@@ -22,7 +22,7 @@ export default function JobsRouter(char: Character) {
       return res.status(201).json({
         message: `${char.data.name} has ${jobs.length} jobs in queue`,
         character: char.data.name,
-        jobs: jobs,
+        jobs: [jobs],
         num_jobs: jobs.length,
       });
     } catch (error) {

@@ -9,32 +9,46 @@ import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema, SimpleItemSchema } from '../types/types.js';
 
 /**
+ * @description Crafts the requested amount of the item
  * @todo
  * - Empty inventory before starting, except for the item or any ingredients
+ *
  */
 export class CraftObjective extends Objective {
   target: ObjectiveTargets;
   numBatches: number = 1;
   numItemsPerBatch: number;
+  checkBank?: boolean;
+  includeInventory?: boolean;
 
-  constructor(character: Character, target: ObjectiveTargets) {
+  constructor(
+    character: Character,
+    target: ObjectiveTargets,
+    checkBank?: boolean,
+    includeInventory?: boolean,
+  ) {
     super(character, `craft_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
     this.target = target;
+    this.checkBank = checkBank;
+    this.includeInventory =
+      includeInventory !== undefined ? includeInventory : true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
-    const quantyInInv = this.character.checkQuantityOfItemInInv(
-      this.target.code,
-    );
+    if (this.includeInventory) {
+      const quantyInInv = this.character.checkQuantityOfItemInInv(
+        this.target.code,
+      );
 
-    if (quantyInInv >= this.target.quantity) {
-      // Already have enough, set target to 0 so no crafting is needed
-      this.target.quantity = 0;
-    } else if (quantyInInv > 0) {
-      // Carrying some, so only need to craft the remainder
-      this.target.quantity = this.target.quantity - quantyInInv;
+      if (quantyInInv >= this.target.quantity) {
+        // Already have enough, set target to 0 so no crafting is needed
+        this.target.quantity = 0;
+      } else if (quantyInInv > 0) {
+        // Carrying some, so only need to craft the remainder
+        this.target.quantity = this.target.quantity - quantyInInv;
+      }
     }
 
     return true;
@@ -295,6 +309,8 @@ export class CraftObjective extends Objective {
               !(await this.character.craftNow(
                 totalIngredNeededToCraft - numInInv,
                 craftingItem.code,
+                true,
+                false,
               ))
             ) {
               logger.warn(
