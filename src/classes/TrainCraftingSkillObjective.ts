@@ -41,7 +41,7 @@ export class TrainCraftingSkillObjective extends Objective {
       const payload: GetAllItemsItemsGetParams = {
         craft_skill: this.skill,
         max_level: charLevel,
-        min_level: Math.max(charLevel - 10, 0),
+        min_level: Math.max(charLevel - 4, 0), // charLevel - 4 here so that we get mostly higher level items to craft
       };
 
       const craftableItemsListData = await getAllItemInformation(payload);
