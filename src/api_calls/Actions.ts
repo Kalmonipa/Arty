@@ -5,8 +5,10 @@ import {
   CharacterMovementResponseSchema,
   CharacterRestResponseSchema,
   CharacterSchema,
+  CombatSimulationDataSchema,
   CraftingSchema,
   DestinationSchema,
+  FakeCharacterSchema,
   SimpleItemSchema,
   SkillResponseSchema,
 } from '../types/types.js';
@@ -458,3 +460,46 @@ export async function actionWithdrawItem(
     return error as ApiError;
   }
 }
+
+export async function fightSimulator(characters: FakeCharacterSchema[], monsterCode: string, iterations: number): Promise< CombatSimulationDataSchema
+| ApiError > {
+
+  const requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+    body: JSON.stringify({characters: characters, monsterCode: monsterCode, iterations: iterations}),
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/simulation/fight_simulation`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 404:
+          message = 'Monster not found.';
+          break;
+        case 422:
+          message =
+            'Request could not be processed due to an invalid payload.';
+          break;
+        case 451:
+          message = 'Access denied, you must be a member to do that.';
+          break;
+        default:
+          message = 'Unknown error from /simulation/fight_simulation';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    return await response.json();
+  } catch (error) {
+    return error as ApiError;
+  }}

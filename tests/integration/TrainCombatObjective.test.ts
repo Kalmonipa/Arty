@@ -67,6 +67,10 @@ class SimpleMockCharacter {
       }
     }
   };
+
+  createFakeCharacterSchema = jest.fn((charData: any): any => {
+    return { ...charData };
+  });
 }
 
 // Mock response data
@@ -239,9 +243,8 @@ describe('TrainCombatObjective Integration Tests', () => {
       expect(result).toBe(true);
       // Should simulate fights with monsters in descending order (highest level first)
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({ code: 'blue_slime', level: 8 }),
+        expect.any(Array),
+        'blue_slime',
       );
     });
 
@@ -471,12 +474,8 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'TestCharacter',
-          level: 10,
-        }),
-        undefined,
-        expect.any(Object),
+        expect.any(Array),
+        expect.any(String),
       );
     });
   });
@@ -507,15 +506,13 @@ describe('TrainCombatObjective Integration Tests', () => {
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledTimes(2);
       expect(mockCharacter.simulateFightNow).toHaveBeenNthCalledWith(
         1,
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({ code: 'blue_slime', level: 8 }),
+        expect.any(Array),
+        'blue_slime',
       );
       expect(mockCharacter.simulateFightNow).toHaveBeenNthCalledWith(
         2,
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({ code: 'red_slime', level: 5 }),
+        expect.any(Array),
+        'red_slime',
       );
     });
 
@@ -583,9 +580,8 @@ describe('TrainCombatObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
-        expect.any(Object),
-        undefined,
-        expect.objectContaining({ code: 'ogre', level: 9 }),
+        expect.any(Array),
+        'ogre',
       );
     });
   });

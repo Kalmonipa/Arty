@@ -15,9 +15,14 @@ jest.mock('../../src/api_calls/Maps', () => ({
   getMaps: jest.fn(),
 }));
 
+jest.mock('../../src/api_calls/Monsters', () => ({
+  getMonsterInformation: jest.fn(),
+}));
+
 // Import the mocked functions
 import { actionFight } from '../../src/api_calls/Actions.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
+import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -143,6 +148,10 @@ class SimpleMockCharacter {
     }
   };
 
+  createFakeCharacterSchema = jest.fn((charData: any): any => {
+    return { ...charData };
+  });
+
   removeItemFromInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
       (item: InventorySlot) => item.code === code,
@@ -213,6 +222,41 @@ const mockMapData = {
   size: 50,
 };
 
+const mockMonsterData = { data: {
+  name: "Red Slime",
+  code: "red_slime",
+  level: 7,
+  type: "normal" as const,
+  hp: 120,
+  attack_fire: 18,
+  attack_earth: 0,
+  attack_water: 0,
+  attack_air: 0,
+  res_fire: 25,
+  res_earth: 0,
+  res_water: 0,
+  res_air: 0,
+  critical_strike: 0,
+  initiative: 100,
+  effects: [],
+  min_gold: 0,
+  max_gold: 5,
+  drops: [
+    {
+      code: "red_slimeball",
+      rate: 10,
+      min_quantity: 1,
+      max_quantity: 1
+    },
+    {
+      code: "apple",
+      rate: 12,
+      min_quantity: 1,
+      max_quantity: 1
+    }
+  ]}
+}
+
 describe('FightObjective Integration Tests', () => {
   let mockCharacter: SimpleMockCharacter;
   let fightObjective: FightObjective;
@@ -243,6 +287,7 @@ describe('FightObjective Integration Tests', () => {
     (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
       mockFightResponse,
     );
+    (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(mockMonsterData);
   });
 
   describe('Basic functionality', () => {
@@ -789,6 +834,128 @@ describe('FightObjective Integration Tests', () => {
     });
   });
 
+  describe('Monster type handling', () => {
+    it('should run fight simulation for normal monsters', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const normalMonsterData = {
+        data: {
+          name: "Red Slime",
+          code: "red_slime",
+          level: 7,
+          type: "normal" as const,
+          hp: 120,
+          attack_fire: 18,
+          attack_earth: 0,
+          attack_water: 0,
+          attack_air: 0,
+          res_fire: 25,
+          res_earth: 0,
+          res_water: 0,
+          res_air: 0,
+          critical_strike: 0,
+          initiative: 100,
+          effects: [],
+          min_gold: 0,
+          max_gold: 5,
+          drops: []
+        }
+      };
+      (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(normalMonsterData);
+
+      // Act
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
+    });
+
+    it('should skip fight simulation for boss monsters', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const bossMonsterData = {
+        data: {
+          name: "Dragon Boss",
+          code: "dragon_boss",
+          level: 50,
+          type: "boss" as const,
+          hp: 5000,
+          attack_fire: 100,
+          attack_earth: 0,
+          attack_water: 0,
+          attack_air: 0,
+          res_fire: 50,
+          res_earth: 0,
+          res_water: 0,
+          res_air: 0,
+          critical_strike: 0,
+          initiative: 100,
+          effects: [],
+          min_gold: 0,
+          max_gold: 5,
+          drops: []
+        }
+      };
+      (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(bossMonsterData);
+
+      const bossTarget: ObjectiveTargets = {
+        code: 'dragon_boss',
+        quantity: 1,
+      };
+      const bossObjective = new FightObjective(mockCharacter as any, bossTarget);
+
+      // Act
+      const result = await bossObjective.runPrerequisiteChecks();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+    });
+
+    it('should skip fight simulation for elite monsters', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const eliteMonsterData = {
+        data: {
+          name: "Elite Orc",
+          code: "elite_orc",
+          level: 25,
+          type: "elite" as const,
+          hp: 1000,
+          attack_fire: 50,
+          attack_earth: 0,
+          attack_water: 0,
+          attack_air: 0,
+          res_fire: 30,
+          res_earth: 0,
+          res_water: 0,
+          res_air: 0,
+          critical_strike: 0,
+          initiative: 100,
+          effects: [],
+          min_gold: 0,
+          max_gold: 5,
+          drops: []
+        }
+      };
+      (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(eliteMonsterData);
+
+      const eliteTarget: ObjectiveTargets = {
+        code: 'elite_orc',
+        quantity: 1,
+      };
+      const eliteObjective = new FightObjective(mockCharacter as any, eliteTarget);
+
+      // Act
+      const result = await eliteObjective.runPrerequisiteChecks();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Parent-child job relationships', () => {
     it('should create TrainCombatObjective with correct parentId when fight simulation fails', async () => {
       // Arrange
@@ -835,6 +1002,7 @@ describe('FightObjective Integration Tests', () => {
     it('should create TrainCombatObjective with parentId when fight simulation fails on first attempt', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
+
       mockCharacter.simulateFightNow.mockResolvedValue(false); // Fight simulation fails
       mockCharacter.trainCombatLevelNow.mockImplementation(
         async (targetLevel: number): Promise<boolean> => {

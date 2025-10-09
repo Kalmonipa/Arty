@@ -10,11 +10,11 @@ import {
   CharacterSchema,
   CraftSkill,
   DestinationSchema,
+  FakeCharacterSchema,
   GatheringSkill,
   ItemSchema,
   ItemSlot,
   MapSchema,
-  MonsterSchema,
   SimpleItemSchema,
   Skill,
 } from '../types/types.js';
@@ -854,6 +854,32 @@ export class Character {
   }
 
   /**
+   * @description Creates a FakeCharacterSchema of the current character
+   */
+  createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
+    return {
+      level : character.level,
+      weapon_slot: character.weapon_slot,
+      rune_slot: character.rune_slot,
+      shield_slot: character.shield_slot,
+      helmet_slot: character.helmet_slot,
+      body_armor_slot: character.body_armor_slot,
+      leg_armor_slot: character.leg_armor_slot,
+      boots_slot: character.boots_slot,
+      ring1_slot: character.ring1_slot,
+      ring2_slot: character.ring2_slot,
+      amulet_slot: character.amulet_slot,
+      artifact1_slot: character.artifact1_slot,
+      artifact2_slot: character.artifact2_slot,
+      artifact3_slot: character.artifact3_slot,
+      utility1_slot: character.utility1_slot,
+      utility1_slot_quantity: character.utility1_slot_quantity,
+      utility2_slot: character.utility2_slot,
+      utility2_slot_quantity: character.utility2_slot_quantity
+    }
+  }
+
+  /**
    * @description Deposit all inventory items into bank
    */
   async depositAllItems() {
@@ -1623,23 +1649,15 @@ export class Character {
    * @description Adds a fight simulation job to see if we'll win a fight
    */
   async simulateFightNow(
-    mockCharacter: CharacterSchema,
-    targetMobName?: string,
-    targetMobSchema?: MonsterSchema,
+    mockCharacters: FakeCharacterSchema[],
+    targetMobCode: string,
     iterations?: number,
     debugLogs?: boolean,
   ) {
-    if (!targetMobName && !targetMobSchema) {
-      logger.error(
-        `One of targetMobName or targetMobSchema must be passed in to simulateFightNow()`,
-      );
-      return false;
-    }
     const job = new FightSimulator(
       this,
-      mockCharacter,
-      targetMobName,
-      targetMobSchema,
+      mockCharacters,
+      targetMobCode,
       iterations,
       debugLogs,
     );

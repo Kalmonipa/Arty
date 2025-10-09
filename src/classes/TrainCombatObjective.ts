@@ -13,7 +13,7 @@ export class TrainCombatObjective extends Objective {
   skill: string;
 
   constructor(character: Character, targetLevel: number) {
-    super(character, `train_${targetLevel}_combat`, 'not_started');
+    super(character, `train_${targetLevel}_combat`, 'not_started', );
     this.character = character;
     this.targetLevel = targetLevel;
     this.skill = 'combat';
@@ -51,13 +51,13 @@ export class TrainCombatObjective extends Objective {
       let foundSuitableMob = false;
       let fightSuccessful = false;
 
-      // Try to find and fight a suitable mob
+      const fakeSchema = this.character.createFakeCharacterSchema(this.character.data)
+
       for (let ind = mobs.data.length - 1; ind >= 0; ind--) {
         const mob = mobs.data[ind];
         const fightSimResult = await this.character.simulateFightNow(
-          structuredClone(this.character.data),
-          undefined,
-          mob,
+          [fakeSchema],
+          mob.code,
         );
 
         if (fightSimResult) {

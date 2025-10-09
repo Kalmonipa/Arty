@@ -6,6 +6,7 @@ import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import { getMonsterInformation } from '../api_calls/Monsters.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
@@ -30,27 +31,39 @@ export class FightObjective extends Objective {
 
     await this.character.evaluateGear('combat', this.target.code);
 
-    for (
-      let fightSimAttempts = 1;
-      fightSimAttempts <= this.maxRetries;
-      fightSimAttempts++
-    ) {
-      logger.info(`Fight sim attempt ${fightSimAttempts}/${this.maxRetries}`);
-      const simResult = await this.character.simulateFightNow(
-        structuredClone(this.character.data),
-        this.target.code,
-      );
+    const mobInfo = await getMonsterInformation(this.target.code);
+    if (mobInfo instanceof ApiError) {
+      return this.character.handleErrors(mobInfo);
+    }
 
-      if (simResult === false) {
-        await this.character.trainCombatLevelNow(this.character.data.level + 1);
-        // If this was the last attempt, return false
-        if (fightSimAttempts === this.maxRetries) {
-          return false;
+    // ToDo: allow the fight sim to sim boss fights with multiple characterss
+    if (mobInfo.data.type === 'normal') {
+      for (
+        let fightSimAttempts = 1;
+        fightSimAttempts <= this.maxRetries;
+        fightSimAttempts++
+      ) {
+        const fakeSchema = this.character.createFakeCharacterSchema(this.character.data)
+        logger.info(`Fight sim attempt ${fightSimAttempts}/${this.maxRetries}`);
+        const simResult = await this.character.simulateFightNow(
+          [fakeSchema],
+          this.target.code,
+        );
+
+        if (simResult === false) {
+          await this.character.trainCombatLevelNow(this.character.data.level + 1);
+          // If this was the last attempt, return false
+          if (fightSimAttempts === this.maxRetries) {
+            return false;
+          }
+          continue;
+        } else {
+          return true;
         }
-        continue;
-      } else {
-        return true;
       }
+    } else {
+      // For boss and elite monsters, skip fight simulation and return true
+      return true;
     }
   }
 
