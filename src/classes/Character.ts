@@ -857,7 +857,8 @@ export class Character {
    * @description Creates a FakeCharacterSchema of the current character
    */
   createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
-    return {
+
+    const fakeChar = {
       level: character.level,
       weapon_slot: character.weapon_slot,
       rune_slot: character.rune_slot,
@@ -877,6 +878,8 @@ export class Character {
       utility2_slot: character.utility2_slot,
       utility2_slot_quantity: character.utility2_slot_quantity,
     };
+    logger.debug(JSON.stringify(fakeChar))
+    return fakeChar;
   }
 
   /**

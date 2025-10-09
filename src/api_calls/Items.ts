@@ -244,7 +244,7 @@ export async function getAllItemInformation(
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
-        message: `Unknown error from /items: ${response}`,
+        message: `Unknown error from /items`,
       });
     }
     return await response.json();
