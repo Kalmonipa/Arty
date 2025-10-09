@@ -22,11 +22,7 @@ export class FightSimulator extends Objective {
     iterations?: number,
     debugLogs?: boolean,
   ) {
-    super(
-      character,
-      `fight_sim_${targetMobCode}`,
-      'not_started',
-    );
+    super(character, `fight_sim_${targetMobCode}`, 'not_started');
     this.mockCharacters = mockCharacters;
     this.targetMobCode = targetMobCode;
     this.iterations = iterations !== undefined ? iterations : 10;
@@ -38,21 +34,27 @@ export class FightSimulator extends Objective {
   }
 
   async run(): Promise<boolean> {
-    const fightSimResponse = await fightSimulator(this.mockCharacters, this.targetMobCode, this.iterations)
+    const fightSimResponse = await fightSimulator(
+      this.mockCharacters,
+      this.targetMobCode,
+      this.iterations,
+    );
     if (fightSimResponse instanceof ApiError) {
-      this.character.handleErrors(fightSimResponse)
-      return false
+      this.character.handleErrors(fightSimResponse);
+      return false;
     }
 
-    let totalTurns = 0
+    let totalTurns = 0;
     for (const fight of fightSimResponse.results) {
       if (fight.result === 'win') {
-        totalTurns += fight.turns
+        totalTurns += fight.turns;
       }
     }
-    const averageTurns = totalTurns / fightSimResponse.wins
+    const averageTurns = totalTurns / fightSimResponse.wins;
 
-    logger.info(`Stats from fight sim: ${fightSimResponse.wins}/${this.iterations} wins (${fightSimResponse.winrate}%). Avg turns for wins: ${averageTurns}`)
+    logger.info(
+      `Stats from fight sim: ${fightSimResponse.wins}/${this.iterations} wins (${fightSimResponse.winrate}%). Avg turns for wins: ${averageTurns}`,
+    );
 
     if (fightSimResponse.winrate > 90) {
       return true;

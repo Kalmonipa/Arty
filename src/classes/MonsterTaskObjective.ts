@@ -19,7 +19,6 @@ export class MonsterTaskObjective extends Objective {
   //  - If 3 fights lost, cancel job. We don't want to keep losing fights
 
   async runPrerequisiteChecks(): Promise<boolean> {
-
     return true;
   }
 
@@ -63,7 +62,10 @@ export class MonsterTaskObjective extends Objective {
   }
 
   private async doTask(): Promise<boolean> {
-    if (this.character.data.task === undefined || this.character.data.task === '') {
+    if (
+      this.character.data.task === undefined ||
+      this.character.data.task === ''
+    ) {
       await this.startNewTask('monsters');
     }
 

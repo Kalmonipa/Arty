@@ -461,13 +461,19 @@ export async function actionWithdrawItem(
   }
 }
 
-export async function fightSimulator(characters: FakeCharacterSchema[], monsterCode: string, iterations: number): Promise< CombatSimulationDataSchema
-| ApiError > {
-
+export async function fightSimulator(
+  characters: FakeCharacterSchema[],
+  monsterCode: string,
+  iterations: number,
+): Promise<CombatSimulationDataSchema | ApiError> {
   const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
-    body: JSON.stringify({characters: characters, monsterCode: monsterCode, iterations: iterations}),
+    body: JSON.stringify({
+      characters: characters,
+      monster: monsterCode,
+      iterations: iterations,
+    }),
   };
 
   try {
@@ -483,8 +489,7 @@ export async function fightSimulator(characters: FakeCharacterSchema[], monsterC
           message = 'Monster not found.';
           break;
         case 422:
-          message =
-            'Request could not be processed due to an invalid payload.';
+          message = 'Request could not be processed due to an invalid payload.';
           break;
         case 451:
           message = 'Access denied, you must be a member to do that.';
@@ -502,4 +507,5 @@ export async function fightSimulator(characters: FakeCharacterSchema[], monsterC
     return await response.json();
   } catch (error) {
     return error as ApiError;
-  }}
+  }
+}

@@ -858,7 +858,7 @@ export class Character {
    */
   createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
     return {
-      level : character.level,
+      level: character.level,
       weapon_slot: character.weapon_slot,
       rune_slot: character.rune_slot,
       shield_slot: character.shield_slot,
@@ -875,8 +875,8 @@ export class Character {
       utility1_slot: character.utility1_slot,
       utility1_slot_quantity: character.utility1_slot_quantity,
       utility2_slot: character.utility2_slot,
-      utility2_slot_quantity: character.utility2_slot_quantity
-    }
+      utility2_slot_quantity: character.utility2_slot_quantity,
+    };
   }
 
   /**

@@ -222,40 +222,42 @@ const mockMapData = {
   size: 50,
 };
 
-const mockMonsterData = { data: {
-  name: "Red Slime",
-  code: "red_slime",
-  level: 7,
-  type: "normal" as const,
-  hp: 120,
-  attack_fire: 18,
-  attack_earth: 0,
-  attack_water: 0,
-  attack_air: 0,
-  res_fire: 25,
-  res_earth: 0,
-  res_water: 0,
-  res_air: 0,
-  critical_strike: 0,
-  initiative: 100,
-  effects: [],
-  min_gold: 0,
-  max_gold: 5,
-  drops: [
-    {
-      code: "red_slimeball",
-      rate: 10,
-      min_quantity: 1,
-      max_quantity: 1
-    },
-    {
-      code: "apple",
-      rate: 12,
-      min_quantity: 1,
-      max_quantity: 1
-    }
-  ]}
-}
+const mockMonsterData = {
+  data: {
+    name: 'Red Slime',
+    code: 'red_slime',
+    level: 7,
+    type: 'normal' as const,
+    hp: 120,
+    attack_fire: 18,
+    attack_earth: 0,
+    attack_water: 0,
+    attack_air: 0,
+    res_fire: 25,
+    res_earth: 0,
+    res_water: 0,
+    res_air: 0,
+    critical_strike: 0,
+    initiative: 100,
+    effects: [],
+    min_gold: 0,
+    max_gold: 5,
+    drops: [
+      {
+        code: 'red_slimeball',
+        rate: 10,
+        min_quantity: 1,
+        max_quantity: 1,
+      },
+      {
+        code: 'apple',
+        rate: 12,
+        min_quantity: 1,
+        max_quantity: 1,
+      },
+    ],
+  },
+};
 
 describe('FightObjective Integration Tests', () => {
   let mockCharacter: SimpleMockCharacter;
@@ -287,7 +289,9 @@ describe('FightObjective Integration Tests', () => {
     (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
       mockFightResponse,
     );
-    (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(mockMonsterData);
+    (
+      getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>
+    ).mockResolvedValue(mockMonsterData);
   });
 
   describe('Basic functionality', () => {
@@ -840,10 +844,10 @@ describe('FightObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('apple', 20);
       const normalMonsterData = {
         data: {
-          name: "Red Slime",
-          code: "red_slime",
+          name: 'Red Slime',
+          code: 'red_slime',
           level: 7,
-          type: "normal" as const,
+          type: 'normal' as const,
           hp: 120,
           attack_fire: 18,
           attack_earth: 0,
@@ -858,10 +862,14 @@ describe('FightObjective Integration Tests', () => {
           effects: [],
           min_gold: 0,
           max_gold: 5,
-          drops: []
-        }
+          drops: [],
+        },
       };
-      (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(normalMonsterData);
+      (
+        getMonsterInformation as jest.MockedFunction<
+          typeof getMonsterInformation
+        >
+      ).mockResolvedValue(normalMonsterData);
 
       // Act
       const result = await fightObjective.runPrerequisiteChecks();
@@ -876,10 +884,10 @@ describe('FightObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('apple', 20);
       const bossMonsterData = {
         data: {
-          name: "Dragon Boss",
-          code: "dragon_boss",
+          name: 'Dragon Boss',
+          code: 'dragon_boss',
           level: 50,
-          type: "boss" as const,
+          type: 'boss' as const,
           hp: 5000,
           attack_fire: 100,
           attack_earth: 0,
@@ -894,16 +902,23 @@ describe('FightObjective Integration Tests', () => {
           effects: [],
           min_gold: 0,
           max_gold: 5,
-          drops: []
-        }
+          drops: [],
+        },
       };
-      (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(bossMonsterData);
+      (
+        getMonsterInformation as jest.MockedFunction<
+          typeof getMonsterInformation
+        >
+      ).mockResolvedValue(bossMonsterData);
 
       const bossTarget: ObjectiveTargets = {
         code: 'dragon_boss',
         quantity: 1,
       };
-      const bossObjective = new FightObjective(mockCharacter as any, bossTarget);
+      const bossObjective = new FightObjective(
+        mockCharacter as any,
+        bossTarget,
+      );
 
       // Act
       const result = await bossObjective.runPrerequisiteChecks();
@@ -918,10 +933,10 @@ describe('FightObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('apple', 20);
       const eliteMonsterData = {
         data: {
-          name: "Elite Orc",
-          code: "elite_orc",
+          name: 'Elite Orc',
+          code: 'elite_orc',
           level: 25,
-          type: "elite" as const,
+          type: 'elite' as const,
           hp: 1000,
           attack_fire: 50,
           attack_earth: 0,
@@ -936,16 +951,23 @@ describe('FightObjective Integration Tests', () => {
           effects: [],
           min_gold: 0,
           max_gold: 5,
-          drops: []
-        }
+          drops: [],
+        },
       };
-      (getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>).mockResolvedValue(eliteMonsterData);
+      (
+        getMonsterInformation as jest.MockedFunction<
+          typeof getMonsterInformation
+        >
+      ).mockResolvedValue(eliteMonsterData);
 
       const eliteTarget: ObjectiveTargets = {
         code: 'elite_orc',
         quantity: 1,
       };
-      const eliteObjective = new FightObjective(mockCharacter as any, eliteTarget);
+      const eliteObjective = new FightObjective(
+        mockCharacter as any,
+        eliteTarget,
+      );
 
       // Act
       const result = await eliteObjective.runPrerequisiteChecks();
