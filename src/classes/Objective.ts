@@ -80,8 +80,7 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    // Bandaid fix to not continously spawn deposit jobs
-    if (!this.parentId.includes('deposit_')) {
+    if (this.parentId && !this.parentId.includes('deposit_')) {
       await this.depositGoldIntoBank(5000);
     }
 
@@ -268,7 +267,7 @@ export abstract class Objective {
   }
 
   /**
-   * @description Deposits gold into the bank if they have more than 1k
+   * @description Deposits gold into the bank if they have more than the desired amount
    * @returns
    */
   protected async depositGoldIntoBank(maxGoldInInv: number): Promise<boolean> {
