@@ -1548,6 +1548,9 @@ export class Character {
   async trainCombatLevelNow(targetLevel: number) {
     return await this.executeJobNow(
       new TrainCombatObjective(this, targetLevel),
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId,
     );
   }
 

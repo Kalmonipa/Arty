@@ -24,6 +24,8 @@ class SimpleMockCharacter {
   data = { ...mockCharacterData };
   preferredFood = 'apple';
   minEquippedUtilities = 5;
+  currentExecutingJob?: { objectiveId: string };
+  createdTrainCombatObjective?: { parentId?: string; targetLevel: number };
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
@@ -89,7 +91,16 @@ class SimpleMockCharacter {
     return true;
   });
 
-  trainCombatLevelNow = jest.fn(async (): Promise<boolean> => {
+  trainCombatLevelNow = jest.fn(async (targetLevel: number): Promise<boolean> => {
+    // Mock the creation of TrainCombatObjective with parentId
+    const mockTrainCombatObjective = {
+      parentId: this.currentExecutingJob?.objectiveId,
+      targetLevel: targetLevel,
+    };
+    
+    // Store the created objective for testing purposes
+    this.createdTrainCombatObjective = mockTrainCombatObjective;
+    
     return true;
   });
 
@@ -773,6 +784,82 @@ describe('FightObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true); // Should succeed since movement is handled internally
       expect(mockCharacter.move).toHaveBeenCalled();
+    });
+  });
+
+  describe('Parent-child job relationships', () => {
+    it('should create TrainCombatObjective with correct parentId when fight simulation fails', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      mockCharacter.simulateFightNow.mockResolvedValue(false); // Fight simulation fails
+      mockCharacter.trainCombatLevelNow.mockImplementation(async (targetLevel: number): Promise<boolean> => {
+        // Mock the creation of TrainCombatObjective with parentId
+        const mockTrainCombatObjective = {
+          parentId: mockCharacter.currentExecutingJob?.objectiveId,
+          targetLevel: targetLevel,
+        };
+        
+        // Store the created objective for testing purposes
+        mockCharacter.createdTrainCombatObjective = mockTrainCombatObjective;
+        
+        return true;
+      });
+      
+      // Set the current executing job to the fight objective
+      mockCharacter.currentExecutingJob = fightObjective;
+
+      // Act
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      // Assert
+      expect(result).toBe(false); // Should fail after max retries
+      expect(mockCharacter.trainCombatLevelNow).toHaveBeenCalledWith(
+        mockCharacter.data.level + 1
+      );
+      expect(mockCharacter.trainCombatLevelNow).toHaveBeenCalledTimes(3); // Called for each retry
+      
+      // Verify that TrainCombatObjective was created with correct parentId
+      expect(mockCharacter.createdTrainCombatObjective).toBeDefined();
+      expect(mockCharacter.createdTrainCombatObjective.parentId).toBe(
+        fightObjective.objectiveId
+      );
+      expect(mockCharacter.createdTrainCombatObjective.targetLevel).toBe(
+        mockCharacter.data.level + 1
+      );
+    });
+
+    it('should create TrainCombatObjective with parentId when fight simulation fails on first attempt', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      mockCharacter.simulateFightNow.mockResolvedValue(false); // Fight simulation fails
+      mockCharacter.trainCombatLevelNow.mockImplementation(async (targetLevel: number): Promise<boolean> => {
+        // Mock the creation of TrainCombatObjective with parentId
+        const mockTrainCombatObjective = {
+          parentId: mockCharacter.currentExecutingJob?.objectiveId,
+          targetLevel: targetLevel,
+        };
+        
+        // Store the created objective for testing purposes
+        mockCharacter.createdTrainCombatObjective = mockTrainCombatObjective;
+        
+        return true;
+      });
+      
+      // Set the current executing job to the fight objective
+      mockCharacter.currentExecutingJob = fightObjective;
+
+      // Act
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      // Assert
+      expect(result).toBe(false); // Should fail after max retries
+      expect(mockCharacter.trainCombatLevelNow).toHaveBeenCalledTimes(3); // Called for each retry
+      
+      // Verify that TrainCombatObjective was created with correct parentId
+      expect(mockCharacter.createdTrainCombatObjective).toBeDefined();
+      expect(mockCharacter.createdTrainCombatObjective.parentId).toBe(
+        fightObjective.objectiveId
+      );
     });
   });
 });

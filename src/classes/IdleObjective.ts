@@ -52,7 +52,7 @@ export class IdleObjective extends Objective {
         return await this.cleanUpBank();
 
       case 'depositGoldIntoBank':
-        return await this.depositGoldIntoBank();
+        return await this.depositGoldIntoBank(1000);
 
       case 'topUpBank':
         return await this.topUpBank(this.role);
@@ -125,20 +125,6 @@ export class IdleObjective extends Objective {
   private async cleanUpBank(): Promise<boolean> {
     const job = new TidyBankObjective(this.character, this.role);
     return this.character.executeJobNow(job, true, true, this.objectiveId);
-  }
-
-  /**
-   * @description Deposits gold into the bank if they have more than 1k
-   * @returns
-   */
-  private async depositGoldIntoBank(): Promise<boolean> {
-    const numGoldInInv = this.character.data.gold;
-
-    if (numGoldInInv > 1000) {
-      return await this.character.depositNow(numGoldInInv - 1000, 'gold');
-    }
-
-    return true;
   }
 
   /**

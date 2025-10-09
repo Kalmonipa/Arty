@@ -42,7 +42,9 @@ export class FightObjective extends Objective {
       );
 
       if (simResult === false) {
-        await this.character.trainCombatLevelNow(this.character.data.level + 1);
+        await this.character.trainCombatLevelNow(
+          this.character.data.level + 1,
+        );
         // If this was the last attempt, return false
         if (fightSimAttempts === this.maxRetries) {
           return false;

@@ -80,6 +80,8 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
+    await this.depositGoldIntoBank(5000)
+
     return true;
   }
 
@@ -261,4 +263,18 @@ export abstract class Objective {
 
     return true;
   }
+
+    /**
+   * @description Deposits gold into the bank if they have more than 1k
+   * @returns
+   */
+    protected async depositGoldIntoBank(maxGoldInInv: number): Promise<boolean> {
+      const numGoldInInv = this.character.data.gold;
+  
+      if (numGoldInInv > maxGoldInInv) {
+        return await this.character.depositNow(numGoldInInv - maxGoldInInv, 'gold');
+      }
+  
+      return true;
+    }
 }
