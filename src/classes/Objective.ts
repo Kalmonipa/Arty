@@ -80,7 +80,10 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    await this.depositGoldIntoBank(5000);
+    // Bandaid fix to not continously spawn deposit jobs
+    if (!this.parentId.includes('deposit_')) {
+      await this.depositGoldIntoBank(5000);
+    }
 
     return true;
   }
