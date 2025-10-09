@@ -858,7 +858,7 @@ export class Character {
    */
   createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
 
-    const fakeChar = {
+    const fakeChar: FakeCharacterSchema = {
       level: character.level,
       weapon_slot: character.weapon_slot,
       rune_slot: character.rune_slot,
@@ -874,10 +874,14 @@ export class Character {
       artifact2_slot: character.artifact2_slot,
       artifact3_slot: character.artifact3_slot,
       utility1_slot: character.utility1_slot,
-      utility1_slot_quantity: character.utility1_slot_quantity,
       utility2_slot: character.utility2_slot,
-      utility2_slot_quantity: character.utility2_slot_quantity,
     };
+    if (character.utility1_slot) {
+      fakeChar.utility1_slot_quantity = character.utility1_slot_quantity
+    }
+    if (character.utility2_slot) {
+      fakeChar.utility2_slot_quantity = character.utility2_slot_quantity
+    }
     logger.debug(JSON.stringify(fakeChar))
     return fakeChar;
   }
