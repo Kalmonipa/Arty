@@ -19,17 +19,7 @@ export class MonsterTaskObjective extends Objective {
   //  - If 3 fights lost, cancel job. We don't want to keep losing fights
 
   async runPrerequisiteChecks(): Promise<boolean> {
-    if (
-      this.character.data.task === undefined ||
-      this.character.data.task === ''
-    ) {
-      await this.startNewTask('items');
-    } else {
-      logger.info(
-        `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}. Collected ${this.character.data.task_progress} so far`,
-      );
-    }
-    
+
     return true;
   }
 
@@ -73,7 +63,7 @@ export class MonsterTaskObjective extends Objective {
   }
 
   private async doTask(): Promise<boolean> {
-    if (this.character.data.task === '') {
+    if (this.character.data.task === undefined || this.character.data.task === '') {
       await this.startNewTask('monsters');
     }
 

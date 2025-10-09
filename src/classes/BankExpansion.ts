@@ -21,9 +21,8 @@ export class ExpandBankObjective extends Objective {
   }
 
   /**
-   * @description deposit the specified items into the bank
-   * If itemCode is 'all', the inventory is emptied into the bank
-   * If 0 is entered, all of the specified item is deposited
+   * @description Calculates whether we should expand the bank and also if we are able too
+   * Purchases a bank expansion if the requirements are met
    */
   async run(): Promise<boolean> {
     const maxBankFullness = 90;

@@ -117,7 +117,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
     it('should start new task when no task is active', async () => {
       // Arrange
-      mockCharacter.data.task = '';
+      mockCharacter.data.task = undefined;
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
 
