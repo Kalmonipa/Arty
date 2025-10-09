@@ -194,7 +194,9 @@ export async function buildListOf(
     type: itemType,
   });
   if (allItems instanceof ApiError) {
-    logger.error(`Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`);
+    logger.error(
+      `Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`,
+    );
     return {};
   }
 

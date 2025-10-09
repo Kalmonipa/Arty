@@ -10,12 +10,18 @@ import { getMonsterInformation } from '../api_calls/Monsters.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
+  participants?: string[];
 
-  constructor(character: Character, target: ObjectiveTargets) {
+  constructor(
+    character: Character,
+    target: ObjectiveTargets,
+    participants?: string[],
+  ) {
     super(character, `fight_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
     this.target = target;
+    this.participants = participants;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -65,6 +71,11 @@ export class FightObjective extends Objective {
           return true;
         }
       }
+    } else if ((!this.participants || this.participants.length === 0) && mobInfo.data.type === 'boss') {
+      logger.info(
+        `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
+      );
+      return false;
     } else {
       // For boss and elite monsters, skip fight simulation and return true
       return true;
@@ -139,7 +150,10 @@ export class FightObjective extends Objective {
           }
         }
 
-        const response = await actionFight(this.character.data);
+        const response = await actionFight(
+          this.character.data,
+          this.participants,
+        );
 
         if (response instanceof ApiError) {
           const shouldRetry = await this.character.handleErrors(response);

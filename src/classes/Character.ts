@@ -857,7 +857,6 @@ export class Character {
    * @description Creates a FakeCharacterSchema of the current character
    */
   createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
-
     const fakeChar: FakeCharacterSchema = {
       level: character.level,
       weapon_slot: character.weapon_slot,
@@ -877,12 +876,12 @@ export class Character {
       utility2_slot: character.utility2_slot,
     };
     if (character.utility1_slot) {
-      fakeChar.utility1_slot_quantity = character.utility1_slot_quantity
+      fakeChar.utility1_slot_quantity = character.utility1_slot_quantity;
     }
     if (character.utility2_slot) {
-      fakeChar.utility2_slot_quantity = character.utility2_slot_quantity
+      fakeChar.utility2_slot_quantity = character.utility2_slot_quantity;
     }
-    logger.debug(JSON.stringify(fakeChar))
+    logger.debug(JSON.stringify(fakeChar));
     return fakeChar;
   }
 
@@ -1496,20 +1495,32 @@ export class Character {
   /**
    * @description Fight the requested amount of mobs
    */
-  async fight(quantity: number, code: string) {
+  async fight(quantity: number, code: string, participants: string[]) {
     this.appendJob(
-      new FightObjective(this, { code: code, quantity: quantity }),
+      new FightObjective(
+        this,
+        { code: code, quantity: quantity },
+        participants,
+      ),
     );
   }
 
   /**
    * @description Creates a new fight objective and executes it
    */
-  async fightNow(quantity: number, code: string): Promise<boolean> {
-    const fightJob = new FightObjective(this, {
-      code: code,
-      quantity: quantity,
-    });
+  async fightNow(
+    quantity: number,
+    code: string,
+    participants?: string[],
+  ): Promise<boolean> {
+    const fightJob = new FightObjective(
+      this,
+      {
+        code: code,
+        quantity: quantity,
+      },
+      participants,
+    );
 
     return await this.executeJobNow(
       fightJob,

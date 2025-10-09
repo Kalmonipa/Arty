@@ -156,10 +156,12 @@ export async function actionDepositItems(
  */
 export async function actionFight(
   character: CharacterSchema,
+  participants?: string[],
 ): Promise<CharacterFightResponseSchema | ApiError> {
   const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
+    body: JSON.stringify(participants),
   };
 
   try {
@@ -171,6 +173,9 @@ export async function actionFight(
     if (!response.ok) {
       let message: string;
       switch (response.status) {
+        case 422:
+          message = 'Request could not be processed due to an invalid payload.';
+          break;
         case 486:
           message = 'An action is already in progress for this character.';
           break;

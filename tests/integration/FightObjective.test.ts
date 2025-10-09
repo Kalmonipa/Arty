@@ -918,6 +918,7 @@ describe('FightObjective Integration Tests', () => {
       const bossObjective = new FightObjective(
         mockCharacter as any,
         bossTarget,
+        ['testchar1', 'testChar2']
       );
 
       // Act
@@ -953,6 +954,7 @@ describe('FightObjective Integration Tests', () => {
           max_gold: 5,
           drops: [],
         },
+      
       };
       (
         getMonsterInformation as jest.MockedFunction<
@@ -974,6 +976,55 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
+      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+    });
+
+    it('should return false if attempting to fight boss alone', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const bossMonsterData = {
+        data: {
+          name: 'Dragon Boss',
+          code: 'dragon_boss',
+          level: 50,
+          type: 'boss' as const,
+          hp: 5000,
+          attack_fire: 100,
+          attack_earth: 0,
+          attack_water: 0,
+          attack_air: 0,
+          res_fire: 50,
+          res_earth: 0,
+          res_water: 0,
+          res_air: 0,
+          critical_strike: 0,
+          initiative: 100,
+          effects: [],
+          min_gold: 0,
+          max_gold: 5,
+          drops: [],
+        },
+      };
+      (
+        getMonsterInformation as jest.MockedFunction<
+          typeof getMonsterInformation
+        >
+      ).mockResolvedValue(bossMonsterData);
+
+      const eliteTarget: ObjectiveTargets = {
+        code: 'elite_orc',
+        quantity: 1,
+      };
+      const eliteObjective = new FightObjective(
+        mockCharacter as any,
+        eliteTarget,
+      );
+
+      // Act
+      const result = await eliteObjective.runPrerequisiteChecks();
+
+      // Assert
+      expect(result).toBe(false);
       expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
     });
   });
