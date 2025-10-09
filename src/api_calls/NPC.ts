@@ -52,7 +52,7 @@ export async function actionBuyItem(
           message = 'The character does not have enough gold.';
           break;
         default:
-          message = 'Unknown error from /action/bank/deposit/item';
+          message = 'Unknown error from /action/buy/item';
           break;
       }
       throw new ApiError({
@@ -111,7 +111,7 @@ export async function actionSellItem(
           message = 'The character does not have enough gold.';
           break;
         default:
-          message = 'Unknown error from /action/bank/deposit/item';
+          message = 'Unknown error from /action/sell/item';
           break;
       }
       throw new ApiError({
