@@ -10,7 +10,6 @@ import { ApiError } from './classes/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import dotenv from 'dotenv';
 import { Role } from './types/CharacterData.js';
-import { all } from 'axios';
 
 dotenv.config({ quiet: true });
 
