@@ -5,7 +5,7 @@ import {
   CharacterMovementResponseSchema,
   CharacterRestResponseSchema,
   CharacterSchema,
-  CombatSimulationDataSchema,
+  CombatSimulationResponseSchema,
   CraftingSchema,
   DestinationSchema,
   FakeCharacterSchema,
@@ -465,7 +465,7 @@ export async function fightSimulator(
   characters: FakeCharacterSchema[],
   monsterCode: string,
   iterations: number,
-): Promise<CombatSimulationDataSchema | ApiError> {
+): Promise<CombatSimulationResponseSchema | ApiError> {
   const requestOptions = {
     method: 'POST',
     headers: MyHeaders,

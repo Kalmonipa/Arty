@@ -44,19 +44,19 @@ export class FightSimulator extends Objective {
       return false;
     }
 
-    // let totalTurns = 0;
-    // for (const fight of fightSimResponse.results) {
-    //   if (fight.result === 'win') {
-    //     totalTurns += fight.turns;
-    //   }
-    // }
-    // const averageTurns = totalTurns / fightSimResponse.wins;
+    let totalTurns = 0;
+    for (const fight of fightSimResponse.data.results) {
+      if (fight.result === 'win') {
+        totalTurns += fight.turns;
+      }
+    }
+    const averageTurns = totalTurns / fightSimResponse.data.wins;
 
     logger.info(
-      `Stats from fight sim: ${fightSimResponse.wins}/${this.iterations} wins (${fightSimResponse.winrate}%)`,
+      `Fight sim showed a ${fightSimResponse.data.winrate}% win rate (${fightSimResponse.data.wins}/${this.iterations}) with ${averageTurns} avg turns per fight`,
     );
 
-    if (fightSimResponse.winrate > 90) {
+    if (fightSimResponse.data.winrate > 90) {
       return true;
     } else {
       return false;
