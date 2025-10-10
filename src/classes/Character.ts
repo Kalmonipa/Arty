@@ -95,10 +95,9 @@ export class Character {
   legsArmorMap?: Record<GearEffects, ItemSchema[]>;
   ringsMap?: Record<GearEffects, ItemSchema[]>;
   shieldMap?: Record<GearEffects, ItemSchema[]>;
-
+  
   consumablesMap?: Record<ConsumableEffects, ItemSchema[]>;
   utilitiesMap?: Record<UtilityEffects, ItemSchema[]>;
-  // ToDo: build a map of gathering weapons and a map of combat weapons
   weaponMap?: Record<WeaponFlavours, ItemSchema[]>;
 
   /**

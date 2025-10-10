@@ -11,6 +11,7 @@ import {
   SimpleItemSchema,
 } from '../types/types.js';
 import { actionDepositGold } from '../api_calls/Bank.js';
+import { ExpandBankObjective } from './BankExpansion.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;
@@ -39,9 +40,11 @@ export class DepositObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (this.isCancelled()) {
         logger.info(`${this.objectiveId} has been cancelled`);
-        //this.character.removeJob(this.objectiveId);
         return false;
       }
+
+      // Check if the bank can and should be expanded
+      await this.character.executeJobNow(new ExpandBankObjective(this.character))
 
       logger.debug(`Deposit attempt ${attempt}/${this.maxRetries}`);
 
