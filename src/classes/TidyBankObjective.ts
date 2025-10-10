@@ -46,7 +46,7 @@ export class TidyBankObjective extends Objective {
       case 'fisherman':
         return await this.cookFish();
 
-      case 'fighter':
+      case 'weaponcrafter':
         return await this.recycleExcessWeapons();
 
       case 'lumberjack':
@@ -167,7 +167,7 @@ export class TidyBankObjective extends Objective {
     for (const weaponList of Object.values(this.character.weaponMap)) {
       for (const weapon of weaponList) {
         if (weapon.level > this.character.data.weaponcrafting_level) {
-          logger.debug(`Not high enough level to recycle ${weapon.code}`);
+          logger.info(`Not high enough level to recycle ${weapon.code}`);
           break;
         }
 
@@ -175,7 +175,7 @@ export class TidyBankObjective extends Objective {
           weapon.code,
         );
         if (numInBank < maxNumberNeededInBank) {
-          logger.debug(
+          logger.info(
             `Less than ${maxNumberNeededInBank} so no need to recycle`,
           );
           break;

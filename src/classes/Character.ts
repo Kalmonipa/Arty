@@ -63,7 +63,6 @@ import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainCombatObjective } from './TrainCombatObjective.js';
 import { RecycleObjective } from './RecycleObjective.js';
 import { ExpandBankObjective } from './BankExpansion.js';
-import { spec } from 'node:test/reporters';
 
 export class Character {
   data: CharacterSchema;
@@ -363,7 +362,11 @@ export class Character {
     } else if (job instanceof TrainGatheringSkillObjective) {
       return { skill: job.skill, targetLevel: job.targetLevel };
     } else if (job instanceof TradeObjective) {
-      return { tradeType: job.tradeType, quantity: job.quantity, itemCode: job.itemCode}
+      return {
+        tradeType: job.tradeType,
+        quantity: job.quantity,
+        itemCode: job.itemCode,
+      };
     } else if (job instanceof TidyBankObjective) {
       return {};
     } else if (job instanceof IdleObjective) {
@@ -472,7 +475,12 @@ export class Character {
           );
           break;
         case 'TradeObjective':
-          job = new TradeObjective(this, specificData.tradeType, specificData.quantity, specificData.itemCode)
+          job = new TradeObjective(
+            this,
+            specificData.tradeType as TradeType,
+            specificData.quantity as number,
+            specificData.itemCode as string,
+          );
           break;
         case 'TidyBankObjective':
           job = new TidyBankObjective(this, this.role);

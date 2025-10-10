@@ -71,14 +71,17 @@ export class FightObjective extends Objective {
           return true;
         }
       }
-    } else if ((!this.participants || this.participants.length === 0) && mobInfo.data.type === 'boss') {
+    } else if (
+      (!this.participants || this.participants.length === 0) &&
+      mobInfo.data.type === 'boss'
+    ) {
       logger.info(
         `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
       );
       return false;
     } else {
       // For boss and elite monsters, skip fight simulation and return true
-      logger.info('thisis achhange')
+      logger.info('thisis achhange');
       return true;
     }
   }

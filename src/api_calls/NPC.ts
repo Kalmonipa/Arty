@@ -64,7 +64,10 @@ export async function actionBuyItem(
 
     const result: NpcMerchantTransactionResponseSchema = await response.json();
 
-    await sleep(result.data.cooldown.remaining_seconds, result.data.cooldown.reason);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {

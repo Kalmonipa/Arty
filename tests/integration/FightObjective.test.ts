@@ -918,7 +918,7 @@ describe('FightObjective Integration Tests', () => {
       const bossObjective = new FightObjective(
         mockCharacter as any,
         bossTarget,
-        ['testchar1', 'testChar2']
+        ['testchar1', 'testChar2'],
       );
 
       // Act
@@ -954,7 +954,6 @@ describe('FightObjective Integration Tests', () => {
           max_gold: 5,
           drops: [],
         },
-      
       };
       (
         getMonsterInformation as jest.MockedFunction<

@@ -38,6 +38,7 @@ export class IdleObjective extends Objective {
       'depositGoldIntoBank',
       'topUpBank',
       'doTask',
+      'tidybank',
       'trainSkill',
     ];
 
@@ -54,11 +55,14 @@ export class IdleObjective extends Objective {
       case 'depositGoldIntoBank':
         return await this.depositGoldIntoBank(1000);
 
+      case 'tidyBank':
+        return await this.tidyBank();
+
       case 'topUpBank':
         return await this.topUpBank(this.role);
 
       case 'doTask':
-        if (this.role === 'fighter' || this.role === 'gearcrafter') {
+        if (this.role === 'weaponcrafter' || this.role === 'gearcrafter') {
           return await this.doMonsterTask();
         } else {
           return await this.doItemTask();
@@ -69,16 +73,6 @@ export class IdleObjective extends Objective {
           case 'alchemist':
             return await this.trainSkill('alchemy');
 
-          case 'fighter':
-            // We want our weaponcrafting to be at least our character level (if not above??)
-            if (
-              this.character.getCharacterLevel('weaponcrafting') <
-              this.character.getCharacterLevel()
-            ) {
-              return await this.trainSkill('weaponcrafting');
-            } else {
-              return await this.trainSkill();
-            }
           case 'fisherman':
             return await this.trainSkill('fishing');
 
@@ -87,7 +81,7 @@ export class IdleObjective extends Objective {
             // ToDo: This might run into issues with gathering mob drops if the gearcrafter isn't high enough to fight them
             if (
               this.character.getCharacterLevel('gearcrafting') <
-              this.character.getCharacterLevel() + 5
+              this.character.getCharacterLevel()
             ) {
               return await this.trainSkill('gearcrafting');
             } else {
@@ -104,7 +98,15 @@ export class IdleObjective extends Objective {
             return await this.trainSkill('mining');
 
           case 'weaponcrafter':
-            return await this.trainSkill('weaponcrafting');
+            // We want our weaponcrafting to be at least our character level (if not above??)
+            if (
+              this.character.getCharacterLevel('weaponcrafting') <
+              this.character.getCharacterLevel()
+            ) {
+              return await this.trainSkill('weaponcrafting');
+            } else {
+              return await this.trainSkill();
+            }
         }
     }
   }
@@ -203,6 +205,18 @@ export class IdleObjective extends Objective {
   private async doMonsterTask(): Promise<boolean> {
     return this.character.executeJobNow(
       new MonsterTaskObjective(this.character, 1),
+      true,
+      true,
+      this.objectiveId,
+    );
+  }
+
+  /**
+   * @description Cleans up the bank. The role of the character decides which items they look after
+   */
+  private async tidyBank(): Promise<boolean> {
+    return this.character.executeJobNow(
+      new TidyBankObjective(this.character, this.role),
       true,
       true,
       this.objectiveId,
