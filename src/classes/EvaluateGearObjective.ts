@@ -381,7 +381,7 @@ export class EvaluateGearObjective extends Objective {
     let bestGear: ItemSchema;
 
     for (let ind = map.length - 1; ind >= 0; ind--) {
-      if (map[ind].level <= charLevel && map[ind].level > charLevel - 10) {
+      if (map[ind].level <= charLevel && map[ind].level > charLevel - 5) {
         // Iterate through all the options to find the one that gives the best target effect
         logger.debug(`Checking ${map[ind].code} for ${targetEffect}`);
         // If bestGear isn't set, set it to the highest level item that has that effect

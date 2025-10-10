@@ -8,6 +8,7 @@ import {
   getBankItems,
   purchaseBankExpansion,
 } from '../api_calls/Bank.js';
+import { getMaps } from '../api_calls/Maps.js';
 
 export class ExpandBankObjective extends Objective {
   constructor(character: Character) {
@@ -62,6 +63,20 @@ export class ExpandBankObjective extends Objective {
       );
       return true;
     }
+
+    const maps = await getMaps({ content_type: 'bank' });
+    if (maps instanceof ApiError) {
+      return this.character.handleErrors(maps);
+    }
+
+    if (maps.data.length === 0) {
+      logger.error(`Cannot find the bank. This shouldn't happen ??`);
+      return false;
+    }
+
+    const contentLocation = this.character.evaluateClosestMap(maps.data);
+
+    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
 
     const withdrawGold = await actionWithdrawGold(
       this.character.data,
