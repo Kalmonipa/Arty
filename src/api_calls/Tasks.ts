@@ -59,7 +59,7 @@ export async function actionAcceptNewTask(
     );
     let rewards: string = '';
     for (const reward of result.data.task.rewards.items) {
-      rewards += `${reward.quantity} ${reward.code}, `;
+      rewards += `${reward.quantity} ${reward.code},`;
     }
     logger.info(
       `Rewards are ${rewards} and ${result.data.task.rewards.gold} gold`,

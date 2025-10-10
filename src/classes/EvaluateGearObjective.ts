@@ -384,8 +384,8 @@ export class EvaluateGearObjective extends Objective {
       if (map[ind].level <= charLevel && map[ind].level > charLevel - 10) {
         // Iterate through all the options to find the one that gives the best target effect
         logger.debug(`Checking ${map[ind].code} for ${targetEffect}`);
-        // If bestGear isn't set, set it to the current item
-        if (bestGear === undefined) {
+        // If bestGear isn't set, set it to the highest level item that has that effect
+        if (bestGear === undefined && map[ind].effects && map[ind].effects.find((effect) => effect.code === targetEffect)) {
           // Check inventory
           let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
           if (numHeld === 0) {
