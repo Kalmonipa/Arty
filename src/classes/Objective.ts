@@ -80,10 +80,6 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    if (this.parentId && !this.parentId.includes('deposit_')) {
-      await this.depositGoldIntoBank(5000);
-    }
-
     return true;
   }
 
@@ -275,7 +271,7 @@ export abstract class Objective {
 
     if (numGoldInInv > maxGoldInInv) {
       return await this.character.depositNow(
-        numGoldInInv - maxGoldInInv,
+        numGoldInInv,
         'gold',
       );
     }

@@ -28,6 +28,14 @@ export class DepositObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+    // Check if the bank can and should be expanded
+    await this.character.executeJobNow(
+      new ExpandBankObjective(this.character),
+    );
+
+    // Deposit any gold they have in their inventory
+    await this.depositGoldIntoBank(5000);
+
     return true;
   }
 
@@ -42,11 +50,6 @@ export class DepositObjective extends Objective {
         logger.info(`${this.objectiveId} has been cancelled`);
         return false;
       }
-
-      // Check if the bank can and should be expanded
-      await this.character.executeJobNow(
-        new ExpandBankObjective(this.character),
-      );
 
       logger.debug(`Deposit attempt ${attempt}/${this.maxRetries}`);
 

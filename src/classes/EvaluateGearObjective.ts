@@ -365,7 +365,9 @@ export class EvaluateGearObjective extends Objective {
 
   /**
    * @description Iterates through all the gear within 10 levels of the character to find the one that suits best
-   *
+   * @todo Make this work better. I've commented out the code that finds the best weapon because it wasn't working 
+   * as well as I'd like. Now it just gets the first, highest level weapon we have in inventory or bank and sets that 
+   * as the best, regardless of target mob strengths/weaknesses.
    * @param map
    * @param targetEffect
    * @param charLevel
@@ -399,36 +401,37 @@ export class EvaluateGearObjective extends Objective {
           } else {
             continue;
           }
-        } else if (
-          // The new item to check doesn't have the target effect, skip it
-          !map[ind].effects.find((effect) => effect.code === targetEffect)
-        ) {
-          continue;
-          // If bestGear doesn't have the target effect, set the new item to bestGear
-          // OR if the new item has a better effect, set that to bestGear
-        } else if (
-          !bestGear.effects.find((effect) => effect.code === targetEffect) ||
-          bestGear.effects.find((effect) => effect.code === targetEffect)
-            .value <
-            map[ind].effects.find((effect) => effect.code === targetEffect)
-              .value
-        ) {
-          // Check inventory
-          let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
-          if (numHeld === 0) {
-            // Check bank
-            numHeld = await this.character.checkQuantityOfItemInBank(
-              map[ind].code,
-            );
-          }
-
-          if (numHeld > 0) {
-            logger.info(
-              `Found ${map[ind].code} is better than ${bestGear.code}`,
-            );
-            bestGear = map[ind];
-          }
         }
+        //  else if (
+        //   // The new item to check doesn't have the target effect, skip it
+        //   !map[ind].effects.find((effect) => effect.code === targetEffect)
+        // ) {
+        //   continue;
+        //   // If bestGear doesn't have the target effect, set the new item to bestGear
+        //   // OR if the new item has a better effect, set that to bestGear
+        // } else if (
+        //   !bestGear.effects.find((effect) => effect.code === targetEffect) ||
+        //   bestGear.effects.find((effect) => effect.code === targetEffect)
+        //     .value <
+        //     map[ind].effects.find((effect) => effect.code === targetEffect)
+        //       .value
+        // ) {
+        //   // Check inventory
+        //   let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
+        //   if (numHeld === 0) {
+        //     // Check bank
+        //     numHeld = await this.character.checkQuantityOfItemInBank(
+        //       map[ind].code,
+        //     );
+        //   }
+
+        //   if (numHeld > 0) {
+        //     logger.info(
+        //       `Found ${map[ind].code} is better than ${bestGear.code}`,
+        //     );
+        //     bestGear = map[ind];
+        //   }
+        // }
       }
     }
 
