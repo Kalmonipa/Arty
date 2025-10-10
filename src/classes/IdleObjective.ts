@@ -32,7 +32,6 @@ export class IdleObjective extends Objective {
    */
   async run(): Promise<boolean> {
     const idleObjectives = [
-      'checkBankExpansion',
       'cleanUpBank',
       'depositGoldIntoBank',
       'topUpBank',
