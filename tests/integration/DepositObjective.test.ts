@@ -48,6 +48,10 @@ class SimpleMockCharacter {
     },
   );
 
+  executeJobNow = jest.fn(async (): Promise<boolean> => {
+    return true;
+  })
+
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
   });
@@ -523,6 +527,7 @@ describe('DepositObjective Integration Tests', () => {
         customBankMap,
       );
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
+      mockCharacter.executeJobNow.mockResolvedValue(true)
 
       // Act
       const result = await depositObjective.run();

@@ -44,7 +44,9 @@ export class DepositObjective extends Objective {
       }
 
       // Check if the bank can and should be expanded
-      await this.character.executeJobNow(new ExpandBankObjective(this.character))
+      await this.character.executeJobNow(
+        new ExpandBankObjective(this.character),
+      );
 
       logger.debug(`Deposit attempt ${attempt}/${this.maxRetries}`);
 
