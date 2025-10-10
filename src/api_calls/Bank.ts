@@ -1,5 +1,5 @@
 import { ApiError } from '../classes/Error.js';
-import { ApiUrl, getRequestOptions, logger, MyHeaders } from '../utils.js';
+import { ApiUrl, getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
 import {
   BankExtensionTransactionSchema,
   BankGoldTransactionResponseSchema,
@@ -94,6 +94,12 @@ export async function actionDepositGold(
     logger.info(
       `Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
     );
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+    
     return result;
   } catch (error) {
     return error as ApiError;

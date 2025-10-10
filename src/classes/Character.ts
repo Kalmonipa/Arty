@@ -330,6 +330,8 @@ export class Character {
         activityType: job.activityType,
         targetMob: job.targetMob,
       };
+    } else if (job instanceof ExpandBankObjective) {
+      return {}
     } else if (job instanceof GatherObjective) {
       return {
         target: job.target,
@@ -353,7 +355,7 @@ export class Character {
     } else if (job instanceof ItemTaskObjective) {
       return { quantity: job.quantity };
     } else if (job instanceof MonsterTaskObjective) {
-      return {};
+      return { quantity: job.quantity };
     } else if (job instanceof TrainCombatObjective) {
       return { targetLevel: job.targetLevel };
     } else if (job instanceof TrainCraftingSkillObjective) {
@@ -405,6 +407,9 @@ export class Character {
             specificData.activityType as WeaponFlavours,
             specificData.targetMob as string,
           );
+          break;
+        case 'ExpandBankObjective':
+          job = new ExpandBankObjective(this)
           break;
         case 'GatherObjective':
           job = new GatherObjective(
