@@ -34,7 +34,9 @@ export class DepositObjective extends Objective {
     );
 
     // Deposit any gold they have in their inventory
-    await this.depositGoldIntoBank(5000);
+    if (this.parentId && !this.parentId.includes('deposit_')) {
+      await this.depositGoldIntoBank(5000);
+    }
 
     return true;
   }
