@@ -6,6 +6,7 @@ import {
   GetAllNpcsItemsNpcsItemsGetParams,
   GetAllNpcsNpcsDetailsGetParams,
   GetNpcItemsNpcsItemsCodeGetParams,
+  NpcMerchantTransactionResponseSchema,
   NpcMerchantTransactionSchema,
   NPCSchema,
   SimpleItemSchema,
@@ -16,12 +17,12 @@ import { ApiUrl, MyHeaders, sleep } from '../utils.js';
  * @description buy items into the npc. Character must be at the same map as the NPC
  * @param character
  * @param items items to purchase
- * @returns {NpcMerchantTransactionSchema}
+ * @returns {NpcMerchantTransactionResponseSchema}
  */
 export async function actionBuyItem(
   character: CharacterSchema,
   items: SimpleItemSchema,
-): Promise<NpcMerchantTransactionSchema | ApiError> {
+): Promise<NpcMerchantTransactionResponseSchema | ApiError> {
   const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
@@ -61,9 +62,9 @@ export async function actionBuyItem(
       });
     }
 
-    const result: NpcMerchantTransactionSchema = await response.json();
+    const result: NpcMerchantTransactionResponseSchema = await response.json();
 
-    await sleep(result.cooldown.remaining_seconds, result.cooldown.reason);
+    await sleep(result.data.cooldown.remaining_seconds, result.data.cooldown.reason);
 
     return result;
   } catch (error) {
