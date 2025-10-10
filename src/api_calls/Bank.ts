@@ -1,7 +1,7 @@
 import { ApiError } from '../classes/Error.js';
 import { ApiUrl, getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
 import {
-  BankExtensionTransactionSchema,
+  BankExtensionTransactionResponseSchema,
   BankGoldTransactionResponseSchema,
   BankResponseSchema,
   CharacterSchema,
@@ -164,6 +164,12 @@ export async function actionWithdrawGold(
     logger.info(
       `Withdrew ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
     );
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
     return result;
   } catch (error) {
     return error as ApiError;
@@ -172,7 +178,7 @@ export async function actionWithdrawGold(
 
 export async function purchaseBankExpansion(
   character: CharacterSchema,
-): Promise<BankExtensionTransactionSchema | ApiError> {
+): Promise<BankExtensionTransactionResponseSchema | ApiError> {
   const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
@@ -213,10 +219,15 @@ export async function purchaseBankExpansion(
       });
     }
 
-    const result: BankExtensionTransactionSchema = await response.json();
+    const result: BankExtensionTransactionResponseSchema = await response.json();
 
     logger.info(
-      `Bank expansion purchased for ${result.transaction.price} gold.`,
+      `Bank expansion purchased for ${result.data.transaction.price} gold.`,
+    );
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
     );
 
     return result;
