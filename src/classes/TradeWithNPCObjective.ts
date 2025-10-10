@@ -103,6 +103,8 @@ export class TradeObjective extends Objective {
     }
     await this.findNpc(targetNpc);
 
+    logger.info(`Payload for purchase: ${JSON.stringify(items)}`)
+
     const buyResponse = await actionBuyItem(this.character.data, items);
     if (buyResponse instanceof ApiError) {
       return this.character.handleErrors(buyResponse);

@@ -78,6 +78,7 @@ export class FightObjective extends Objective {
       return false;
     } else {
       // For boss and elite monsters, skip fight simulation and return true
+      logger.info('thisis achhange')
       return true;
     }
   }

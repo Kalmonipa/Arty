@@ -28,7 +28,7 @@ export async function actionBuyItem(
     body: JSON.stringify(items),
   };
 
-  const apiUrl = new URL(`${ApiUrl}/my/${character.name}}/action/npc/buy`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/npc/buy`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
@@ -52,7 +52,7 @@ export async function actionBuyItem(
           message = 'The character does not have enough gold.';
           break;
         default:
-          message = 'Unknown error from /action/buy/item';
+          message = 'Unknown error from /action/npc/buy';
           break;
       }
       throw new ApiError({
