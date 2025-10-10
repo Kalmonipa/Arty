@@ -2,7 +2,6 @@ import { getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { ExpandBankObjective } from './BankExpansion.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
@@ -46,9 +45,6 @@ export class IdleObjective extends Objective {
       idleObjectives[Math.floor(Math.random() * idleObjectives.length)];
 
     switch (randomObjective) {
-      case 'checkBankExpansion':
-        return await this.checkBankExpansion();
-
       case 'cleanUpBank':
         return await this.cleanUpBank();
 
@@ -109,15 +105,6 @@ export class IdleObjective extends Objective {
             }
         }
     }
-  }
-
-  /**
-   * @description Check if the bank can be expanded and do so if we have enough money leftover
-   *
-   */
-  private async checkBankExpansion(): Promise<boolean> {
-    const job = new ExpandBankObjective(this.character);
-    return this.character.executeJobNow(job, true, true, this.objectiveId);
   }
 
   /**
