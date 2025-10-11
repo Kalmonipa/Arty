@@ -56,7 +56,7 @@ export class FightSimulator extends Objective {
       `Fight sim showed a ${fightSimResponse.data.winrate}% win rate (${fightSimResponse.data.wins}/${this.iterations}) with ${averageTurns} avg turns per fight`,
     );
 
-    if (fightSimResponse.data.winrate > 90) {
+    if (fightSimResponse.data.winrate > 80) {
       return true;
     } else {
       return false;
