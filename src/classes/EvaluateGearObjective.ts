@@ -137,6 +137,9 @@ export class EvaluateGearObjective extends Objective {
     logger.debug(`Finding best shield`);
     let equipResult: boolean;
     for (const attack of mobAttacks) {
+      logger.info(
+        `Finding best ${attack.counterType} weapon against ${attack.value} ${attack.type}`,
+      );
       equipResult = await this.checkGearOfType(
         'shield',
         attack.counterType,
@@ -159,9 +162,6 @@ export class EvaluateGearObjective extends Objective {
         break;
       }
     }
-
-    // Check shield
-    //await this.checkGearOfType('shield', 'res_fire', charLevel);
 
     // Check helmet
     await this.checkGearOfType('helmet', 'hp', charLevel);
