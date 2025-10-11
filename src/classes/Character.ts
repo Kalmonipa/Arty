@@ -1027,9 +1027,8 @@ export class Character {
 
     const healthStatus: HealthStatus = this.checkHealth();
 
-    const preferredFoodHealValue = this.consumablesMap.heal
-      .find((food) => food.code === this.preferredFood)
-      .effects.find((effect) => effect.code === 'heal').value;
+    const preferredFoodObj = this.consumablesMap.heal.find((food) => food.code === this.preferredFood);
+    const preferredFoodHealValue = preferredFoodObj?.effects?.find((effect) => effect.code === 'heal')?.value ?? 0;
 
     let amountNeededToEat = Math.ceil(
       healthStatus.difference / preferredFoodHealValue,
