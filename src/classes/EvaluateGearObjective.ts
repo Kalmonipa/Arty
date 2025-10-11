@@ -77,9 +77,6 @@ export class EvaluateGearObjective extends Objective {
     }
 
     logger.debug(`Setting array of monster attacks`);
-    logger.debug(
-      `${this.targetMob} fire attack is ${mobInfo.data.attack_fire}`,
-    );
     // Array of the mobs attack values, sorted from highest in 1st pos, to lowest in last pos
     const mobAttacks: MonsterAttack[] = [
       {
@@ -138,7 +135,7 @@ export class EvaluateGearObjective extends Objective {
     let equipResult: boolean;
     for (const attack of mobAttacks) {
       logger.info(
-        `Finding best ${attack.counterType} weapon against ${attack.value} ${attack.type}`,
+        `Finding best ${attack.counterType} shield against ${attack.value} ${attack.type}`,
       );
       equipResult = await this.checkGearOfType(
         'shield',
@@ -372,7 +369,7 @@ export class EvaluateGearObjective extends Objective {
     let bestGear: ItemSchema;
 
     for (let ind = map.length - 1; ind >= 0; ind--) {
-      if (map[ind].level <= charLevel && map[ind].level > charLevel - 5) {
+      if (map[ind].level <= charLevel && map[ind].level > charLevel - 10) {
         // Iterate through all the options to find the one that gives the best target effect
         logger.debug(`Checking ${map[ind].code} for ${targetEffect}`);
         // If bestGear isn't set, set it to the highest level item that has that effect
