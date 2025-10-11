@@ -1,4 +1,3 @@
-import { HealthStatus } from '../types/CharacterData.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { Objective } from './Objective.js';
@@ -70,15 +69,7 @@ export class EvaluateGearObjective extends Objective {
   ): Promise<boolean> {
     // If we're not doing a gathering task, then we're fighting and should check all gear
 
-    const healthStatus: HealthStatus = this.character.checkHealth();
-
-    if (healthStatus.percentage !== 100) {
-      if (healthStatus.difference < 150) {
-        await this.character.rest();
-      } else {
-        await this.character.eatFood();
-      }
-    }
+    await this.character.recoverHealth();
 
     const mobInfo = await getMonsterInformation(targetMob);
     if (mobInfo instanceof ApiError) {

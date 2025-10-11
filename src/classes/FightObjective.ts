@@ -1,6 +1,5 @@
 import { actionFight } from '../api_calls/Actions.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { HealthStatus } from '../types/CharacterData.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -133,7 +132,7 @@ export class FightObjective extends Objective {
           contentLocation,
         );
 
-        await this.character.recoverHealth()
+        await this.character.recoverHealth();
 
         // Check these after each fight in case we need to top up
         if (
@@ -172,7 +171,7 @@ export class FightObjective extends Objective {
             return false;
           }
 
-          await this.character.recoverHealth()
+          await this.character.recoverHealth();
 
           // Check amount of food in inventory to use after battles
           if (

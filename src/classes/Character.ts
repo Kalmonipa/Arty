@@ -1047,7 +1047,7 @@ export class Character {
 
         const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
         if (numInInv === 0) {
-          await this.rest()
+          await this.rest();
           return true;
         } else if (amountNeededToEat > numInInv) {
           logger.info(
