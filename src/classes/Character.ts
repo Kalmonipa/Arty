@@ -1052,7 +1052,12 @@ export class Character {
         await this.rest();
         return true;
       } else {
-        await this.setPreferredFood();
+        const hasPreferredFood = await this.setPreferredFood();
+        if (!hasPreferredFood) {
+          logger.warn(`No food available in inventory or bank. Resting instead.`);
+          await this.rest();
+          return true;
+        }
 
         const healthStatus: HealthStatus = this.checkHealth();
 
@@ -1068,12 +1073,47 @@ export class Character {
         );
 
         const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-        if (numInInv === 0) {
-          await this.rest();
-          return true;
+        
+        // If we don't have enough food in inventory, try to withdraw from bank
+        if (numInInv < this.minFood) {
+          logger.info(
+            `Only have ${numInInv}/${this.minFood} ${this.preferredFood} in inventory. Attempting to withdraw from bank.`,
+          );
+          
+          const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+          if (numInBank > 0) {
+            const amountToWithdraw = Math.min(
+              numInBank,
+              this.desiredFoodCount - numInInv
+            );
+            logger.info(`Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`);
+            await this.withdrawNow(amountToWithdraw, this.preferredFood);
+            
+            const newNumInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+            if (newNumInInv >= amountNeededToEat) {
+              amountNeededToEat = Math.min(amountNeededToEat, newNumInInv);
+            } else {
+              amountNeededToEat = newNumInInv;
+            }
+          } else {
+            logger.info(`No ${this.preferredFood} in bank. Looking for alternative food.`);
+            const foundAlternative = await this.setPreferredFood();
+            if (!foundAlternative) {
+              logger.warn(`No alternative food found. Resting instead.`);
+              await this.rest();
+              return true;
+            }
+            
+            const newNumInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+            if (newNumInInv === 0) {
+              await this.rest();
+              return true;
+            }
+            amountNeededToEat = Math.min(amountNeededToEat, newNumInInv);
+          }
         } else if (amountNeededToEat > numInInv) {
           logger.info(
-            `Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`,
+            `Only have ${numInInv} ${this.preferredFood} in inventory. Eating what we have.`,
           );
           amountNeededToEat = numInInv;
         }
@@ -1168,22 +1208,36 @@ export class Character {
   async topUpFood(priorLocation?: DestinationSchema) {
     if (!this.preferredFood) {
       logger.debug(`No preferred food set to top up`);
-      this.setPreferredFood();
-      return;
+      const hasPreferredFood = await this.setPreferredFood();
+      if (!hasPreferredFood) {
+        logger.warn(`No food available to top up`);
+        return;
+      }
     }
 
     // Check to make sure we have enough preferred food in the bank. If there's none, set a new preferred food
     const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
     if (numInBank === 0) {
-      this.setPreferredFood();
+      logger.info(`No ${this.preferredFood} in bank. Looking for alternative food.`);
+      const foundAlternative = await this.setPreferredFood();
+      if (!foundAlternative) {
+        logger.warn(`No alternative food found in bank`);
+        return;
+      }
     }
 
+    const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
     const numNeeded = Math.min(
-      numInBank,
-      this.desiredFoodCount - this.checkQuantityOfItemInInv(this.preferredFood),
+      await this.checkQuantityOfItemInBank(this.preferredFood),
+      this.desiredFoodCount - numInInv,
     );
 
-    await this.withdrawNow(numNeeded, this.preferredFood);
+    if (numNeeded > 0) {
+      logger.info(`Topping up ${this.preferredFood}: withdrawing ${numNeeded} from bank (currently have ${numInInv} in inventory)`);
+      await this.withdrawNow(numNeeded, this.preferredFood);
+    } else {
+      logger.debug(`Already have enough ${this.preferredFood} in inventory (${numInInv}/${this.desiredFoodCount})`);
+    }
 
     if (priorLocation) {
       await this.move(priorLocation);
@@ -1275,7 +1329,6 @@ export class Character {
   /**
    * @description Checks inventory for the desired food and tops it up if we need too
    * Sets the preferred food if there isn't one already set
-   * @todo Need to set a new preferredFood if we don't have any in inv or bank
    * @returns {boolean} stating whether we have a good amount of food or not
    */
   async checkFoodLevels(): Promise<boolean> {
@@ -1294,6 +1347,64 @@ export class Character {
   }
 
   /**
+   * @description Ensures the character has enough food for activities
+   * Will withdraw from bank if needed, or switch to alternative food if current preferred food is not available
+   * @returns {boolean} true if character has sufficient food, false if no food is available
+   */
+  async ensureFoodAvailable(): Promise<boolean> {
+    const hasPreferredFood = await this.setPreferredFood();
+    if (!hasPreferredFood) {
+      logger.warn(`No food available in inventory or bank`);
+      return false;
+    }
+
+    const currentFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+    
+    if (currentFoodInInv >= this.minFood) {
+      logger.debug(`Have sufficient ${this.preferredFood} in inventory (${currentFoodInInv}/${this.minFood})`);
+      return true;
+    }
+
+    const foodInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+    if (foodInBank > 0) {
+      const amountToWithdraw = Math.min(
+        foodInBank,
+        this.desiredFoodCount - currentFoodInInv
+      );
+      logger.info(`Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank to ensure sufficient food`);
+      await this.withdrawNow(amountToWithdraw, this.preferredFood);
+      return true;
+    }
+
+    logger.info(`No ${this.preferredFood} in bank. Looking for alternative food.`);
+    const foundAlternative = await this.setPreferredFood();
+    if (!foundAlternative) {
+      logger.warn(`No alternative food found`);
+      return false;
+    }
+
+    const newFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+    if (newFoodInInv >= this.minFood) {
+      logger.info(`Switched to ${this.preferredFood} which has sufficient quantity (${newFoodInInv})`);
+      return true;
+    }
+
+    const newFoodInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+    if (newFoodInBank > 0) {
+      const amountToWithdraw = Math.min(
+        newFoodInBank,
+        this.desiredFoodCount - newFoodInInv
+      );
+      logger.info(`Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`);
+      await this.withdrawNow(amountToWithdraw, this.preferredFood);
+      return true;
+    }
+
+    logger.warn(`No food available for ${this.preferredFood}`);
+    return false;
+  }
+
+  /**
    * @description Preferred food is used to withdraw from the bank without having to figure out what food is available
    * @returns true if successful, false otherwise
    */
@@ -1301,6 +1412,18 @@ export class Character {
     if (!this.data || !this.data.inventory) {
       return false;
     }
+    
+    if (this.preferredFood) {
+      const currentFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+      if (currentFoodInInv > this.minFood) {
+        logger.debug(
+          `Current preferred food ${this.preferredFood} has ${currentFoodInInv} in inventory, keeping it`,
+        );
+        return true;
+      }
+    }
+
+    // Look for food in inventory first
     const foundItem = this.data.inventory.find((invItem) => {
       return this.consumablesMap.heal.find(
         (item) => invItem.code === item.code,
@@ -1312,20 +1435,17 @@ export class Character {
         `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
       );
       this.preferredFood = foundItem.code;
-
-      if (foundItem.quantity <= this.minFood) {
-        return false;
-      } else {
-        return true;
-      }
+      return true;
     }
+    
     logger.debug(`Not enough food in inventory. Checking bank to find some`);
     const bankItems = await getBankItems();
     if (bankItems instanceof ApiError) {
       this.handleErrors(bankItems);
-    } else if (!bankItems) {
+      return false;
+    } else if (!bankItems || bankItems.data.length === 0) {
       logger.info(`No food items in the bank`);
-      return true;
+      return false;
     } else {
       const foundItem = bankItems.data.find((bankItem) => {
         return this.consumablesMap.heal.find(
@@ -1339,6 +1459,9 @@ export class Character {
         );
         this.preferredFood = foundItem.code;
         return true;
+      } else {
+        logger.info(`No food found in the bank`);
+        return false;
       }
     }
   }
