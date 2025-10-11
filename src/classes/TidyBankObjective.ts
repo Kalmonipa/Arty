@@ -9,8 +9,7 @@ import { Objective } from './Objective.js';
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API
   // Make lists of cooking, mining, etc
-  rawFishList = ['gudgeon', 'shrimp', 'trout'];
-  rawFoodList = ['raw_beef', 'egg', 'apple', 'raw_chicken'];
+  rawFoodList = ['gudgeon', 'shrimp', 'trout', 'raw_chicken', 'raw_beef', 'raw_wolf_meat'];
   rawOreList = [
     'copper_ore',
     'iron_ore',
@@ -44,7 +43,7 @@ export class TidyBankObjective extends Objective {
       case 'alchemist':
         break;
       case 'fisherman':
-        return await this.cookFish();
+        return await this.cookFood();
 
       case 'weaponcrafter':
         return await this.recycleExcessWeapons();
@@ -62,11 +61,11 @@ export class TidyBankObjective extends Objective {
   }
 
   /**
-   * Finds any raw fish in the bank and cooks it
+   * Finds any raw food in the bank and cooks it
    * @returns true if successful or false if it failed
    */
-  private async cookFish(): Promise<boolean> {
-    for (const item of this.rawFishList) {
+  private async cookFood(): Promise<boolean> {
+    for (const item of this.rawFoodList) {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
       if (numInBank == 0) {
         break;
@@ -86,7 +85,7 @@ export class TidyBankObjective extends Objective {
         return await this.character.craftNow(numToCraft, item);
       }
     }
-    logger.info(`Found no fish in the bank to clean up`);
+    logger.info(`Found no food in the bank to clean up`);
     return true;
   }
 
