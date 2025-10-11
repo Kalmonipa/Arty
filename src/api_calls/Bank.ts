@@ -1,5 +1,11 @@
 import { ApiError } from '../classes/Error.js';
-import { ApiUrl, getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
+import {
+  ApiUrl,
+  getRequestOptions,
+  logger,
+  MyHeaders,
+  sleep,
+} from '../utils.js';
 import {
   BankExtensionTransactionResponseSchema,
   BankGoldTransactionResponseSchema,
@@ -99,7 +105,7 @@ export async function actionDepositGold(
       result.data.cooldown.remaining_seconds,
       result.data.cooldown.reason,
     );
-    
+
     return result;
   } catch (error) {
     return error as ApiError;
@@ -219,7 +225,8 @@ export async function purchaseBankExpansion(
       });
     }
 
-    const result: BankExtensionTransactionResponseSchema = await response.json();
+    const result: BankExtensionTransactionResponseSchema =
+      await response.json();
 
     logger.info(
       `Bank expansion purchased for ${result.data.transaction.price} gold.`,

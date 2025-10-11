@@ -365,8 +365,8 @@ export class EvaluateGearObjective extends Objective {
 
   /**
    * @description Iterates through all the gear within 10 levels of the character to find the one that suits best
-   * @todo Make this work better. I've commented out the code that finds the best weapon because it wasn't working 
-   * as well as I'd like. Now it just gets the first, highest level weapon we have in inventory or bank and sets that 
+   * @todo Make this work better. I've commented out the code that finds the best weapon because it wasn't working
+   * as well as I'd like. Now it just gets the first, highest level weapon we have in inventory or bank and sets that
    * as the best, regardless of target mob strengths/weaknesses.
    * @param map
    * @param targetEffect
@@ -385,7 +385,11 @@ export class EvaluateGearObjective extends Objective {
         // Iterate through all the options to find the one that gives the best target effect
         logger.debug(`Checking ${map[ind].code} for ${targetEffect}`);
         // If bestGear isn't set, set it to the highest level item that has that effect
-        if (bestGear === undefined && map[ind].effects && map[ind].effects.find((effect) => effect.code === targetEffect)) {
+        if (
+          bestGear === undefined &&
+          map[ind].effects &&
+          map[ind].effects.find((effect) => effect.code === targetEffect)
+        ) {
           // Check inventory
           let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
           if (numHeld === 0) {

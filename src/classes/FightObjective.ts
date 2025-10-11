@@ -133,15 +133,7 @@ export class FightObjective extends Objective {
           contentLocation,
         );
 
-        let healthStatus: HealthStatus = this.character.checkHealth();
-
-        if (healthStatus.percentage !== 100) {
-          if (healthStatus.difference < 150) {
-            await this.character.rest();
-          } else {
-            await this.character.eatFood();
-          }
-        }
+        await this.character.recoverHealth()
 
         // Check these after each fight in case we need to top up
         if (
@@ -180,15 +172,7 @@ export class FightObjective extends Objective {
             return false;
           }
 
-          healthStatus = this.character.checkHealth();
-
-          if (healthStatus.percentage !== 100) {
-            if (healthStatus.difference < 150) {
-              await this.character.rest();
-            } else {
-              await this.character.eatFood();
-            }
-          }
+          await this.character.recoverHealth()
 
           // Check amount of food in inventory to use after battles
           if (

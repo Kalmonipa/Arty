@@ -331,7 +331,7 @@ export class Character {
         targetMob: job.targetMob,
       };
     } else if (job instanceof ExpandBankObjective) {
-      return {}
+      return {};
     } else if (job instanceof GatherObjective) {
       return {
         target: job.target,
@@ -409,7 +409,7 @@ export class Character {
           );
           break;
         case 'ExpandBankObjective':
-          job = new ExpandBankObjective(this)
+          job = new ExpandBankObjective(this);
           break;
         case 'GatherObjective':
           job = new GatherObjective(
@@ -1022,43 +1022,62 @@ export class Character {
   /**
    * @description Eat the required amount of preferred food to recover fully
    */
-  async eatFood() {
-    await this.setPreferredFood();
-
+  async recoverHealth(): Promise<boolean> {
     const healthStatus: HealthStatus = this.checkHealth();
 
-    const preferredFoodObj = this.consumablesMap.heal.find((food) => food.code === this.preferredFood);
-    const preferredFoodHealValue = preferredFoodObj?.effects?.find((effect) => effect.code === 'heal')?.value ?? 0;
-
-    let amountNeededToEat = Math.ceil(
-      healthStatus.difference / preferredFoodHealValue,
-    );
-
-    const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-    if (amountNeededToEat > numInInv) {
-      logger.info(
-        `Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`,
-      );
-      amountNeededToEat = numInInv;
-    }
-
-    logger.info(
-      `Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`,
-    );
-
-    const useResponse = await actionUse(this.data, {
-      code: this.preferredFood,
-      quantity: amountNeededToEat,
-    });
-    if (useResponse instanceof ApiError) {
-      this.handleErrors(useResponse);
-    } else {
-      if (useResponse.data.character) {
-        this.data = useResponse.data.character;
+    if (healthStatus.percentage !== 100) {
+      if (healthStatus.difference < 150) {
+        await this.rest();
+        return true;
       } else {
-        logger.error('Use item response missing character data');
+        await this.setPreferredFood();
+
+        const healthStatus: HealthStatus = this.checkHealth();
+
+        const preferredFoodObj = this.consumablesMap.heal.find(
+          (food) => food.code === this.preferredFood,
+        );
+        const preferredFoodHealValue =
+          preferredFoodObj?.effects?.find((effect) => effect.code === 'heal')
+            ?.value ?? 0;
+
+        let amountNeededToEat = Math.ceil(
+          healthStatus.difference / preferredFoodHealValue,
+        );
+
+        const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+        if (numInInv === 0) {
+          await this.rest()
+          return true;
+        } else if (amountNeededToEat > numInInv) {
+          logger.info(
+            `Only have ${numInInv} ${this.preferredFood} in inventory. Will set new preferred food`,
+          );
+          amountNeededToEat = numInInv;
+        }
+
+        logger.info(
+          `Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`,
+        );
+
+        const useResponse = await actionUse(this.data, {
+          code: this.preferredFood,
+          quantity: amountNeededToEat,
+        });
+        if (useResponse instanceof ApiError) {
+          this.handleErrors(useResponse);
+          return false;
+        } else {
+          if (useResponse.data.character) {
+            this.data = useResponse.data.character;
+            return true;
+          } else {
+            logger.error('Use item response missing character data');
+          }
+        }
       }
     }
+    return true;
   }
 
   /**

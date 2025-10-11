@@ -270,10 +270,7 @@ export abstract class Objective {
     const numGoldInInv = this.character.data.gold;
 
     if (numGoldInInv > maxGoldInInv) {
-      return await this.character.depositNow(
-        numGoldInInv,
-        'gold',
-      );
+      return await this.character.depositNow(numGoldInInv, 'gold');
     }
 
     return true;

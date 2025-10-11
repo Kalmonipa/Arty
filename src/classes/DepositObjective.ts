@@ -29,9 +29,7 @@ export class DepositObjective extends Objective {
 
   async runPrerequisiteChecks(): Promise<boolean> {
     // Check if the bank can and should be expanded
-    await this.character.executeJobNow(
-      new ExpandBankObjective(this.character),
-    );
+    await this.character.executeJobNow(new ExpandBankObjective(this.character));
 
     // Deposit any gold they have in their inventory
     if (this.parentId && !this.parentId.includes('deposit_')) {

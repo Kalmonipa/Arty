@@ -122,8 +122,8 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  eatFood = jest.fn(async (): Promise<void> => {
-    // Mock implementation
+  recoverHealth = jest.fn(async (): Promise<boolean> => {
+    return true;
   });
 
   equipUtility = jest.fn(async (): Promise<boolean> => {
@@ -361,22 +361,6 @@ describe('FightObjective Integration Tests', () => {
   });
 
   describe('Health management', () => {
-    it('should rest when health is low but difference is small', async () => {
-      // Arrange
-      mockCharacter.addItemToInventory('apple', 20);
-      mockCharacter.checkHealth.mockReturnValue({
-        percentage: 80,
-        difference: 50,
-      });
-
-      // Act
-      const result = await fightObjective.run();
-
-      // Assert
-      expect(result).toBe(true);
-      expect(mockCharacter.rest).toHaveBeenCalled();
-    });
-
     it('should eat food when health is very low', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
@@ -390,10 +374,10 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.eatFood).toHaveBeenCalled();
+      expect(mockCharacter.recoverHealth).toHaveBeenCalled();
     });
 
-    it('should not rest or eat when health is full', async () => {
+    it('should call recoverHealth to check health and recover if needed', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
       mockCharacter.checkHealth.mockReturnValue({
@@ -406,8 +390,7 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.rest).not.toHaveBeenCalled();
-      expect(mockCharacter.eatFood).not.toHaveBeenCalled();
+      expect(mockCharacter.recoverHealth).toHaveBeenCalled();
     });
   });
 
