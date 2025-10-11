@@ -68,6 +68,10 @@ export class Character {
   data: CharacterSchema;
 
   /**
+   * Maximum number of jobs allowed in the queue
+   */
+  maxJobsInQueue: number = 25;
+  /**
    * The current active job. We only ever execute this job
    */
   activeJob?: Objective;
@@ -517,6 +521,12 @@ export class Character {
    * @param obj
    */
   async appendJob(obj: Objective) {
+    if (this.jobList.length >= this.maxJobsInQueue) {
+      logger.warn(
+        `Already ${this.maxJobsInQueue} jobs in queue. Can't add more`,
+      );
+      return;
+    }
     this.jobList.push(obj);
     logger.info(
       `Added ${obj.objectiveId} to position ${this.jobList.length} in job list`,
@@ -528,6 +538,12 @@ export class Character {
    * Adds an objective to the beginning of the job list
    */
   async prependJob(obj: Objective) {
+    if (this.jobList.length >= this.maxJobsInQueue) {
+      logger.warn(
+        `Already ${this.maxJobsInQueue} jobs in queue. Can't add more`,
+      );
+      return;
+    }
     this.jobList.unshift(obj);
     await this.saveJobQueue();
   }
@@ -536,6 +552,12 @@ export class Character {
    * Inserts an objective into the specified position in the array
    */
   async insertJob(obj: Objective, index: number) {
+    if (this.jobList.length >= this.maxJobsInQueue) {
+      logger.warn(
+        `Already ${this.maxJobsInQueue} jobs in queue. Can't add more`,
+      );
+      return;
+    }
     this.jobList.splice(index, 0, obj);
     logger.info(`Inserted ${obj.objectiveId} into position ${index}`);
     await this.saveJobQueue();
