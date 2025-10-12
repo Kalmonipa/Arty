@@ -1,8 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../objectives/Character.js';
-import { DataPageSimpleItemSchema, SimpleItemSchema } from '../types/types.js';
-import { getBankItems } from '../api_calls/Bank.js';
-import { ApiError } from '../objectives/Error.js';
+import { SimpleItemSchema } from '../types/types.js';
 
 export default function ItemsRouter(char: Character) {
   const router = Router();
@@ -19,7 +17,7 @@ export default function ItemsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let invItems: SimpleItemSchema[] = [];
+      const invItems: SimpleItemSchema[] = [];
       for (const item of char.data.inventory) {
         if (item.quantity > 0) {
           invItems.push({ code: item.code, quantity: item.quantity });
@@ -51,20 +49,13 @@ export default function ItemsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      let bankItems: DataPageSimpleItemSchema | ApiError = await getBankItems(
-        undefined,
-        undefined,
-        100,
-      );
-      if (bankItems instanceof ApiError) {
-        return res.status(bankItems.error.code).json(bankItems.error);
-      }
+      const bankItems: SimpleItemSchema[] = await char.getAllBankItems()
 
       return res.status(201).json({
-        message: `There are ${bankItems.data.length} items in the bank`,
+        message: `There are ${bankItems.length} items in the bank`,
         character: char.data.name,
-        bankItems: bankItems.data,
-        numItems: bankItems.data.length,
+        bankItems: bankItems,
+        numItems: bankItems.length,
       });
     } catch (error) {
       return res

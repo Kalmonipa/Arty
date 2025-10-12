@@ -879,20 +879,46 @@ export class Character {
   async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
     const bankItem = await getBankItems(contentCode);
     if (bankItem instanceof ApiError) {
-      this.handleErrors(bankItem);
+      await this.handleErrors(bankItem);
+      return 0;
+    }
+
+    if (bankItem.total === 0) {
+      return 0;
+    } else if (bankItem.total === 1) {
+      return bankItem.data[0].quantity;
     } else {
-      if (bankItem.total === 0) {
-        return 0;
-      } else if (bankItem.total === 1) {
-        return bankItem.data[0].quantity;
-      } else {
-        let total = 0;
-        for (const item of bankItem.data) {
-          total += item.quantity;
+      let total = 0;
+      for (const item of bankItem.data) {
+        total += item.quantity;
+      }
+      return total;
+    }
+  }
+
+  async getAllBankItems(): Promise<SimpleItemSchema[]> {
+    let bankItems: SimpleItemSchema[] = []
+
+    const bankItemResponse = await getBankItems(undefined, undefined, 100);
+    if (bankItemResponse instanceof ApiError) {
+      await this.handleErrors(bankItemResponse);
+      return;
+    }
+
+    bankItems = bankItemResponse.data
+
+    if (bankItemResponse.pages > 1) {
+      for (let pages = 2; pages <= bankItemResponse.pages; pages++) {
+        const bankItemPage = await getBankItems(undefined, pages, 100);
+        if (bankItemPage instanceof ApiError) {
+          await this.handleErrors(bankItemPage);
+          return;
         }
-        return total;
+        bankItems.push(...bankItemPage.data);
       }
     }
+
+    return bankItems
   }
 
   /**
@@ -1496,15 +1522,15 @@ export class Character {
     }
 
     logger.debug(`Not enough food in inventory. Checking bank to find some`);
-    const bankItems = await getBankItems(undefined, undefined, 100);
+    const bankItems = await this.getAllBankItems()
     if (bankItems instanceof ApiError) {
       this.handleErrors(bankItems);
       return false;
-    } else if (!bankItems || bankItems.data.length === 0) {
+    } else if (!bankItems || bankItems.length === 0) {
       logger.info(`No food items in the bank`);
       return false;
     } else {
-      const foundItem = bankItems.data.find((bankItem) => {
+      const foundItem = bankItems.find((bankItem) => {
         return this.consumablesMap.heal.find(
           (item) => bankItem.code === item.code,
         );

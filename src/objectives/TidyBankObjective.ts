@@ -111,7 +111,7 @@ export class TidyBankObjective extends Objective {
    * @returns
    */
   private async craftBars(): Promise<boolean> {
-    const contentsOfBank = await getBankItems();
+    const contentsOfBank = await this.character.getAllBankItems()
     if (contentsOfBank instanceof ApiError) {
       this.character.handleErrors(contentsOfBank);
       return false;
@@ -119,7 +119,7 @@ export class TidyBankObjective extends Objective {
 
     for (const item of this.rawOreList) {
       //const numInBank = await this.character.checkQuantityOfItemInBank(item);
-      const numInBank = contentsOfBank.data.find(
+      const numInBank = contentsOfBank.find(
         (bankItem) => bankItem.code === item,
       ).quantity;
 
@@ -281,14 +281,10 @@ export class TidyBankObjective extends Objective {
         return false;
       }
   
-      const contentsOfBank = await getBankItems(undefined, undefined, 100);
-      if (contentsOfBank instanceof ApiError) {
-        this.character.handleErrors(contentsOfBank);
-        return false;
-      }
+      const contentsOfBank = await this.character.getAllBankItems()
   
       for (const gear of itemListResponse.data) {
-        const numInBank = contentsOfBank.data.find(
+        const numInBank = contentsOfBank.find(
           (bankItem) => bankItem.code === gear.code,
         ).quantity;
 
