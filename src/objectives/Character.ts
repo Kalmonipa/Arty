@@ -1523,11 +1523,9 @@ export class Character {
 
     logger.debug(`Not enough food in inventory. Checking bank to find some`);
     const bankItems = await this.getAllBankItems()
-    if (bankItems instanceof ApiError) {
-      this.handleErrors(bankItems);
-      return false;
-    } else if (!bankItems || bankItems.length === 0) {
-      logger.info(`No food items in the bank`);
+    
+    if (!bankItems || bankItems.length === 0) {
+      logger.info(`No items in the bank`);
       return false;
     } else {
       const foundItem = bankItems.find((bankItem) => {
