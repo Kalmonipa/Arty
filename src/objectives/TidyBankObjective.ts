@@ -42,9 +42,6 @@ export class TidyBankObjective extends Objective {
 
   /**
    * @description Picks a random resource to clean up from the available options. Currently just cooks fish
-   * @todo
-   * - Implement ore, gem fragments, recycling armor/jewellery etc
-   * - Clean up resources based on the characters role (this is more of a role based thing but not actually necessary)
    */
   async run(): Promise<boolean> {
     switch (this.role) {
@@ -55,15 +52,16 @@ export class TidyBankObjective extends Objective {
         return await this.cookFood();
 
       case 'gearcrafter':
-        return await this.recycleExcessGear();
+        return await this.recycleExcessEquipment('gearcrafting')
 
       case 'weaponcrafter':
-        return await this.recycleExcessWeapons();
+        return await this.recycleExcessEquipment('weaponcrafting')
 
       case 'lumberjack':
         break;
 
       case 'miner':
+        await this.recycleExcessEquipment('jewelrycrafting')
         return await this.craftBars();
 
       default:
@@ -78,8 +76,24 @@ export class TidyBankObjective extends Objective {
    * @returns true if successful or false if it failed
    */
   private async cookFood(): Promise<boolean> {
+    const contentsOfBank = await getBankItems();
+    if (contentsOfBank instanceof ApiError) {
+      this.character.handleErrors(contentsOfBank);
+      return false;
+    }
+
     for (const item of this.rawFoodList) {
-      const numInBank = await this.character.checkQuantityOfItemInBank(item);
+      //const numInBank = await this.character.checkQuantityOfItemInBank(item);
+
+      const numInBank = contentsOfBank.data.find(
+        (bankItem) => bankItem.code === item,
+      ).quantity;
+
+      if (numInBank === undefined) {
+        logger.info(`${item} not found in bank`);
+        break;
+      }
+
       if (numInBank == 0) {
         break;
       } else {
@@ -107,8 +121,23 @@ export class TidyBankObjective extends Objective {
    * @returns
    */
   private async craftBars(): Promise<boolean> {
+    const contentsOfBank = await getBankItems();
+    if (contentsOfBank instanceof ApiError) {
+      this.character.handleErrors(contentsOfBank);
+      return false;
+    }
+
     for (const item of this.rawOreList) {
-      const numInBank = await this.character.checkQuantityOfItemInBank(item);
+      //const numInBank = await this.character.checkQuantityOfItemInBank(item);
+      const numInBank = contentsOfBank.data.find(
+        (bankItem) => bankItem.code === item,
+      ).quantity;
+
+      if (numInBank === undefined) {
+        logger.info(`${item} not found in bank`);
+        break;
+      }
+
       if (numInBank == 0) {
         break;
       } else {
@@ -246,4 +275,51 @@ export class TidyBankObjective extends Objective {
 
     return true;
   }
+
+    /**
+   * @description Recycle any excess jewelry if there are more than 5 in the bank
+   */
+    private async recycleExcessEquipment(skill: CraftSkill): Promise<boolean> {
+      const maxNumberNeededInBank = 5;
+  
+      const itemListResponse = await getAllItemInformation({
+        craft_skill: skill,
+        max_level: this.character.getCharacterLevel(skill),
+      });
+      if (itemListResponse instanceof ApiError) {
+        this.character.handleErrors(itemListResponse);
+        return false;
+      }
+  
+      const contentsOfBank = await getBankItems();
+      if (contentsOfBank instanceof ApiError) {
+        this.character.handleErrors(contentsOfBank);
+        return false;
+      }
+  
+      for (const gear of itemListResponse.data) {
+        const numInBank = contentsOfBank.data.find(
+          (bankItem) => bankItem.code === gear.code,
+        ).quantity;
+
+        if (numInBank === undefined) {
+          logger.info(`${gear.code} not found in bank`);
+          break;
+        }
+  
+        if (numInBank < maxNumberNeededInBank) {
+          logger.info(
+            `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
+          );
+          break;
+        }
+  
+        await this.character.recycleItemNow(
+          gear.code,
+          numInBank - maxNumberNeededInBank,
+        );
+      }
+  
+      return true;
+    }
 }
