@@ -30,7 +30,7 @@ export class TidyBankObjective extends Objective {
   role: Role;
 
   constructor(character: Character, role: Role) {
-    super(character, `tidy_bank`, 'not_started');
+    super(character, `tidy_${role}_bank`, 'not_started');
 
     this.character = character;
     this.role = role;
@@ -76,18 +76,8 @@ export class TidyBankObjective extends Objective {
    * @returns true if successful or false if it failed
    */
   private async cookFood(): Promise<boolean> {
-    const contentsOfBank = await getBankItems();
-    if (contentsOfBank instanceof ApiError) {
-      this.character.handleErrors(contentsOfBank);
-      return false;
-    }
-
     for (const item of this.rawFoodList) {
-      //const numInBank = await this.character.checkQuantityOfItemInBank(item);
-
-      const numInBank = contentsOfBank.data.find(
-        (bankItem) => bankItem.code === item,
-      ).quantity;
+      const numInBank = await this.character.checkQuantityOfItemInBank(item);
 
       if (numInBank === undefined) {
         logger.info(`${item} not found in bank`);
@@ -245,7 +235,7 @@ export class TidyBankObjective extends Objective {
       return false;
     }
 
-    const contentsOfBank = await getBankItems();
+    const contentsOfBank = await getBankItems(undefined, undefined, 100);
     if (contentsOfBank instanceof ApiError) {
       this.character.handleErrors(contentsOfBank);
       return false;
@@ -291,7 +281,7 @@ export class TidyBankObjective extends Objective {
         return false;
       }
   
-      const contentsOfBank = await getBankItems();
+      const contentsOfBank = await getBankItems(undefined, undefined, 100);
       if (contentsOfBank instanceof ApiError) {
         this.character.handleErrors(contentsOfBank);
         return false;
