@@ -50,7 +50,7 @@ export class TidyBankObjective extends Objective {
     switch (this.role) {
       case 'alchemist':
         break;
-        
+
       case 'fisherman':
         return await this.cookFood();
 
@@ -192,13 +192,13 @@ export class TidyBankObjective extends Objective {
           break;
         }
 
-        return await this.character.recycleItemNow(
+        await this.character.recycleItemNow(
           weapon.code,
           numInBank - maxNumberNeededInBank,
         );
       }
     }
-    logger.info(`Found no weapons to recycle`);
+    return true;
   }
 
   /**
@@ -238,13 +238,12 @@ export class TidyBankObjective extends Objective {
         break;
       }
 
-      return await this.character.recycleItemNow(
+      await this.character.recycleItemNow(
         gear.code,
         numInBank - maxNumberNeededInBank,
       );
     }
 
-    logger.info(`Found no gear to recycle`);
-    return false;
+    return true;
   }
 }

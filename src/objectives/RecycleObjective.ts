@@ -30,6 +30,7 @@ export class RecycleObjective extends Objective {
 
   /**
    * @description Recycle the item. Character will move to the correct workshop map
+   * @todo Add retry logic
    */
   async run(): Promise<boolean> {
     // ToDo:
