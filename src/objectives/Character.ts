@@ -1496,7 +1496,7 @@ export class Character {
     }
 
     logger.debug(`Not enough food in inventory. Checking bank to find some`);
-    const bankItems = await getBankItems();
+    const bankItems = await getBankItems(undefined, undefined, 100);
     if (bankItems instanceof ApiError) {
       this.handleErrors(bankItems);
       return false;
