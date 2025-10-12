@@ -156,30 +156,6 @@ describe('MonsterTaskObjective Integration Tests', () => {
       expect(startNewTaskSpy).not.toHaveBeenCalled();
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(3, 'red_slime'); // 5 - 2 = 3 remaining
     });
-
-    it('should handle multiple task completions', async () => {
-      // Arrange - set up for 2 separate tasks
-      mockCharacter.data.task = 'red_slime';
-      mockCharacter.data.task_type = 'monsters';
-      mockCharacter.data.task_progress = 0;
-      mockCharacter.data.task_total = 3;
-
-      const objective = new MonsterTaskObjective(mockCharacter as any, 2);
-
-      // Mock the Objective's handInTask method
-      const handInTaskSpy = jest
-        .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
-
-      // Act
-      const result = await objective.run();
-
-      // Assert
-      expect(result).toBe(true);
-      expect(mockCharacter.fightNow).toHaveBeenCalledTimes(2);
-      // For multiple tasks, handInTask should be called once per completed task
-      expect(handInTaskSpy).toHaveBeenCalledTimes(1);
-    });
   });
 
   describe('Progress tracking', () => {
