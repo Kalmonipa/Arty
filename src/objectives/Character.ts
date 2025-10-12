@@ -1530,7 +1530,7 @@ export class Character {
     } else {
       const foundItem = bankItems.find((bankItem) => {
         return this.consumablesMap.heal.find(
-          (item) => bankItem.code === item.code,
+          (item) => bankItem.code === item.code && item.level <= this.data.level,
         );
       });
 
