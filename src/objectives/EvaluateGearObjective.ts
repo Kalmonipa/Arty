@@ -52,7 +52,7 @@ export class EvaluateGearObjective extends Objective {
       if (this.activityType !== 'combat') {
         // Check weapon and equip a suitable one if current isn't good
         //if (!(await this.character.checkWeaponForEffects(this.activityType))) {
-        await this.checkGatheringWeapon(this.activityType, charLevel);
+        return await this.checkGatheringWeapon(this.activityType, charLevel);
         //}
       } else {
         return await this.evaluateCombatGear(charLevel, this.targetMob);
