@@ -293,7 +293,7 @@ export class TidyBankObjective extends Objective {
           break;
         }
   
-        if (numInBank < maxNumberNeededInBank) {
+        if (numInBank <= maxNumberNeededInBank) {
           logger.info(
             `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
           );
