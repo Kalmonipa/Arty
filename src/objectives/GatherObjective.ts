@@ -130,16 +130,16 @@ export class GatherObjective extends Objective {
         }
         continue;
       } else {
-        if (
-          isGatheringSkill(resourceDetails.subtype) &&
-          !(await this.character.checkWeaponForEffects(
-            resourceDetails.subtype as GatheringSkill,
-          ))
-        ) {
-          await this.character.evaluateGear(
-            resourceDetails.subtype as WeaponFlavours,
-          );
-        }
+        // if (
+        //   isGatheringSkill(resourceDetails.subtype) &&
+        //   !(await this.character.checkWeaponForEffects(
+        //     resourceDetails.subtype as GatheringSkill,
+        //   ))
+        // ) {
+        await this.character.evaluateGear(
+          resourceDetails.subtype as WeaponFlavours,
+        );
+        //}
       }
 
       // Evaluate our inventory space before we start collecting items
