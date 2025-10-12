@@ -1509,7 +1509,7 @@ export class Character {
     // Look for food in inventory first
     const foundItem = this.data.inventory.find((invItem) => {
       return this.consumablesMap.heal.find(
-        (item) => invItem.code === item.code,
+        (item) => invItem.code === item.code && item.level <= this.data.level,
       );
     });
 
