@@ -40,7 +40,6 @@ export class IdleObjective extends Objective {
         'depositGoldIntoBank',
         'topUpBank',
         'doTask',
-        'tidybank',
         'trainSkill',
       ];
 
@@ -54,11 +53,8 @@ export class IdleObjective extends Objective {
         case 'depositGoldIntoBank':
           return await this.depositGoldIntoBank(1000);
 
-        case 'tidyBank':
-          return await this.tidyBank();
-
         case 'topUpBank':
-          return await this.topUpBank(this.role);
+          return await this.topUpBank();
 
         case 'doTask':
           if (this.role === 'weaponcrafter' || this.role === 'gearcrafter') {
@@ -113,9 +109,7 @@ export class IdleObjective extends Objective {
 
       await this.depositGoldIntoBank(1000);
 
-      await this.tidyBank();
-
-      await this.topUpBank(this.role);
+      await this.topUpBank();
 
       if (this.role === 'weaponcrafter' || this.role === 'gearcrafter') {
         await this.doMonsterTask();
@@ -174,7 +168,12 @@ export class IdleObjective extends Objective {
    */
   private async cleanUpBank(): Promise<boolean> {
     const job = new TidyBankObjective(this.character, this.role);
-    return this.character.executeJobNow(job, true, true, this.objectiveId);
+    return await this.character.executeJobNow(
+      job,
+      true,
+      true,
+      this.objectiveId,
+    );
   }
 
   /**
@@ -183,7 +182,7 @@ export class IdleObjective extends Objective {
    * - 1k Food of varying levels
    * - x Task coins (maybe?)
    */
-  private async topUpBank(role: Role): Promise<boolean> {
+  private async topUpBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
     const minimumInBank = 100;
     const listOfFish = [
@@ -194,7 +193,7 @@ export class IdleObjective extends Objective {
       'cooked_salmon',
     ];
 
-    if (role === 'alchemist') {
+    if (this.role === 'alchemist') {
       for (const potion of this.character.utilitiesMap['restore']) {
         // Check if we can craft the potion
         if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
@@ -211,7 +210,7 @@ export class IdleObjective extends Objective {
           }
         }
       }
-    } else if (role === 'fisherman') {
+    } else if (this.role === 'fisherman') {
       for (const fish of this.character.consumablesMap['heal'].filter(
         (consumable) => listOfFish.includes(consumable.code),
       )) {
@@ -226,7 +225,7 @@ export class IdleObjective extends Objective {
           }
         }
       }
-    } else if (role === 'miner') {
+    } else if (this.role === 'miner') {
       await this.topUpMiningBars();
     }
 
@@ -238,7 +237,7 @@ export class IdleObjective extends Objective {
    * @returns true if successful, false if not
    */
   private async doItemTask(): Promise<boolean> {
-    return this.character.executeJobNow(
+    return await this.character.executeJobNow(
       new ItemTaskObjective(this.character, 1),
       true,
       true,
@@ -251,20 +250,8 @@ export class IdleObjective extends Objective {
    * @returns true if successful, false if not
    */
   private async doMonsterTask(): Promise<boolean> {
-    return this.character.executeJobNow(
+    return await this.character.executeJobNow(
       new MonsterTaskObjective(this.character, 1),
-      true,
-      true,
-      this.objectiveId,
-    );
-  }
-
-  /**
-   * @description Cleans up the bank. The role of the character decides which items they look after
-   */
-  private async tidyBank(): Promise<boolean> {
-    return this.character.executeJobNow(
-      new TidyBankObjective(this.character, this.role),
       true,
       true,
       this.objectiveId,
@@ -300,7 +287,12 @@ export class IdleObjective extends Objective {
         this.character.getCharacterLevel(skill) + 1,
       );
     }
-    return this.character.executeJobNow(job, true, true, this.objectiveId);
+    return await this.character.executeJobNow(
+      job,
+      true,
+      true,
+      this.objectiveId,
+    );
   }
 
   /**

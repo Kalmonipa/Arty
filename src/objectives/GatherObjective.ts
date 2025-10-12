@@ -7,11 +7,10 @@ import { WeaponFlavours } from '../types/ItemData.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
   DataPageMonsterSchema,
-  GatheringSkill,
   ItemSchema,
   SimpleItemSchema,
 } from '../types/types.js';
-import { isGatheringSkill, logger } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
