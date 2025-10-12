@@ -1,3 +1,4 @@
+import { getBankItems } from '../api_calls/Bank.js';
 import { getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { CraftSkill, ItemSchema } from '../types/types.js';
@@ -49,14 +50,19 @@ export class TidyBankObjective extends Objective {
     switch (this.role) {
       case 'alchemist':
         break;
+        
       case 'fisherman':
         return await this.cookFood();
+
+      case 'gearcrafter':
+        return await this.recycleExcessGear();
 
       case 'weaponcrafter':
         return await this.recycleExcessWeapons();
 
       case 'lumberjack':
         break;
+
       case 'miner':
         return await this.craftBars();
 
@@ -166,7 +172,6 @@ export class TidyBankObjective extends Objective {
 
   /**
    * @description Recycle any weapons that we have more than 5 of in the bank
-   * @todo Do this for gear as well
    */
   private async recycleExcessWeapons() {
     const maxNumberNeededInBank = 5;
@@ -182,7 +187,7 @@ export class TidyBankObjective extends Objective {
         );
         if (numInBank < maxNumberNeededInBank) {
           logger.info(
-            `Less than ${maxNumberNeededInBank} so no need to recycle`,
+            `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${weapon.code}`,
           );
           break;
         }
@@ -194,5 +199,52 @@ export class TidyBankObjective extends Objective {
       }
     }
     logger.info(`Found no weapons to recycle`);
+  }
+
+  /**
+   * @description Recycle any excess gear if there are more than 5 in the bank
+   */
+  private async recycleExcessGear(): Promise<boolean> {
+    const maxNumberNeededInBank = 5;
+
+    const gearListResponse = await getAllItemInformation({
+      craft_skill: 'gearcrafting',
+      max_level: this.character.data.gearcrafting_level,
+    });
+    if (gearListResponse instanceof ApiError) {
+      this.character.handleErrors(gearListResponse);
+      return false;
+    }
+
+    const contentsOfBank = await getBankItems();
+    if (contentsOfBank instanceof ApiError) {
+      this.character.handleErrors(contentsOfBank);
+      return false;
+    }
+
+    for (const gear of gearListResponse.data) {
+      const numInBank = contentsOfBank.data.find(
+        (bankItem) => bankItem.code === gear.code,
+      ).quantity;
+      if (numInBank === undefined) {
+        logger.info(`${gear.code} not found in bank`);
+        break;
+      }
+
+      if (numInBank < maxNumberNeededInBank) {
+        logger.info(
+          `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
+        );
+        break;
+      }
+
+      return await this.character.recycleItemNow(
+        gear.code,
+        numInBank - maxNumberNeededInBank,
+      );
+    }
+
+    logger.info(`Found no gear to recycle`);
+    return false;
   }
 }

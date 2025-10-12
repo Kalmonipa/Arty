@@ -14,6 +14,13 @@ import {
   DataPageSimpleItemSchema,
 } from '../types/types.js';
 
+/**
+ * @description Fetch all items in your bank.
+ * @param item_code item code to filter
+ * @param page
+ * @param size
+ * @returns {DataPageSimpleItemSchema}
+ */
 export async function getBankItems(
   item_code?: string,
   page?: number,
