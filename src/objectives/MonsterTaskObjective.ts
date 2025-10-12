@@ -69,6 +69,11 @@ export class MonsterTaskObjective extends Objective {
       await this.startNewTask('monsters');
     }
 
+    // Check if task is completed and hand it in
+    if (this.character.data.task_total === this.character.data.task_progress) {
+      return true;
+    }
+
     const maps = await getMaps({
       content_code: this.character.data.task,
       content_type: 'monster',
