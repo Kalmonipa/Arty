@@ -9,7 +9,14 @@ import { Objective } from './Objective.js';
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API
   // Make lists of cooking, mining, etc
-  rawFoodList = ['gudgeon', 'shrimp', 'trout', 'raw_chicken', 'raw_beef', 'raw_wolf_meat'];
+  rawFoodList = [
+    'gudgeon',
+    'shrimp',
+    'trout',
+    'raw_chicken',
+    'raw_beef',
+    'raw_wolf_meat',
+  ];
   rawOreList = [
     'copper_ore',
     'iron_ore',

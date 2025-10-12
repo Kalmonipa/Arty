@@ -80,6 +80,9 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
+    // ToDo: Call this at every isCancelled check to check more frequently
+    await this.character.checkForActiveEvents();
+
     return true;
   }
 

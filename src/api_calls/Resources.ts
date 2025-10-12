@@ -50,7 +50,7 @@ export async function getAllResourceInformation(
 }
 
 export async function getResourceInformation(
-  itemCode: string
+  itemCode: string,
 ): Promise<ResourceResponseSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
@@ -67,11 +67,11 @@ export async function getResourceInformation(
         case 404:
           message = 'Item not found.';
           break;
-          default:
-            message = 'Unknown error from /action/bank/deposit/item';
-            break;
-        }       
-        throw new ApiError({
+        default:
+          message = 'Unknown error from /action/bank/deposit/item';
+          break;
+      }
+      throw new ApiError({
         code: response.status,
         message: message,
       });
@@ -81,4 +81,3 @@ export async function getResourceInformation(
     return error as ApiError;
   }
 }
-

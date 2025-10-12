@@ -63,6 +63,8 @@ import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainCombatObjective } from './TrainCombatObjective.js';
 import { RecycleObjective } from './RecycleObjective.js';
 import { ExpandBankObjective } from './BankExpansion.js';
+import { getActiveEvents } from '../api_calls/Events.js';
+import { EventObjective } from './EventObjective.js';
 
 export class Character {
   data: CharacterSchema;
@@ -142,6 +144,10 @@ export class Character {
    * Role of the character. One of Alchemist, Fighter, Fisherman, Lumberjack, Miner
    */
   role: Role;
+  /**
+   * Events that we would like to participate in
+   */
+  applicableResourceEvents = ['magic_apparition', 'strange_apparition'];
 
   constructor(data: CharacterSchema) {
     this.data = data;
@@ -749,6 +755,25 @@ export class Character {
    * Character activity functions
    ********/
 
+  /**
+   * @description Checks if there are any active jobs and creates an EventObjective to do it
+   */
+  async checkForActiveEvents(): Promise<boolean> {
+    const activeEventsResponse = await getActiveEvents({});
+    if (activeEventsResponse instanceof ApiError) {
+      await this.handleErrors(activeEventsResponse);
+      return false;
+    }
+
+    for (const event of activeEventsResponse.data) {
+      if (this.applicableResourceEvents.includes(event.code)) {
+        const job = new EventObjective(this, event);
+        return await this.executeJobNow(job, true, true);
+      }
+    }
+    return false;
+  }
+
   /********
    * Character detail functions
    ********/
@@ -1054,7 +1079,9 @@ export class Character {
       } else {
         const hasPreferredFood = await this.setPreferredFood();
         if (!hasPreferredFood) {
-          logger.warn(`No food available in inventory or bank. Resting instead.`);
+          logger.warn(
+            `No food available in inventory or bank. Resting instead.`,
+          );
           await this.rest();
           return true;
         }
@@ -1073,38 +1100,48 @@ export class Character {
         );
 
         const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-        
+
         // If we don't have enough food in inventory, try to withdraw from bank
         if (numInInv < this.minFood) {
           logger.info(
             `Only have ${numInInv}/${this.minFood} ${this.preferredFood} in inventory. Attempting to withdraw from bank.`,
           );
-          
-          const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+
+          const numInBank = await this.checkQuantityOfItemInBank(
+            this.preferredFood,
+          );
           if (numInBank > 0) {
             const amountToWithdraw = Math.min(
               numInBank,
-              this.desiredFoodCount - numInInv
+              this.desiredFoodCount - numInInv,
             );
-            logger.info(`Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`);
+            logger.info(
+              `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`,
+            );
             await this.withdrawNow(amountToWithdraw, this.preferredFood);
-            
-            const newNumInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+
+            const newNumInInv = this.checkQuantityOfItemInInv(
+              this.preferredFood,
+            );
             if (newNumInInv >= amountNeededToEat) {
               amountNeededToEat = Math.min(amountNeededToEat, newNumInInv);
             } else {
               amountNeededToEat = newNumInInv;
             }
           } else {
-            logger.info(`No ${this.preferredFood} in bank. Looking for alternative food.`);
+            logger.info(
+              `No ${this.preferredFood} in bank. Looking for alternative food.`,
+            );
             const foundAlternative = await this.setPreferredFood();
             if (!foundAlternative) {
               logger.warn(`No alternative food found. Resting instead.`);
               await this.rest();
               return true;
             }
-            
-            const newNumInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+
+            const newNumInInv = this.checkQuantityOfItemInInv(
+              this.preferredFood,
+            );
             if (newNumInInv === 0) {
               await this.rest();
               return true;
@@ -1218,7 +1255,9 @@ export class Character {
     // Check to make sure we have enough preferred food in the bank. If there's none, set a new preferred food
     const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
     if (numInBank === 0) {
-      logger.info(`No ${this.preferredFood} in bank. Looking for alternative food.`);
+      logger.info(
+        `No ${this.preferredFood} in bank. Looking for alternative food.`,
+      );
       const foundAlternative = await this.setPreferredFood();
       if (!foundAlternative) {
         logger.warn(`No alternative food found in bank`);
@@ -1233,10 +1272,14 @@ export class Character {
     );
 
     if (numNeeded > 0) {
-      logger.info(`Topping up ${this.preferredFood}: withdrawing ${numNeeded} from bank (currently have ${numInInv} in inventory)`);
+      logger.info(
+        `Topping up ${this.preferredFood}: withdrawing ${numNeeded} from bank (currently have ${numInInv} in inventory)`,
+      );
       await this.withdrawNow(numNeeded, this.preferredFood);
     } else {
-      logger.debug(`Already have enough ${this.preferredFood} in inventory (${numInInv}/${this.desiredFoodCount})`);
+      logger.debug(
+        `Already have enough ${this.preferredFood} in inventory (${numInInv}/${this.desiredFoodCount})`,
+      );
     }
 
     if (priorLocation) {
@@ -1359,9 +1402,11 @@ export class Character {
     }
 
     const currentFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-    
+
     if (currentFoodInInv >= this.minFood) {
-      logger.debug(`Have sufficient ${this.preferredFood} in inventory (${currentFoodInInv}/${this.minFood})`);
+      logger.debug(
+        `Have sufficient ${this.preferredFood} in inventory (${currentFoodInInv}/${this.minFood})`,
+      );
       return true;
     }
 
@@ -1369,14 +1414,18 @@ export class Character {
     if (foodInBank > 0) {
       const amountToWithdraw = Math.min(
         foodInBank,
-        this.desiredFoodCount - currentFoodInInv
+        this.desiredFoodCount - currentFoodInInv,
       );
-      logger.info(`Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank to ensure sufficient food`);
+      logger.info(
+        `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank to ensure sufficient food`,
+      );
       await this.withdrawNow(amountToWithdraw, this.preferredFood);
       return true;
     }
 
-    logger.info(`No ${this.preferredFood} in bank. Looking for alternative food.`);
+    logger.info(
+      `No ${this.preferredFood} in bank. Looking for alternative food.`,
+    );
     const foundAlternative = await this.setPreferredFood();
     if (!foundAlternative) {
       logger.warn(`No alternative food found`);
@@ -1385,17 +1434,23 @@ export class Character {
 
     const newFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
     if (newFoodInInv >= this.minFood) {
-      logger.info(`Switched to ${this.preferredFood} which has sufficient quantity (${newFoodInInv})`);
+      logger.info(
+        `Switched to ${this.preferredFood} which has sufficient quantity (${newFoodInInv})`,
+      );
       return true;
     }
 
-    const newFoodInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
+    const newFoodInBank = await this.checkQuantityOfItemInBank(
+      this.preferredFood,
+    );
     if (newFoodInBank > 0) {
       const amountToWithdraw = Math.min(
         newFoodInBank,
-        this.desiredFoodCount - newFoodInInv
+        this.desiredFoodCount - newFoodInInv,
       );
-      logger.info(`Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`);
+      logger.info(
+        `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`,
+      );
       await this.withdrawNow(amountToWithdraw, this.preferredFood);
       return true;
     }
@@ -1412,9 +1467,11 @@ export class Character {
     if (!this.data || !this.data.inventory) {
       return false;
     }
-    
+
     if (this.preferredFood) {
-      const currentFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
+      const currentFoodInInv = this.checkQuantityOfItemInInv(
+        this.preferredFood,
+      );
       if (currentFoodInInv > this.minFood) {
         logger.debug(
           `Current preferred food ${this.preferredFood} has ${currentFoodInInv} in inventory, keeping it`,
@@ -1437,7 +1494,7 @@ export class Character {
       this.preferredFood = foundItem.code;
       return true;
     }
-    
+
     logger.debug(`Not enough food in inventory. Checking bank to find some`);
     const bankItems = await getBankItems();
     if (bankItems instanceof ApiError) {

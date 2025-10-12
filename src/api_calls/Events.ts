@@ -1,5 +1,10 @@
 import { ApiError } from '../objectives/Error.js';
-import { DataPageActiveEventSchema, DataPageEventSchema, GetAllActiveEventsEventsActiveGetParams, GetAllEventsEventsGetParams } from '../types/types.js';
+import {
+  DataPageActiveEventSchema,
+  DataPageEventSchema,
+  GetAllActiveEventsEventsActiveGetParams,
+  GetAllEventsEventsGetParams,
+} from '../types/types.js';
 import { ApiUrl, MyHeaders } from '../utils.js';
 
 export async function getAllEvents(
@@ -66,4 +71,3 @@ export async function getActiveEvents(
     return error as ApiError;
   }
 }
-

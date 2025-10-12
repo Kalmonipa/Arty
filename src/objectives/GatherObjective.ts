@@ -167,7 +167,10 @@ export class GatherObjective extends Objective {
         } else {
           return true;
         }
-      } else if (resourceDetails.subtype === 'task' || resourceDetails.subtype === 'npc') {
+      } else if (
+        resourceDetails.subtype === 'task' ||
+        resourceDetails.subtype === 'npc'
+      ) {
         if (
           !(await this.character.tradeWithNpcNow(
             'buy',
