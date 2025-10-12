@@ -12,12 +12,21 @@ import { Objective } from './Objective.js';
 export class TrainCraftingSkillObjective extends Objective {
   skill: CraftSkill;
   targetLevel: number;
+  /**
+   * Range within the character level that they should craft. Defaults to 4
+   * Useful to only craft higher level items during trainSkill objectives when there are
+   * items to craft every 5 levels (e.g weapon/gear crafting)
+   * Alchemy for example only has items every 10 levels so setting a range of 5 levels wouldn't
+   * work for that
+   */
+  levelRange?: number; 
 
-  constructor(character: Character, skill: CraftSkill, targetLevel: number) {
+  constructor(character: Character, skill: CraftSkill, targetLevel: number, levelRange?: number) {
     super(character, `train_${targetLevel}_${skill}`, 'not_started');
     this.character = character;
     this.targetLevel = targetLevel;
     this.skill = skill;
+    this.levelRange = levelRange ?? 4
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -41,7 +50,7 @@ export class TrainCraftingSkillObjective extends Objective {
       const payload: GetAllItemsItemsGetParams = {
         craft_skill: this.skill,
         max_level: charLevel,
-        min_level: Math.max(charLevel - 4, 0), // charLevel - 4 here so that we get mostly higher level items to craft
+        min_level: Math.max(charLevel - this.levelRange, 0),
       };
 
       const craftableItemsListData = await getAllItemInformation(payload);

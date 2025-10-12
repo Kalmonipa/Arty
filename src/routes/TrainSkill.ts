@@ -45,7 +45,7 @@ export default function TrainSkillRouter(char: Character) {
         job = new TrainCombatObjective(char, targetLevel);
       } else if (skill === 'alchemy' && char.data.alchemy_level > 5) {
         // ToDo: Find a better way to find the level to start crafting potions
-        job = new TrainCraftingSkillObjective(char, skill, targetLevel);
+        job = new TrainCraftingSkillObjective(char, skill, targetLevel, 9);
       } else if (isGatheringSkill(skill)) {
         job = new TrainGatheringSkillObjective(char, skill, targetLevel);
       } else {
