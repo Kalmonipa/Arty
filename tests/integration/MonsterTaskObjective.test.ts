@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
-import { MonsterTaskObjective } from '../../src/classes/MonsterTaskObjective.js';
+import { MonsterTaskObjective } from '../../src/objectives/MonsterTaskObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
-import { ApiError } from '../../src/classes/Error.js';
+import { ApiError } from '../../src/objectives/Error.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Maps', () => ({

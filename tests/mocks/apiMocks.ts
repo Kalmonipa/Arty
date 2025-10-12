@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { ApiError } from '../../src/classes/Error.js';
+import { ApiError } from '../../src/objectives/Error.js';
 import {
   CharacterSchema,
   DataPageMapSchema,
@@ -345,8 +345,8 @@ export const mockGetMaps = jest.fn() as jest.MockedFunction<
 export const mockGetAllMonsterInformation = jest.fn() as jest.MockedFunction<
   typeof import('../../src/api_calls/Monsters.js').getAllMonsterInformation
 >;
-export const mockGetResourceInformation = jest.fn() as jest.MockedFunction<
-  typeof import('../../src/api_calls/Resources.js').getResourceInformation
+export const mockGetAllResourceInformation = jest.fn() as jest.MockedFunction<
+  typeof import('../../src/api_calls/Resources.js').getAllResourceInformation
 >;
 
 // Default mock implementations
@@ -354,7 +354,7 @@ mockActionGather.mockResolvedValue(mockGatherResponse);
 mockGetItemInformation.mockResolvedValue(mockItemData);
 mockGetMaps.mockResolvedValue(mockMapData);
 mockGetAllMonsterInformation.mockResolvedValue(mockMonsterData);
-mockGetResourceInformation.mockResolvedValue(mockResourceData);
+mockGetAllResourceInformation.mockResolvedValue(mockResourceData);
 
 // Helper functions to create error responses
 export const createApiError = (code: number, message: string): ApiError => {
@@ -367,12 +367,12 @@ export const resetAllMocks = () => {
   mockGetItemInformation.mockReset();
   mockGetMaps.mockReset();
   mockGetAllMonsterInformation.mockReset();
-  mockGetResourceInformation.mockReset();
+  mockGetAllResourceInformation.mockReset();
 
   // Reset to default implementations
   mockActionGather.mockResolvedValue(mockGatherResponse);
   mockGetItemInformation.mockResolvedValue(mockItemData);
   mockGetMaps.mockResolvedValue(mockMapData);
   mockGetAllMonsterInformation.mockResolvedValue(mockMonsterData);
-  mockGetResourceInformation.mockResolvedValue(mockResourceData);
+  mockGetAllResourceInformation.mockResolvedValue(mockResourceData);
 };

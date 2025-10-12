@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { EquipObjective } from '../../src/classes/EquipObjective.js';
+import { EquipObjective } from '../../src/objectives/EquipObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/classes/Error.js';
+import { ApiError } from '../../src/objectives/Error.js';
 import { ItemSlot } from '../../src/types/types.js';
 
 // Mock the API modules

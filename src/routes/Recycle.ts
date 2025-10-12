@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../classes/Character.js';
-import { RecycleObjective } from '../classes/RecycleObjective.js';
+import { Character } from '../objectives/Character.js';
+import { RecycleObjective } from '../objectives/RecycleObjective.js';
 
 export default function RecycleRouter(char: Character) {
   const router = Router();

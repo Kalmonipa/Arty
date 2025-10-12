@@ -1,11 +1,12 @@
-import { ApiError } from '../classes/Error.js';
+import { ApiError } from '../objectives/Error.js';
 import {
   DataPageResourceSchema,
   GetAllResourcesResourcesGetParams,
+  ResourceResponseSchema,
 } from '../types/types.js';
 import { ApiUrl, MyHeaders } from '../utils.js';
 
-export async function getResourceInformation(
+export async function getAllResourceInformation(
   data: GetAllResourcesResourcesGetParams,
 ): Promise<DataPageResourceSchema | ApiError> {
   const requestOptions = {
@@ -47,3 +48,37 @@ export async function getResourceInformation(
     return error as ApiError;
   }
 }
+
+export async function getResourceInformation(
+  itemCode: string
+): Promise<ResourceResponseSchema | ApiError> {
+  const requestOptions = {
+    method: 'GET',
+    headers: MyHeaders,
+  };
+
+  const apiUrl = new URL(`${ApiUrl}/resources/${itemCode}`);
+
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 404:
+          message = 'Item not found.';
+          break;
+          default:
+            message = 'Unknown error from /action/bank/deposit/item';
+            break;
+        }       
+        throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+    return await response.json();
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+

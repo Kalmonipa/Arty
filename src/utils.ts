@@ -6,7 +6,7 @@ import {
   ItemType,
 } from './types/types.js';
 import { getAllItemInformation } from './api_calls/Items.js';
-import { ApiError } from './classes/Error.js';
+import { ApiError } from './objectives/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import dotenv from 'dotenv';
 import { Role } from './types/CharacterData.js';

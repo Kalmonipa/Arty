@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { GatherObjective } from '../../src/classes/GatherObjective.js';
+import { GatherObjective } from '../../src/objectives/GatherObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
@@ -7,7 +7,7 @@ import { InventorySlot } from '../../src/types/CharacterData.js';
 
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { getResourceInformation } from '../../src/api_calls/Resources.js';
+import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
 
 // Mock item data
@@ -109,7 +109,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 }));
 
 jest.mock('../../src/api_calls/Resources', () => ({
-  getResourceInformation: jest.fn(),
+  getAllResourceInformation: jest.fn(),
 }));
 
 // Simple mock character
@@ -285,8 +285,8 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
         getItemInformation as jest.MockedFunction<typeof getItemInformation>
       ).mockResolvedValue(mockIronOreData);
       (
-        getResourceInformation as jest.MockedFunction<
-          typeof getResourceInformation
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
       (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(

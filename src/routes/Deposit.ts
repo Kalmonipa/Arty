@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../classes/Character.js';
-import { DepositObjective } from '../classes/DepositObjective.js';
+import { Character } from '../objectives/Character.js';
+import { DepositObjective } from '../objectives/DepositObjective.js';
 
 export default function DepositRouter(char: Character) {
   const router = Router();

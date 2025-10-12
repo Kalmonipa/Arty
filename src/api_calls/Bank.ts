@@ -1,4 +1,4 @@
-import { ApiError } from '../classes/Error.js';
+import { ApiError } from '../objectives/Error.js';
 import {
   ApiUrl,
   getRequestOptions,

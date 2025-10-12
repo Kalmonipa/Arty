@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../classes/Character.js';
+import { Character } from '../objectives/Character.js';
 import { DataPageSimpleItemSchema, SimpleItemSchema } from '../types/types.js';
 import { getBankItems } from '../api_calls/Bank.js';
-import { ApiError } from '../classes/Error.js';
+import { ApiError } from '../objectives/Error.js';
 
 export default function ItemsRouter(char: Character) {
   const router = Router();

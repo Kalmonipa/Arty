@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../classes/Character.js';
-import { TrainGatheringSkillObjective } from '../classes/TrainGatheringSkillObjective.js';
+import { Character } from '../objectives/Character.js';
+import { TrainGatheringSkillObjective } from '../objectives/TrainGatheringSkillObjective.js';
 import { isGatheringSkill } from '../utils.js';
 import { CraftSkill, Skill } from '../types/types.js';
-import { TrainCraftingSkillObjective } from '../classes/TrainCraftingSkillObjective.js';
-import { TrainCombatObjective } from '../classes/TrainCombatObjective.js';
+import { TrainCraftingSkillObjective } from '../objectives/TrainCraftingSkillObjective.js';
+import { TrainCombatObjective } from '../objectives/TrainCombatObjective.js';
 
 export default function TrainSkillRouter(char: Character) {
   const router = Router();

@@ -1,5 +1,5 @@
 import { getAllItemInformation } from '../api_calls/Items.js';
-import { getResourceInformation } from '../api_calls/Resources.js';
+import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { DataPageResourceSchema, GatheringSkill } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
@@ -38,7 +38,7 @@ export class TrainGatheringSkillObjective extends Objective {
       }
 
       const resourceTypes: DataPageResourceSchema | ApiError =
-        await getResourceInformation({
+        await getAllResourceInformation({
           skill: this.skill,
           max_level: charLevel,
         });

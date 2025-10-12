@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
-import { DepositObjective } from '../../src/classes/DepositObjective.js';
+import { DepositObjective } from '../../src/objectives/DepositObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { MapSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/classes/Error.js';
+import { ApiError } from '../../src/objectives/Error.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Actions', () => ({

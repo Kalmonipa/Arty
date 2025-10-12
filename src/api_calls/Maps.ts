@@ -1,4 +1,4 @@
-import { ApiError } from '../classes/Error.js';
+import { ApiError } from '../objectives/Error.js';
 import { GetAllMapsMapsGetParams, DataPageMapSchema } from '../types/types.js';
 import { ApiUrl, MyHeaders } from '../utils.js';
 

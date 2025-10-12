@@ -2,7 +2,7 @@ import { actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
-import { getResourceInformation } from '../api_calls/Resources.js';
+import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { WeaponFlavours } from '../types/ItemData.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
@@ -167,7 +167,7 @@ export class GatherObjective extends Objective {
         } else {
           return true;
         }
-      } else if (resourceDetails.subtype === 'task') {
+      } else if (resourceDetails.subtype === 'task' || resourceDetails.subtype === 'npc') {
         if (
           !(await this.character.tradeWithNpcNow(
             'buy',
@@ -310,7 +310,7 @@ export class GatherObjective extends Objective {
   ): Promise<boolean> {
     logger.debug(`Finding resource map type for ${code}`);
 
-    const resources = await getResourceInformation({
+    const resources = await getAllResourceInformation({
       drop: code,
     });
     if (resources instanceof ApiError) {
