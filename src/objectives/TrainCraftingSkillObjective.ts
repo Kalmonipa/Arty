@@ -19,14 +19,19 @@ export class TrainCraftingSkillObjective extends Objective {
    * Alchemy for example only has items every 10 levels so setting a range of 5 levels wouldn't
    * work for that
    */
-  levelRange?: number; 
+  levelRange?: number;
 
-  constructor(character: Character, skill: CraftSkill, targetLevel: number, levelRange?: number) {
+  constructor(
+    character: Character,
+    skill: CraftSkill,
+    targetLevel: number,
+    levelRange?: number,
+  ) {
     super(character, `train_${targetLevel}_${skill}`, 'not_started');
     this.character = character;
     this.targetLevel = targetLevel;
     this.skill = skill;
-    this.levelRange = levelRange ?? 4
+    this.levelRange = levelRange ?? 4;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

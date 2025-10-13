@@ -897,7 +897,7 @@ export class Character {
   }
 
   async getAllBankItems(): Promise<SimpleItemSchema[]> {
-    let bankItems: SimpleItemSchema[] = []
+    let bankItems: SimpleItemSchema[] = [];
 
     const bankItemResponse = await getBankItems(undefined, undefined, 100);
     if (bankItemResponse instanceof ApiError) {
@@ -905,7 +905,7 @@ export class Character {
       return;
     }
 
-    bankItems = bankItemResponse.data
+    bankItems = bankItemResponse.data;
 
     if (bankItemResponse.pages > 1) {
       for (let pages = 2; pages <= bankItemResponse.pages; pages++) {
@@ -918,7 +918,7 @@ export class Character {
       }
     }
 
-    return bankItems
+    return bankItems;
   }
 
   /**
@@ -1522,15 +1522,16 @@ export class Character {
     }
 
     logger.debug(`Not enough food in inventory. Checking bank to find some`);
-    const bankItems = await this.getAllBankItems()
-    
+    const bankItems = await this.getAllBankItems();
+
     if (!bankItems || bankItems.length === 0) {
       logger.info(`No items in the bank`);
       return false;
     } else {
       const foundItem = bankItems.find((bankItem) => {
         return this.consumablesMap.heal.find(
-          (item) => bankItem.code === item.code && item.level <= this.data.level,
+          (item) =>
+            bankItem.code === item.code && item.level <= this.data.level,
         );
       });
 

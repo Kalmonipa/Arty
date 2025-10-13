@@ -52,16 +52,16 @@ export class TidyBankObjective extends Objective {
         return await this.cookFood();
 
       case 'gearcrafter':
-        return await this.recycleExcessEquipment('gearcrafting')
+        return await this.recycleExcessEquipment('gearcrafting');
 
       case 'weaponcrafter':
-        return await this.recycleExcessEquipment('weaponcrafting')
+        return await this.recycleExcessEquipment('weaponcrafting');
 
       case 'lumberjack':
         break;
 
       case 'miner':
-        await this.recycleExcessEquipment('jewelrycrafting')
+        await this.recycleExcessEquipment('jewelrycrafting');
         return await this.craftBars();
 
       default:
@@ -111,7 +111,7 @@ export class TidyBankObjective extends Objective {
    * @returns
    */
   private async craftBars(): Promise<boolean> {
-    const contentsOfBank = await this.character.getAllBankItems()
+    const contentsOfBank = await this.character.getAllBankItems();
     if (contentsOfBank instanceof ApiError) {
       this.character.handleErrors(contentsOfBank);
       return false;
@@ -266,46 +266,46 @@ export class TidyBankObjective extends Objective {
     return true;
   }
 
-    /**
+  /**
    * @description Recycle any excess jewelry if there are more than 5 in the bank
    */
-    private async recycleExcessEquipment(skill: CraftSkill): Promise<boolean> {
-      const maxNumberNeededInBank = 5;
-  
-      const itemListResponse = await getAllItemInformation({
-        craft_skill: skill,
-        max_level: this.character.getCharacterLevel(skill),
-      });
-      if (itemListResponse instanceof ApiError) {
-        this.character.handleErrors(itemListResponse);
-        return false;
-      }
-  
-      const contentsOfBank = await this.character.getAllBankItems()
-  
-      for (const gear of itemListResponse.data) {
-        const numInBank = contentsOfBank.find(
-          (bankItem) => bankItem.code === gear.code,
-        ).quantity;
+  private async recycleExcessEquipment(skill: CraftSkill): Promise<boolean> {
+    const maxNumberNeededInBank = 5;
 
-        if (numInBank === undefined) {
-          logger.info(`${gear.code} not found in bank`);
-          break;
-        }
-  
-        if (numInBank <= maxNumberNeededInBank) {
-          logger.info(
-            `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
-          );
-          break;
-        }
-  
-        await this.character.recycleItemNow(
-          gear.code,
-          numInBank - maxNumberNeededInBank,
-        );
-      }
-  
-      return true;
+    const itemListResponse = await getAllItemInformation({
+      craft_skill: skill,
+      max_level: this.character.getCharacterLevel(skill),
+    });
+    if (itemListResponse instanceof ApiError) {
+      this.character.handleErrors(itemListResponse);
+      return false;
     }
+
+    const contentsOfBank = await this.character.getAllBankItems();
+
+    for (const gear of itemListResponse.data) {
+      const numInBank = contentsOfBank.find(
+        (bankItem) => bankItem.code === gear.code,
+      ).quantity;
+
+      if (numInBank === undefined) {
+        logger.info(`${gear.code} not found in bank`);
+        break;
+      }
+
+      if (numInBank <= maxNumberNeededInBank) {
+        logger.info(
+          `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
+        );
+        break;
+      }
+
+      await this.character.recycleItemNow(
+        gear.code,
+        numInBank - maxNumberNeededInBank,
+      );
+    }
+
+    return true;
+  }
 }

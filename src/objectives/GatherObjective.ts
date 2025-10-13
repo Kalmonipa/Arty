@@ -10,7 +10,7 @@ import {
   ItemSchema,
   SimpleItemSchema,
 } from '../types/types.js';
-import { logger } from '../utils.js';
+import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
@@ -129,16 +129,11 @@ export class GatherObjective extends Objective {
         }
         continue;
       } else {
-        // if (
-        //   isGatheringSkill(resourceDetails.subtype) &&
-        //   !(await this.character.checkWeaponForEffects(
-        //     resourceDetails.subtype as GatheringSkill,
-        //   ))
-        // ) {
-        await this.character.evaluateGear(
-          resourceDetails.subtype as WeaponFlavours,
-        );
-        //}
+        if (isGatheringSkill(resourceDetails.subtype)) {
+          await this.character.evaluateGear(
+            resourceDetails.subtype as WeaponFlavours,
+          );
+        }
       }
 
       // Evaluate our inventory space before we start collecting items

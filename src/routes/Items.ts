@@ -49,7 +49,7 @@ export default function ItemsRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      const bankItems: SimpleItemSchema[] = await char.getAllBankItems()
+      const bankItems: SimpleItemSchema[] = await char.getAllBankItems();
 
       return res.status(201).json({
         message: `There are ${bankItems.length} items in the bank`,

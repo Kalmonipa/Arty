@@ -163,6 +163,14 @@ export class IdleObjective extends Objective {
   }
 
   /**
+   * @description Check if there are jobs in the queue
+   * @returns true if yes, false if no other jobs in the queue
+   */
+  private checkForOtherJobsInQueue(): boolean {
+    return true;
+  }
+
+  /**
    * Craft certain items and recycle items depending on role
    * @returns true if successful, false if not
    */
