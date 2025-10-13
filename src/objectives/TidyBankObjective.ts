@@ -118,10 +118,15 @@ export class TidyBankObjective extends Objective {
     }
 
     for (const item of this.rawOreList) {
-      //const numInBank = await this.character.checkQuantityOfItemInBank(item);
-      const numInBank = contentsOfBank.find(
+      const content = 
+      contentsOfBank.find(
         (bankItem) => bankItem.code === item,
-      ).quantity;
+      )
+      if (!content) {
+        logger.info(`No ${item} found in the bank`)
+        break;
+      }
+      const numInBank = content.quantity;
 
       if (numInBank === undefined) {
         logger.info(`${item} not found in bank`);
