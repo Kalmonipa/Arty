@@ -87,7 +87,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Assert
       expect(objective.quantity).toBe(3);
       expect(objective.character).toBe(mockCharacter);
-      expect(objective.objectiveId).toMatch(/^task_3_monstertask_[a-f0-9]+$/);
+      expect(objective.objectiveId).toMatch(/^task_3_monsters_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
       expect(objective.type).toBe('monster');
     });

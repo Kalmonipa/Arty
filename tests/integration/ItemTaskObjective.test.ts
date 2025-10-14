@@ -298,7 +298,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       // Assert
       expect(objective.quantity).toBe(3);
       expect(objective.character).toBe(mockCharacter);
-      expect(objective.objectiveId).toMatch(/^task_3_itemstask_[a-f0-9]+$/);
+      expect(objective.objectiveId).toMatch(/^task_3_items_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
       expect(objective.type).toBe('items');
     });
