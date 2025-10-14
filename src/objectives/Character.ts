@@ -1026,6 +1026,10 @@ export class Character {
     }
 
     maps.forEach((map) => {
+      if (map.name === 'Sandwhisper Isle') {
+        logger.debug(`${map.name} requires transitioning. Not implemented yet`);
+        return;
+      }
       const dist =
         Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
       if (dist < closestDistance) {
