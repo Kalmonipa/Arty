@@ -224,7 +224,9 @@ export class GatherObjective extends Objective {
         // Ensure response has the expected structure before accessing nested properties
         if (response && response.data && response.data.character) {
           this.character.data = response.data.character;
-          this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
+          if (response.data.details.items.find((item) => item.code === target.code)) {
+            this.progress++; 
+          }
         } else {
           logger.error(
             'Invalid response structure from actionGather:',
