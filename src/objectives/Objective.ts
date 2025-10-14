@@ -81,7 +81,7 @@ export abstract class Objective {
     await this.character.cooldownStatus();
 
     // ToDo: Call this at every isCancelled check to check more frequently
-    if (!this.parentId.includes('_event_')) {
+    if (this.parentId && !this.parentId.includes('_event_')) {
       await this.character.checkForActiveEvents();
     }
 
