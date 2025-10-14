@@ -97,7 +97,7 @@ export class TradeObjective extends Objective {
       );
       if (numInBank >= currencyNeeded) {
         await this.character.withdrawNow(currencyNeeded, this.currency);
-      } else if (this.currency === 'task_coins') {
+      } else if (this.currency === 'tasks_coin') {
         while (
           this.character.checkQuantityOfItemInInv(this.currency) <
           currencyNeeded
