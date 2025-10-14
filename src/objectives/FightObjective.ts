@@ -90,7 +90,7 @@ export class FightObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!this.checkStatus()) return false;
+      if (!await this.checkStatus()) return false;
 
       logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
 
@@ -115,7 +115,7 @@ export class FightObjective extends Objective {
         this.progress < this.target.quantity;
         this.progress++
       ) {
-        if (!this.checkStatus()) return false;
+        if (!await this.checkStatus()) return false;
 
         logger.info(
           `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,

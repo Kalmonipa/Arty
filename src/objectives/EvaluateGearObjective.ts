@@ -36,10 +36,7 @@ export class EvaluateGearObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (this.isCancelled()) {
-        logger.info(`${this.objectiveId} has been cancelled`);
-        return false;
-      }
+      if (!await this.checkStatus()) return false;
 
       logger.debug(`Gear up attempt ${attempt}/${this.maxRetries}`);
 

@@ -161,14 +161,14 @@ export abstract class Objective {
    * If paused, sleeps for 10 seconds then rechecks the status until it's resumed
    * @returns false if the objective should fail, true if the objective should continue
    */
-  checkStatus(): boolean {
+  async checkStatus(): Promise<boolean> {
     if (this.isCancelled()) {
       logger.info(`${this.objectiveId} has been cancelled`);
       return false;
     }
 
     while (this.status === 'paused') {
-      sleep(10, 'paused job', true); // Logging this for debugging
+      await sleep(10, 'paused job', true); // Logging this for debugging
     }
 
     return true;

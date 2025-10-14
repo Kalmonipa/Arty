@@ -25,7 +25,7 @@ export class UnequipObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!this.checkStatus()) return false;
+      if (!await this.checkStatus()) return false;
 
       logger.debug(`Unequip attempt ${attempt}/${this.maxRetries}`);
 

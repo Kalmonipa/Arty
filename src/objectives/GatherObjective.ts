@@ -232,7 +232,7 @@ export class GatherObjective extends Objective {
         }
       }
 
-      if (!this.checkStatus()) return false;
+      if (!await this.checkStatus()) return false;
 
       await this.character.saveJobQueue();
     }
@@ -275,7 +275,7 @@ export class GatherObjective extends Objective {
           numHeld = newNumHeld;
         }
 
-        if (!this.checkStatus()) return false;
+        if (!await this.checkStatus()) return false;
 
         await this.character.saveJobQueue();
       }
@@ -331,7 +331,7 @@ export class GatherObjective extends Objective {
       exceptions,
     );
 
-    if (!this.checkStatus()) return false;
+    if (!await this.checkStatus()) return false;
 
     numHeld = this.character.checkQuantityOfItemInInv(code);
     if (this.progress >= quantity) {
