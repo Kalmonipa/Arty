@@ -84,6 +84,8 @@ export class TidyBankObjective extends Objective {
         break;
       }
 
+      logger.info(`Found ${numInBank} ${item} in the bank.`)
+
       if (numInBank == 0) {
         break;
       } else {
@@ -94,6 +96,8 @@ export class TidyBankObjective extends Objective {
         if (!itemToCraftSchema) {
           break;
         }
+
+        logger.info(`Cooking ${itemToCraftSchema.code} from ${item}`)
 
         const numToCraft = Math.floor(
           numInBank / itemToCraftSchema.craft.items[0].quantity,
