@@ -98,13 +98,20 @@ export class TradeObjective extends Objective {
       if (numInBank >= currencyNeeded) {
         await this.character.withdrawNow(currencyNeeded, this.currency);
       } else if (this.currency === 'task_coins') {
-        if (Math.floor(Math.random() * 2) === 0) {
-          await this.character.executeJobNow(new MonsterTaskObjective(this.character, 5))
-        } else {
-          await this.character.executeJobNow(new ItemTaskObjective(this.character, 5))
-        }
+        while (
+          this.character.checkQuantityOfItemInInv(this.currency) <
+          currencyNeeded
+        )
+          if (Math.floor(Math.random() * 2) === 0) {
+            await this.character.executeJobNow(
+              new MonsterTaskObjective(this.character, 1),
+            );
+          } else {
+            await this.character.executeJobNow(
+              new ItemTaskObjective(this.character, 1),
+            );
+          }
       } else {
-        // ToDo: Do item tasks until we have enough currency
         logger.warn(`Collecting ${this.currency} feature not implemented yet`);
         return false;
       }

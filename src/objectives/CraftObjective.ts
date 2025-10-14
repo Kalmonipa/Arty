@@ -184,6 +184,8 @@ export class CraftObjective extends Objective {
             }
             break;
           } else {
+            this.progress += this.numItemsPerBatch;
+
             if (response.data.character) {
               this.character.data = response.data.character;
             } else {

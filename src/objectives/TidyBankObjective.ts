@@ -118,12 +118,9 @@ export class TidyBankObjective extends Objective {
     }
 
     for (const item of this.rawOreList) {
-      const content = 
-      contentsOfBank.find(
-        (bankItem) => bankItem.code === item,
-      )
+      const content = contentsOfBank.find((bankItem) => bankItem.code === item);
       if (!content) {
-        logger.info(`No ${item} found in the bank`)
+        logger.info(`No ${item} found in the bank`);
         break;
       }
       const numInBank = content.quantity;
@@ -289,12 +286,11 @@ export class TidyBankObjective extends Objective {
     const contentsOfBank = await this.character.getAllBankItems();
 
     for (const gear of itemListResponse.data) {
-      const content = 
-      contentsOfBank.find(
+      const content = contentsOfBank.find(
         (bankItem) => bankItem.code === gear.code,
-      )
+      );
       if (!content) {
-        logger.info(`No ${gear.code} found in the bank`)
+        logger.info(`No ${gear.code} found in the bank`);
         break;
       }
       const numInBank = content.quantity;

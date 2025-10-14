@@ -768,7 +768,12 @@ export class Character {
     for (const event of activeEventsResponse.data) {
       if (this.applicableResourceEvents.includes(event.code)) {
         const job = new EventObjective(this, event);
-        return await this.executeJobNow(job, true, true, this.currentExecutingJob.objectiveId);
+        return await this.executeJobNow(
+          job,
+          true,
+          true,
+          this.currentExecutingJob.objectiveId,
+        );
       }
     }
     return false;
