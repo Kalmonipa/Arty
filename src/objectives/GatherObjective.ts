@@ -232,11 +232,7 @@ export class GatherObjective extends Objective {
         }
       }
 
-      if (this.isCancelled()) {
-        logger.info(`${this.objectiveId} has been cancelled.`);
-        //this.character.removeJob(this.objectiveId);
-        return false;
-      }
+      if (!this.checkStatus()) return false;
 
       await this.character.saveJobQueue();
     }
@@ -279,11 +275,7 @@ export class GatherObjective extends Objective {
           numHeld = newNumHeld;
         }
 
-        if (this.isCancelled()) {
-          logger.info(`${this.objectiveId} has been cancelled.`);
-          //this.character.removeJob(this.objectiveId);
-          return false;
-        }
+        if (!this.checkStatus()) return false;
 
         await this.character.saveJobQueue();
       }
@@ -339,11 +331,7 @@ export class GatherObjective extends Objective {
       exceptions,
     );
 
-    if (this.isCancelled()) {
-      logger.info(`${this.objectiveId} has been cancelled.`);
-      //this.character.removeJob(this.objectiveId);
-      return false;
-    }
+    if (!this.checkStatus()) return false;
 
     numHeld = this.character.checkQuantityOfItemInInv(code);
     if (this.progress >= quantity) {

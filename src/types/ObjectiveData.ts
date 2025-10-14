@@ -8,7 +8,8 @@ export type ObjectiveStatus =
   | 'not_started'
   | 'in_progress'
   | 'complete'
-  | 'failed';
+  | 'failed'
+  | 'paused';
 
 export interface SerializedJob {
   type: string;

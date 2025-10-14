@@ -185,5 +185,49 @@ export default function JobsRouter(char: Character) {
     }
   });
 
+  router.post('/pause', async (req: Request, res: Response) => {
+    try {
+      if (typeof char === 'undefined' || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      char.pauseJob();
+
+      return res.status(200).json({
+        message: `Paused job ${char.currentExecutingJob.objectiveId}`,
+        character: char.data.name,
+        jobs: char.listObjectives(),
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  router.post('/resume', async (req: Request, res: Response) => {
+    try {
+      if (typeof char === 'undefined' || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      char.resumeJob();
+
+      return res.status(200).json({
+        message: `Resumed job ${char.currentExecutingJob.objectiveId}`,
+        character: char.data.name,
+        jobs: char.listObjectives(),
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
   return router;
 }

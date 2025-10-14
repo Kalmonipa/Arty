@@ -27,10 +27,7 @@ export class TrainCombatObjective extends Objective {
     let attempts = 0;
     let charLevel = this.character.getCharacterLevel();
 
-    if (this.isCancelled()) {
-      logger.info(`${this.objectiveId} has been cancelled`);
-      return false;
-    }
+    if (!this.checkStatus()) return false;
 
     if (charLevel >= this.targetLevel) {
       logger.info(`Already at target combat level ${this.targetLevel}`);

@@ -90,10 +90,7 @@ export class FightObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (this.isCancelled()) {
-        logger.info(`${this.objectiveId} has been cancelled`);
-        return false;
-      }
+      if (!this.checkStatus()) return false;
 
       logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
 
@@ -118,10 +115,7 @@ export class FightObjective extends Objective {
         this.progress < this.target.quantity;
         this.progress++
       ) {
-        if (this.isCancelled()) {
-          logger.info(`${this.objectiveId} has been cancelled`);
-          return false;
-        }
+        if (!this.checkStatus()) return false;
 
         logger.info(
           `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,

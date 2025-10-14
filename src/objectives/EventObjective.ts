@@ -191,10 +191,7 @@ export class EventObjective extends Objective {
           }
         }
 
-        if (this.isCancelled()) {
-          logger.info(`${this.objectiveId} has been cancelled.`);
-          return false;
-        }
+        if (!this.checkStatus()) return false;
 
         await this.character.saveJobQueue();
       }

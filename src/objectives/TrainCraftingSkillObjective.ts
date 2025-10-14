@@ -41,10 +41,7 @@ export class TrainCraftingSkillObjective extends Objective {
   async run(): Promise<boolean> {
     let charLevel = this.character.getCharacterLevel(this.skill);
     while (charLevel < this.targetLevel) {
-      if (this.isCancelled()) {
-        logger.info(`${this.objectiveId} has been cancelled`);
-        return false;
-      }
+      if (!this.checkStatus()) return false;
 
       // Steps:
       // Find items to craft that are within 10 (?) levels

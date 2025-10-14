@@ -45,11 +45,7 @@ export class RecycleObjective extends Objective {
 
     let result = false;
 
-    if (this.isCancelled()) {
-      logger.info(`${this.objectiveId} has been cancelled`);
-      //this.character.removeJob(this.objectiveId);
-      return false;
-    }
+    if (!this.checkStatus()) return false;
 
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 

@@ -570,6 +570,23 @@ export class Character {
   }
 
   /**
+   * @description Pauses the current job
+   * Maybe should pause the parent jobs too?
+   */
+  pauseJob() {
+    logger.info(`${this.currentExecutingJob.objectiveId} set to paused`);
+    this.currentExecutingJob.status = 'paused';
+  }
+
+  /**
+   * @description Resume current job
+   */
+  resumeJob() {
+    logger.info(`${this.currentExecutingJob.objectiveId} set to in_progress`);
+    this.currentExecutingJob.status = 'in_progress';
+  }
+
+  /**
    * Adds a job to the jobList and executes it immediately
    * This ensures all jobs go through the jobList system for tracking
    * @param obj The objective to add and execute

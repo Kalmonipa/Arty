@@ -1,7 +1,7 @@
 import * as crypto from 'node:crypto';
 import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
-import { logger } from '../utils.js';
+import { logger, sleep } from '../utils.js';
 import { getMaps } from '../api_calls/Maps.js';
 import {
   actionAcceptNewTask,
@@ -153,6 +153,25 @@ export abstract class Objective {
     } else {
       return false;
     }
+  }
+
+  /**
+   * @description Does various status checks on the objective
+   * If cancelled, fails the job
+   * If paused, sleeps for 10 seconds then rechecks the status until it's resumed
+   * @returns false if the objective should fail, true if the objective should continue
+   */
+  checkStatus(): boolean {
+    if (this.isCancelled()) {
+      logger.info(`${this.objectiveId} has been cancelled`);
+      return false;
+    }
+
+    while (this.status === 'paused') {
+      sleep(10, 'paused job', true); // Logging this for debugging
+    }
+
+    return true;
   }
 
   /********
