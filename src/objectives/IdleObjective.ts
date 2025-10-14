@@ -112,9 +112,9 @@ export class IdleObjective extends Objective {
       await this.topUpBank();
 
       if (this.role === 'weaponcrafter' || this.role === 'gearcrafter') {
-        await this.doMonsterTask();
+        await this.doMonsterTask(5);
       } else {
-        await this.doItemTask();
+        await this.doItemTask(5);
       }
 
       switch (this.role) {
@@ -244,9 +244,9 @@ export class IdleObjective extends Objective {
    * Completes an item task
    * @returns true if successful, false if not
    */
-  private async doItemTask(): Promise<boolean> {
+  private async doItemTask(num?: number): Promise<boolean> {
     return await this.character.executeJobNow(
-      new ItemTaskObjective(this.character, 1),
+      new ItemTaskObjective(this.character, num ?? 1),
       true,
       true,
       this.objectiveId,
@@ -257,9 +257,9 @@ export class IdleObjective extends Objective {
    * Completes an item task
    * @returns true if successful, false if not
    */
-  private async doMonsterTask(): Promise<boolean> {
+  private async doMonsterTask(num?: number): Promise<boolean> {
     return await this.character.executeJobNow(
-      new MonsterTaskObjective(this.character, 1),
+      new MonsterTaskObjective(this.character, num ?? 1),
       true,
       true,
       this.objectiveId,
