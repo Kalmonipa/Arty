@@ -45,6 +45,8 @@ export class GatherObjective extends Objective {
    * @returns true if successful, false if failure
    */
   async run(): Promise<boolean> {
+    if (!await this.checkStatus()) return false;
+
     let result = false;
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
     let numInBank = 0;

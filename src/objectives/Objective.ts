@@ -40,9 +40,8 @@ export abstract class Objective {
 
   async execute(): Promise<boolean> {
     this.character.isIdle = false;
-    if (this.status === 'cancelled') {
-      return false;
-    }
+    if (!await this.checkStatus()) return false;
+
 
     // Check if parent job has been cancelled
     if (this.cancelIfParentIsCancelled()) {
