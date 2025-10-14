@@ -2,7 +2,7 @@ import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
-import { ItemSchema, ItemSlot } from '../types/types.js';
+import { ItemSchema, ItemSlot, MonsterSchema } from '../types/types.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { ApiError } from './Error.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
@@ -46,11 +46,9 @@ export class EvaluateGearObjective extends Objective {
           : this.character.getCharacterLevel(this.activityType);
 
       // Just check the weapon if we're doing a gathering task
+      // ToDo: Find prospecting/wisdom gear for non-combat activities
       if (this.activityType !== 'combat') {
-        // Check weapon and equip a suitable one if current isn't good
-        //if (!(await this.character.checkWeaponForEffects(this.activityType))) {
         return await this.checkGatheringWeapon(this.activityType, charLevel);
-        //}
       } else {
         return await this.evaluateCombatGear(charLevel, this.targetMob);
       }
@@ -126,7 +124,8 @@ export class EvaluateGearObjective extends Objective {
     await this.topUpHealthPots();
 
     // This would take in the effects property to see what the best potion to equip
-    await this.topUpSecondaryPots();
+    await this.topUpSecondaryPots(mobInfo.data);
+    
 
     logger.debug(`Finding best shield`);
     let equipResult: boolean;
@@ -203,9 +202,20 @@ export class EvaluateGearObjective extends Objective {
 
   /**
    * @description Equips other potions (antidote, damage boost etc) into utility 2 slot
+   * @todo Equip damage, resistance, etc pots if available
    */
-  private async topUpSecondaryPots() {
-    // ToDo: Implement this
+  private async topUpSecondaryPots(mobInfo: MonsterSchema) {
+    if (mobInfo.effects.length === 0) { // If the target mob has no effects, unequip all secondary pots
+      return await this.character.unequipNow('utility2')
+    } else if (mobInfo.effects.length > 1) {
+      logger.warn(`${mobInfo.code} has more than 1 effect. Not sure what to do`)
+      return false;
+    } else if (mobInfo.effects[0].code === 'poison') {
+      return await this.character.equipUtility('antipoison', 'utility2')
+    } else {
+      logger.info(`Counter of ${mobInfo.effects[0].code} from ${mobInfo.code} not found.`)
+      return false;
+    }
   }
 
   /**
