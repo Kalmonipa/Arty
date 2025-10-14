@@ -1034,7 +1034,7 @@ export class Character {
       logger.info(`Removing ${itemCode} from exceptions list`);
       this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1);
     } else {
-      logger.warn(`Can't remove item code ${itemCode} from itemsToKeep list`);
+      logger.debug(`Can't remove item code ${itemCode} from itemsToKeep list`);
     }
   }
 

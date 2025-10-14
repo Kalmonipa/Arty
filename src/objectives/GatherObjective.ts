@@ -267,7 +267,7 @@ export class GatherObjective extends Objective {
 
         // ToDo: make this check all mobs in case multiple drop the item
         if (!(await this.character.fightNow(1, mobInfo.data[0].code))) {
-          logger.warn(`Fight attempt against ${mobInfo.data[0].code} failed`);
+          logger.debug(`Fight attempt against ${mobInfo.data[0].code} failed`);
           return false;
         }
 
