@@ -112,11 +112,10 @@ export class CraftObjective extends Objective {
         const contentLocation = this.character.evaluateClosestMap(maps.data);
 
         for (let batch = 0; batch < this.numBatches; batch++) {
-          logger.debug(`Crafting batch ${batch}/${this.numBatches}`);
+          logger.info(`Crafting batch ${batch}/${this.numBatches}`);
 
           if (this.isCancelled()) {
             logger.info(`${this.objectiveId} has been cancelled`);
-            //this.character.removeJob(this.objectiveId);
             return false;
           }
 
