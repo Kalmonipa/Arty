@@ -11,7 +11,7 @@ export class ItemTaskObjective extends Objective {
   quantity: number;
 
   constructor(character: Character, quantity: number) {
-    super(character, `task_${quantity}_itemstask`, 'not_started');
+    super(character, `task_${quantity}_items`, 'not_started');
 
     this.character = character;
     this.quantity = quantity;

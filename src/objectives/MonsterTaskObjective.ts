@@ -9,7 +9,7 @@ export class MonsterTaskObjective extends Objective {
   quantity: number;
 
   constructor(character: Character, quantity: number) {
-    super(character, `task_${quantity}_monstertask`, 'not_started');
+    super(character, `task_${quantity}_monsters`, 'not_started');
 
     this.character = character;
     this.quantity = quantity;

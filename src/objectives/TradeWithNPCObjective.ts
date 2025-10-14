@@ -9,6 +9,8 @@ import { NPCItem, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
+import { ItemTaskObjective } from './ItemTaskObjective.js';
+import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { Objective } from './Objective.js';
 
 /**
@@ -95,6 +97,12 @@ export class TradeObjective extends Objective {
       );
       if (numInBank >= currencyNeeded) {
         await this.character.withdrawNow(currencyNeeded, this.currency);
+      } else if (this.currency === 'task_coins') {
+        if (Math.floor(Math.random() * 2) === 0) {
+          await this.character.executeJobNow(new MonsterTaskObjective(this.character, 5))
+        } else {
+          await this.character.executeJobNow(new ItemTaskObjective(this.character, 5))
+        }
       } else {
         // ToDo: Do item tasks until we have enough currency
         logger.warn(`Collecting ${this.currency} feature not implemented yet`);
