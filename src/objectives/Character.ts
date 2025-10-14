@@ -204,6 +204,7 @@ export class Character {
         parentId: obj.parentId,
         childId: obj.childId,
         status: obj.status,
+        progress: obj.progress,
       });
     }
     return objectives;
