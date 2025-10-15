@@ -206,7 +206,7 @@ export class EvaluateGearObjective extends Objective {
    */
   private async topUpSecondaryPots(mobInfo: MonsterSchema) {
 
-    if (!mobInfo.effects) {
+    if (!mobInfo.effects || mobInfo.effects.length === 0) {
       if (this.character.data.utility2_slot_quantity > 0) { 
         return await this.character.unequipNow('utility2')
       } else {
