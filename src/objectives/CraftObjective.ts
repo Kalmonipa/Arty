@@ -79,7 +79,7 @@ export class CraftObjective extends Objective {
         }
         continue;
       } else {
-        if (!await this.checkStatus()) return false;
+        if (!(await this.checkStatus())) return false;
 
         if (!targetItem.craft) {
           logger.warn(`Item has no craft information`);
@@ -111,7 +111,7 @@ export class CraftObjective extends Objective {
         for (let batch = 0; batch < this.numBatches; batch++) {
           logger.info(`Crafting batch ${batch}/${this.numBatches}`);
 
-          if (!await this.checkStatus()) return false;
+          if (!(await this.checkStatus())) return false;
 
           const gathered = await this.gatherIngredients(
             targetItem.craft.items,
@@ -149,7 +149,7 @@ export class CraftObjective extends Objective {
             }
           }
 
-          if (!await this.checkStatus()) return false;
+          if (!(await this.checkStatus())) return false;
 
           await this.character.move({
             x: contentLocation.x,
@@ -265,7 +265,7 @@ export class CraftObjective extends Objective {
         }
 
         if (numInInv < totalIngredNeededToCraft) {
-          if (!await this.checkStatus()) return false;
+          if (!(await this.checkStatus())) return false;
 
           if (craftingItemInfo.subtype === 'mob') {
             logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
@@ -284,7 +284,7 @@ export class CraftObjective extends Objective {
               return false;
             }
 
-            if (!await this.checkStatus()) return false;
+            if (!(await this.checkStatus())) return false;
           } else if (craftingItemInfo.craft !== null) {
             logger.debug(
               `Resource ${craftingItemInfo.code} is a craftable item`,
@@ -304,7 +304,7 @@ export class CraftObjective extends Objective {
               return false;
             }
 
-            if (!await this.checkStatus()) return false;
+            if (!(await this.checkStatus())) return false;
           } else {
             logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
@@ -323,7 +323,7 @@ export class CraftObjective extends Objective {
               return false;
             }
 
-            if (!await this.checkStatus()) return false;
+            if (!(await this.checkStatus())) return false;
           }
         }
 

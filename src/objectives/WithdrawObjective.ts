@@ -28,7 +28,7 @@ export class WithdrawObjective extends Objective {
    */
   async run() {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!await this.checkStatus()) return false;
+      if (!(await this.checkStatus())) return false;
 
       logger.debug(`Withdraw attempt ${attempt}/${this.maxRetries}`);
 

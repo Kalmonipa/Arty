@@ -36,7 +36,7 @@ export class EvaluateGearObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!await this.checkStatus()) return false;
+      if (!(await this.checkStatus())) return false;
 
       logger.debug(`Gear up attempt ${attempt}/${this.maxRetries}`);
 
@@ -125,7 +125,6 @@ export class EvaluateGearObjective extends Objective {
 
     // This would take in the effects property to see what the best potion to equip
     await this.topUpSecondaryPots(mobInfo.data);
-    
 
     logger.debug(`Finding best shield`);
     let equipResult: boolean;
@@ -205,20 +204,23 @@ export class EvaluateGearObjective extends Objective {
    * @todo Equip damage, resistance, etc pots if available
    */
   private async topUpSecondaryPots(mobInfo: MonsterSchema) {
-
     if (!mobInfo.effects || mobInfo.effects.length === 0) {
-      if (this.character.data.utility2_slot_quantity > 0) { 
-        return await this.character.unequipNow('utility2')
+      if (this.character.data.utility2_slot_quantity > 0) {
+        return await this.character.unequipNow('utility2');
       } else {
         return true;
       }
     } else if (mobInfo.effects.length > 1) {
-      logger.warn(`${mobInfo.code} has more than 1 effect. Not sure what to do`)
+      logger.warn(
+        `${mobInfo.code} has more than 1 effect. Not sure what to do`,
+      );
       return false;
     } else if (mobInfo.effects[0].code === 'poison') {
-      return await this.character.equipUtility('antipoison', 'utility2')
+      return await this.character.equipUtility('antipoison', 'utility2');
     } else {
-      logger.info(`Counter of ${mobInfo.effects[0].code} from ${mobInfo.code} not found.`)
+      logger.info(
+        `Counter of ${mobInfo.effects[0].code} from ${mobInfo.code} not found.`,
+      );
       return false;
     }
   }

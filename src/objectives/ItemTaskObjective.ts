@@ -25,7 +25,7 @@ export class ItemTaskObjective extends Objective {
     let result = false;
 
     for (let count = 0; count < this.quantity; count++) {
-      if (!await this.checkStatus()) return false;
+      if (!(await this.checkStatus())) return false;
 
       logger.info(`Completed ${count}/${this.quantity} tasks`);
       result = await this.doTask();
@@ -42,7 +42,7 @@ export class ItemTaskObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       logger.info(`Item task attempt ${attempt}/${this.maxRetries}`);
 
-      if (!await this.checkStatus()) return false;
+      if (!(await this.checkStatus())) return false;
 
       if (
         this.character.data.task === undefined ||
@@ -72,7 +72,7 @@ export class ItemTaskObjective extends Objective {
       while (
         this.character.data.task_progress < this.character.data.task_total
       ) {
-        if (!await this.checkStatus()) return false;
+        if (!(await this.checkStatus())) return false;
 
         // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
         const numToGather = Math.min(

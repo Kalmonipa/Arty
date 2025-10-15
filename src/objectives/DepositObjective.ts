@@ -46,7 +46,7 @@ export class DepositObjective extends Objective {
    */
   async run(): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!await this.checkStatus()) return false;
+      if (!(await this.checkStatus())) return false;
 
       logger.debug(`Deposit attempt ${attempt}/${this.maxRetries}`);
 

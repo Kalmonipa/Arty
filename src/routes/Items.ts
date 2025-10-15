@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../objectives/Character.js';
 import { SimpleItemSchema } from '../types/types.js';
+import { DeleteItemObjective } from '../objectives/DeleteItemObjective.js';
 
 export default function ItemsRouter(char: Character) {
   const router = Router();
@@ -62,6 +63,38 @@ export default function ItemsRouter(char: Character) {
         .status(500)
         .json({ error: error.message || 'Internal server error.' });
     }
+  });
+
+  router.post('/delete', async (req: Request, res: Response) => {
+    const { quantity, itemCode } = req.body;
+
+    if (isNaN(quantity) || !itemCode) {
+      return res.status(400).json({ error: 'Invalid quantity or itemCode.' });
+    }
+
+    if (typeof char === 'undefined' || !char) {
+      return res
+        .status(500)
+        .json({ error: 'Character instance not available.' });
+    }
+
+    const job = new DeleteItemObjective(char, {
+      code: itemCode,
+      quantity: quantity,
+    });
+
+    await char.appendJob(job);
+
+    return res.status(201).json({
+      message: `Delete job ${job.objectiveId} added to queue.`,
+      character: char.data.name,
+      job: {
+        id: job.objectiveId,
+        itemCode: job.target.code,
+        quantity: job.target.quantity,
+        status: job.status,
+      },
+    });
   });
 
   return router;

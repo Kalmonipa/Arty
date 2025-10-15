@@ -45,7 +45,7 @@ export class RecycleObjective extends Objective {
 
     let result = false;
 
-    if (!await this.checkStatus()) return false;
+    if (!(await this.checkStatus())) return false;
 
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 

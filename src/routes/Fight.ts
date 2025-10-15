@@ -1,7 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { CraftObjective } from '../objectives/CraftObjective.js';
 import { Character } from '../objectives/Character.js';
-import { EquipObjective } from '../objectives/EquipObjective.js';
 import { FightObjective } from '../objectives/FightObjective.js';
 
 export default function FightRouter(char: Character) {

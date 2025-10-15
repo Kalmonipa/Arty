@@ -3,6 +3,7 @@ import { ApiUrl, getRequestOptions, MyHeaders, sleep } from '../utils.js';
 import {
   CharacterSchema,
   DataPageItemSchema,
+  DeleteItemResponseSchema,
   EquipmentResponseSchema,
   EquipSchema,
   GetAllItemsItemsGetParams,
@@ -275,6 +276,68 @@ export async function getItemInformation(
     const data: ItemResponseSchema = await response.json();
 
     return data.data;
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+/**
+ * Delete an item in the characters inventory
+ * @param item
+ * @returns
+ */
+export async function actionDeleteItem(
+  character: CharacterSchema,
+  item: SimpleItemSchema,
+): Promise<DeleteItemResponseSchema | ApiError> {
+  const requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+    body: JSON.stringify(item),
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/delete`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 422:
+          message = 'Request could not be processed due to an invalid payload.';
+          break;
+        case 478:
+          message = 'Missing required item(s).';
+          break;
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 499:
+          message = 'The character is in cooldown';
+          break;
+        default:
+          message = 'Unknown error from /action/equip';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: DeleteItemResponseSchema = await response.json();
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
+    return result;
   } catch (error) {
     return error as ApiError;
   }

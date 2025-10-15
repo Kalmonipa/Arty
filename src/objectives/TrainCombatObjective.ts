@@ -27,7 +27,7 @@ export class TrainCombatObjective extends Objective {
     let attempts = 0;
     let charLevel = this.character.getCharacterLevel();
 
-    if (!await this.checkStatus()) return false;
+    if (!(await this.checkStatus())) return false;
 
     if (charLevel >= this.targetLevel) {
       logger.info(`Already at target combat level ${this.targetLevel}`);

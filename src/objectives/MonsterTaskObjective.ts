@@ -26,10 +26,10 @@ export class MonsterTaskObjective extends Objective {
     let result = false;
 
     while (this.progress < this.quantity) {
-      if (!await this.checkStatus()) return false;
+      if (!(await this.checkStatus())) return false;
 
       for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-        if (!await this.checkStatus()) return false;
+        if (!(await this.checkStatus())) return false;
 
         logger.info(`Monster task attempt ${attempt}/${this.maxRetries}`);
 

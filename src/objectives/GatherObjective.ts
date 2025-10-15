@@ -45,7 +45,7 @@ export class GatherObjective extends Objective {
    * @returns true if successful, false if failure
    */
   async run(): Promise<boolean> {
-    if (!await this.checkStatus()) return false;
+    if (!(await this.checkStatus())) return false;
 
     let result = false;
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
@@ -224,8 +224,12 @@ export class GatherObjective extends Objective {
         // Ensure response has the expected structure before accessing nested properties
         if (response && response.data && response.data.character) {
           this.character.data = response.data.character;
-          if (response.data.details.items.find((item) => item.code === target.code)) {
-            this.progress++; 
+          if (
+            response.data.details.items.find(
+              (item) => item.code === target.code,
+            )
+          ) {
+            this.progress++;
           }
         } else {
           logger.error(
@@ -236,7 +240,7 @@ export class GatherObjective extends Objective {
         }
       }
 
-      if (!await this.checkStatus()) return false;
+      if (!(await this.checkStatus())) return false;
 
       await this.character.saveJobQueue();
     }
@@ -279,7 +283,7 @@ export class GatherObjective extends Objective {
           numHeld = newNumHeld;
         }
 
-        if (!await this.checkStatus()) return false;
+        if (!(await this.checkStatus())) return false;
 
         await this.character.saveJobQueue();
       }
@@ -335,7 +339,7 @@ export class GatherObjective extends Objective {
       exceptions,
     );
 
-    if (!await this.checkStatus()) return false;
+    if (!(await this.checkStatus())) return false;
 
     numHeld = this.character.checkQuantityOfItemInInv(code);
     if (this.progress >= quantity) {

@@ -191,7 +191,7 @@ export class EventObjective extends Objective {
           }
         }
 
-        if (!await this.checkStatus()) return false;
+        if (!(await this.checkStatus())) return false;
 
         await this.character.saveJobQueue();
       }
