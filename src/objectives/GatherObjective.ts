@@ -110,6 +110,8 @@ export class GatherObjective extends Objective {
     maxRetries: number = 3,
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      if (!(await this.checkStatus())) return false;
+
       logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
       // Add the gathering item to the exclusion list
