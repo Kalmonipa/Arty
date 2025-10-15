@@ -206,8 +206,12 @@ export class EvaluateGearObjective extends Objective {
    */
   private async topUpSecondaryPots(mobInfo: MonsterSchema) {
 
-    if (!mobInfo.effects && this.character.data.utility2_slot_quantity > 0) { 
-      return await this.character.unequipNow('utility2')
+    if (!mobInfo.effects) {
+      if (this.character.data.utility2_slot_quantity > 0) { 
+        return await this.character.unequipNow('utility2')
+      } else {
+        return true;
+      }
     } else if (mobInfo.effects.length > 1) {
       logger.warn(`${mobInfo.code} has more than 1 effect. Not sure what to do`)
       return false;
