@@ -80,7 +80,12 @@ export class DepositObjective extends Objective {
         const itemsToDeposit: SimpleItemSchema[] = [];
 
         for (let i = 0; i < this.character.data.inventory.length; i++) {
-          if (this.character.data.inventory[i].code !== '') {
+          if (
+            this.character.data.inventory[i].code !== '' &&
+            !this.character.itemsToKeep.includes(
+              this.character.data.inventory[i].code,
+            )
+          ) {
             itemsToDeposit.push({
               code: this.character.data.inventory[i].code,
               quantity: this.character.data.inventory[i].quantity,

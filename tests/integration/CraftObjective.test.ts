@@ -4,7 +4,6 @@ import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import {
   MapSchema,
   ItemSchema,
-  SimpleItemSchema,
 } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
@@ -31,6 +30,8 @@ import { getMaps } from '../../src/api_calls/Maps.js';
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
+
+  itemsToKeep = []
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(

@@ -2071,7 +2071,7 @@ export class Character {
         return false;
       case 497: // The character's inventory is full. Dump everything
         await this.evaluateDepositItemsInBank(
-          undefined,
+          this.itemsToKeep,
           { x: this.data.x, y: this.data.y },
           true,
         );
