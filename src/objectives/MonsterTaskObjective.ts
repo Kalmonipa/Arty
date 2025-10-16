@@ -1,6 +1,7 @@
 import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
+import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
@@ -51,6 +52,14 @@ export class MonsterTaskObjective extends Objective {
     if (this.character.data.task_total === this.character.data.task_progress) {
       result = await this.handInTask('monsters');
     }
+
+    const numCoinsInInv = this.character.checkQuantityOfItemInInv('tasks_coin');
+    await this.character.executeJobNow(
+      new DepositObjective(this.character, {
+        code: 'tasks_coin',
+        quantity: numCoinsInInv,
+      }),
+    );
 
     return result;
   }

@@ -3,6 +3,7 @@ import { actionTasksTrade } from '../api_calls/Tasks.js';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
+import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
@@ -30,8 +31,16 @@ export class ItemTaskObjective extends Objective {
       logger.info(`Completed ${count}/${this.quantity} tasks`);
       result = await this.doTask();
 
-      this.progress++
+      this.progress++;
     }
+
+    const numCoinsInInv = this.character.checkQuantityOfItemInInv('tasks_coin');
+    await this.character.executeJobNow(
+      new DepositObjective(this.character, {
+        code: 'tasks_coin',
+        quantity: numCoinsInInv,
+      }),
+    );
 
     return result;
   }

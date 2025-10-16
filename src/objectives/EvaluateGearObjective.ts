@@ -208,7 +208,7 @@ export class EvaluateGearObjective extends Objective {
       // if (this.character.data.utility2_slot_quantity > 0) {
       //   return await this.character.unequipNow('utility2', this.character.data.utility2_slot_quantity);
       // } else {
-        return true;
+      return true;
       //}
     } else if (mobInfo.effects.length > 1) {
       logger.warn(
@@ -278,7 +278,7 @@ export class EvaluateGearObjective extends Objective {
     for (let ind = weapons.length - 1; ind >= 0; ind--) {
       if (weapons[ind].level <= charLevel) {
         if (weapons[ind].code === this.character.data.weapon_slot) {
-          logger.info(`Already have ${weapons[ind].code} equipped`)
+          logger.info(`Already have ${weapons[ind].code} equipped`);
           return true;
         }
         logger.debug(`Attempting to equip ${weapons[ind].name} for gathering`);

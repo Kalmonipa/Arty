@@ -1,10 +1,7 @@
 import { jest } from '@jest/globals';
 import { CraftObjective } from '../../src/objectives/CraftObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
-import {
-  MapSchema,
-  ItemSchema,
-} from '../../src/types/types.js';
+import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/objectives/Error.js';
@@ -31,7 +28,7 @@ import { getMaps } from '../../src/api_calls/Maps.js';
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
 
-  itemsToKeep = []
+  itemsToKeep = [];
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(

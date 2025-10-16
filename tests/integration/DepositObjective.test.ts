@@ -28,7 +28,7 @@ import { getMaps } from '../../src/api_calls/Maps.js';
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
 
-  itemsToKeep = []
+  itemsToKeep = [];
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(

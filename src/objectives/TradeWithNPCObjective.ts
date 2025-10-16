@@ -104,11 +104,17 @@ export class TradeObjective extends Objective {
         )
           if (Math.floor(Math.random() * 2) === 0) {
             await this.character.executeJobNow(
-              new MonsterTaskObjective(this.character, 1,), true, true, this.objectiveId
+              new MonsterTaskObjective(this.character, 1),
+              true,
+              true,
+              this.objectiveId,
             );
           } else {
             await this.character.executeJobNow(
-              new ItemTaskObjective(this.character, 1), true, true, this.objectiveId
+              new ItemTaskObjective(this.character, 1),
+              true,
+              true,
+              this.objectiveId,
             );
           }
       } else {

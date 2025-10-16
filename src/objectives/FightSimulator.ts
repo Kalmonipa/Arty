@@ -50,7 +50,10 @@ export class FightSimulator extends Objective {
         totalTurns += fight.turns;
       }
     }
-    const averageTurns = fightSimResponse.data.wins > 0 ? totalTurns / fightSimResponse.data.wins : 0;
+    const averageTurns =
+      fightSimResponse.data.wins > 0
+        ? totalTurns / fightSimResponse.data.wins
+        : 0;
 
     logger.info(
       `Fight sim showed a ${fightSimResponse.data.winrate}% win rate (${fightSimResponse.data.wins}/${this.iterations}) with ${averageTurns} avg turns per fight`,
