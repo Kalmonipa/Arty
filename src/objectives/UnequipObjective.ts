@@ -31,7 +31,6 @@ export class UnequipObjective extends Objective {
 
       if (!this.quantity) this.quantity = 1;
 
-      // validations
       if (
         (this.itemSlot === 'utility1' || this.itemSlot === 'utility2') &&
         this.quantity > 100
@@ -68,6 +67,7 @@ export class UnequipObjective extends Objective {
           logger.error('Unequip response missing character data');
         }
       }
+      return true;
     }
   }
 }

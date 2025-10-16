@@ -205,11 +205,11 @@ export class EvaluateGearObjective extends Objective {
    */
   private async topUpSecondaryPots(mobInfo: MonsterSchema) {
     if (!mobInfo.effects || mobInfo.effects.length === 0) {
-      if (this.character.data.utility2_slot_quantity > 0) {
-        return await this.character.unequipNow('utility2');
-      } else {
+      // if (this.character.data.utility2_slot_quantity > 0) {
+      //   return await this.character.unequipNow('utility2', this.character.data.utility2_slot_quantity);
+      // } else {
         return true;
-      }
+      //}
     } else if (mobInfo.effects.length > 1) {
       logger.warn(
         `${mobInfo.code} has more than 1 effect. Not sure what to do`,
@@ -257,7 +257,6 @@ export class EvaluateGearObjective extends Objective {
     } else if (
       (await this.character.checkQuantityOfItemInBank(bestWeapon.code)) > 0
     ) {
-      await this.character.withdrawNow(1, bestWeapon.code);
       return await this.character.equipNow(bestWeapon.code, 'weapon');
     } else {
       logger.debug(`Can't find any ${bestWeapon.name}`);
@@ -285,7 +284,6 @@ export class EvaluateGearObjective extends Objective {
           (await this.character.checkQuantityOfItemInBank(weapons[ind].code)) >
           0
         ) {
-          await this.character.withdrawNow(1, weapons[ind].code);
           return await this.character.equipNow(weapons[ind].code, 'weapon');
         } else {
           logger.debug(`Can't find any ${weapons[ind].name}`);
