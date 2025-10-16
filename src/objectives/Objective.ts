@@ -166,7 +166,7 @@ export abstract class Objective {
     }
 
     while (this.status === 'paused') {
-      await sleep(10, 'paused job', true); // Logging this for debugging
+      await sleep(10, 'paused job', false); // Logging this for debugging
     }
 
     return true;
