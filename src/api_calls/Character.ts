@@ -44,3 +44,41 @@ export async function getCharacter(
     return error as ApiError;
   }
 }
+
+/**
+ * @description returns all characters in the account
+ * @param characterName
+ * @returns {CharacterSchema[]}
+ */
+export async function getMyCharacters(): Promise<CharacterSchema[] | ApiError> {
+  const requestOptions = {
+    method: 'GET',
+    headers: MyHeaders,
+  };
+
+  try {
+    const response = await fetch(`${ApiUrl}/my/characters`, requestOptions);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new ApiError({
+        code: response.status,
+        message: `Failed to get character data: ${response.statusText}`,
+      });
+    }
+
+    if (!data.data) {
+      throw new ApiError({
+        code: 500,
+        message: 'Character API response missing data field',
+      });
+    }
+
+    return data.data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return error;
+    }
+    return error as ApiError;
+  }
+}

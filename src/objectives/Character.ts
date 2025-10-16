@@ -1802,7 +1802,7 @@ export class Character {
     quantity: number,
     code: string,
     participants?: string[],
-    runFightSim?: boolean
+    runFightSim?: boolean,
   ): Promise<boolean> {
     const fightJob = new FightObjective(
       this,
@@ -1811,7 +1811,7 @@ export class Character {
         quantity: quantity,
       },
       participants,
-      runFightSim
+      runFightSim,
     );
 
     return await this.executeJobNow(

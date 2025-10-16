@@ -196,7 +196,7 @@ export default function JobsRouter(char: Character) {
       char.pauseJob();
 
       return res.status(200).json({
-        message: `Paused job ${char.currentExecutingJob.objectiveId}`,
+        message: `Paused job ${char.currentExecutingJob.objectiveId} for ${char.data.name}`,
         character: char.data.name,
         jobs: char.listObjectives(),
       });
@@ -218,7 +218,7 @@ export default function JobsRouter(char: Character) {
       char.resumeJob();
 
       return res.status(200).json({
-        message: `Resumed job ${char.currentExecutingJob.objectiveId}`,
+        message: `Resumed job ${char.currentExecutingJob.objectiveId} for ${char.data.name}`,
         character: char.data.name,
         jobs: char.listObjectives(),
       });

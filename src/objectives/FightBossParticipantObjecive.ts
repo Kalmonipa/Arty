@@ -7,7 +7,7 @@ import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 
-export class FightObjective extends Objective {
+export class FightBossParticipantObjective extends Objective {
   target: ObjectiveTargets;
   participants?: string[];
   runFightSim?: boolean;
@@ -16,14 +16,12 @@ export class FightObjective extends Objective {
     character: Character,
     target: ObjectiveTargets,
     participants?: string[],
-    runFightSim?: boolean,
   ) {
     super(character, `fight_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
     this.target = target;
     this.participants = participants;
-    this.runFightSim = runFightSim ?? true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -31,11 +29,6 @@ export class FightObjective extends Objective {
       [this.target.code, this.character.preferredFood],
       { x: this.character.data.x, y: this.character.data.y },
     );
-
-    // Check amount of food in inventory to use after battles
-    // if (!(await this.character.checkFoodLevels())) {
-    //   await this.character.topUpFood();
-    // }
 
     await this.character.evaluateGear('combat', this.target.code);
 

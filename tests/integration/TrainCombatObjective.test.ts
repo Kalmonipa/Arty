@@ -454,7 +454,7 @@ describe('TrainCombatObjective Integration Tests', () => {
         10,
         expect.any(String),
         undefined,
-        false
+        false,
       );
     });
 

@@ -1,3 +1,5 @@
+import { Objective } from '../objectives/Objective.js';
+
 /**
  * @param percentage The percentage of health we are currently on
  * @param difference The amount needed to get to 100%
@@ -21,3 +23,10 @@ export type Role =
   | 'lumberjack'
   | 'miner'
   | 'weaponcrafter';
+
+export type JobResponse = {
+  message: string;
+  character: string;
+  cancelledJobs?: string[];
+  jobs: Objective[];
+};
