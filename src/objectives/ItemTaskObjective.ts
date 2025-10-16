@@ -29,6 +29,8 @@ export class ItemTaskObjective extends Objective {
 
       logger.info(`Completed ${count}/${this.quantity} tasks`);
       result = await this.doTask();
+
+      this.progress++
     }
 
     return result;
