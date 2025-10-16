@@ -61,7 +61,7 @@ export class TrainCombatObjective extends Objective {
 
         if (fightSimResult) {
           foundSuitableMob = true;
-          const fightResult = await this.character.fightNow(10, mob.code);
+          const fightResult = await this.character.fightNow(10, mob.code, undefined, false);
 
           if (fightResult) {
             fightSuccessful = true;

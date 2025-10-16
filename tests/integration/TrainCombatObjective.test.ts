@@ -453,6 +453,8 @@ describe('TrainCombatObjective Integration Tests', () => {
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
+        undefined,
+        false
       );
     });
 

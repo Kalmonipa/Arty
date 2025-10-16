@@ -10,17 +10,20 @@ import { getMonsterInformation } from '../api_calls/Monsters.js';
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
   participants?: string[];
+  runFightSim?: boolean
 
   constructor(
     character: Character,
     target: ObjectiveTargets,
     participants?: string[],
+    runFightSim?: boolean,
   ) {
     super(character, `fight_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
     this.target = target;
     this.participants = participants;
+    this.runFightSim = runFightSim ?? true
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -30,9 +33,9 @@ export class FightObjective extends Objective {
     );
 
     // Check amount of food in inventory to use after battles
-    if (!(await this.character.checkFoodLevels())) {
-      await this.character.topUpFood();
-    }
+    // if (!(await this.character.checkFoodLevels())) {
+    //   await this.character.topUpFood();
+    // }
 
     await this.character.evaluateGear('combat', this.target.code);
 
@@ -43,33 +46,21 @@ export class FightObjective extends Objective {
 
     // ToDo: allow the fight sim to sim boss fights with multiple characterss
     if (mobInfo.data.type === 'normal') {
-      for (
-        let fightSimAttempts = 1;
-        fightSimAttempts <= this.maxRetries;
-        fightSimAttempts++
-      ) {
-        const fakeSchema = this.character.createFakeCharacterSchema(
-          this.character.data,
-        );
-        logger.info(`Fight sim attempt ${fightSimAttempts}/${this.maxRetries}`);
-        const simResult = await this.character.simulateFightNow(
-          [fakeSchema],
-          this.target.code,
-        );
+      if (this.runFightSim) {
+      const fakeSchema = this.character.createFakeCharacterSchema(
+        this.character.data,
+      );
+      const simResult = await this.character.simulateFightNow(
+        [fakeSchema],
+        this.target.code,
+      );
 
-        if (simResult === false) {
-          await this.character.trainCombatLevelNow(
-            this.character.data.level + 1,
-          );
-          // If this was the last attempt, return false
-          if (fightSimAttempts === this.maxRetries) {
-            return false;
-          }
-          continue;
-        } else {
-          return true;
-        }
+      if (simResult === false) {
+        await this.character.trainCombatLevelNow(this.character.data.level + 1);
+        return false;
       }
+    }
+      return true;
     } else if (
       (!this.participants || this.participants.length === 0) &&
       mobInfo.data.type === 'boss'

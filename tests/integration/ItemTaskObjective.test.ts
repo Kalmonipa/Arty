@@ -76,6 +76,10 @@ class SimpleMockCharacter {
     },
   );
 
+  executeJobNow = jest.fn(async (): Promise<boolean> => {
+    return true;
+  });
+
   // startNewTask is a method of the Objective class, not Character
   // We'll mock it on the Objective instance instead
 

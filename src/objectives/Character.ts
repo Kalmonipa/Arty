@@ -1155,9 +1155,9 @@ export class Character {
         const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
 
         // If we don't have enough food in inventory, try to withdraw from bank
-        if (numInInv < this.minFood) {
+        if (numInInv < amountNeededToEat) {
           logger.info(
-            `Only have ${numInInv}/${this.minFood} ${this.preferredFood} in inventory. Attempting to withdraw from bank.`,
+            `Only have ${numInInv} ${this.preferredFood} in inventory. Attempting to withdraw from bank.`,
           );
 
           const numInBank = await this.checkQuantityOfItemInBank(
@@ -1802,6 +1802,7 @@ export class Character {
     quantity: number,
     code: string,
     participants?: string[],
+    runFightSim?: boolean
   ): Promise<boolean> {
     const fightJob = new FightObjective(
       this,
@@ -1810,6 +1811,7 @@ export class Character {
         quantity: quantity,
       },
       participants,
+      runFightSim
     );
 
     return await this.executeJobNow(

@@ -11,6 +11,7 @@ jest.mock('../../src/api_calls/Maps', () => ({
 // Import the mocked functions
 import { getMaps } from '../../src/api_calls/Maps.js';
 import { MapSchema } from '../../src/types/MapData.js';
+import { InventorySlot } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -37,6 +38,17 @@ class SimpleMockCharacter {
     // Mock fighting monsters
     this.data.task_progress += quantity;
     return true;
+  });
+
+  executeJobNow = jest.fn(async (): Promise<boolean> => {
+    return true;
+  });
+
+  checkQuantityOfItemInInv = jest.fn((code: string): number => {
+    const item = this.data.inventory.find(
+      (item: InventorySlot) => item.code === code,
+    );
+    return item ? item.quantity : 0;
   });
 }
 
