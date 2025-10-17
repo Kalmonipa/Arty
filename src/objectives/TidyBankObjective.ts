@@ -87,7 +87,7 @@ export class TidyBankObjective extends Objective {
       logger.info(`Found ${numInBank} ${item} in the bank.`);
 
       if (numInBank == 0) {
-        break;
+        continue;
       } else {
         const itemToCraftSchema = await this.identifyCraftedItemFrom(
           item,

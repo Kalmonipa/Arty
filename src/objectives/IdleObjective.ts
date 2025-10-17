@@ -227,7 +227,7 @@ export class IdleObjective extends Objective {
           const numInBank = await this.character.checkQuantityOfItemInBank(
             fish.code,
           );
-          // Ensure quantity is greater than 1k
+          // Ensure quantity is greater than 100
           if (numInBank < minimumInBank) {
             await this.character.craftNow(minimumInBank - numInBank, fish.code);
           }
