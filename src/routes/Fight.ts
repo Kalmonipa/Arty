@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../objectives/Character.js';
 import { FightObjective } from '../objectives/FightObjective.js';
+import { FightBossParticipantObjective } from '../objectives/FightBossParticipantObjecive.js';
 
 export default function FightRouter(char: Character) {
   const router = Router();
@@ -34,6 +35,43 @@ export default function FightRouter(char: Character) {
           id: job.objectiveId,
           itemCode: job.target.code,
           quantity: job.target.quantity,
+          status: job.status,
+        },
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  router.post('/boss/participant', async (req: Request, res: Response) => {
+    try {
+      const { bossName, parentObjective } = req.body;
+
+      if (typeof char === 'undefined' || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      const job = new FightBossParticipantObjective(
+        char,
+        bossName,
+        parentObjective,
+      );
+
+      await char.prependJob(job);
+
+      char.currentExecutingJob = job;
+
+      return res.status(201).json({
+        message: `Fight boss job ${job.objectiveId} added to queue.`,
+        character: char.data.name,
+
+        job: {
+          id: job.objectiveId,
+          bossName: bossName,
           status: job.status,
         },
       });

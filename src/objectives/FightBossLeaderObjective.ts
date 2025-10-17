@@ -14,8 +14,7 @@ export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
   participants?: string[];
   runFightSim?: boolean;
-  participant1Ready = false;
-  participant2Ready = false;
+  numParticipantsReady = 0;
 
   constructor(
     character: Character,
@@ -92,8 +91,8 @@ export class FightBossLeaderObjective extends Objective {
 
       // Create partiicpant jobs
       // Create route to initiate the jobs
-      // Create route for participants to notify the leader that they're ready
-      // Initiate fight
+      // Create route for participants to notify the leader that they're ready by incrementing numParticipantsReady
+      // When numParticipantsReady === 3, initiate fight
     }
   }
 
