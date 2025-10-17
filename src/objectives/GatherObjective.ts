@@ -261,7 +261,9 @@ export class GatherObjective extends Objective {
       logger.error(`Found no mobs for drop ${target.code}`);
       return false;
     } else {
-      let numHeld = 0;
+      let numHeld = this.character.checkQuantityOfItemInInv(
+        this.target.code,
+      );
 
       // We want to compare total progress with the target quantity
       while (this.progress < target.quantity) {
