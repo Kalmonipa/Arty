@@ -57,16 +57,20 @@ export class FightObjective extends Objective {
         );
 
         if (simResult && fakeSchema.utility1_slot_quantity) {
-          fakeSchema.utility1_slot = ''
-          fakeSchema.utility1_slot_quantity = null
+          fakeSchema.utility1_slot = '';
+          fakeSchema.utility1_slot_quantity = null;
 
-          const simResultWithoutHealthPots = await this.character.simulateFightNow(
-            [fakeSchema],
-            this.target.code,
-          );
+          const simResultWithoutHealthPots =
+            await this.character.simulateFightNow(
+              [fakeSchema],
+              this.target.code,
+            );
 
           if (simResultWithoutHealthPots) {
-            await this.character.unequipNow('utility1', this.character.data.utility1_slot_quantity)
+            await this.character.unequipNow(
+              'utility1',
+              this.character.data.utility1_slot_quantity,
+            );
           }
         }
 

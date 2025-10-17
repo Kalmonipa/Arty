@@ -1,3 +1,4 @@
+import { getItemInformation } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
 import {
   actionBuyItem,
@@ -9,6 +10,7 @@ import { NPCItem, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
+import { GatherObjective } from './GatherObjective.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { Objective } from './Objective.js';
@@ -118,8 +120,13 @@ export class TradeObjective extends Objective {
             );
           }
       } else {
-        logger.warn(`Collecting ${this.currency} feature not implemented yet`);
-        return false;
+        logger.info(`Attempting to gather ${this.currency}`);
+        await this.character.executeJobNow(
+          new GatherObjective(this.character, {
+            code: this.currency,
+            quantity: currencyNeeded,
+          }),
+        );
       }
     }
     await this.findNpc(targetNpc);
