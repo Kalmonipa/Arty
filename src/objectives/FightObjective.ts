@@ -50,16 +50,31 @@ export class FightObjective extends Objective {
         const fakeSchema = this.character.createFakeCharacterSchema(
           this.character.data,
         );
+
         const simResult = await this.character.simulateFightNow(
           [fakeSchema],
           this.target.code,
         );
 
+        if (fakeSchema.utility1_slot_quantity) {
+          fakeSchema.utility1_slot = ''
+          fakeSchema.utility1_slot_quantity = null
+
+          const simResultWithoutHealthPots = await this.character.simulateFightNow(
+            [fakeSchema],
+            this.target.code,
+          );
+
+          if (simResultWithoutHealthPots) {
+            await this.character.unequipNow('utility1', this.character.data.utility1_slot_quantity)
+          }
+        }
+
         if (simResult === false) {
           await this.character.trainCombatLevelNow(
             this.character.data.level + 1,
           );
-          return false;
+          return true;
         }
       }
       return true;
