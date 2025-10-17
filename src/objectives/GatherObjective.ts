@@ -207,7 +207,7 @@ export class GatherObjective extends Objective {
     exceptions?: string[],
   ): Promise<boolean> {
     // Loop that does the gather requests
-    for (let count = 0; count < target.quantity; count++) {
+    while (this.progress < target.quantity) {
       if (this.progress % 5 === 0) {
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${target.code}`,
