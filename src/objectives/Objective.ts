@@ -132,6 +132,7 @@ export abstract class Objective {
       this.status = 'complete';
     } else {
       if (this.status === 'cancelled') {
+        this.character.itemsToKeep = []
         return;
       } else {
         logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
@@ -166,7 +167,7 @@ export abstract class Objective {
     }
 
     while (this.status === 'paused') {
-      await sleep(10, 'paused job', false); // Logging this for debugging
+      await sleep(10, 'paused job', true);
     }
 
     return true;
