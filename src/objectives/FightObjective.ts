@@ -56,7 +56,7 @@ export class FightObjective extends Objective {
           this.target.code,
         );
 
-        if (fakeSchema.utility1_slot_quantity) {
+        if (simResult && fakeSchema.utility1_slot_quantity) {
           fakeSchema.utility1_slot = ''
           fakeSchema.utility1_slot_quantity = null
 

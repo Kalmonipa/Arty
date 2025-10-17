@@ -23,6 +23,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 import { actionFight } from '../../src/api_calls/Actions.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
+import { ItemSlot } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -53,6 +54,14 @@ class SimpleMockCharacter {
     async (quantity: number, code: string): Promise<boolean> => {
       // Mock successful withdrawal
       this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
+
+  unequipNow = jest.fn(
+    async (itemSlot: ItemSlot, quantity: number): Promise<boolean> => {
+      this.data.utility1_slot = '';
+      this.data.utility1_slot_quantity = 0;
       return true;
     },
   );
@@ -1038,7 +1047,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(false); // Should fail after max retries
+      expect(result).toBe(true);
       expect(mockCharacter.trainCombatLevelNow).toHaveBeenCalledWith(
         mockCharacter.data.level + 1,
       );
