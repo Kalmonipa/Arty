@@ -124,11 +124,6 @@ export class Character {
    */
   minEquippedUtilities = 20;
   /**
-   * The code of the food we're currently using. Saving it as a var so
-   * I don't have to search my inv to figure out what to use
-   */
-  preferredFood: string;
-  /**
    * Desired number of food in inventory
    */
   desiredFoodCount = 50;
@@ -1120,7 +1115,7 @@ export class Character {
   }
 
   /**
-   * @description Eat the required amount of preferred food to recover fully
+   * @description Eat the required amount of food to recover fully
    */
   async recoverHealth(): Promise<boolean> {
     const healthStatus: HealthStatus = this.checkHealth();
@@ -1130,8 +1125,9 @@ export class Character {
         await this.rest();
         return true;
       } else {
-        const hasPreferredFood = await this.setPreferredFood();
-        if (!hasPreferredFood) {
+        // Find the best available food
+        const bestFood = await this.findBestFood();
+        if (!bestFood) {
           logger.warn(
             `No food available in inventory or bank. Resting instead.`,
           );
@@ -1140,80 +1136,37 @@ export class Character {
         }
 
         const healthStatus: HealthStatus = this.checkHealth();
-
-        const preferredFoodObj = this.consumablesMap.heal.find(
-          (food) => food.code === this.preferredFood,
-        );
-        const preferredFoodHealValue =
-          preferredFoodObj?.effects?.find((effect) => effect.code === 'heal')
-            ?.value ?? 0;
-
         let amountNeededToEat = Math.ceil(
-          healthStatus.difference / preferredFoodHealValue,
+          healthStatus.difference / bestFood.healValue,
         );
 
-        const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-
-        // If we don't have enough food in inventory, try to withdraw from bank
-        if (numInInv < amountNeededToEat) {
-          logger.info(
-            `Only have ${numInInv} ${this.preferredFood} in inventory. Attempting to withdraw from bank.`,
-          );
-
-          const numInBank = await this.checkQuantityOfItemInBank(
-            this.preferredFood,
-          );
-          if (numInBank > 0) {
-            const amountToWithdraw = Math.min(
-              numInBank,
-              this.desiredFoodCount - numInInv,
-            );
-            logger.info(
-              `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`,
-            );
-            await this.withdrawNow(amountToWithdraw, this.preferredFood);
-
-            const newNumInInv = this.checkQuantityOfItemInInv(
-              this.preferredFood,
-            );
-            if (newNumInInv >= amountNeededToEat) {
-              amountNeededToEat = Math.min(amountNeededToEat, newNumInInv);
-            } else {
-              amountNeededToEat = newNumInInv;
-            }
-          } else {
-            logger.info(
-              `No ${this.preferredFood} in bank. Looking for alternative food.`,
-            );
-            const foundAlternative = await this.setPreferredFood();
-            if (!foundAlternative) {
-              logger.warn(`No alternative food found. Resting instead.`);
-              await this.rest();
-              return true;
-            }
-
-            const newNumInInv = this.checkQuantityOfItemInInv(
-              this.preferredFood,
-            );
-            if (newNumInInv === 0) {
-              await this.rest();
-              return true;
-            }
-            amountNeededToEat = Math.min(amountNeededToEat, newNumInInv);
+        // If food is in bank, withdraw it first
+        if (bestFood.source === 'bank') {
+          const withdrawSuccess = await this.withdrawFoodIfNeeded(bestFood, amountNeededToEat);
+          if (!withdrawSuccess) {
+            logger.warn(`Could not withdraw enough food from bank. Resting instead.`);
+            await this.rest();
+            return true;
           }
-        } else if (amountNeededToEat > numInInv) {
-          logger.info(
-            `Only have ${numInInv} ${this.preferredFood} in inventory. Eating what we have.`,
-          );
-          amountNeededToEat = numInInv;
         }
 
+        // Check current inventory quantity after potential withdrawal
+        const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
+        if (currentQuantity === 0) {
+          logger.warn(`No food available in inventory after withdrawal attempt. Resting instead.`);
+          await this.rest();
+          return true;
+        }
+
+        // Adjust amount to eat based on what's actually available
+        amountNeededToEat = Math.min(amountNeededToEat, currentQuantity);
+
         logger.info(
-          `Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`,
+          `Eating ${amountNeededToEat} ${bestFood.code} to recover ${healthStatus.difference} health`,
         );
 
         const useResponse = await actionUse(this.data, {
-          code: this.preferredFood,
+          code: bestFood.code,
           quantity: amountNeededToEat,
         });
         if (useResponse instanceof ApiError) {
@@ -1292,47 +1245,43 @@ export class Character {
   }
 
   /**
-   * @description top up the preferred food from the bank until we have the amount we want
+   * @description top up food from the bank until we have the desired amount
    * Moves back to the previous location if one is provided
    */
   async topUpFood(priorLocation?: DestinationSchema) {
-    if (!this.preferredFood) {
-      logger.debug(`No preferred food set to top up`);
-      const hasPreferredFood = await this.setPreferredFood();
-      if (!hasPreferredFood) {
-        logger.warn(`No food available to top up`);
-        return;
-      }
+    // Find the best available food
+    const bestFood = await this.findBestFood();
+    if (!bestFood) {
+      logger.warn(`No food available to top up`);
+      return;
     }
 
-    // Check to make sure we have enough preferred food in the bank. If there's none, set a new preferred food
-    const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
-    if (numInBank === 0) {
-      logger.info(
-        `No ${this.preferredFood} in bank. Looking for alternative food.`,
+    // If food is in bank, withdraw it to reach desired count
+    if (bestFood.source === 'bank') {
+      const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
+      const numNeeded = Math.min(
+        bestFood.quantity,
+        this.desiredFoodCount - currentQuantity,
       );
-      const foundAlternative = await this.setPreferredFood();
-      if (!foundAlternative) {
-        logger.warn(`No alternative food found in bank`);
-        return;
+
+      if (numNeeded > 0) {
+        logger.info(
+          `Topping up ${bestFood.code}: withdrawing ${numNeeded} from bank (currently have ${currentQuantity} in inventory)`,
+        );
+        await this.withdrawNow(numNeeded, bestFood.code);
+      } else {
+        logger.debug(
+          `Already have enough ${bestFood.code} in inventory (${currentQuantity}/${this.desiredFoodCount})`,
+        );
       }
-    }
-
-    const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-    const numNeeded = Math.min(
-      await this.checkQuantityOfItemInBank(this.preferredFood),
-      this.desiredFoodCount - numInInv,
-    );
-
-    if (numNeeded > 0) {
-      logger.info(
-        `Topping up ${this.preferredFood}: withdrawing ${numNeeded} from bank (currently have ${numInInv} in inventory)`,
-      );
-      await this.withdrawNow(numNeeded, this.preferredFood);
     } else {
-      logger.debug(
-        `Already have enough ${this.preferredFood} in inventory (${numInInv}/${this.desiredFoodCount})`,
-      );
+      // Food is already in inventory, check if we need more
+      const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
+      if (currentQuantity < this.desiredFoodCount) {
+        logger.debug(
+          `Have ${currentQuantity} ${bestFood.code} in inventory, desired ${this.desiredFoodCount}`,
+        );
+      }
     }
 
     if (priorLocation) {
@@ -1423,155 +1372,177 @@ export class Character {
   }
 
   /**
-   * @description Checks inventory for the desired food and tops it up if we need too
-   * Sets the preferred food if there isn't one already set
+   * @description Checks inventory for food and determines if we have enough
    * @returns {boolean} stating whether we have a good amount of food or not
    */
   async checkFoodLevels(): Promise<boolean> {
-    if (this.preferredFood) {
-      logger.debug(`Preferred food is ${this.preferredFood}`);
-      const amountCurrFood = this.checkQuantityOfItemInInv(this.preferredFood);
-      if (amountCurrFood > this.minFood) {
+    const inventoryFood = this.findFoodInInventory();
+    if (inventoryFood.length === 0) {
+      logger.debug(`No food found in inventory`);
+      return false;
+    }
+
+    // Check if any food in inventory meets minimum requirements
+    for (const food of inventoryFood) {
+      if (food.quantity > this.minFood) {
+        logger.debug(`Found ${food.quantity} ${food.code} in inventory (min: ${this.minFood})`);
         return true;
-      } else {
-        return false;
       }
-    } else {
-      logger.debug(`No preferred food. Finding one`);
-      return await this.setPreferredFood();
-    }
-  }
-
-  /**
-   * @description Ensures the character has enough food for activities
-   * Will withdraw from bank if needed, or switch to alternative food if current preferred food is not available
-   * @returns {boolean} true if character has sufficient food, false if no food is available
-   */
-  async ensureFoodAvailable(): Promise<boolean> {
-    const hasPreferredFood = await this.setPreferredFood();
-    if (!hasPreferredFood) {
-      logger.warn(`No food available in inventory or bank`);
-      return false;
     }
 
-    const currentFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-
-    if (currentFoodInInv >= this.minFood) {
-      logger.debug(
-        `Have sufficient ${this.preferredFood} in inventory (${currentFoodInInv}/${this.minFood})`,
-      );
-      return true;
-    }
-
-    const foodInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
-    if (foodInBank > 0) {
-      const amountToWithdraw = Math.min(
-        foodInBank,
-        this.desiredFoodCount - currentFoodInInv,
-      );
-      logger.info(
-        `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank to ensure sufficient food`,
-      );
-      await this.withdrawNow(amountToWithdraw, this.preferredFood);
-      return true;
-    }
-
-    logger.info(
-      `No ${this.preferredFood} in bank. Looking for alternative food.`,
-    );
-    const foundAlternative = await this.setPreferredFood();
-    if (!foundAlternative) {
-      logger.warn(`No alternative food found`);
-      return false;
-    }
-
-    const newFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-    if (newFoodInInv >= this.minFood) {
-      logger.info(
-        `Switched to ${this.preferredFood} which has sufficient quantity (${newFoodInInv})`,
-      );
-      return true;
-    }
-
-    const newFoodInBank = await this.checkQuantityOfItemInBank(
-      this.preferredFood,
-    );
-    if (newFoodInBank > 0) {
-      const amountToWithdraw = Math.min(
-        newFoodInBank,
-        this.desiredFoodCount - newFoodInInv,
-      );
-      logger.info(
-        `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`,
-      );
-      await this.withdrawNow(amountToWithdraw, this.preferredFood);
-      return true;
-    }
-
-    logger.warn(`No food available for ${this.preferredFood}`);
+    logger.debug(`No food in inventory meets minimum requirements (${this.minFood})`);
     return false;
   }
 
   /**
-   * @description Preferred food is used to withdraw from the bank without having to figure out what food is available
-   * @returns true if successful, false otherwise
+   * @description Ensures the character has enough food for activities
+   * Will withdraw from bank if needed
+   * @returns {boolean} true if character has sufficient food, false if no food is available
    */
-  async setPreferredFood(): Promise<boolean> {
-    if (!this.data || !this.data.inventory) {
-      return false;
-    }
-
-    if (this.preferredFood) {
-      const currentFoodInInv = this.checkQuantityOfItemInInv(
-        this.preferredFood,
-      );
-      if (currentFoodInInv > this.minFood) {
+  async ensureFoodAvailable(): Promise<boolean> {
+    // First check if we already have enough food in inventory
+    const inventoryFood = this.findFoodInInventory();
+    for (const food of inventoryFood) {
+      if (food.quantity >= this.minFood) {
         logger.debug(
-          `Current preferred food ${this.preferredFood} has ${currentFoodInInv} in inventory, keeping it`,
+          `Have sufficient ${food.code} in inventory (${food.quantity}/${this.minFood})`,
         );
         return true;
       }
     }
 
-    // Look for food in inventory first
-    const foundItem = this.data.inventory.find((invItem) => {
-      return this.consumablesMap.heal.find(
-        (item) => invItem.code === item.code && item.level <= this.data.level,
-      );
-    });
-
-    if (foundItem && foundItem.quantity > this.minFood) {
-      logger.debug(
-        `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
-      );
-      this.preferredFood = foundItem.code;
-      return true;
+    // If not enough in inventory, find best food and withdraw if needed
+    const bestFood = await this.findBestFood();
+    if (!bestFood) {
+      logger.warn(`No food available in inventory or bank`);
+      return false;
     }
 
-    logger.debug(`Not enough food in inventory. Checking bank to find some`);
-    const bankItems = await this.getAllBankItems();
-
-    if (!bankItems || bankItems.length === 0) {
-      logger.info(`No items in the bank`);
-      return false;
-    } else {
-      const foundItem = bankItems.find((bankItem) => {
-        return this.consumablesMap.heal.find(
-          (item) =>
-            bankItem.code === item.code && item.level <= this.data.level,
+    // If food is in bank, withdraw it
+    if (bestFood.source === 'bank') {
+      const withdrawSuccess = await this.withdrawFoodIfNeeded(bestFood, this.minFood);
+      if (withdrawSuccess) {
+        logger.info(
+          `Withdrew ${bestFood.code} from bank to ensure sufficient food`,
         );
-      });
-
-      if (foundItem) {
-        logger.debug(
-          `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
-        );
-        this.preferredFood = foundItem.code;
         return true;
       } else {
-        logger.info(`No food found in the bank`);
+        logger.warn(`Could not withdraw enough ${bestFood.code} from bank`);
         return false;
       }
+    }
+
+    // Food is in inventory but not enough
+    logger.warn(`Not enough ${bestFood.code} in inventory (${bestFood.quantity}/${this.minFood})`);
+    return false;
+  }
+
+  /**
+   * @description Find food items in inventory that have heal effects
+   * @returns Array of food items with heal effects found in inventory
+   */
+  findFoodInInventory(): { code: string; quantity: number; healValue: number }[] {
+    if (!this.data || !this.data.inventory) {
+      return [];
+    }
+
+    const foodItems: { code: string; quantity: number; healValue: number }[] = [];
+
+    for (const invItem of this.data.inventory) {
+      // Check if this item has heal effects
+      const itemInfo = this.consumablesMap.heal.find(item => item.code === invItem.code);
+      if (itemInfo && itemInfo.effects) {
+        const healEffect = itemInfo.effects.find(effect => effect.code === 'heal');
+        if (healEffect && invItem.quantity > 0) {
+          foodItems.push({
+            code: invItem.code,
+            quantity: invItem.quantity,
+            healValue: healEffect.value
+          });
+        }
+      }
+    }
+
+    return foodItems;
+  }
+
+  /**
+   * @description Find food items in bank that have heal effects
+   * @returns Array of food items with heal effects found in bank
+   */
+  async findFoodInBank(): Promise<{ code: string; quantity: number; healValue: number }[]> {
+    const bankItems = await this.getAllBankItems();
+    if (!bankItems || bankItems.length === 0) {
+      return [];
+    }
+
+    const foodItems: { code: string; quantity: number; healValue: number }[] = [];
+
+    for (const bankItem of bankItems) {
+      // Check if this item has heal effects
+      const itemInfo = this.consumablesMap.heal.find(item => item.code === bankItem.code);
+      if (itemInfo && itemInfo.effects) {
+        const healEffect = itemInfo.effects.find(effect => effect.code === 'heal');
+        if (healEffect && bankItem.quantity > 0) {
+          foodItems.push({
+            code: bankItem.code,
+            quantity: bankItem.quantity,
+            healValue: healEffect.value
+          });
+        }
+      }
+    }
+
+    return foodItems;
+  }
+
+  /**
+   * @description Find the best food item available (inventory first, then bank)
+   * @returns Best food item or null if none found
+   */
+  async findBestFood(): Promise<{ code: string; quantity: number; healValue: number; source: 'inventory' | 'bank' } | null> {
+    // First check inventory
+    const inventoryFood = this.findFoodInInventory();
+    if (inventoryFood.length > 0) {
+      // Sort by heal value (descending) and return the best one
+      const bestFood = inventoryFood.sort((a, b) => b.healValue - a.healValue)[0];
+      return { ...bestFood, source: 'inventory' };
+    }
+
+    // If no food in inventory, check bank
+    const bankFood = await this.findFoodInBank();
+    if (bankFood.length > 0) {
+      // Sort by heal value (descending) and return the best one
+      const bestFood = bankFood.sort((a, b) => b.healValue - a.healValue)[0];
+      return { ...bestFood, source: 'bank' };
+    }
+
+    return null;
+  }
+
+  /**
+   * @description Withdraw food from bank if needed
+   * @param foodItem The food item to withdraw
+   * @param quantityNeeded How much food is needed
+   * @returns true if successful, false otherwise
+   */
+  async withdrawFoodIfNeeded(foodItem: { code: string; quantity: number; healValue: number }, quantityNeeded: number): Promise<boolean> {
+    const currentQuantity = this.checkQuantityOfItemInInv(foodItem.code);
+    
+    if (currentQuantity >= quantityNeeded) {
+      return true; // Already have enough
+    }
+
+    const neededFromBank = quantityNeeded - currentQuantity;
+    const availableInBank = foodItem.quantity;
+    
+    if (availableInBank >= neededFromBank) {
+      logger.info(`Withdrawing ${neededFromBank} ${foodItem.code} from bank`);
+      await this.withdrawNow(neededFromBank, foodItem.code);
+      return true;
+    } else {
+      logger.warn(`Not enough ${foodItem.code} in bank (need ${neededFromBank}, have ${availableInBank})`);
+      return false;
     }
   }
 

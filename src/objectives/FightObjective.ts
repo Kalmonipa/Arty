@@ -27,8 +27,12 @@ export class FightObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+    const foodItems = this.character.findFoodInInventory();
+    const foodCodes = foodItems.map(food => food.code);
+    const itemsToKeep = [...foodCodes];
+    
     await this.character.evaluateDepositItemsInBank(
-      [this.target.code, this.character.preferredFood],
+      itemsToKeep,
       { x: this.character.data.x, y: this.character.data.y },
     );
 
@@ -133,8 +137,13 @@ export class FightObjective extends Objective {
           `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
         );
 
+        // Get all food items to deposit
+        const foodItems = this.character.findFoodInInventory();
+        const foodCodes = foodItems.map(food => food.code);
+        const itemsToKeep = [...foodCodes];
+        
         await this.character.evaluateDepositItemsInBank(
-          [this.target.code, this.character.preferredFood],
+          itemsToKeep,
           contentLocation,
         );
 
@@ -180,10 +189,7 @@ export class FightObjective extends Objective {
           await this.character.recoverHealth();
 
           // Check amount of food in inventory to use after battles
-          if (
-            this.character.preferredFood &&
-            !(await this.character.checkFoodLevels())
-          ) {
+          if (!(await this.character.checkFoodLevels())) {
             await this.character.topUpFood(contentLocation);
           }
         }

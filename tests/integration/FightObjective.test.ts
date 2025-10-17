@@ -28,7 +28,6 @@ import { ItemSlot } from '../../src/types/types.js';
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
-  preferredFood = 'apple';
   minEquippedUtilities = 5;
   currentExecutingJob?: { objectiveId: string };
   createdTrainCombatObjective?: { parentId?: string; targetLevel: number };
@@ -90,7 +89,37 @@ class SimpleMockCharacter {
   });
 
   checkFoodLevels = jest.fn(async (): Promise<boolean> => {
-    return this.checkQuantityOfItemInInv(this.preferredFood) > 10;
+    // Mock implementation - check if we have any food in inventory
+    return this.data.inventory.some((item: InventorySlot) => item.quantity > 10);
+  });
+
+  findFoodInInventory = jest.fn((): { code: string; quantity: number; healValue: number }[] => {
+    // Mock implementation - return some food items
+    return this.data.inventory
+      .filter((item: InventorySlot) => item.quantity > 0)
+      .map((item: InventorySlot) => ({
+        code: item.code,
+        quantity: item.quantity,
+        healValue: 50 // Mock heal value
+      }));
+  });
+
+  findFoodInBank = jest.fn(async (): Promise<{ code: string; quantity: number; healValue: number }[]> => {
+    // Mock implementation - return empty array for bank
+    return [];
+  });
+
+  findBestFood = jest.fn(async (): Promise<{ code: string; quantity: number; healValue: number; source: 'inventory' | 'bank' } | null> => {
+    const inventoryFood = this.findFoodInInventory();
+    if (inventoryFood.length > 0) {
+      return { ...inventoryFood[0], source: 'inventory' as const };
+    }
+    return null;
+  });
+
+  withdrawFoodIfNeeded = jest.fn(async (): Promise<boolean> => {
+    // Mock implementation
+    return true;
   });
 
   topUpFood = jest.fn(async (): Promise<void> => {

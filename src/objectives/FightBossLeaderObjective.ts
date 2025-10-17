@@ -1,5 +1,3 @@
-import { actionFight } from '../api_calls/Actions.js';
-import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -30,8 +28,13 @@ export class FightBossLeaderObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+    // Get all food items to deposit
+    const foodItems = this.character.findFoodInInventory();
+    const foodCodes = foodItems.map(food => food.code);
+    const itemsToKeep = [...foodCodes];
+    
     await this.character.evaluateDepositItemsInBank(
-      [this.target.code, this.character.preferredFood],
+      itemsToKeep,
       { x: this.character.data.x, y: this.character.data.y },
     );
 
