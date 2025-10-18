@@ -1453,7 +1453,7 @@ export class Character {
       const itemInfo = this.consumablesMap.heal.find(item => item.code === invItem.code);
       if (itemInfo && itemInfo.effects) {
         const healEffect = itemInfo.effects.find(effect => effect.code === 'heal');
-        if (healEffect && invItem.quantity > 0) {
+        if (healEffect && invItem.quantity > 0 && itemInfo.level < this.data.level) {
           foodItems.push({
             code: invItem.code,
             quantity: invItem.quantity,
@@ -1483,7 +1483,7 @@ export class Character {
       const itemInfo = this.consumablesMap.heal.find(item => item.code === bankItem.code);
       if (itemInfo && itemInfo.effects) {
         const healEffect = itemInfo.effects.find(effect => effect.code === 'heal');
-        if (healEffect && bankItem.quantity > 0) {
+        if (healEffect && bankItem.quantity > 0 && itemInfo.level < this.data.level) {
           foodItems.push({
             code: bankItem.code,
             quantity: bankItem.quantity,
