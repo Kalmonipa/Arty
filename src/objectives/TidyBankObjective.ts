@@ -106,7 +106,7 @@ export class TidyBankObjective extends Objective {
           numInBank / itemToCraftSchema.craft.items[0].quantity,
         );
 
-        await this.character.craftNow(numToCraft, item);
+        await this.character.craftNow(numToCraft, itemToCraftSchema.code);
       }
     }
     logger.info(`Found no food in the bank to clean up`);
