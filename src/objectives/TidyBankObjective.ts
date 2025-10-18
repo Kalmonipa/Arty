@@ -192,8 +192,8 @@ export class TidyBankObjective extends Objective {
         );
         continue;
       } else {
-        logger.info(`Crafting ${craftedItemList[0]} from ${ingredient}`)
-        return craftedItemList[0];
+        logger.info(`Crafting ${craftItem.code} from ${ingredient}`)
+        return craftItem;
       }
     }
     return;
