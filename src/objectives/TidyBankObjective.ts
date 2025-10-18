@@ -76,6 +76,7 @@ export class TidyBankObjective extends Objective {
    * @returns true if successful or false if it failed
    */
   private async cookFood(): Promise<boolean> {
+    logger.info(`Starting to cook uncooked food in bank`)
     for (const item of this.rawFoodList) {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
 
@@ -86,7 +87,7 @@ export class TidyBankObjective extends Objective {
 
       logger.info(`Found ${numInBank} ${item} in the bank.`);
 
-      if (numInBank == 0) {
+      if (numInBank === 0) {
         continue;
       } else {
         const itemToCraftSchema = await this.identifyCraftedItemFrom(
@@ -103,7 +104,7 @@ export class TidyBankObjective extends Objective {
           numInBank / itemToCraftSchema.craft.items[0].quantity,
         );
 
-        return await this.character.craftNow(numToCraft, item);
+        await this.character.craftNow(numToCraft, item);
       }
     }
     logger.info(`Found no food in the bank to clean up`);
