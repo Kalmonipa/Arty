@@ -68,7 +68,9 @@ export class ItemTaskObjective extends Objective {
 
       if (
         this.character.data.task === 'strange_ore' ||
-        this.character.data.task === 'magic_wood'
+        this.character.data.task === 'magic_wood' ||
+        this.character.data.task === 'magical_plank' ||
+        this.character.data.task === 'strangold_bar'
       ) {
         logger.info(
           `${this.character.data.task} is an item we want to keep. Cancelling task`,
