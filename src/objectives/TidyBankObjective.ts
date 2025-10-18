@@ -85,11 +85,13 @@ export class TidyBankObjective extends Objective {
         break;
       }
 
-      logger.info(`Found ${numInBank} ${item} in the bank.`);
+      
 
       if (numInBank === 0) {
+        logger.info(`Found no ${item} in the bank. Moving on`);
         continue;
       } else {
+        logger.info(`Found ${numInBank} ${item} in the bank.`);
         const itemToCraftSchema = await this.identifyCraftedItemFrom(
           item,
           'cooking',
@@ -190,6 +192,7 @@ export class TidyBankObjective extends Objective {
         );
         continue;
       } else {
+        logger.info(`Crafting ${craftedItemList[0]} from ${ingredient}`)
         return craftedItemList[0];
       }
     }
