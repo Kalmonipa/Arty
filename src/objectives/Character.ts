@@ -1351,7 +1351,11 @@ export class Character {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
           continue;
-        } else if (exceptions && exceptions.includes(item.code)) {
+        } else if (
+          exceptions &&
+          exceptions.includes(item.code) &&
+          usedInventorySpace != 100
+        ) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.debug(`Adding ${item.quantity} ${item.code} to deposit list`);
