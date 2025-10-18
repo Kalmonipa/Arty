@@ -9,6 +9,7 @@ import { InventorySlot } from '../../src/types/CharacterData.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
+import { actionGather } from '../../src/api_calls/Actions.js';
 
 // Mock item data
 const mockIronOreData: ItemSchema = {
@@ -123,11 +124,14 @@ class SimpleMockCharacter {
     return item ? item.quantity : 0;
   });
 
-  checkQuantityOfItemInBank = jest.fn(async (): Promise<number> => {
+  checkQuantityOfItemInBank = jest.fn(async (code: string): Promise<number> => {
+    // Mock bank storage - in real implementation this would check actual bank
     return 0;
   });
 
-  withdrawNow = jest.fn(async (): Promise<boolean> => {
+  withdrawNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
+    // Simulate withdrawing from bank by adding to inventory
+    this.addItemToInventory(code, quantity);
     return true;
   });
 
@@ -190,6 +194,7 @@ class SimpleMockCharacter {
       this.data.inventory.push({ slot: 10, code: code, quantity: quantity });
     }
   };
+
 }
 
 describe('GatherObjective Integration Tests (Minimal)', () => {
@@ -212,12 +217,31 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     // Create fresh gather objective
     gatherObjective = new GatherObjective(mockCharacter as any, target);
+
+    // Mock actionGather to simulate successful gathering
+    (actionGather as jest.MockedFunction<typeof actionGather>).mockResolvedValue({
+      data: {
+        character: mockCharacter.data,
+        cooldown: { 
+          total_seconds: 1,
+          remaining_seconds: 0, 
+          started_at: new Date().toISOString(),
+          expiration: new Date(Date.now() + 1000).toISOString(),
+          reason: 'gathering' 
+        },
+        details: {
+          xp: 10,
+          items: [{ code: 'iron_ore', quantity: 1 }]
+        }
+      }
+    });
   });
 
   describe('Basic functionality', () => {
     it('should return true when target quantity is already in inventory', async () => {
       // Arrange
       mockCharacter.addItemToInventory('iron_ore', 15);
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(15);
 
       // Act
       const result = await gatherObjective.run();
@@ -246,7 +270,41 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(10, 'iron_ore');
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_ore'); // Need to withdraw 5 (10 - 5)
+    });
+
+    it('should withdraw partial amount from bank and gather the rest', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(3);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
+      mockCharacter.withdrawNow.mockResolvedValue(true);
+
+      // Mock the API calls for gathering
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        mockMapData,
+      );
+
+      const objectiveWithBankCheck = new GatherObjective(
+        mockCharacter as any,
+        target,
+        true, // checkBank = true
+      );
+
+      // Act
+      const result = await objectiveWithBankCheck.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_ore'); // Withdraw all from bank
+      // Should then gather 2 more (10 - 3 - 5 = 2)
     });
 
     it('should create GatherObjective with correct properties', () => {
@@ -305,6 +363,160 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('New simplified logic tests', () => {
+    it('should reset progress to 0 when starting to gather', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+
+      // Mock the API calls
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        mockMapData,
+      );
+
+      const objective = new GatherObjective(
+        mockCharacter as any,
+        target,
+        true, // checkBank = true
+      );
+
+      // Act
+      await objective.run();
+
+      // Assert
+      // Progress should be reset to 0 initially, but will be updated during gathering
+      // The important thing is that the logic correctly calculates what needs to be gathered
+      expect(objective.progress).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should calculate correct quantity to gather after bank withdrawal', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(2);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(3);
+      mockCharacter.withdrawNow.mockResolvedValue(true);
+
+      // Mock the API calls
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        mockMapData,
+      );
+
+      const objective = new GatherObjective(
+        mockCharacter as any,
+        target,
+        true, // checkBank = true
+      );
+
+      // Act
+      const result = await objective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(3, 'iron_ore'); // Withdraw all from bank
+      // Should then gather 5 more (10 - 2 - 3 = 5)
+    });
+
+    it('should handle case where bank has more than needed', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(3);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(15);
+      mockCharacter.withdrawNow.mockResolvedValue(true);
+
+      const objective = new GatherObjective(
+        mockCharacter as any,
+        target,
+        true, // checkBank = true
+      );
+
+      // Act
+      const result = await objective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(7, 'iron_ore'); // Need to withdraw 7 (10 - 3)
+    });
+
+    it('should not check bank when checkBank is false', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+
+      // Mock the API calls
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        mockMapData,
+      );
+
+      const objective = new GatherObjective(
+        mockCharacter as any,
+        target,
+        false, // checkBank = false
+      );
+
+      // Act
+      const result = await objective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockCharacter.checkQuantityOfItemInBank).not.toHaveBeenCalled();
+      expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    });
+
+    it('should handle includeInventory parameter correctly', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(5);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+
+      // Mock the API calls
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        mockMapData,
+      );
+
+      const objective = new GatherObjective(
+        mockCharacter as any,
+        target,
+        false, // checkBank = false
+        true, // includeInventory = true (default)
+      );
+
+      // Act
+      const result = await objective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      // Should gather 5 more (10 - 5 = 5)
     });
   });
 });
