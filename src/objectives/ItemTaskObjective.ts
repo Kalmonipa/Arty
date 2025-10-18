@@ -66,6 +66,17 @@ export class ItemTaskObjective extends Objective {
         );
       }
 
+      if (
+        this.character.data.task === 'strange_ore' ||
+        this.character.data.task === 'magic_wood'
+      ) {
+        logger.info(
+          `${this.character.data.task} is an item we want to keep. Cancelling task`,
+        );
+        await this.cancelCurrentTask('items');
+        continue;
+      }
+
       // get information on the requested item
       const taskInfo: ApiError | ItemSchema = await getItemInformation(
         this.character.data.task,

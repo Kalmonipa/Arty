@@ -755,6 +755,20 @@ export class Character {
         await this.appendJob(new IdleObjective(this, this.role));
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];
+
+        // Check if job is already completed (executed via executeJobNow)
+        if (
+          currentJob.status === 'complete' ||
+          currentJob.status === 'cancelled' ||
+          currentJob.status === 'failed'
+        ) {
+          logger.info(
+            `Removing completed job ${currentJob.objectiveId} with status: ${currentJob.status}`,
+          );
+          await this.removeJob(currentJob.objectiveId);
+          continue;
+        }
+
         this.currentExecutingJob = currentJob;
         logger.info(`Executing job ${currentJob.objectiveId}`);
         await currentJob.execute();
@@ -1142,9 +1156,14 @@ export class Character {
 
         // If food is in bank, withdraw it first
         if (bestFood.source === 'bank') {
-          const withdrawSuccess = await this.withdrawFoodIfNeeded(bestFood, amountNeededToEat);
+          const withdrawSuccess = await this.withdrawFoodIfNeeded(
+            bestFood,
+            amountNeededToEat,
+          );
           if (!withdrawSuccess) {
-            logger.warn(`Could not withdraw enough food from bank. Resting instead.`);
+            logger.warn(
+              `Could not withdraw enough food from bank. Resting instead.`,
+            );
             await this.rest();
             return true;
           }
@@ -1153,7 +1172,9 @@ export class Character {
         // Check current inventory quantity after potential withdrawal
         const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
         if (currentQuantity === 0) {
-          logger.warn(`No food available in inventory after withdrawal attempt. Resting instead.`);
+          logger.warn(
+            `No food available in inventory after withdrawal attempt. Resting instead.`,
+          );
           await this.rest();
           return true;
         }
@@ -1385,12 +1406,16 @@ export class Character {
     // Check if any food in inventory meets minimum requirements
     for (const food of inventoryFood) {
       if (food.quantity > this.minFood) {
-        logger.debug(`Found ${food.quantity} ${food.code} in inventory (min: ${this.minFood})`);
+        logger.debug(
+          `Found ${food.quantity} ${food.code} in inventory (min: ${this.minFood})`,
+        );
         return true;
       }
     }
 
-    logger.debug(`No food in inventory meets minimum requirements (${this.minFood})`);
+    logger.debug(
+      `No food in inventory meets minimum requirements (${this.minFood})`,
+    );
     return false;
   }
 
@@ -1420,7 +1445,10 @@ export class Character {
 
     // If food is in bank, withdraw it
     if (bestFood.source === 'bank') {
-      const withdrawSuccess = await this.withdrawFoodIfNeeded(bestFood, this.minFood);
+      const withdrawSuccess = await this.withdrawFoodIfNeeded(
+        bestFood,
+        this.minFood,
+      );
       if (withdrawSuccess) {
         logger.info(
           `Withdrew ${bestFood.code} from bank to ensure sufficient food`,
@@ -1433,7 +1461,9 @@ export class Character {
     }
 
     // Food is in inventory but not enough
-    logger.warn(`Not enough ${bestFood.code} in inventory (${bestFood.quantity}/${this.minFood})`);
+    logger.warn(
+      `Not enough ${bestFood.code} in inventory (${bestFood.quantity}/${this.minFood})`,
+    );
     return false;
   }
 
@@ -1441,23 +1471,36 @@ export class Character {
    * @description Find food items in inventory that have heal effects
    * @returns Array of food items with heal effects found in inventory
    */
-  findFoodInInventory(): { code: string; quantity: number; healValue: number }[] {
+  findFoodInInventory(): {
+    code: string;
+    quantity: number;
+    healValue: number;
+  }[] {
     if (!this.data || !this.data.inventory) {
       return [];
     }
 
-    const foodItems: { code: string; quantity: number; healValue: number }[] = [];
+    const foodItems: { code: string; quantity: number; healValue: number }[] =
+      [];
 
     for (const invItem of this.data.inventory) {
       // Check if this item has heal effects
-      const itemInfo = this.consumablesMap.heal.find(item => item.code === invItem.code);
+      const itemInfo = this.consumablesMap.heal.find(
+        (item) => item.code === invItem.code,
+      );
       if (itemInfo && itemInfo.effects) {
-        const healEffect = itemInfo.effects.find(effect => effect.code === 'heal');
-        if (healEffect && invItem.quantity > 0 && itemInfo.level < this.data.level) {
+        const healEffect = itemInfo.effects.find(
+          (effect) => effect.code === 'heal',
+        );
+        if (
+          healEffect &&
+          invItem.quantity > 0 &&
+          itemInfo.level < this.data.level
+        ) {
           foodItems.push({
             code: invItem.code,
             quantity: invItem.quantity,
-            healValue: healEffect.value
+            healValue: healEffect.value,
           });
         }
       }
@@ -1470,24 +1513,35 @@ export class Character {
    * @description Find food items in bank that have heal effects
    * @returns Array of food items with heal effects found in bank
    */
-  async findFoodInBank(): Promise<{ code: string; quantity: number; healValue: number }[]> {
+  async findFoodInBank(): Promise<
+    { code: string; quantity: number; healValue: number }[]
+  > {
     const bankItems = await this.getAllBankItems();
     if (!bankItems || bankItems.length === 0) {
       return [];
     }
 
-    const foodItems: { code: string; quantity: number; healValue: number }[] = [];
+    const foodItems: { code: string; quantity: number; healValue: number }[] =
+      [];
 
     for (const bankItem of bankItems) {
       // Check if this item has heal effects
-      const itemInfo = this.consumablesMap.heal.find(item => item.code === bankItem.code);
+      const itemInfo = this.consumablesMap.heal.find(
+        (item) => item.code === bankItem.code,
+      );
       if (itemInfo && itemInfo.effects) {
-        const healEffect = itemInfo.effects.find(effect => effect.code === 'heal');
-        if (healEffect && bankItem.quantity > 0 && itemInfo.level < this.data.level) {
+        const healEffect = itemInfo.effects.find(
+          (effect) => effect.code === 'heal',
+        );
+        if (
+          healEffect &&
+          bankItem.quantity > 0 &&
+          itemInfo.level < this.data.level
+        ) {
           foodItems.push({
             code: bankItem.code,
             quantity: bankItem.quantity,
-            healValue: healEffect.value
+            healValue: healEffect.value,
           });
         }
       }
@@ -1500,12 +1554,19 @@ export class Character {
    * @description Find the best food item available (inventory first, then bank)
    * @returns Best food item or null if none found
    */
-  async findBestFood(): Promise<{ code: string; quantity: number; healValue: number; source: 'inventory' | 'bank' } | null> {
+  async findBestFood(): Promise<{
+    code: string;
+    quantity: number;
+    healValue: number;
+    source: 'inventory' | 'bank';
+  } | null> {
     // First check inventory
     const inventoryFood = this.findFoodInInventory();
     if (inventoryFood.length > 0) {
       // Sort by heal value (descending) and return the best one
-      const bestFood = inventoryFood.sort((a, b) => b.healValue - a.healValue)[0];
+      const bestFood = inventoryFood.sort(
+        (a, b) => b.healValue - a.healValue,
+      )[0];
       return { ...bestFood, source: 'inventory' };
     }
 
@@ -1526,22 +1587,27 @@ export class Character {
    * @param quantityNeeded How much food is needed
    * @returns true if successful, false otherwise
    */
-  async withdrawFoodIfNeeded(foodItem: { code: string; quantity: number; healValue: number }, quantityNeeded: number): Promise<boolean> {
+  async withdrawFoodIfNeeded(
+    foodItem: { code: string; quantity: number; healValue: number },
+    quantityNeeded: number,
+  ): Promise<boolean> {
     const currentQuantity = this.checkQuantityOfItemInInv(foodItem.code);
-    
+
     if (currentQuantity >= quantityNeeded) {
       return true; // Already have enough
     }
 
     const neededFromBank = quantityNeeded - currentQuantity;
     const availableInBank = foodItem.quantity;
-    
+
     if (availableInBank >= neededFromBank) {
       logger.info(`Withdrawing ${neededFromBank} ${foodItem.code} from bank`);
       await this.withdrawNow(neededFromBank, foodItem.code);
       return true;
     } else {
-      logger.warn(`Not enough ${foodItem.code} in bank (need ${neededFromBank}, have ${availableInBank})`);
+      logger.warn(
+        `Not enough ${foodItem.code} in bank (need ${neededFromBank}, have ${availableInBank})`,
+      );
       return false;
     }
   }

@@ -76,7 +76,7 @@ export class TidyBankObjective extends Objective {
    * @returns true if successful or false if it failed
    */
   private async cookFood(): Promise<boolean> {
-    logger.info(`Starting to cook uncooked food in bank`)
+    logger.info(`Starting to cook uncooked food in bank`);
     for (const item of this.rawFoodList) {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
 
@@ -84,8 +84,6 @@ export class TidyBankObjective extends Objective {
         logger.info(`${item} not found in bank`);
         break;
       }
-
-      
 
       if (numInBank === 0) {
         logger.info(`Found no ${item} in the bank. Moving on`);
@@ -192,7 +190,7 @@ export class TidyBankObjective extends Objective {
         );
         continue;
       } else {
-        logger.info(`Crafting ${craftItem.code} from ${ingredient}`)
+        logger.info(`Crafting ${craftItem.code} from ${ingredient}`);
         return craftItem;
       }
     }

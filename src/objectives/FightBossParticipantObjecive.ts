@@ -27,13 +27,13 @@ export class FightBossParticipantObjective extends Objective {
   async runPrerequisiteChecks(): Promise<boolean> {
     // Get all food items to deposit
     const foodItems = this.character.findFoodInInventory();
-    const foodCodes = foodItems.map(food => food.code);
+    const foodCodes = foodItems.map((food) => food.code);
     const itemsToKeep = [...foodCodes];
-    
-    await this.character.evaluateDepositItemsInBank(
-      itemsToKeep,
-      { x: this.character.data.x, y: this.character.data.y },
-    );
+
+    await this.character.evaluateDepositItemsInBank(itemsToKeep, {
+      x: this.character.data.x,
+      y: this.character.data.y,
+    });
 
     await this.character.evaluateGear('combat', this.target.code);
 
@@ -114,9 +114,9 @@ export class FightBossParticipantObjective extends Objective {
 
         // Get all food items to deposit
         const foodItems = this.character.findFoodInInventory();
-        const foodCodes = foodItems.map(food => food.code);
+        const foodCodes = foodItems.map((food) => food.code);
         const itemsToKeep = [...foodCodes];
-        
+
         await this.character.evaluateDepositItemsInBank(
           itemsToKeep,
           contentLocation,

@@ -78,7 +78,11 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    if (this.parentId && !this.parentId.includes('_event_') && !this.objectiveId.includes('_event_')) {
+    if (
+      this.parentId &&
+      !this.parentId.includes('_event_') &&
+      !this.objectiveId.includes('_event_')
+    ) {
       await this.character.checkForActiveEvents();
     }
 
@@ -131,7 +135,7 @@ export abstract class Objective {
       this.status = 'complete';
     } else {
       if (this.status === 'cancelled') {
-        this.character.itemsToKeep = []
+        this.character.itemsToKeep = [];
         return;
       } else {
         logger.info(`Setting status of ${this.objectiveId} to 'failed'`);

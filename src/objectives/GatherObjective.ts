@@ -65,7 +65,7 @@ export class GatherObjective extends Objective {
 
     // Calculate total available items
     const totalAvailable = numInInv + numInBank;
-    
+
     // If we already have enough, we're done
     if (totalAvailable >= this.target.quantity) {
       if (numInInv >= this.target.quantity) {
@@ -79,7 +79,10 @@ export class GatherObjective extends Objective {
         logger.info(
           `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${needToWithdraw}`,
         );
-        return await this.character.withdrawNow(needToWithdraw, this.target.code);
+        return await this.character.withdrawNow(
+          needToWithdraw,
+          this.target.code,
+        );
       }
     }
 
@@ -92,19 +95,23 @@ export class GatherObjective extends Objective {
     }
 
     // Calculate how many we still need to gather
-    const currentTotal = this.character.checkQuantityOfItemInInv(this.target.code);
+    const currentTotal = this.character.checkQuantityOfItemInInv(
+      this.target.code,
+    );
     const stillNeeded = this.target.quantity - currentTotal;
-    
+
     if (stillNeeded <= 0) {
-      logger.info(`Already have enough ${this.target.code} after bank withdrawal`);
+      logger.info(
+        `Already have enough ${this.target.code} after bank withdrawal`,
+      );
       return true;
     }
 
     logger.info(`Need to gather ${stillNeeded} more ${this.target.code}`);
-    
+
     // Reset progress to 0 for clean tracking
     this.progress = 0;
-    
+
     return await this.gather(stillNeeded, this.target.code);
   }
 
@@ -217,11 +224,11 @@ export class GatherObjective extends Objective {
   ): Promise<boolean> {
     const maxAttempts = target.quantity * 2;
     let attempts = 0;
-    
+
     // Loop that does the gather requests
     while (this.progress < target.quantity && attempts < maxAttempts) {
       attempts++;
-      
+
       if (this.progress % 5 === 0 || attempts % 10 === 0) {
         logger.info(
           `Gathered ${this.progress}/${target.quantity} ${target.code} (attempt ${attempts})`,
@@ -259,12 +266,14 @@ export class GatherObjective extends Objective {
 
       await this.character.saveJobQueue();
     }
-    
+
     if (attempts >= maxAttempts) {
-      logger.warn(`Gathering loop exceeded maximum attempts (${maxAttempts}) for ${target.code}`);
+      logger.warn(
+        `Gathering loop exceeded maximum attempts (${maxAttempts}) for ${target.code}`,
+      );
       return false;
     }
-    
+
     return true;
   }
 
@@ -280,9 +289,7 @@ export class GatherObjective extends Objective {
       logger.error(`Found no mobs for drop ${target.code}`);
       return false;
     } else {
-      let numHeld = this.character.checkQuantityOfItemInInv(
-        this.target.code,
-      );
+      let numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
 
       // We want to compare total progress with the target quantity
       while (this.progress < target.quantity) {

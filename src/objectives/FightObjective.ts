@@ -28,13 +28,13 @@ export class FightObjective extends Objective {
 
   async runPrerequisiteChecks(): Promise<boolean> {
     const foodItems = this.character.findFoodInInventory();
-    const foodCodes = foodItems.map(food => food.code);
+    const foodCodes = foodItems.map((food) => food.code);
     const itemsToKeep = [...foodCodes];
-    
-    await this.character.evaluateDepositItemsInBank(
-      itemsToKeep,
-      { x: this.character.data.x, y: this.character.data.y },
-    );
+
+    await this.character.evaluateDepositItemsInBank(itemsToKeep, {
+      x: this.character.data.x,
+      y: this.character.data.y,
+    });
 
     // Check amount of food in inventory to use after battles
     // if (!(await this.character.checkFoodLevels())) {
@@ -139,9 +139,9 @@ export class FightObjective extends Objective {
 
         // Get all food items to deposit
         const foodItems = this.character.findFoodInInventory();
-        const foodCodes = foodItems.map(food => food.code);
+        const foodCodes = foodItems.map((food) => food.code);
         const itemsToKeep = [...foodCodes];
-        
+
         await this.character.evaluateDepositItemsInBank(
           itemsToKeep,
           contentLocation,

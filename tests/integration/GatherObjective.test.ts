@@ -129,11 +129,13 @@ class SimpleMockCharacter {
     return 0;
   });
 
-  withdrawNow = jest.fn(async (quantity: number, code: string): Promise<boolean> => {
-    // Simulate withdrawing from bank by adding to inventory
-    this.addItemToInventory(code, quantity);
-    return true;
-  });
+  withdrawNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Simulate withdrawing from bank by adding to inventory
+      this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
 
   checkWeaponForEffects = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -194,7 +196,6 @@ class SimpleMockCharacter {
       this.data.inventory.push({ slot: 10, code: code, quantity: quantity });
     }
   };
-
 }
 
 describe('GatherObjective Integration Tests (Minimal)', () => {
@@ -219,21 +220,23 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
     gatherObjective = new GatherObjective(mockCharacter as any, target);
 
     // Mock actionGather to simulate successful gathering
-    (actionGather as jest.MockedFunction<typeof actionGather>).mockResolvedValue({
+    (
+      actionGather as jest.MockedFunction<typeof actionGather>
+    ).mockResolvedValue({
       data: {
         character: mockCharacter.data,
-        cooldown: { 
+        cooldown: {
           total_seconds: 1,
-          remaining_seconds: 0, 
+          remaining_seconds: 0,
           started_at: new Date().toISOString(),
           expiration: new Date(Date.now() + 1000).toISOString(),
-          reason: 'gathering' 
+          reason: 'gathering',
         },
         details: {
           xp: 10,
-          items: [{ code: 'iron_ore', quantity: 1 }]
-        }
-      }
+          items: [{ code: 'iron_ore', quantity: 1 }],
+        },
+      },
     });
   });
 
