@@ -78,8 +78,9 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    // ToDo: Call this at every isCancelled check to check more frequently
-    if (this.parentId && !this.parentId.includes('_event_')) {
+    // Only check for active events if this is not an EventObjective itself
+    // This prevents infinite loops when EventObjectives call checkForActiveEvents
+    if (this.parentId && !this.parentId.includes('_event_') && !this.objectiveId.includes('_event_')) {
       await this.character.checkForActiveEvents();
     }
 
