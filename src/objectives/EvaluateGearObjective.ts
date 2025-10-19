@@ -212,18 +212,22 @@ export class EvaluateGearObjective extends Objective {
    */
   private async topUpSecondaryPots(mobInfo: MonsterSchema) {
     if (!mobInfo.effects || mobInfo.effects.length === 0) {
-      // if (this.character.data.utility2_slot_quantity > 0) {
-      //   return await this.character.unequipNow('utility2', this.character.data.utility2_slot_quantity);
-      // } else {
       return true;
-      //}
     } else if (mobInfo.effects.length > 1) {
       logger.warn(
         `${mobInfo.code} has more than 1 effect. Not sure what to do`,
       );
       return false;
     } else if (mobInfo.effects[0].code === 'poison') {
-      return await this.character.equipUtility('antipoison', 'utility2');
+      if (
+        this.character.data.utility2_slot_quantity &&
+        this.character.data.utility2_slot_quantity <
+          this.character.minEquippedUtilities
+      ) {
+        return await this.character.equipUtility('antipoison', 'utility2');
+      } else {
+        return true;
+      }
     } else {
       logger.info(
         `Counter of ${mobInfo.effects[0].code} from ${mobInfo.code} not found.`,
