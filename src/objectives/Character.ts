@@ -979,7 +979,7 @@ export class Character {
   /**
    * @description Creates a FakeCharacterSchema of the current character
    */
-  createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
+  createFakeCharacterSchema(character: CharacterSchema, includeUtility1?: boolean): FakeCharacterSchema {
     const fakeChar: FakeCharacterSchema = {
       level: character.level,
       weapon_slot: character.weapon_slot,
@@ -998,7 +998,7 @@ export class Character {
       utility1_slot: character.utility1_slot,
       utility2_slot: character.utility2_slot,
     };
-    if (character.utility1_slot) {
+    if (includeUtility1 && character.utility1_slot) {
       fakeChar.utility1_slot_quantity = character.utility1_slot_quantity;
     }
     if (character.utility2_slot) {
