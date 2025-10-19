@@ -94,9 +94,9 @@ export class FightObjective extends Objective {
         }
 
         if (simResult === false) {
-          await this.character.trainCombatLevelNow(
-            this.character.data.level + 1,
-          );
+          // await this.character.trainCombatLevelNow(
+          //   this.character.data.level + 1,
+          // );
           return true;
         }
       }
