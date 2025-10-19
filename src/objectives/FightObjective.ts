@@ -9,6 +9,7 @@ import { getMonsterInformation } from '../api_calls/Monsters.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
+  shouldEquipHealthPots = true;
   participants?: string[];
   runFightSim?: boolean;
 
@@ -53,10 +54,12 @@ export class FightObjective extends Objective {
       if (this.runFightSim) {
         const fakeSchema = this.character.createFakeCharacterSchema(
           this.character.data,
-          true
+          true,
         );
 
-        logger.info(`Simulating fight against ${this.target.code} with health pots`)
+        logger.info(
+          `Simulating fight against ${this.target.code} with health pots`,
+        );
         const simResult = await this.character.simulateFightNow(
           [fakeSchema],
           this.target.code,
@@ -65,10 +68,12 @@ export class FightObjective extends Objective {
         if (simResult && fakeSchema.utility1_slot_quantity) {
           const fakeSchema = this.character.createFakeCharacterSchema(
             this.character.data,
-            false
+            false,
           );
 
-          logger.info(`Simulating fight against ${this.target.code} without health pots`)
+          logger.info(
+            `Simulating fight against ${this.target.code} without health pots`,
+          );
 
           const simResultWithoutHealthPots =
             await this.character.simulateFightNow(
@@ -77,6 +82,10 @@ export class FightObjective extends Objective {
             );
 
           if (simResultWithoutHealthPots) {
+            logger.info(
+              `Unequipping ${this.character.data.utility1_slot} as not needed`,
+            );
+            this.shouldEquipHealthPots = false;
             await this.character.unequipNow(
               'utility1',
               this.character.data.utility1_slot_quantity,
@@ -158,7 +167,8 @@ export class FightObjective extends Objective {
         // Check these after each fight in case we need to top up
         if (
           this.character.data.utility1_slot_quantity <=
-          this.character.minEquippedUtilities
+            this.character.minEquippedUtilities &&
+          this.shouldEquipHealthPots
         ) {
           if (await this.character.equipUtility('restore', 'utility1')) {
             // If we moved to the bank we need to move back to the monster location

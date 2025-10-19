@@ -610,7 +610,7 @@ export class Character {
         this.appendJob(obj);
       }
 
-      logger.info(
+      logger.debug(
         `Added job ${obj.objectiveId} to position ${prepend ? 0 : this.jobList.length - 1}${parentId ? `, parent: ${parentId}` : ''}`,
       );
 
@@ -659,7 +659,7 @@ export class Character {
 
     logger.debug(`Removing ${objectiveId} from position ${ind}`);
     const deletedObj = this.jobList.splice(ind, 1);
-    logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`);
+    logger.debug(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
       for (const obj of this.jobList) {
@@ -979,7 +979,10 @@ export class Character {
   /**
    * @description Creates a FakeCharacterSchema of the current character
    */
-  createFakeCharacterSchema(character: CharacterSchema, includeUtility1?: boolean): FakeCharacterSchema {
+  createFakeCharacterSchema(
+    character: CharacterSchema,
+    includeUtility1?: boolean,
+  ): FakeCharacterSchema {
     const fakeChar: FakeCharacterSchema = {
       level: character.level,
       weapon_slot: character.weapon_slot,

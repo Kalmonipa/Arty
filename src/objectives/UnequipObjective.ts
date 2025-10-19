@@ -29,8 +29,6 @@ export class UnequipObjective extends Objective {
 
       logger.debug(`Unequip attempt ${attempt}/${this.maxRetries}`);
 
-      if (!this.quantity) this.quantity = 1;
-
       if (
         (this.itemSlot === 'utility1' || this.itemSlot === 'utility2') &&
         this.quantity > 100
@@ -45,7 +43,7 @@ export class UnequipObjective extends Objective {
 
       const unequipSchema: UnequipSchema = {
         slot: this.itemSlot,
-        quantity: this.quantity,
+        quantity: this.quantity || 1,
       };
 
       const response = await actionUnequipItem(
