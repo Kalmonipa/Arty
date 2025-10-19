@@ -10,7 +10,8 @@ export type GearEffects =
   | 'prospecting'
   | 'wisdom'
   | ResistanceType
-  | AttackType;
+  | AttackType
+  | DamageType;
 
 export type UtilityEffects =
   | 'antipoison'
@@ -34,3 +35,5 @@ export type AttackType =
   | 'attack_earth'
   | 'attack_water'
   | 'attack_air';
+
+export type DamageType = 'dmg_fire' | 'dmg_earth' | 'dmg_water' | 'dmg_air';

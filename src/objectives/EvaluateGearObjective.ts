@@ -8,7 +8,8 @@ import { ApiError } from './Error.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
 
 /**
- * @todo Should compare our current gear to see if it's good enough
+ * @description Evaluates which gear is the best to use for the upcoming fight
+ * Should take in the
  */
 
 export class EvaluateGearObjective extends Objective {
@@ -101,22 +102,26 @@ export class EvaluateGearObjective extends Objective {
     const mobResistances: MonsterResistance[] = [
       {
         type: 'res_air' as const,
-        counterType: 'attack_air' as const,
+        atkCounterType: 'attack_air' as const,
+        dmgCounterType: 'dmg_air' as const,
         value: mobInfo.data.res_air,
       },
       {
         type: 'res_earth' as const,
-        counterType: 'attack_earth' as const,
+        atkCounterType: 'attack_earth' as const,
+        dmgCounterType: 'dmg_earth' as const,
         value: mobInfo.data.res_earth,
       },
       {
         type: 'res_fire' as const,
-        counterType: 'attack_fire' as const,
+        atkCounterType: 'attack_fire' as const,
+        dmgCounterType: 'dmg_fire' as const,
         value: mobInfo.data.res_fire,
       },
       {
         type: 'res_water' as const,
-        counterType: 'attack_water' as const,
+        atkCounterType: 'attack_water' as const,
+        dmgCounterType: 'dmg_water' as const,
         value: mobInfo.data.res_water,
       },
     ].sort((a, b) => a.value - b.value);
@@ -144,10 +149,10 @@ export class EvaluateGearObjective extends Objective {
 
     for (const resistance of mobResistances) {
       logger.info(
-        `Finding best ${resistance.counterType} weapon against ${resistance.value} ${resistance.type}`,
+        `Finding best ${resistance.atkCounterType} weapon against ${resistance.value} ${resistance.type}`,
       );
       equipResult = await this.checkCombatWeapon(
-        resistance.counterType,
+        resistance.atkCounterType,
         charLevel,
       );
       if (equipResult) {
@@ -155,24 +160,26 @@ export class EvaluateGearObjective extends Objective {
       }
     }
 
-    // Check helmet
-    await this.checkGearOfType('helmet', 'hp', charLevel);
+    // Check gear types with mob resistance priorities
+    const gearTypes: ItemSlot[] = [
+      'helmet',
+      'body_armor',
+      'leg_armor',
+      'ring1',
+      'ring2',
+      'amulet',
+    ];
 
-    // Check armor
-    await this.checkGearOfType('body_armor', 'hp', charLevel);
-
-    // Check legs
-    await this.checkGearOfType('leg_armor', 'hp', charLevel);
+    for (const gearType of gearTypes) {
+      await this.checkGearWithResistancePriority(
+        gearType,
+        mobResistances,
+        charLevel,
+      );
+    }
 
     // Check boots
     await this.checkGearOfType('boots', 'hp', charLevel);
-
-    // Check rings
-    await this.checkGearOfType('ring1', 'dmg', charLevel);
-    await this.checkGearOfType('ring2', 'dmg', charLevel);
-
-    // Check amulet
-    await this.checkGearOfType('amulet', 'hp', charLevel);
 
     // Check health potions in utility slot 1
     if (
@@ -295,6 +302,40 @@ export class EvaluateGearObjective extends Objective {
       }
     }
     return false;
+  }
+
+  /**
+   * @description Checks gear with priority based on mob resistances, falling back to 'dmg' if no good gear found
+   * @param gearType The slot that we want to equip into
+   * @param mobResistances Array of monster resistances sorted by priority
+   * @param charLevel the characters combat level
+   * @returns true if we successfully equipped something
+   */
+  private async checkGearWithResistancePriority(
+    gearType: ItemSlot,
+    mobResistances: MonsterResistance[],
+    charLevel: number,
+  ): Promise<boolean> {
+    // Try each resistance type in order of priority (lowest resistance first)
+    for (const resistance of mobResistances) {
+      const success = await this.checkGearOfType(
+        gearType,
+        resistance.dmgCounterType,
+        charLevel,
+      );
+      if (success) {
+        logger.debug(
+          `Successfully equipped ${gearType} with ${resistance.dmgCounterType} resistance`,
+        );
+        return true;
+      }
+    }
+
+    // If no good gear found for any resistance type, fall back to 'dmg'
+    logger.debug(
+      `No good ${gearType} gear found for resistance types, trying 'dmg'`,
+    );
+    return await this.checkGearOfType(gearType, 'dmg', charLevel);
   }
 
   /**

@@ -1,4 +1,3 @@
-import { getItemInformation } from '../api_calls/Items.js';
 import { getMaps } from '../api_calls/Maps.js';
 import {
   actionBuyItem,
