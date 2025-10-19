@@ -175,8 +175,8 @@ export class EventObjective extends Objective {
         const response = await actionGather(this.character.data);
 
         if (response instanceof ApiError) {
-          await this.character.handleErrors(response);
-          continue;
+          return await this.character.handleErrors(response);
+          
         } else {
           // Ensure response has the expected structure before accessing nested properties
           if (response && response.data && response.data.character) {
