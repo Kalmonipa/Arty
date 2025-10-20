@@ -43,8 +43,13 @@ export class TrainGatheringSkillObjective extends Objective {
         return this.character.handleErrors(resourceTypes);
       }
 
-      const resourceToGather =
+      let resourceToGather =
         resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;
+
+      if (resourceToGather === 'strange_ore' || resourceToGather === 'magic_wood') {
+        logger.info(`${resourceToGather} is an event resource. Skipping`)
+        resourceToGather = resourceTypes.data[resourceTypes.data.length - 2].drops[0].code;
+      }
 
       await this.character.gatherNow(
         Math.round(this.character.data.inventory_max_items * 0.8),
