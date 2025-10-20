@@ -1146,10 +1146,10 @@ export class Character {
         const bestFood = await this.findBestFood();
         if (!bestFood) {
           logger.warn(
-            `No food available in inventory or bank. Resting instead.`,
+            `No food available in inventory or bank. Gathering some instead.`,
           );
-          await this.rest();
-          return true;
+          // ToDo: Make this dynamically pick the food to gather
+          await this.craftNow(40, 'cooked_gudgeon', true, true)
         }
 
         const healthStatus: HealthStatus = this.checkHealth();
@@ -1262,7 +1262,17 @@ export class Character {
           );
           return true;
         } else {
-          logger.debug(`Can't find any ${utility[ind].name}`);
+          
+          if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
+            logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
+            if (await this.craftNow(50, utility[ind].code)) {
+              return await this.equipNow(utility[ind].code, 'utility1', 50)
+            } else {
+              logger.debug(`Can't craft ${utility[ind].name}`)
+            }
+          } else {
+            logger.debug(`Can't find any ${utility[ind].name}`);
+          }
         }
       }
     }
