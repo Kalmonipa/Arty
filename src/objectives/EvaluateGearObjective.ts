@@ -219,11 +219,13 @@ export class EvaluateGearObjective extends Objective {
       );
       return false;
     } else if (mobInfo.effects[0].code === 'poison') {
+      logger.info(`${mobInfo.name} has the ${mobInfo.effects[0].code} effect`)
       if (
         this.character.data.utility2_slot_quantity &&
         this.character.data.utility2_slot_quantity <
           this.character.minEquippedUtilities
       ) {
+        logger.info(`Equipping antidotes`)
         return await this.character.equipUtility('antipoison', 'utility2');
       } else {
         return true;
