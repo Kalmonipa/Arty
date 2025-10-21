@@ -222,9 +222,10 @@ export class EvaluateGearObjective extends Objective {
       logger.info(`${mobInfo.name} has the ${mobInfo.effects[0].code} effect`)
       logger.info(`Current util2 quantity: ${this.character.data.utility2_slot_quantity}; Quantity needed: ${this.character.minEquippedUtilities}`)
       if (
-        this.character.data.utility2_slot_quantity &&
+        !this.character.data.utility2_slot_quantity || 
+        (this.character.data.utility2_slot_quantity &&
         this.character.data.utility2_slot_quantity <
-          this.character.minEquippedUtilities
+          this.character.minEquippedUtilities)
       ) {
         logger.info(`Equipping antidotes`)
         return await this.character.equipUtility('antipoison', 'utility2');
