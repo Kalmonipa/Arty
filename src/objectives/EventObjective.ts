@@ -158,7 +158,7 @@ export class EventObjective extends Objective {
     while (Date.now() < expirationTime) {
       await this.character.evaluateGear(resourceInfoResponse.data.skill);
 
-      this.character.move(resourceLocation);
+      await this.character.move(resourceLocation);
 
       //const numToGather = this.character.data.inventory_max_items * 0.9;
       const numToGather = 10;
