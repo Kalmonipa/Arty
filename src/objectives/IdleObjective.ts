@@ -31,149 +31,97 @@ export class IdleObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
-    // Feature flag for randomising idle objectives or going through a list
-    const shouldBeRandom = false;
+    await this.cleanUpBank();
+    if (this.checkIdleJobIsLast()) return true;
 
-    if (shouldBeRandom) {
-      const idleObjectives = [
-        'cleanUpBank',
-        'depositGoldIntoBank',
-        'topUpBank',
-        'doTask',
-        'trainSkill',
-      ];
+    await this.depositGoldIntoBank(1000);
+    if (this.checkIdleJobIsLast()) return true;
 
-      const randomObjective =
-        idleObjectives[Math.floor(Math.random() * idleObjectives.length)];
+    await this.topUpBank();
+    if (this.checkIdleJobIsLast()) return true;
 
-      switch (randomObjective) {
-        case 'cleanUpBank':
-          return await this.cleanUpBank();
-
-        case 'depositGoldIntoBank':
-          return await this.depositGoldIntoBank(1000);
-
-        case 'topUpBank':
-          return await this.topUpBank();
-
-        case 'doTask':
-          if (this.role === 'weaponcrafter' || this.role === 'gearcrafter') {
-            return await this.doMonsterTask();
-          } else {
-            return await this.doItemTask();
-          }
-
-        case 'trainSkill':
-          switch (this.role) {
-            case 'alchemist':
-              return await this.trainSkill('alchemy');
-
-            case 'fisherman':
-              return await this.trainSkill('fishing');
-
-            case 'gearcrafter':
-              // We want our gearcrafter to be able to craft gear for our fighter so ideally we'd craft stuff above our level
-              // ToDo: This might run into issues with gathering mob drops if the gearcrafter isn't high enough to fight them
-              if (
-                this.character.getCharacterLevel('gearcrafting') <
-                this.character.getCharacterLevel()
-              ) {
-                return await this.trainSkill('gearcrafting');
-              } else {
-                return await this.trainSkill();
-              }
-
-            case 'jewelrycrafter':
-              return await this.trainSkill('jewelrycrafting');
-
-            case 'lumberjack':
-              return await this.trainSkill('woodcutting');
-
-            case 'miner':
-              return await this.trainSkill('mining');
-
-            case 'weaponcrafter':
-              // We want our weaponcrafting to be at least our character level (if not above??)
-              if (
-                this.character.getCharacterLevel('weaponcrafting') <
-                this.character.getCharacterLevel()
-              ) {
-                return await this.trainSkill('weaponcrafting');
-              } else {
-                return await this.trainSkill();
-              }
-          }
-      }
+    if (
+      (this.role === 'weaponcrafter' &&
+        this.character.data.level < this.character.data.weaponcrafting_level) ||
+      (this.role === 'gearcrafter' &&
+        this.character.data.level < this.character.data.gearcrafting_level)
+    ) {
+      await this.doMonsterTask(5);
+      if (this.checkIdleJobIsLast()) return true;
     } else {
-      await this.cleanUpBank();
+      await this.doItemTask(5);
+      if (this.checkIdleJobIsLast()) return true;
+    }
 
-      await this.depositGoldIntoBank(1000);
+    switch (this.role) {
+      case 'alchemist':
+        await this.trainSkill('alchemy');
+        if (this.checkIdleJobIsLast()) return true;
+        break;
+      case 'fisherman':
+        await this.trainSkill('fishing');
+        if (this.checkIdleJobIsLast()) return true;
+        break;
+      case 'gearcrafter':
+        // We want our gearcrafter to be able to craft gear for our fighter so ideally we'd craft stuff above our level
+        // ToDo: This might run into issues with gathering mob drops if the gearcrafter isn't high enough to fight them
+        if (
+          this.character.getCharacterLevel('gearcrafting') <
+          this.character.getCharacterLevel()
+        ) {
+          await this.trainSkill('gearcrafting');
+          if (this.checkIdleJobIsLast()) return true;
+        } else {
+          await this.trainSkill();
+          if (this.checkIdleJobIsLast()) return true;
+        }
+        break;
 
-      await this.topUpBank();
+      case 'jewelrycrafter':
+        await this.trainSkill('jewelrycrafting');
+        if (this.checkIdleJobIsLast()) return true;
+        break;
 
-      if (
-        (this.role === 'weaponcrafter' &&
-          this.character.data.level <
-            this.character.data.weaponcrafting_level) ||
-        (this.role === 'gearcrafter' &&
-          this.character.data.level < this.character.data.gearcrafting_level)
-      ) {
-        await this.doMonsterTask(5);
-      } else {
-        await this.doItemTask(5);
-      }
-
-      switch (this.role) {
-        case 'alchemist':
-          await this.trainSkill('alchemy');
-          break;
-        case 'fisherman':
-          await this.trainSkill('fishing');
-          break;
-        case 'gearcrafter':
-          // We want our gearcrafter to be able to craft gear for our fighter so ideally we'd craft stuff above our level
-          // ToDo: This might run into issues with gathering mob drops if the gearcrafter isn't high enough to fight them
-          if (
-            this.character.getCharacterLevel('gearcrafting') <
-            this.character.getCharacterLevel()
-          ) {
-            await this.trainSkill('gearcrafting');
-          } else {
-            await this.trainSkill();
-          }
-          break;
-
-        case 'jewelrycrafter':
-          await this.trainSkill('jewelrycrafting');
-          break;
-
-        case 'lumberjack':
-          await this.trainSkill('woodcutting');
-          break;
-        case 'miner':
-          await this.trainSkill('mining');
-          break;
-        case 'weaponcrafter':
-          // We want our weaponcrafting to be at least our character level (if not above??)
-          if (
-            this.character.getCharacterLevel('weaponcrafting') <
-            this.character.getCharacterLevel()
-          ) {
-            await this.trainSkill('weaponcrafting');
-          } else {
-            await this.trainSkill();
-          }
-          break;
-      }
+      case 'lumberjack':
+        await this.trainSkill('woodcutting');
+        if (this.checkIdleJobIsLast()) return true;
+        break;
+      case 'miner':
+        await this.trainSkill('mining');
+        if (this.checkIdleJobIsLast()) return true;
+        break;
+      case 'weaponcrafter':
+        // We want our weaponcrafting to be at least our character level (if not above??)
+        if (
+          this.character.getCharacterLevel('weaponcrafting') <
+          this.character.getCharacterLevel()
+        ) {
+          await this.trainSkill('weaponcrafting');
+          if (this.checkIdleJobIsLast()) return true;
+        } else {
+          await this.trainSkill();
+          if (this.checkIdleJobIsLast()) return true;
+        }
+        break;
     }
   }
 
   /**
-   * @description Check if there are jobs in the queue
-   * @returns true if yes, false if no other jobs in the queue
+   * @description Helper function to check if there are any new jobs added to the queue
+   * @returns true if there are other jobs in the queue, false if not
    */
-  private checkForOtherJobsInQueue(): boolean {
-    return true;
+  private checkIdleJobIsLast() {
+    const jobs = this.character.jobList ?? [];
+    const idleJobIndex = jobs.findIndex((job: Objective) =>
+      job.objectiveId.startsWith('idle_'),
+    );
+    if (idleJobIndex === -1) {
+      return false;
+    }
+    if (idleJobIndex !== jobs.length - 1) {
+      return true;
+    }
+    return false;
   }
 
   /**

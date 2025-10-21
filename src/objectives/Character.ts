@@ -2144,7 +2144,8 @@ export class Character {
         return false;
       case 496: // Conditions not met
         return false;
-      case 497: { // The character's inventory is full. Dump everything
+      case 497: {
+        // The character's inventory is full. Dump everything
         const mapData = await getMapsById(this.data.map_id);
         if (mapData instanceof ApiError) {
           logger.error(`Failed to get current map data`);

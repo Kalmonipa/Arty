@@ -1,4 +1,4 @@
-import { MapSchema } from "./types.js";
+import { MapSchema } from './types.js';
 
 export type MapContentSchema = {
   type: string;
