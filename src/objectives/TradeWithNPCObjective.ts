@@ -11,7 +11,6 @@ import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
-import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { Objective } from './Objective.js';
 
 /**
@@ -103,21 +102,21 @@ export class TradeObjective extends Objective {
           this.character.checkQuantityOfItemInInv(this.currency) <
           currencyNeeded
         )
-          if (Math.floor(Math.random() * 2) === 0) {
-            await this.character.executeJobNow(
-              new MonsterTaskObjective(this.character, 1),
-              true,
-              true,
-              this.objectiveId,
-            );
-          } else {
+          // if (Math.floor(Math.random() * 2) === 0) {
+          //   await this.character.executeJobNow(
+          //     new MonsterTaskObjective(this.character, 1),
+          //     true,
+          //     true,
+          //     this.objectiveId,
+          //   );
+          // } else {
             await this.character.executeJobNow(
               new ItemTaskObjective(this.character, 1),
               true,
               true,
               this.objectiveId,
             );
-          }
+          //}
       } else {
         logger.info(`Attempting to gather ${this.currency}`);
         await this.character.executeJobNow(

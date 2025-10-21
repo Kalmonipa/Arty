@@ -111,7 +111,13 @@ export class IdleObjective extends Objective {
 
       await this.topUpBank();
 
-      if ((this.role === 'weaponcrafter' && this.character.data.level < this.character.data.weaponcrafting_level) || (this.role === 'gearcrafter' && this.character.data.level < this.character.data.gearcrafting_level) ) {
+      if (
+        (this.role === 'weaponcrafter' &&
+          this.character.data.level <
+            this.character.data.weaponcrafting_level) ||
+        (this.role === 'gearcrafter' &&
+          this.character.data.level < this.character.data.gearcrafting_level)
+      ) {
         await this.doMonsterTask(5);
       } else {
         await this.doItemTask(5);

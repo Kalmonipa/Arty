@@ -176,7 +176,6 @@ export class EventObjective extends Objective {
 
         if (response instanceof ApiError) {
           return await this.character.handleErrors(response);
-          
         } else {
           // Ensure response has the expected structure before accessing nested properties
           if (response && response.data && response.data.character) {
