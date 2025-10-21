@@ -794,7 +794,9 @@ export class Character {
 
     for (const job of this.jobList) {
       if (job.objectiveId.includes('_event_')) {
-        logger.info(`Event job ${job.objectiveId} already in queue. Not checking again`)
+        logger.info(
+          `Event job ${job.objectiveId} already in queue. Not checking again`,
+        );
         return false;
       }
     }

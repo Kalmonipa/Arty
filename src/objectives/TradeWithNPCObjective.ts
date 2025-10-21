@@ -110,13 +110,13 @@ export class TradeObjective extends Objective {
           //     this.objectiveId,
           //   );
           // } else {
-            await this.character.executeJobNow(
-              new ItemTaskObjective(this.character, 1),
-              true,
-              true,
-              this.objectiveId,
-            );
-          //}
+          await this.character.executeJobNow(
+            new ItemTaskObjective(this.character, 1),
+            true,
+            true,
+            this.objectiveId,
+          );
+        //}
       } else {
         logger.info(`Attempting to gather ${this.currency}`);
         await this.character.executeJobNow(

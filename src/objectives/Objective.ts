@@ -79,7 +79,7 @@ export abstract class Objective {
     await this.character.cooldownStatus();
 
     await this.character.checkForActiveEvents();
-  
+
     return true;
   }
 
