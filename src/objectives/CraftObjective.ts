@@ -151,10 +151,7 @@ export class CraftObjective extends Objective {
 
           if (!(await this.checkStatus())) return false;
 
-          await this.character.move({
-            x: contentLocation.x,
-            y: contentLocation.y,
-          });
+          await this.character.move(contentLocation);
 
           logger.info(
             `Crafting ${this.numItemsPerBatch} ${this.target.code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,

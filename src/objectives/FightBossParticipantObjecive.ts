@@ -30,10 +30,7 @@ export class FightBossParticipantObjective extends Objective {
     const foodCodes = foodItems.map((food) => food.code);
     const itemsToKeep = [...foodCodes];
 
-    await this.character.evaluateDepositItemsInBank(itemsToKeep, {
-      x: this.character.data.x,
-      y: this.character.data.y,
-    });
+    await this.character.evaluateDepositItemsInBank(itemsToKeep);
 
     await this.character.evaluateGear('combat', this.target.code);
 
@@ -54,9 +51,9 @@ export class FightBossParticipantObjective extends Objective {
         );
 
         if (simResult === false) {
-          await this.character.trainCombatLevelNow(
-            this.character.data.level + 1,
-          );
+          // await this.character.trainCombatLevelNow(
+          //   this.character.data.level + 1,
+          // );
           return false;
         }
       }
@@ -99,7 +96,7 @@ export class FightBossParticipantObjective extends Objective {
 
       const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      await this.character.move(contentLocation);
 
       for (
         this.progress;

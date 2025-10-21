@@ -1,14 +1,8 @@
+import { MapSchema } from "./types.js";
+
 export type MapContentSchema = {
   type: string;
   content: string;
-};
-
-export type MapSchema = {
-  name: string;
-  skin: string;
-  x: number;
-  y: number;
-  content: MapContentSchema;
 };
 
 export type SimpleMapSchema = {

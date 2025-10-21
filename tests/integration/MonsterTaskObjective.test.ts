@@ -10,8 +10,7 @@ jest.mock('../../src/api_calls/Maps', () => ({
 
 // Import the mocked functions
 import { getMaps } from '../../src/api_calls/Maps.js';
-import { MapSchema } from '../../src/types/MapData.js';
-import { InventorySlot } from '../../src/types/types.js';
+import { InventorySlot, MapSchema } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {

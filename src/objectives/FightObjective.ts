@@ -32,15 +32,7 @@ export class FightObjective extends Objective {
     const foodCodes = foodItems.map((food) => food.code);
     const itemsToKeep = [...foodCodes];
 
-    await this.character.evaluateDepositItemsInBank(itemsToKeep, {
-      x: this.character.data.x,
-      y: this.character.data.y,
-    });
-
-    // Check amount of food in inventory to use after battles
-    // if (!(await this.character.checkFoodLevels())) {
-    //   await this.character.topUpFood();
-    // }
+    await this.character.evaluateDepositItemsInBank(itemsToKeep);
 
     await this.character.evaluateGear('combat', this.target.code);
 
@@ -139,7 +131,7 @@ export class FightObjective extends Objective {
 
       const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      await this.character.move(contentLocation);
 
       for (
         this.progress;

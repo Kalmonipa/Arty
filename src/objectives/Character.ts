@@ -4,12 +4,11 @@ import {
   actionRest,
 } from '../api_calls/Actions.js';
 import { actionUse, getItemInformation } from '../api_calls/Items.js';
-import { getMaps } from '../api_calls/Maps.js';
+import { getMaps, getMapsById } from '../api_calls/Maps.js';
 import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
   CharacterSchema,
   CraftSkill,
-  DestinationSchema,
   FakeCharacterSchema,
   GatheringSkill,
   ItemSchema,
@@ -51,7 +50,6 @@ import {
   GearEffects,
   ConsumableEffects,
 } from '../types/ItemData.js';
-import { SimpleMapSchema } from '../types/MapData.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
 import { EvaluateGearObjective } from './EvaluateGearObjective.js';
@@ -1290,7 +1288,7 @@ export class Character {
    * @description top up food from the bank until we have the desired amount
    * Moves back to the previous location if one is provided
    */
-  async topUpFood(priorLocation?: DestinationSchema) {
+  async topUpFood(priorLocation?: MapSchema) {
     // Find the best available food
     const bestFood = await this.findBestFood();
     if (!bestFood) {
@@ -1348,7 +1346,7 @@ export class Character {
    */
   async evaluateDepositItemsInBank(
     exceptions?: string[],
-    priorLocation?: SimpleMapSchema,
+    priorLocation?: MapSchema,
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
     const usedInventorySpace = this.getInventoryFullness();
@@ -1365,7 +1363,7 @@ export class Character {
 
       const contentLocation = this.evaluateClosestMap(maps.data);
 
-      await this.move({ x: contentLocation.x, y: contentLocation.y });
+      await this.move(contentLocation);
 
       const itemsToDeposit: SimpleItemSchema[] = [];
       for (const item of this.data.inventory) {
@@ -1641,9 +1639,20 @@ export class Character {
    * @description moves the character to the destination if they are not already there
    * @todo Take in a map_id as an alternative to x,y coords
    */
-  async move(destination: DestinationSchema) {
-    if (this.data.x === destination.x && this.data.y === destination.y) {
-      return;
+  async move(destination: MapSchema): Promise<boolean> {
+    if (
+      (this.data.x === destination.x && this.data.y === destination.y) ||
+      this.data.map_id === destination.map_id
+    ) {
+      return true;
+    }
+
+    if (
+      destination.layer != this.data.layer ||
+      destination.name === 'Sandwhisper Isle'
+    ) {
+      logger.info(`Moving to ${destination.map_id} requires transitioning`);
+      return false;
     }
 
     logger.info(`Moving to x: ${destination.x}, y: ${destination.y}`);
@@ -1654,12 +1663,14 @@ export class Character {
     });
 
     if (moveResponse instanceof ApiError) {
-      this.handleErrors(moveResponse);
+      return this.handleErrors(moveResponse);
     } else {
       if (moveResponse.data.character) {
         this.data = moveResponse.data.character;
+        return true;
       } else {
         logger.error('Move response missing character data');
+        return false;
       }
     }
   }
@@ -2133,13 +2144,19 @@ export class Character {
         return false;
       case 496: // Conditions not met
         return false;
-      case 497: // The character's inventory is full. Dump everything
+      case 497: { // The character's inventory is full. Dump everything
+        const mapData = await getMapsById(this.data.map_id);
+        if (mapData instanceof ApiError) {
+          logger.error(`Failed to get current map data`);
+          return false;
+        }
         await this.evaluateDepositItemsInBank(
           this.itemsToKeep,
-          { x: this.data.x, y: this.data.y },
+          mapData.data,
           true,
         );
         return true;
+      }
       case 499:
         await sleep(this.data.cooldown, 'cooldown');
         return true;

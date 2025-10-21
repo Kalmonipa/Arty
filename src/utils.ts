@@ -1,6 +1,7 @@
 import winston from 'winston';
 import {
   DataPageItemSchema,
+  DestinationSchema,
   GatheringSkill,
   ItemSchema,
   ItemType,
@@ -21,6 +22,15 @@ export const CharRole = getEnv('ROLE').toLowerCase() as Role;
 export const MAX_COMBAT_LEVEL = 50;
 export const MAX_SKILL_LEVEL = 50;
 export const CRITICAL_MODIFIER = 0.5;
+
+/**
+ * Array of all the transition maps
+ * 571: mountain_6; to Mithril/Bat cave
+ * @todo Find a way to get this programmatically
+ */
+export const TransitionLocations: DestinationSchema[] = [
+  { x: -2, y: 6, map_id: 571 },
+];
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 

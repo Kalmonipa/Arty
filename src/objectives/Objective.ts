@@ -213,7 +213,7 @@ export abstract class Objective {
 
     const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+    await this.character.move(contentLocation);
   }
 
   /**
@@ -264,7 +264,7 @@ export abstract class Objective {
 
     const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+    await this.character.move(contentLocation);
 
     const response = await actionCompleteTask(this.character.data);
 

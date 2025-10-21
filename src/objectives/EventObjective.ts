@@ -4,7 +4,6 @@ import { ApiError } from './Error.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
 import { ActiveEventSchema } from '../types/types.js';
-import { SimpleMapSchema } from '../types/MapData.js';
 import { actionGather } from '../api_calls/Actions.js';
 
 /**
@@ -149,16 +148,11 @@ export class EventObjective extends Objective {
       return;
     }
 
-    const resourceLocation: SimpleMapSchema = {
-      x: event.map.x,
-      y: event.map.y,
-    };
-
     const expirationTime = new Date(event.expiration).getTime();
     while (Date.now() < expirationTime) {
       await this.character.evaluateGear(resourceInfoResponse.data.skill);
 
-      await this.character.move(resourceLocation);
+      await this.character.move(event.map);
 
       //const numToGather = this.character.data.inventory_max_items * 0.9;
       const numToGather = 10;
@@ -169,7 +163,7 @@ export class EventObjective extends Objective {
         if (this.progress % 5 === 0) {
           logger.info(`Gathered ${this.progress}/${numToGather} ${event.code}`);
           // Check inventory space to make sure we are less than 90% full
-          await this.character.evaluateDepositItemsInBank([], resourceLocation);
+          await this.character.evaluateDepositItemsInBank([], event.map);
         }
 
         const response = await actionGather(this.character.data);

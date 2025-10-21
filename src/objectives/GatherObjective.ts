@@ -8,13 +8,13 @@ import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
   DataPageMonsterSchema,
   ItemSchema,
+  MapSchema,
   SimpleItemSchema,
 } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { SimpleMapSchema } from '../types/MapData.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -164,10 +164,7 @@ export class GatherObjective extends Objective {
           ? [code]
           : [];
 
-      await this.character.evaluateDepositItemsInBank(exceptions, {
-        x: this.character.data.x,
-        y: this.character.data.y,
-      });
+      await this.character.evaluateDepositItemsInBank(exceptions);
 
       if (resourceDetails.subtype === 'mob') {
         if (
@@ -219,7 +216,7 @@ export class GatherObjective extends Objective {
 
   async gatherItemLoop(
     target: SimpleItemSchema,
-    location: SimpleMapSchema,
+    location: MapSchema,
     exceptions?: string[],
   ): Promise<boolean> {
     const maxAttempts = target.quantity * 2;
@@ -355,14 +352,11 @@ export class GatherObjective extends Objective {
     }
 
     const contentLocation = this.character.evaluateClosestMap(maps.data);
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+    await this.character.move(contentLocation);
 
     const success = await this.gatherItemLoop(
       { code: code, quantity: quantity },
-      {
-        x: contentLocation.x,
-        y: contentLocation.y,
-      },
+      contentLocation,
       exceptions,
     );
 

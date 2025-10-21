@@ -175,6 +175,6 @@ export class TradeObjective extends Objective {
 
     const traderLocation = this.character.evaluateClosestMap(maps.data);
 
-    await this.character.move({ x: traderLocation.x, y: traderLocation.y });
+    await this.character.move(traderLocation);
   }
 }

@@ -92,7 +92,7 @@ export class MonsterTaskObjective extends Objective {
 
     const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-    await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+    await this.character.move(contentLocation);
 
     const result = await this.character.fightNow(
       this.character.data.task_total - this.character.data.task_progress,
