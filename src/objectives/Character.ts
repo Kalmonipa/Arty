@@ -792,6 +792,13 @@ export class Character {
       return false;
     }
 
+    for (const job of this.jobList) {
+      if (job.objectiveId.includes('_event_')) {
+        logger.info(`Event job ${job.objectiveId} already in queue. Not checking again`)
+        return false;
+      }
+    }
+
     for (const event of activeEventsResponse.data) {
       if (this.applicableResourceEvents.includes(event.code)) {
         const job = new EventObjective(this, event);

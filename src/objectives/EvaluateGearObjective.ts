@@ -220,7 +220,6 @@ export class EvaluateGearObjective extends Objective {
       return false;
     } else if (mobInfo.effects[0].code === 'poison') {
       logger.info(`${mobInfo.name} has the ${mobInfo.effects[0].code} effect`)
-      logger.info(`Current util2 quantity: ${this.character.data.utility2_slot_quantity}; Quantity needed: ${this.character.minEquippedUtilities}`)
       if (
         !this.character.data.utility2_slot_quantity || 
         (this.character.data.utility2_slot_quantity &&

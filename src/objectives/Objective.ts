@@ -78,14 +78,8 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    if (
-      this.parentId &&
-      !this.parentId.includes('_event_') &&
-      !this.objectiveId.includes('_event_')
-    ) {
-      await this.character.checkForActiveEvents();
-    }
-
+    await this.character.checkForActiveEvents();
+  
     return true;
   }
 
@@ -170,7 +164,7 @@ export abstract class Objective {
     }
 
     while (this.status === 'paused') {
-      await sleep(10, 'paused job', true);
+      await sleep(10, 'paused job', false);
     }
 
     return true;
