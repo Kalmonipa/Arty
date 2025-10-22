@@ -47,7 +47,7 @@ export class GatherObjective extends Objective {
   async run(): Promise<boolean> {
     if (!(await this.checkStatus())) return false;
 
-    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+    let numInInv = 0;
     let numInBank = 0;
 
     if (this.target.code === 'wooden_stick') {
@@ -55,6 +55,9 @@ export class GatherObjective extends Objective {
       return false;
     }
 
+    if (this.includeInventory) {
+      numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+    }
     // Sometimes we want to collect a bunch of the resource so we should skip checking the bank
     // Other times we want to gather stuff to then craft so taking from the bank is OK
     if (this.checkBank) {
@@ -75,7 +78,7 @@ export class GatherObjective extends Objective {
         return true;
       } else {
         // Need to withdraw from bank
-        const needToWithdraw = this.target.quantity - numInInv;
+        const needToWithdraw = Math.max(this.target.quantity - numInInv, 0);
         logger.info(
           `Found ${numInBank} ${this.target.code} in the bank. Withdrawing ${needToWithdraw}`,
         );
