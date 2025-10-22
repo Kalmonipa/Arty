@@ -68,7 +68,7 @@ export class GatherObjective extends Objective {
 
     // If we already have enough, we're done
     if (totalAvailable >= this.target.quantity) {
-      if (numInInv >= this.target.quantity) {
+      if (this.includeInventory && numInInv >= this.target.quantity) {
         logger.info(
           `${numInInv} ${this.target.code} in inventory already. No need to collect more`,
         );
