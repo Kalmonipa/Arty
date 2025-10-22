@@ -1,10 +1,10 @@
 import winston from 'winston';
 import {
   DataPageItemSchema,
-  DestinationSchema,
   GatheringSkill,
   ItemSchema,
   ItemType,
+  MapSchema,
 } from './types/types.js';
 import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './objectives/Error.js';
@@ -28,8 +28,29 @@ export const CRITICAL_MODIFIER = 0.5;
  * 571: mountain_6; to Mithril/Bat cave
  * @todo Find a way to get this programmatically
  */
-export const TransitionLocations: DestinationSchema[] = [
-  { x: -2, y: 6, map_id: 571 },
+export const TransitionLocations: MapSchema[] = [
+  {
+    map_id: 571,
+    name: "Mountain",
+    skin: "mountain_6",
+    x: -2,
+    y: 6,
+    layer: "overworld",
+    access: {
+      type: "standard",
+      conditions: []
+    },
+    interactions: {
+      content: null,
+      transition: {
+        map_id: 572,
+        x: -2,
+        y: 6,
+        layer: "underground",
+        conditions: []
+      }
+    }
+  }
 ];
 
 const logLevel = process.env.LOG_LEVEL || 'info';

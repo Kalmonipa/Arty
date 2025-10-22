@@ -23,6 +23,7 @@ import {
   CharRole,
   logger,
   sleep,
+  TransitionLocations,
 } from '../utils.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -1673,6 +1674,31 @@ export class Character {
         return false;
       }
     }
+  }
+
+  /**
+   * @description Transitioning function to find the transition point that gets to where we want to go
+   */
+  private findTransitionPoint(destination: MapSchema): MapSchema {
+    let closestDistance = 1000000;
+    let closestMap: MapSchema;
+
+    TransitionLocations.forEach((transitionMap) => {
+      const dist =
+        Math.abs(destination.x - transitionMap.x) + Math.abs(destination.y - transitionMap.y);
+      if (dist < closestDistance) {
+        closestDistance = dist;
+        closestMap = transitionMap;
+      }
+    });
+
+    if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
+      logger.info(
+        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+      );
+    }
+
+    return closestMap;
   }
 
   /**
