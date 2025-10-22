@@ -25,10 +25,10 @@ export class ItemTaskObjective extends Objective {
   async run(): Promise<boolean> {
     let result = false;
 
-    for (let count = 0; count < this.quantity; count++) {
+    while (this.progress < this.quantity) {
       if (!(await this.checkStatus())) return false;
 
-      logger.info(`Completed ${count}/${this.quantity} tasks`);
+      logger.info(`Completed ${this.progress}/${this.quantity} tasks`);
       result = await this.doTask();
 
       this.progress++;
