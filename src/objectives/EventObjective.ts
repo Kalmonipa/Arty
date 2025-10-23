@@ -237,7 +237,7 @@ export class EventObjective extends Objective {
         }
       }
 
-      const response = await actionFight(this.character.data, []);
+      const response = await actionFight(this.character.data);
 
       if (response instanceof ApiError) {
         return await this.character.handleErrors(response);
