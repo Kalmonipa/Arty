@@ -456,15 +456,18 @@ export async function actionTransition(
 
     const result: CharacterTransitionResponseSchema = await response.json();
 
+    // Validate the response structure
+    if (!result || !result.data) {
+      logger.error('Invalid transition response structure:', result);
+      throw new ApiError({
+        code: 500,
+        message: 'Invalid transition response from server',
+      });
+    }
+
     logger.info(
       `Successfully transitioned to ${result.data.destination.name} (id: ${result.data.destination.map_id}, x: ${result.data.destination.x}, y: ${result.data.destination.y})`,
     );
-
-    if (result.data.transition.conditions) {
-      logger.info(
-        `Transition ${result.data.transition.conditions[0].operator} ${result.data.transition.conditions[0].value} ${result.data.transition.conditions[0].code}`,
-      );
-    }
 
     await sleep(
       result.data.cooldown.remaining_seconds,
