@@ -254,6 +254,7 @@ export class EvaluateGearObjective extends Objective {
       weapons,
       targetEffect,
       charLevel,
+      'weapon'
     );
     if (bestWeapon === undefined) {
       logger.warn(`Found no good weapon for ${targetEffect}`);
@@ -391,7 +392,7 @@ export class EvaluateGearObjective extends Objective {
         return false;
     }
 
-    const bestGear = await this.identifyBestGear(map, targetEffect, charLevel);
+    const bestGear = await this.identifyBestGear(map, targetEffect, charLevel, gearType);
     if (bestGear === undefined) {
       logger.debug(`Found no good ${gearType} gear for ${targetEffect}`);
       return false;
@@ -429,6 +430,7 @@ export class EvaluateGearObjective extends Objective {
     map: ItemSchema[],
     targetEffect: GearEffects,
     charLevel: number,
+    gearSlot: ItemSlot
   ): Promise<ItemSchema> {
     let bestGear: ItemSchema;
 
@@ -442,6 +444,11 @@ export class EvaluateGearObjective extends Objective {
           map[ind].effects &&
           map[ind].effects.find((effect) => effect.code === targetEffect)
         ) {
+          if (this.character.getCharacterGearIn(gearSlot) === map[ind].code) {
+            logger.info(`${bestGear.code} already equipped`);
+            return map[ind];
+          }
+
           // Check inventory
           let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
           if (numHeld === 0) {

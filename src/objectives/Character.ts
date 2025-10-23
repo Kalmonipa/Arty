@@ -922,6 +922,7 @@ export class Character {
    * @returns the amount found in the bank
    */
   async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
+    let numFound = 0;
     const bankItem = await getBankItems(contentCode);
     if (bankItem instanceof ApiError) {
       await this.handleErrors(bankItem);
@@ -929,16 +930,18 @@ export class Character {
     }
 
     if (bankItem.total === 0) {
-      return 0;
+      numFound = 0;
     } else if (bankItem.total === 1) {
-      return bankItem.data[0].quantity;
+      numFound = bankItem.data[0].quantity;
     } else {
       let total = 0;
       for (const item of bankItem.data) {
         total += item.quantity;
       }
-      return total;
+      numFound = total;
     }
+    logger.debug(`Found ${numFound} ${contentCode} in inventory`);
+    return numFound;
   }
 
   async getAllBankItems(): Promise<SimpleItemSchema[]> {
