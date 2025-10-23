@@ -142,7 +142,7 @@ export class CraftObjective extends Objective {
               );
               if (!gathered) {
                 logger.warn(
-                  `Reathering ingredients for ${targetItem.code} has failed`,
+                  `Regathering ingredients for ${targetItem.code} has failed`,
                 );
                 break;
               }
@@ -343,7 +343,6 @@ export class CraftObjective extends Objective {
           logger.info(
             `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
           );
-          return false;
         }
       }
     }

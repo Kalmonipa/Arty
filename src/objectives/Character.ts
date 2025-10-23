@@ -146,7 +146,7 @@ export class Character {
   applicableResourceEvents = [
     'magic_apparition',
     'strange_apparition',
-    //'bandit_camp',
+    'bandit_camp',
   ];
 
   constructor(data: CharacterSchema) {
