@@ -4,7 +4,7 @@ import { ApiError } from './Error.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
 import { ActiveEventSchema } from '../types/types.js';
-import { actionGather } from '../api_calls/Actions.js';
+import { actionFight, actionGather } from '../api_calls/Actions.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -121,23 +121,29 @@ export class EventObjective extends Objective {
        */
 
   async run() {
-    return await this.gatherResources(this.activeEvent);
+    switch (this.activeEvent.code) {
+      case 'magic_apparition':
+      case 'strange_apparition':
+        return await this.gatherResources(this.activeEvent);
+      case 'bandit_camp':
+        return await this.fightMobs(this.activeEvent);
+      default:
+        logger.info(`Event ${this.activeEvent.code} not configured yet.`);
+        return false;
+    }
   }
 
   /**
    * @description Function to respond to resource events
    */
-  private async gatherResources(event: ActiveEventSchema) {
+  private async gatherResources(event: ActiveEventSchema): Promise<boolean> {
     const resourceInfoResponse = await getResourceInformation(
       event.map.interactions.content.code,
     );
     if (resourceInfoResponse instanceof ApiError) {
-      if (this.character.handleErrors(resourceInfoResponse)) {
-        return;
-      } else {
-        return false;
-      }
+      return this.character.handleErrors(resourceInfoResponse);
     }
+
     const charSkillLevel = this.character.getCharacterLevel(
       resourceInfoResponse.data.skill,
     );
@@ -189,5 +195,66 @@ export class EventObjective extends Objective {
         await this.character.saveJobQueue();
       }
     }
+  }
+
+  /**
+   * @description Fight the event mob
+   */
+  private async fightMobs(event: ActiveEventSchema): Promise<boolean> {
+    if (!event.map.interactions.content) {
+      logger.warn(`Event ${event.code} has no interactions content`);
+      return false;
+    }
+
+    await this.character.evaluateGear(
+      'combat',
+      event.map.interactions.content.code,
+    );
+
+    const expirationTime = new Date(event.expiration).getTime();
+    while (Date.now() < expirationTime) {
+      const moveResult = await this.character.move(event.map);
+      if (!moveResult) {
+        logger.warn(`Move to ${event.code} failed`);
+        return false;
+      }
+
+      // Check amount of food in inventory to use after battles
+      if (!(await this.character.checkFoodLevels())) {
+        await this.character.topUpFood(event.map);
+      }
+
+      await this.character.recoverHealth();
+
+      // Check these after each fight in case we need to top up
+      if (
+        this.character.data.utility1_slot_quantity <=
+        this.character.minEquippedUtilities
+      ) {
+        if (await this.character.equipUtility('restore', 'utility1')) {
+          // If we moved to the bank we need to move back to the monster location
+          await this.character.move(event.map);
+        }
+      }
+
+      const response = await actionFight(this.character.data, []);
+
+      if (response instanceof ApiError) {
+        return await this.character.handleErrors(response);
+      } else {
+        if (response.data.characters) {
+          const charData = response.data.characters.find(
+            (char) => char.name === this.character.data.name,
+          );
+
+          this.character.data = charData;
+        } else {
+          logger.error('Fight response missing character data');
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 }

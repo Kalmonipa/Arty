@@ -95,7 +95,9 @@ export class TradeObjective extends Objective {
       const numInBank = await this.character.checkQuantityOfItemInBank(
         this.currency,
       );
-      logger.info(`Found ${numInBank} ${this.currency} in the bank to trade with`)
+      logger.info(
+        `Found ${numInBank} ${this.currency} in the bank to trade with`,
+      );
       if (numInBank >= currencyNeeded) {
         await this.character.withdrawNow(currencyNeeded, this.currency);
       } else if (this.currency === 'tasks_coin') {

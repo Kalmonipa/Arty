@@ -141,7 +141,11 @@ export class Character {
   /**
    * Events that we would like to participate in
    */
-  applicableResourceEvents = ['magic_apparition', 'strange_apparition'];
+  applicableResourceEvents = [
+    'magic_apparition',
+    'strange_apparition',
+    'bandit_camp',
+  ];
 
   constructor(data: CharacterSchema) {
     this.data = data;
@@ -791,6 +795,7 @@ export class Character {
       return false;
     }
 
+    // Avoids creating an infinite loop
     for (const job of this.jobList) {
       if (job.objectiveId.includes('_event_')) {
         logger.info(
@@ -1649,16 +1654,17 @@ export class Character {
     }
 
     if (destination.name === 'Sandwhisper Isle') {
-      logger.warn(`Movement to ${destination.name} is not enabled yet`)
+      logger.warn(`Movement to ${destination.name} is not enabled yet`);
       return false;
     }
 
-    if (
-      destination.layer != this.data.layer
-    ) {
-      logger.info(`Moving to ${destination.map_id} requires transitioning to ${destination.layer}`);
-      const transitionMap = await this.findUndergroundTransitionPoint(destination)
-      logger.info(`Moving to ${transitionMap.map_id}`)
+    if (destination.layer != this.data.layer) {
+      logger.info(
+        `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
+      );
+      const transitionMap =
+        await this.findUndergroundTransitionPoint(destination);
+      logger.info(`Moving to ${transitionMap.map_id}`);
     }
 
     logger.info(`Moving to x: ${destination.x}, y: ${destination.y}`);
@@ -1690,7 +1696,8 @@ export class Character {
 
     TransitionLocations.forEach((transitionMap) => {
       const dist =
-        Math.abs(destination.x - transitionMap.x) + Math.abs(destination.y - transitionMap.y);
+        Math.abs(destination.x - transitionMap.x) +
+        Math.abs(destination.y - transitionMap.y);
       if (dist < closestDistance) {
         closestDistance = dist;
         closestMap = transitionMap;
