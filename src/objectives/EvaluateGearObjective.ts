@@ -403,11 +403,6 @@ export class EvaluateGearObjective extends Objective {
       return false;
     }
 
-    if (this.character.getCharacterGearIn(gearType) === bestGear.code) {
-      logger.info(`${bestGear.code} already equipped`);
-      return true;
-    }
-
     logger.debug(`Attempting to equip ${bestGear.name} for ${targetEffect}`);
     if (this.character.checkQuantityOfItemInInv(bestGear.code) > 0) {
       return await this.character.equipNow(bestGear.code, gearType);
