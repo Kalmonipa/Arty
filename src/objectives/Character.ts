@@ -1690,8 +1690,11 @@ export class Character {
       if (transitionResponse instanceof ApiError) {
         return this.handleErrors(transitionResponse);
       } else {
-        if (transitionResponse.data.character) {
+        logger.debug(`Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`);
+        if (transitionResponse && transitionResponse.data && transitionResponse.data.character) {
           this.data = transitionResponse.data.character;
+        } else {
+          logger.warn('Transition response missing character data, response structure:', transitionResponse);
         }
       }
     } else if (
@@ -1711,8 +1714,11 @@ export class Character {
       if (transitionResponse instanceof ApiError) {
         return this.handleErrors(transitionResponse);
       } else {
-        if (transitionResponse.data.character) {
+        logger.debug(`Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`);
+        if (transitionResponse && transitionResponse.data && transitionResponse.data.character) {
           this.data = transitionResponse.data.character;
+        } else {
+          logger.warn('Transition response missing character data, response structure:', transitionResponse);
         }
       }
     }
