@@ -5,6 +5,7 @@ import {
   CharacterMovementResponseSchema,
   CharacterRestResponseSchema,
   CharacterSchema,
+  CharacterTransitionResponseSchema,
   CombatSimulationResponseSchema,
   CraftingSchema,
   DestinationSchema,
@@ -387,6 +388,83 @@ export async function actionRest(
     }
 
     const result: CharacterRestResponseSchema = await response.json();
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
+    return result;
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+/**
+ * @description transition from one layer to another
+ */
+export async function actionTransition(
+  character: CharacterSchema,
+): Promise<CharacterTransitionResponseSchema | ApiError> {
+  const requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/transition`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 404:
+          message = 'Map not found.';
+          break;
+        case 422:
+          message = 'Request could not be processed due to an invalid payload.';
+          break;
+        case 478:
+          message = 'Missing item or insufficient quantity.';
+          break;
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 492:
+          message = 'Insufficient gold for this transition.';
+          break;
+        case 496:
+          message = 'Conditions not met.';
+          break;
+        case 498:
+          message = 'Character not found.';
+          break;
+        case 499:
+          message = 'The character is in cooldown.';
+          break;
+        default:
+          message = 'Unknown error from /action/transition';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: CharacterTransitionResponseSchema = await response.json();
+
+    logger.info(
+      `Successfully transitioned to ${result.data.destination.name} (id: ${result.data.destination.map_id}, x: ${result.data.destination.x}, y: ${result.data.destination.y})`,
+    );
+
+    if (result.data.transition.conditions) {
+      logger.info(
+        `Transition ${result.data.transition.conditions[0].operator} ${result.data.transition.conditions[0].value} ${result.data.transition.conditions[0].code}`,
+      );
+    }
 
     await sleep(
       result.data.cooldown.remaining_seconds,

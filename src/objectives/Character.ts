@@ -2,6 +2,7 @@ import {
   actionDepositItems,
   actionMove,
   actionRest,
+  actionTransition,
 } from '../api_calls/Actions.js';
 import { actionUse, getItemInformation } from '../api_calls/Items.js';
 import { getMaps, getMapsById } from '../api_calls/Maps.js';
@@ -1672,16 +1673,53 @@ export class Character {
       return false;
     }
 
-    if (destination.layer != this.data.layer) {
+    if (
+      destination.layer === 'underground' &&
+      this.data.layer === 'overworld'
+    ) {
       logger.info(
         `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
       );
-      const transitionMap =
-        await this.findUndergroundTransitionPoint(destination);
-      logger.info(`Moving to ${transitionMap.map_id}`);
+      const transitionMapLocation =
+        this.findOverworldToUndergroundTransitionPoint(destination);
+
+      logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
+
+      await this.move(transitionMapLocation);
+      const transitionResponse = await actionTransition(this.data);
+      if (transitionResponse instanceof ApiError) {
+        return this.handleErrors(transitionResponse);
+      } else {
+        if (transitionResponse.data.character) {
+          this.data = transitionResponse.data.character;
+        }
+      }
+    } else if (
+      destination.layer === 'overworld' &&
+      this.data.layer === 'underground'
+    ) {
+      logger.info(
+        `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
+      );
+      
+      const transitionMapLocation = this.findUndergroundToOverworldTransitionPoint();
+
+      logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
+
+      await this.move(transitionMapLocation);
+      const transitionResponse = await actionTransition(this.data);
+      if (transitionResponse instanceof ApiError) {
+        return this.handleErrors(transitionResponse);
+      } else {
+        if (transitionResponse.data.character) {
+          this.data = transitionResponse.data.character;
+        }
+      }
     }
 
-    logger.info(`Moving to x: ${destination.x}, y: ${destination.y}`);
+    logger.info(
+      `Moving to ${destination.name} (id: ${destination.map_id}, x: ${destination.x}, y: ${destination.y})`,
+    );
 
     const moveResponse = await actionMove(this.data, {
       x: destination.x,
@@ -1704,7 +1742,9 @@ export class Character {
   /**
    * @description Transitioning function to find the transition point that gets to where we want to go
    */
-  private findUndergroundTransitionPoint(destination: MapSchema): MapSchema {
+  private findOverworldToUndergroundTransitionPoint(
+    destination: MapSchema,
+  ): MapSchema {
     let closestDistance = 1000000;
     let closestMap: MapSchema;
 
@@ -1712,6 +1752,32 @@ export class Character {
       const dist =
         Math.abs(destination.x - transitionMap.x) +
         Math.abs(destination.y - transitionMap.y);
+      if (dist < closestDistance) {
+        closestDistance = dist;
+        closestMap = transitionMap;
+      }
+    });
+
+    if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
+      logger.info(
+        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+      );
+    }
+
+    return closestMap;
+  }
+
+  /**
+   * @description Transitioning function to find the transition point that gets to where we want to go
+   */
+  private findUndergroundToOverworldTransitionPoint(): MapSchema {
+    let closestDistance = 1000000;
+    let closestMap: MapSchema;
+
+    TransitionLocations.forEach((transitionMap) => {
+      const dist =
+        Math.abs(this.data.x - transitionMap.x) +
+        Math.abs(this.data.y - transitionMap.y);
       if (dist < closestDistance) {
         closestDistance = dist;
         closestMap = transitionMap;
