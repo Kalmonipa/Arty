@@ -51,6 +51,28 @@ export const TransitionLocations: MapSchema[] = [
       },
     },
   },
+  {
+    map_id: 572,
+    name: "Underground",
+    skin: "mine_1",
+    x: -2,
+    y: 6,
+    layer: "underground",
+    access: {
+      type: "standard",
+      conditions: []
+    },
+    interactions: {
+      content: null,
+      transition: {
+        map_id: 571,
+        x: -2,
+        y: 6,
+        layer: "overworld",
+        conditions: []
+      }
+    }
+  }
 ];
 
 const logLevel = process.env.LOG_LEVEL || 'info';

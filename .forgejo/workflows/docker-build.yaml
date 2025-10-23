@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Run tests
         run: |
-          npm ci
+          npm ci --no-audit --no-fund
           npm run build
           npm run test
       - name: Verify Docker connection

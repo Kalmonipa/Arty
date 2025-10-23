@@ -1749,6 +1749,9 @@ export class Character {
     let closestMap: MapSchema;
 
     TransitionLocations.forEach((transitionMap) => {
+      if (transitionMap.layer !== this.data.layer) {
+        return;
+      }
       const dist =
         Math.abs(destination.x - transitionMap.x) +
         Math.abs(destination.y - transitionMap.y);
@@ -1775,6 +1778,9 @@ export class Character {
     let closestMap: MapSchema;
 
     TransitionLocations.forEach((transitionMap) => {
+      if (transitionMap.layer !== this.data.layer) {
+        return;
+      }
       const dist =
         Math.abs(this.data.x - transitionMap.x) +
         Math.abs(this.data.y - transitionMap.y);
