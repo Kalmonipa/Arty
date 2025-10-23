@@ -222,16 +222,11 @@ export class GatherObjective extends Objective {
     location: MapSchema,
     exceptions?: string[],
   ): Promise<boolean> {
-    const maxAttempts = target.quantity * 2;
-    let attempts = 0;
-
     // Loop that does the gather requests
-    while (this.progress < target.quantity && attempts < maxAttempts) {
-      attempts++;
-
-      if (this.progress % 5 === 0 || attempts % 10 === 0) {
+    while (this.progress < target.quantity) {
+      if (this.progress % 5 === 0) {
         logger.info(
-          `Gathered ${this.progress}/${target.quantity} ${target.code} (attempt ${attempts})`,
+          `Gathered ${this.progress}/${target.quantity} ${target.code}`,
         );
         // Check inventory space to make sure we are less than 90% full
         await this.character.evaluateDepositItemsInBank(exceptions, location);
@@ -265,13 +260,6 @@ export class GatherObjective extends Objective {
       if (!(await this.checkStatus())) return false;
 
       await this.character.saveJobQueue();
-    }
-
-    if (attempts >= maxAttempts) {
-      logger.warn(
-        `Gathering loop exceeded maximum attempts (${maxAttempts}) for ${target.code}`,
-      );
-      return false;
     }
 
     return true;

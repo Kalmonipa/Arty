@@ -1528,7 +1528,10 @@ export class Character {
       [];
 
     for (const invItem of this.data.inventory) {
-      // Check if this item has heal effects
+      // Excluding apples so that we can use them for apple pie
+      if (invItem.code === 'apple') {
+        continue;
+      }
       const itemInfo = this.consumablesMap.heal.find(
         (item) => item.code === invItem.code,
       );
@@ -1690,11 +1693,20 @@ export class Character {
       if (transitionResponse instanceof ApiError) {
         return this.handleErrors(transitionResponse);
       } else {
-        logger.debug(`Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`);
-        if (transitionResponse && transitionResponse.data && transitionResponse.data.character) {
+        logger.debug(
+          `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
+        );
+        if (
+          transitionResponse &&
+          transitionResponse.data &&
+          transitionResponse.data.character
+        ) {
           this.data = transitionResponse.data.character;
         } else {
-          logger.warn('Transition response missing character data, response structure:', transitionResponse);
+          logger.warn(
+            'Transition response missing character data, response structure:',
+            transitionResponse,
+          );
         }
       }
     } else if (
@@ -1704,8 +1716,9 @@ export class Character {
       logger.info(
         `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
       );
-      
-      const transitionMapLocation = this.findUndergroundToOverworldTransitionPoint();
+
+      const transitionMapLocation =
+        this.findUndergroundToOverworldTransitionPoint();
 
       logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
 
@@ -1714,11 +1727,20 @@ export class Character {
       if (transitionResponse instanceof ApiError) {
         return this.handleErrors(transitionResponse);
       } else {
-        logger.debug(`Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`);
-        if (transitionResponse && transitionResponse.data && transitionResponse.data.character) {
+        logger.debug(
+          `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
+        );
+        if (
+          transitionResponse &&
+          transitionResponse.data &&
+          transitionResponse.data.character
+        ) {
           this.data = transitionResponse.data.character;
         } else {
-          logger.warn('Transition response missing character data, response structure:', transitionResponse);
+          logger.warn(
+            'Transition response missing character data, response structure:',
+            transitionResponse,
+          );
         }
       }
     }

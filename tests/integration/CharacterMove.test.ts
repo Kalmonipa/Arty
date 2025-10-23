@@ -25,7 +25,9 @@ jest.mock('../../src/api_calls/Maps.js', () => ({
 import { actionMove, actionTransition } from '../../src/api_calls/Actions.js';
 
 const mockActionMove = actionMove as jest.MockedFunction<typeof actionMove>;
-const mockActionTransition = actionTransition as jest.MockedFunction<typeof actionTransition>;
+const mockActionTransition = actionTransition as jest.MockedFunction<
+  typeof actionTransition
+>;
 
 describe('Character.move()', () => {
   let character: Character;
@@ -34,7 +36,7 @@ describe('Character.move()', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Create a fresh character instance for each test
     mockCharacter = { ...mockCharacterData };
     character = new Character(mockCharacter);
@@ -64,7 +66,11 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: destination,
-          path: [[0, 0], [5, 5], [10, 15]],
+          path: [
+            [0, 0],
+            [5, 5],
+            [10, 15],
+          ],
           character: { ...mockCharacter, x: 10, y: 15, map_id: 100 },
         },
       };
@@ -113,8 +119,18 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: destination,
-          path: [[0, 0], [10, 10], [20, 25]],
-          character: { ...mockCharacter, x: 20, y: 25, map_id: 200, layer: 'underground' },
+          path: [
+            [0, 0],
+            [10, 10],
+            [20, 25],
+          ],
+          character: {
+            ...mockCharacter,
+            x: 20,
+            y: 25,
+            map_id: 200,
+            layer: 'underground',
+          },
         },
       };
 
@@ -199,7 +215,10 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: transitionLocation,
-          path: [[0, 0], [-2, 6]],
+          path: [
+            [0, 0],
+            [-2, 6],
+          ],
           character: { ...mockCharacter, x: -2, y: 6, map_id: 571 },
         },
       };
@@ -230,7 +249,13 @@ describe('Character.move()', () => {
             layer: 'underground',
             conditions: [],
           },
-          character: { ...mockCharacter, x: -2, y: 6, map_id: 572, layer: 'underground' },
+          character: {
+            ...mockCharacter,
+            x: -2,
+            y: 6,
+            map_id: 572,
+            layer: 'underground',
+          },
         },
       };
 
@@ -244,8 +269,18 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: destination,
-          path: [[-2, 6], [15, 20], [30, 35]],
-          character: { ...mockCharacter, x: 30, y: 35, map_id: 300, layer: 'underground' },
+          path: [
+            [-2, 6],
+            [15, 20],
+            [30, 35],
+          ],
+          character: {
+            ...mockCharacter,
+            x: 30,
+            y: 35,
+            map_id: 300,
+            layer: 'underground',
+          },
         },
       };
 
@@ -261,20 +296,28 @@ describe('Character.move()', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockActionMove).toHaveBeenCalledTimes(2);
-      expect(mockActionMove).toHaveBeenNthCalledWith(1, expect.objectContaining({
-        x: 0,
-        y: 0,
-        layer: 'overworld',
-      }), {
-        x: transitionLocation.x,
-        y: transitionLocation.y,
-      });
-      expect(mockActionMove).toHaveBeenNthCalledWith(2, expect.objectContaining({
-        layer: 'underground',
-      }), {
-        x: destination.x,
-        y: destination.y,
-      });
+      expect(mockActionMove).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          x: 0,
+          y: 0,
+          layer: 'overworld',
+        }),
+        {
+          x: transitionLocation.x,
+          y: transitionLocation.y,
+        },
+      );
+      expect(mockActionMove).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          layer: 'underground',
+        }),
+        {
+          x: destination.x,
+          y: destination.y,
+        },
+      );
       expect(mockActionTransition).toHaveBeenCalledTimes(1);
       expect(character.data.layer).toBe('underground');
       expect(character.data.x).toBe(30);
@@ -314,7 +357,10 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: TransitionLocations[0],
-          path: [[0, 0], [-2, 6]],
+          path: [
+            [0, 0],
+            [-2, 6],
+          ],
           character: { ...mockCharacter, x: -2, y: 6, map_id: 571 },
         },
       };
@@ -345,7 +391,13 @@ describe('Character.move()', () => {
             layer: 'underground',
             conditions: [],
           },
-          character: { ...mockCharacter, x: -2, y: 6, map_id: 572, layer: 'underground' },
+          character: {
+            ...mockCharacter,
+            x: -2,
+            y: 6,
+            map_id: 572,
+            layer: 'underground',
+          },
         },
       };
 
@@ -359,8 +411,18 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: destination,
-          path: [[-2, 6], [50, 50], [100, 100]],
-          character: { ...mockCharacter, x: 100, y: 100, map_id: 500, layer: 'underground' },
+          path: [
+            [-2, 6],
+            [50, 50],
+            [100, 100],
+          ],
+          character: {
+            ...mockCharacter,
+            x: 100,
+            y: 100,
+            map_id: 500,
+            layer: 'underground',
+          },
         },
       };
 
@@ -375,14 +437,18 @@ describe('Character.move()', () => {
       // Assert
       expect(result).toBe(true);
       // Should move to the transition point first (Mountain at -2, 6)
-      expect(mockActionMove).toHaveBeenNthCalledWith(1, expect.objectContaining({
-        x: 0,
-        y: 0,
-        layer: 'overworld',
-      }), {
-        x: -2,
-        y: 6,
-      });
+      expect(mockActionMove).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          x: 0,
+          y: 0,
+          layer: 'overworld',
+        }),
+        {
+          x: -2,
+          y: 6,
+        },
+      );
     });
   });
 
@@ -436,13 +502,19 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: TransitionLocations[0],
-          path: [[0, 0], [-2, 6]],
+          path: [
+            [0, 0],
+            [-2, 6],
+          ],
           character: { ...mockCharacter, x: -2, y: 6, map_id: 571 },
         },
       };
 
-      const transitionError = new ApiError({ code: 422, message: 'Invalid transition' });
-      
+      const transitionError = new ApiError({
+        code: 422,
+        message: 'Invalid transition',
+      });
+
       mockActionMove.mockResolvedValue(mockMoveResponse);
       mockActionTransition.mockResolvedValue(transitionError);
 
@@ -478,7 +550,10 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: destination,
-          path: [[0, 0], [80, 85]],
+          path: [
+            [0, 0],
+            [80, 85],
+          ],
           character: null, // Missing character data
         },
       };
@@ -520,7 +595,7 @@ describe('Character.move()', () => {
     it('should handle multiple transition locations and find the closest one', async () => {
       // This test would be more comprehensive if we had multiple transition locations
       // For now, we'll test with the single transition location we have
-      
+
       // Arrange
       const destination: MapSchema = {
         map_id: 1000,
@@ -543,7 +618,10 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: TransitionLocations[0],
-          path: [[0, 0], [-2, 6]],
+          path: [
+            [0, 0],
+            [-2, 6],
+          ],
           character: { ...mockCharacter, x: -2, y: 6, map_id: 571 },
         },
       };
@@ -574,7 +652,13 @@ describe('Character.move()', () => {
             layer: 'underground',
             conditions: [],
           },
-          character: { ...mockCharacter, x: -2, y: 6, map_id: 572, layer: 'underground' },
+          character: {
+            ...mockCharacter,
+            x: -2,
+            y: 6,
+            map_id: 572,
+            layer: 'underground',
+          },
         },
       };
 
@@ -588,8 +672,18 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: destination,
-          path: [[-2, 6], [25, 25], [50, 50]],
-          character: { ...mockCharacter, x: 50, y: 50, map_id: 1000, layer: 'underground' },
+          path: [
+            [-2, 6],
+            [25, 25],
+            [50, 50],
+          ],
+          character: {
+            ...mockCharacter,
+            x: 50,
+            y: 50,
+            map_id: 1000,
+            layer: 'underground',
+          },
         },
       };
 

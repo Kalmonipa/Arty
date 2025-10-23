@@ -17,6 +17,7 @@ export class TidyBankObjective extends Objective {
     'raw_chicken',
     'raw_beef',
     'raw_wolf_meat',
+    'apple',
   ];
   rawOreList = [
     'copper_ore',
