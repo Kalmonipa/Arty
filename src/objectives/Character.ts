@@ -7,6 +7,7 @@ import { actionUse, getItemInformation } from '../api_calls/Items.js';
 import { getMaps, getMapsById } from '../api_calls/Maps.js';
 import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
+  ActiveEventSchema,
   CharacterSchema,
   CraftSkill,
   FakeCharacterSchema,
@@ -339,6 +340,10 @@ export class Character {
         activityType: job.activityType,
         targetMob: job.targetMob,
       };
+    } else if (job instanceof EventObjective) {
+      return {
+        activeEvent: job.activeEvent,
+      };
     } else if (job instanceof ExpandBankObjective) {
       return {};
     } else if (job instanceof GatherObjective) {
@@ -415,6 +420,12 @@ export class Character {
             this,
             specificData.activityType as WeaponFlavours,
             specificData.targetMob as string,
+          );
+          break;
+        case 'EventObjective':
+          job = new EventObjective(
+            this,
+            specificData.activeEvent as ActiveEventSchema,
           );
           break;
         case 'ExpandBankObjective':
