@@ -24,8 +24,8 @@ export const MAX_SKILL_LEVEL = 50;
 export const CRITICAL_MODIFIER = 0.5;
 
 /**
- * Array of all the transition maps
- * 571: mountain_6; to Mithril/Bat cave
+ * Array of all the transition maps:
+ * - 571: mountain_6; to Mithril/Bat cave
  * @todo Find a way to get this programmatically
  */
 export const TransitionLocations: MapSchema[] = [

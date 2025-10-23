@@ -433,7 +433,7 @@ export class EvaluateGearObjective extends Objective {
     let bestGear: ItemSchema;
 
     for (let ind = map.length - 1; ind >= 0; ind--) {
-      if (map[ind].level <= charLevel) {
+      if (map[ind].level <= charLevel && map[ind].level > charLevel - 15) {
         // Iterate through all the options to find the one that gives the best target effect
         logger.debug(`Checking ${map[ind].code} for ${targetEffect}`);
         // If bestGear isn't set, set it to the highest level item that has that effect
@@ -458,36 +458,6 @@ export class EvaluateGearObjective extends Objective {
             continue;
           }
         }
-        //  else if (
-        //   // The new item to check doesn't have the target effect, skip it
-        //   !map[ind].effects.find((effect) => effect.code === targetEffect)
-        // ) {
-        //   continue;
-        //   // If bestGear doesn't have the target effect, set the new item to bestGear
-        //   // OR if the new item has a better effect, set that to bestGear
-        // } else if (
-        //   !bestGear.effects.find((effect) => effect.code === targetEffect) ||
-        //   bestGear.effects.find((effect) => effect.code === targetEffect)
-        //     .value <
-        //     map[ind].effects.find((effect) => effect.code === targetEffect)
-        //       .value
-        // ) {
-        //   // Check inventory
-        //   let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
-        //   if (numHeld === 0) {
-        //     // Check bank
-        //     numHeld = await this.character.checkQuantityOfItemInBank(
-        //       map[ind].code,
-        //     );
-        //   }
-
-        //   if (numHeld > 0) {
-        //     logger.info(
-        //       `Found ${map[ind].code} is better than ${bestGear.code}`,
-        //     );
-        //     bestGear = map[ind];
-        //   }
-        // }
       }
     }
 

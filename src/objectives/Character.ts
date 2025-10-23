@@ -1648,12 +1648,17 @@ export class Character {
       return true;
     }
 
-    if (
-      destination.layer != this.data.layer ||
-      destination.name === 'Sandwhisper Isle'
-    ) {
-      logger.info(`Moving to ${destination.map_id} requires transitioning`);
+    if (destination.name === 'Sandwhisper Isle') {
+      logger.warn(`Movement to ${destination.name} is not enabled yet`)
       return false;
+    }
+
+    if (
+      destination.layer != this.data.layer
+    ) {
+      logger.info(`Moving to ${destination.map_id} requires transitioning to ${destination.layer}`);
+      const transitionMap = await this.findUndergroundTransitionPoint(destination)
+      logger.info(`Moving to ${transitionMap.map_id}`)
     }
 
     logger.info(`Moving to x: ${destination.x}, y: ${destination.y}`);
@@ -1679,7 +1684,7 @@ export class Character {
   /**
    * @description Transitioning function to find the transition point that gets to where we want to go
    */
-  private findTransitionPoint(destination: MapSchema): MapSchema {
+  private findUndergroundTransitionPoint(destination: MapSchema): MapSchema {
     let closestDistance = 1000000;
     let closestMap: MapSchema;
 
