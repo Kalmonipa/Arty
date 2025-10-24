@@ -77,6 +77,8 @@ export class TradeObjective extends Objective {
     const targetNpc = npcItems[0].npc;
     const buyPrice = npcItems[0].buy_price;
 
+    if (!(await this.checkStatus())) return false;
+
     // Calculate crystals needed
     let currencyNeeded = this.quantity * buyPrice;
 
@@ -102,9 +104,10 @@ export class TradeObjective extends Objective {
         await this.character.withdrawNow(currencyNeeded, this.currency);
       } else if (this.currency === 'tasks_coin') {
         while (
-          this.character.checkQuantityOfItemInInv(this.currency) <
+          await this.character.checkQuantityOfItemInBank(this.currency) <
           currencyNeeded
         )
+        if (!(await this.checkStatus())) return false;
           // if (Math.floor(Math.random() * 2) === 0) {
           //   await this.character.executeJobNow(
           //     new MonsterTaskObjective(this.character, 1),
