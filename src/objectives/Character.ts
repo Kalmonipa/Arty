@@ -1266,7 +1266,7 @@ export class Character {
         if (numInInv >= numNeeded) {
           logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
           await this.equipNow(utility[ind].code, slot, numInInv);
-          return false;
+          return true;
         } else if (numInInv > 0 && numInInv < numNeeded) {
           logger.debug(
             `Carrying ${numInInv} in inv. Equipping them and checking bank`,
@@ -1292,13 +1292,15 @@ export class Character {
         } else {
           if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
             logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
-            if (await this.craftNow(50, utility[ind].code)) {
-              return await this.equipNow(utility[ind].code, 'utility1', 50);
+            if (await this.craftNow(numNeeded, utility[ind].code)) {
+              return await this.equipNow(utility[ind].code, 'utility1', numNeeded);
             } else {
               logger.debug(`Can't craft ${utility[ind].name}`);
+              return false;
             }
           } else {
             logger.debug(`Can't find any ${utility[ind].name}`);
+            return false;
           }
         }
       }
