@@ -103,18 +103,28 @@ export class TradeObjective extends Objective {
       if (numInBank >= currencyNeeded) {
         await this.character.withdrawNow(currencyNeeded, this.currency);
       } else if (this.currency === 'tasks_coin') {
+        let taskAttempts = 0;
+        const maxTaskAttempts = 20;
+        
         while (
           (await this.character.checkQuantityOfItemInBank(this.currency)) <
-          currencyNeeded
-        )
+          currencyNeeded &&
+          taskAttempts < maxTaskAttempts
+        ) {
           if (!(await this.checkStatus())) return false;
-        logger.info(`Completing tasks to get ${this.currency}`);
-        await this.character.executeJobNow(
-          new ItemTaskObjective(this.character, 1),
-          true,
-          true,
-          this.objectiveId,
-        );
+          taskAttempts++;
+          await this.character.executeJobNow(
+            new ItemTaskObjective(this.character, 1),
+            true,
+            true,
+            this.objectiveId,
+          );
+        }
+        
+        if (taskAttempts >= maxTaskAttempts) {
+          logger.warn(`Reached maximum task attempts (${maxTaskAttempts}) for ${this.currency}`);
+          return false;
+        }
       } else {
         logger.info(`Attempting to gather ${this.currency}`);
         await this.character.executeJobNow(
