@@ -157,13 +157,23 @@ export class IdleObjective extends Objective {
 
     if (this.role === 'alchemist') {
       for (const potion of this.character.utilitiesMap['restore']) {
-        // Check if we can craft the potion
         if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
-          // If we can craft the potion, get the number in the bank
           const numInBank = await this.character.checkQuantityOfItemInBank(
             potion.code,
           );
-          // Ensure quantity is greater than 1k
+          if (numInBank < minimumInBank) {
+            await this.character.craftNow(
+              minimumInBank - numInBank,
+              potion.code,
+            );
+          }
+        }
+      }
+      for (const potion of this.character.utilitiesMap['antipoison']) {
+        if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
+          const numInBank = await this.character.checkQuantityOfItemInBank(
+            potion.code,
+          );
           if (numInBank < minimumInBank) {
             await this.character.craftNow(
               minimumInBank - numInBank,

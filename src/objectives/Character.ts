@@ -371,6 +371,8 @@ export class Character {
       return { quantity: job.quantity };
     } else if (job instanceof MonsterTaskObjective) {
       return { quantity: job.quantity };
+    } else if (job instanceof RecycleObjective) {
+      return { target: job.target }
     } else if (job instanceof TrainCombatObjective) {
       return { targetLevel: job.targetLevel };
     } else if (job instanceof TrainCraftingSkillObjective) {
@@ -478,6 +480,9 @@ export class Character {
           break;
         case 'MonsterTaskObjective':
           job = new MonsterTaskObjective(this, specificData.quantity as number);
+          break;
+        case 'RecycleObjective':
+          job = new RecycleObjective(this, specificData.target as ObjectiveTargets)
           break;
         case 'TrainCombatObjective':
           job = new TrainCombatObjective(

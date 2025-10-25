@@ -11,7 +11,7 @@ import { actionRecycle } from '../api_calls/Recycling.js';
  * @description Recycles the specified items and deposits the results into the bank
  */
 export class RecycleObjective extends Objective {
-  target: ObjectiveTargets;
+  target: ObjectiveTargets; // ToDo: USe SimpleItemSchema
 
   constructor(character: Character, target: ObjectiveTargets) {
     super(
