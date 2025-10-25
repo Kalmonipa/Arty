@@ -104,25 +104,17 @@ export class TradeObjective extends Objective {
         await this.character.withdrawNow(currencyNeeded, this.currency);
       } else if (this.currency === 'tasks_coin') {
         while (
-          await this.character.checkQuantityOfItemInBank(this.currency) <
+          (await this.character.checkQuantityOfItemInBank(this.currency)) <
           currencyNeeded
         )
-        if (!(await this.checkStatus())) return false;
-          // if (Math.floor(Math.random() * 2) === 0) {
-          //   await this.character.executeJobNow(
-          //     new MonsterTaskObjective(this.character, 1),
-          //     true,
-          //     true,
-          //     this.objectiveId,
-          //   );
-          // } else {
-          await this.character.executeJobNow(
-            new ItemTaskObjective(this.character, 1),
-            true,
-            true,
-            this.objectiveId,
-          );
-        //}
+          if (!(await this.checkStatus())) return false;
+        logger.info(`Completing tasks to get ${this.currency}`);
+        await this.character.executeJobNow(
+          new ItemTaskObjective(this.character, 1),
+          true,
+          true,
+          this.objectiveId,
+        );
       } else {
         logger.info(`Attempting to gather ${this.currency}`);
         await this.character.executeJobNow(

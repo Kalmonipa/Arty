@@ -103,7 +103,6 @@ export class GatherObjective extends Objective {
     );
     const stillNeeded = this.target.quantity - currentTotal;
 
-
     if (stillNeeded <= 0) {
       logger.info(
         `Already have enough ${this.target.code} after bank withdrawal`,

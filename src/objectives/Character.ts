@@ -1293,7 +1293,11 @@ export class Character {
           if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
             logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
             if (await this.craftNow(numNeeded, utility[ind].code)) {
-              return await this.equipNow(utility[ind].code, 'utility1', numNeeded);
+              return await this.equipNow(
+                utility[ind].code,
+                'utility1',
+                numNeeded,
+              );
             } else {
               logger.debug(`Can't craft ${utility[ind].name}`);
               return false;
