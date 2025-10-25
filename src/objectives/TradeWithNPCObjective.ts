@@ -98,7 +98,7 @@ export class TradeObjective extends Objective {
         this.currency,
       );
       logger.info(
-        `Found ${numInBank} ${this.currency} in the bank to trade with`,
+        `Found ${numInBank}/${currencyNeeded} ${this.currency} in the bank to trade with`,
       );
       if (numInBank >= currencyNeeded) {
         await this.character.withdrawNow(currencyNeeded, this.currency);
