@@ -512,7 +512,7 @@ describe('CraftObjective Integration Tests', () => {
         10,
         'feather',
         true,
-        false,
+        true,
       );
     });
 
@@ -596,7 +596,7 @@ describe('CraftObjective Integration Tests', () => {
         10,
         'feather',
         true,
-        false,
+        true,
       );
     });
 
@@ -667,16 +667,16 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
-        10,
+        15,
         'cowhide',
         true,
-        false,
+        true,
       );
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
         5,
         'feather',
         true,
-        false,
+        true,
       );
       expect(mockCharacter.gatherNow).toHaveBeenCalledTimes(2);
     });

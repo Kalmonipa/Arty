@@ -269,10 +269,10 @@ export class CraftObjective extends Objective {
 
             if (
               !(await this.character.gatherNow(
-                totalIngredNeededToCraft - numInInv,
+                totalIngredNeededToCraft,
                 craftingItem.code,
                 true,
-                false,
+                true,
               ))
             ) {
               logger.warn(
@@ -305,13 +305,13 @@ export class CraftObjective extends Objective {
           } else {
             logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
-            // We don't want to include what's in our inventory. We want to collect new
+            // Pass the total amount needed, let GatherObjective figure out how many to gather
             if (
               !(await this.character.gatherNow(
-                totalIngredNeededToCraft - numInInv,
+                totalIngredNeededToCraft,
                 craftingItem.code,
                 true,
-                false,
+                true,
               ))
             ) {
               logger.warn(
