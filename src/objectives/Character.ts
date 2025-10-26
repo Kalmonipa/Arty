@@ -824,6 +824,11 @@ export class Character {
 
     for (const event of activeEventsResponse.data) {
       if (this.applicableResourceEvents.includes(event.code)) {
+        if (event.code === 'bandit_camp' && this.data.level < 25) {
+          logger.debug(`${this.data.name} is too low level for Bandit Camp`)
+          continue;
+        }
+
         const job = new EventObjective(this, event);
         return await this.executeJobNow(
           job,
