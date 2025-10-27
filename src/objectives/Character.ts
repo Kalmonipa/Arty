@@ -1314,7 +1314,6 @@ export class Character {
             }
           } else {
             logger.debug(`Can't find any ${utility[ind].name}`);
-            return false;
           }
         }
       }
