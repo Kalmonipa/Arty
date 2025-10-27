@@ -1181,13 +1181,14 @@ export class Character {
         return true;
       } else {
         // Find the best available food
-        const bestFood = await this.findBestFood();
+        let bestFood = await this.findBestFood();
         if (!bestFood) {
           logger.warn(
             `No food available in inventory or bank. Gathering some instead.`,
           );
           // ToDo: Make this dynamically pick the food to gather
           await this.craftNow(40, 'cooked_gudgeon', true, true);
+          bestFood = {code: 'cooked_gudgeon', quantity: 40, healValue: 75, source: 'inventory'}
         }
 
         const healthStatus: HealthStatus = this.checkHealth();
