@@ -74,13 +74,16 @@ export class FightObjective extends Objective {
             );
 
           if (simResultWithoutHealthPots) {
-            logger.info(
-              `Unequipping ${this.character.data.utility1_slot} as not needed`,
-            );
+            const utilOnePot = this.character.data.utility1_slot;
+            logger.info(`Unequipping ${utilOnePot} as not needed`);
             this.shouldEquipHealthPots = false;
             await this.character.unequipNow(
               'utility1',
               this.character.data.utility1_slot_quantity,
+            );
+            await this.character.depositNow(
+              this.character.data.utility1_slot_quantity,
+              utilOnePot,
             );
           }
         }

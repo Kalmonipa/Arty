@@ -105,10 +105,10 @@ export class TradeObjective extends Objective {
       } else if (this.currency === 'tasks_coin') {
         let taskAttempts = 0;
         const maxTaskAttempts = 20;
-        
+
         while (
           (await this.character.checkQuantityOfItemInBank(this.currency)) <
-          currencyNeeded &&
+            currencyNeeded &&
           taskAttempts < maxTaskAttempts
         ) {
           if (!(await this.checkStatus())) return false;
@@ -120,9 +120,11 @@ export class TradeObjective extends Objective {
             this.objectiveId,
           );
         }
-        
+
         if (taskAttempts >= maxTaskAttempts) {
-          logger.warn(`Reached maximum task attempts (${maxTaskAttempts}) for ${this.currency}`);
+          logger.warn(
+            `Reached maximum task attempts (${maxTaskAttempts}) for ${this.currency}`,
+          );
           return false;
         }
       } else {

@@ -372,7 +372,7 @@ export class Character {
     } else if (job instanceof MonsterTaskObjective) {
       return { quantity: job.quantity };
     } else if (job instanceof RecycleObjective) {
-      return { target: job.target }
+      return { target: job.target };
     } else if (job instanceof TrainCombatObjective) {
       return { targetLevel: job.targetLevel };
     } else if (job instanceof TrainCraftingSkillObjective) {
@@ -482,7 +482,10 @@ export class Character {
           job = new MonsterTaskObjective(this, specificData.quantity as number);
           break;
         case 'RecycleObjective':
-          job = new RecycleObjective(this, specificData.target as ObjectiveTargets)
+          job = new RecycleObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
           break;
         case 'TrainCombatObjective':
           job = new TrainCombatObjective(
@@ -825,7 +828,7 @@ export class Character {
     for (const event of activeEventsResponse.data) {
       if (this.applicableResourceEvents.includes(event.code)) {
         if (event.code === 'bandit_camp' && this.data.level < 25) {
-          logger.debug(`${this.data.name} is too low level for Bandit Camp`)
+          logger.debug(`${this.data.name} is too low level for Bandit Camp`);
           continue;
         }
 
@@ -1188,7 +1191,12 @@ export class Character {
           );
           // ToDo: Make this dynamically pick the food to gather
           await this.craftNow(40, 'cooked_gudgeon', true, true);
-          bestFood = {code: 'cooked_gudgeon', quantity: 40, healValue: 75, source: 'inventory'}
+          bestFood = {
+            code: 'cooked_gudgeon',
+            quantity: 40,
+            healValue: 75,
+            source: 'inventory',
+          };
         }
 
         const healthStatus: HealthStatus = this.checkHealth();
