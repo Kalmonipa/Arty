@@ -65,6 +65,14 @@ class SimpleMockCharacter {
     },
   );
 
+  depositNow = jest.fn(
+    async (quantity: number, code: string): Promise<boolean> => {
+      // Mock successful deposit
+      this.removeItemFromInventory(code, quantity);
+      return true;
+    },
+  );
+
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
   });
