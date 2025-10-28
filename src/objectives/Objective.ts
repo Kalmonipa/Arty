@@ -124,6 +124,11 @@ export abstract class Objective {
    * @description Sets the status of the job to 'complete'
    */
   completeJob(wasSuccess: boolean) {
+    if (!this.parentId) {
+      logger.info(`Clearing itemsToKeep`);
+      this.character.itemsToKeep = [];
+    }
+
     if (wasSuccess) {
       logger.info(`Setting status of ${this.objectiveId} to 'complete'`);
       this.status = 'complete';

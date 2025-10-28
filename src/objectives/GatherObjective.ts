@@ -213,8 +213,9 @@ export class GatherObjective extends Objective {
         }
       }
     }
-    // Remove the gathered item if it's in the exclusion list
-    this.character.removeItemFromItemsToKeep(this.target.code);
+    if (!this.parentId) {
+      this.character.removeItemFromItemsToKeep(this.target.code);
+    }
   }
 
   async gatherItemLoop(
