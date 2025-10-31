@@ -186,6 +186,29 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
+  getCharacterLevel = jest.fn((skillName?: string): number => {
+    switch (skillName) {
+      case 'alchemy':
+        return this.data.alchemy_level;
+      case 'cooking':
+        return this.data.cooking_level;
+      case 'fishing':
+        return this.data.fishing_level;
+      case 'gearcrafting':
+        return this.data.gearcrafting_level;
+      case 'jewelrycrafting':
+        return this.data.jewelrycrafting_level;
+      case 'mining':
+        return this.data.mining_level;
+      case 'weaponcrafting':
+        return this.data.weaponcrafting_level;
+      case 'woodcutting':
+        return this.data.woodcutting_level;
+      default:
+        return this.data.level;
+    }
+  });
+
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
       (item: InventorySlot) => item.code === code,
