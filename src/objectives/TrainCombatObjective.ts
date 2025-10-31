@@ -48,6 +48,8 @@ export class TrainCombatObjective extends Objective {
       let foundSuitableMob = false;
       let fightSuccessful = false;
 
+      await this.character.evaluateGear('combat');
+
       const fakeSchema = this.character.createFakeCharacterSchema(
         this.character.data,
       );
