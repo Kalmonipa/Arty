@@ -331,15 +331,18 @@ export class GatherObjective extends Objective {
       return this.character.handleErrors(resources);
     }
 
-    logger.info(`Finding location of ${resources.data[0].code}`);
+    logger.debug(`Finding best resource to gather`)
+    const resource = resources.data.findLast((res) => res.level <= this.character.getCharacterLevel(res.skill))
 
-    const maps = await getMaps({ content_code: resources.data[0].code });
+    logger.info(`Finding location of ${resource.code}`);
+
+    const maps = await getMaps({ content_code: resource.code });
     if (maps instanceof ApiError) {
       return this.character.handleErrors(maps);
     }
 
     if (maps.data.length === 0) {
-      logger.error(`Cannot find any maps for ${resources.data[0].code}`);
+      logger.error(`Cannot find any maps for ${resource.code}`);
       return false;
     }
 
