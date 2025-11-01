@@ -109,11 +109,10 @@ const customFormat = winston.format.combine(
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(({ timestamp, level, message, character, objectiveId, rootId }) => {
+  winston.format.printf(({ timestamp, level, message, character, objectiveId }) => {
     const char = character || CharName;
     const objId = objectiveId ? ` [${objectiveId}]` : '';
-    const root = rootId && rootId !== objectiveId ? ` [root:${rootId}]` : '';
-    return `[${timestamp}] [${char}]${objId}${root} ${level.toUpperCase()}: ${message}`;
+    return `[${timestamp}] [${char}]${objId} ${level.toUpperCase()}: ${message}`;
   }),
 );
 
