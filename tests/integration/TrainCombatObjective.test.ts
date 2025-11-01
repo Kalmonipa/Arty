@@ -30,6 +30,10 @@ class SimpleMockCharacter {
     return true;
   });
 
+  evaluateGear = jest.fn(async (): Promise<void> => {
+    // Mock implementation
+  });
+
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
   });

@@ -623,6 +623,8 @@ export class Character {
     // Set the parentId if provided
     if (parentId) {
       obj.parentId = parentId;
+      // Update rootId when parentId is set
+      obj.updateRootId();
       logger.debug(`Set parentId ${parentId} for job ${obj.objectiveId}`);
     }
 

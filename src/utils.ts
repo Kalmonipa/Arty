@@ -92,12 +92,14 @@ const customFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YYYYTHH:mm:ss.SSSZ' }),
   winston.format.errors({ stack: true }),
   winston.format.json(),
-  winston.format.printf(({ timestamp, level, message, character, ...meta }) => {
+  winston.format.printf(({ timestamp, level, message, character, objectiveId, rootId, ...meta }) => {
     const logObject = {
       timestamp,
       level,
       message,
       character: character || CharName,
+      ...(objectiveId && { objectiveId }),
+      ...(rootId && { rootId }),
       ...meta,
     };
     return JSON.stringify(logObject);
@@ -107,9 +109,11 @@ const customFormat = winston.format.combine(
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(({ timestamp, level, message, character }) => {
+  winston.format.printf(({ timestamp, level, message, character, objectiveId, rootId }) => {
     const char = character || CharName;
-    return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
+    const objId = objectiveId ? ` [${objectiveId}]` : '';
+    const root = rootId && rootId !== objectiveId ? ` [root:${rootId}]` : '';
+    return `[${timestamp}] [${char}]${objId}${root} ${level.toUpperCase()}: ${message}`;
   }),
 );
 

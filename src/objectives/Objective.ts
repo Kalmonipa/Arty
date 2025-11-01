@@ -19,6 +19,8 @@ export abstract class Objective {
   maxRetries: number = 3;
   parentId?: string;
   childId?: string;
+  rootId: string;
+  protected log: typeof logger;
 
   constructor(
     character: Character,
@@ -26,6 +28,7 @@ export abstract class Objective {
     status: ObjectiveStatus,
     parentId?: string,
     childId?: string,
+    rootId?: string,
   ) {
     this.character = character;
     // appending a random string to the objectiveId to ensure uniqueness
@@ -36,6 +39,26 @@ export abstract class Objective {
     this.progress = 0;
     this.parentId = parentId;
     this.childId = childId;
+
+    // Calculate rootId: if provided use it, if has parent use parent's rootId, otherwise this is the root
+    if (rootId) {
+      this.rootId = rootId;
+    } else if (parentId) {
+      // Find the parent and use its rootId directly (they stem from the same root)
+      const parentJob = this.character.jobList.find(
+        (job) => job.objectiveId === parentId,
+      );
+      this.rootId = parentJob?.rootId || parentId;
+    } else {
+      // This is the root objective
+      this.rootId = this.objectiveId;
+    }
+
+    // Create a child logger with objectiveId and rootId in default metadata
+    this.log = logger.child({ 
+      objectiveId: this.objectiveId,
+      rootId: this.rootId,
+    });
   }
 
   async execute(): Promise<boolean> {
@@ -55,7 +78,7 @@ export abstract class Objective {
     if (result) {
       result = await this.run();
     } else {
-      logger.warn(
+      this.log.warn(
         `Prerequisite checks for ${this.objectiveId} failed. Stopping job`,
       );
     }
@@ -87,7 +110,7 @@ export abstract class Objective {
    * @description Cancels the currently active job
    */
   cancelJob(): boolean {
-    logger.info(`Setting status of ${this.objectiveId} to 'cancelled'`);
+    this.log.info(`Setting status of ${this.objectiveId} to 'cancelled'`);
     this.status = 'cancelled';
     return true;
   }
@@ -102,7 +125,7 @@ export abstract class Objective {
         (job) => job.objectiveId === this.parentId,
       );
       if (parentJob && parentJob.status === 'cancelled') {
-        logger.info(
+        this.log.info(
           `Parent job ${this.parentId} is cancelled, cancelling child job ${this.objectiveId}`,
         );
         this.cancelJob();
@@ -116,7 +139,7 @@ export abstract class Objective {
    * @description Sets the status of the job to 'in_progress'
    */
   startJob() {
-    logger.info(`Setting status of ${this.objectiveId} to 'in_progress'`);
+    this.log.info(`Setting status of ${this.objectiveId} to 'in_progress'`);
     this.status = 'in_progress';
   }
 
@@ -125,21 +148,39 @@ export abstract class Objective {
    */
   completeJob(wasSuccess: boolean) {
     if (!this.parentId) {
-      logger.info(`Clearing itemsToKeep`);
+      this.log.info(`Clearing itemsToKeep`);
       this.character.itemsToKeep = [];
     }
 
     if (wasSuccess) {
-      logger.info(`Setting status of ${this.objectiveId} to 'complete'`);
+      this.log.info(`Setting status of ${this.objectiveId} to 'complete'`);
       this.status = 'complete';
     } else {
       if (this.status === 'cancelled') {
         this.character.itemsToKeep = [];
         return;
       } else {
-        logger.info(`Setting status of ${this.objectiveId} to 'failed'`);
+        this.log.info(`Setting status of ${this.objectiveId} to 'failed'`);
         this.status = 'failed';
       }
+    }
+  }
+
+  /**
+   * @description Updates rootId when parentId is set after construction
+   */
+  updateRootId(): void {
+    if (this.parentId) {
+      // Find the parent and use its rootId directly
+      const parentJob = this.character.jobList.find(
+        (job) => job.objectiveId === this.parentId,
+      );
+      this.rootId = parentJob?.rootId || this.parentId;
+      // Update the logger with new rootId
+      this.log = logger.child({ 
+        objectiveId: this.objectiveId,
+        rootId: this.rootId,
+      });
     }
   }
 
@@ -164,7 +205,7 @@ export abstract class Objective {
    */
   async checkStatus(): Promise<boolean> {
     if (this.isCancelled()) {
-      logger.info(`${this.objectiveId} has been cancelled`);
+      this.log.info(`${this.objectiveId} has been cancelled`);
       return false;
     }
 
@@ -212,7 +253,7 @@ export abstract class Objective {
     }
 
     if (maps.data.length === 0) {
-      logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
+      this.log.error(`Cannot find the tasks master. This shouldn't happen ??`);
       return;
     }
 
@@ -236,7 +277,7 @@ export abstract class Objective {
       if (response.data.character) {
         this.character.data = response.data.character;
       } else {
-        logger.error('Task response missing character data');
+        this.log.error('Task response missing character data');
       }
     }
   }
@@ -246,11 +287,11 @@ export abstract class Objective {
    */
   async handInTask(taskType: TaskType) {
     if (taskType === 'monsters') {
-      logger.info(
+      this.log.info(
         `Completed ${this.character.data.task_total} fights. Handing in task`,
       );
     } else if (taskType === 'items') {
-      logger.info(
+      this.log.info(
         `Collected ${this.character.data.task_total} items. Handing in task`,
       );
     }
@@ -263,7 +304,7 @@ export abstract class Objective {
     }
 
     if (maps.data.length === 0) {
-      logger.error(`Cannot find the tasks master. This shouldn't happen ??`);
+      this.log.error(`Cannot find the tasks master. This shouldn't happen ??`);
       return;
     }
 
@@ -280,7 +321,7 @@ export abstract class Objective {
       if (response.data.character) {
         this.character.data = response.data.character;
       } else {
-        logger.error('Complete task response missing character data');
+        this.log.error('Complete task response missing character data');
       }
     }
 
