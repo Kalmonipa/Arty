@@ -16,6 +16,7 @@ import {
   ItemSchema,
   ItemSlot,
   MapSchema,
+  SimpleEffectSchema,
   SimpleItemSchema,
   Skill,
 } from '../types/types.js';
@@ -967,7 +968,7 @@ export class Character {
       }
       numFound = total;
     }
-    logger.debug(`Found ${numFound} ${contentCode} in inventory`);
+    logger.debug(`Found ${numFound} ${contentCode} in bank`);
     return numFound;
   }
 
@@ -1286,7 +1287,7 @@ export class Character {
         logger.debug(`Attempting to equip ${utility[ind].name}`);
         if (numInInv >= numNeeded) {
           logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-          await this.equipNow(utility[ind].code, slot, numInInv);
+          await this.equipNow(utility[ind].code, slot, numNeeded);
           return true;
         } else if (numInInv > 0 && numInInv < numNeeded) {
           logger.debug(
@@ -1314,11 +1315,7 @@ export class Character {
           if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
             logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
             if (await this.craftNow(numNeeded, utility[ind].code)) {
-              return await this.equipNow(
-                utility[ind].code,
-                'utility1',
-                numNeeded,
-              );
+              return await this.equipNow(utility[ind].code, slot, numNeeded);
             } else {
               logger.debug(`Can't craft ${utility[ind].name}`);
               return false;
@@ -1326,6 +1323,84 @@ export class Character {
           } else {
             logger.debug(`Can't find any ${utility[ind].name}`);
           }
+        }
+      }
+    }
+  }
+
+  /**
+   * @description Equips a utility into slot 2 that will counteract the effect of a monster.
+   * Calculates how many potions we need to reach max number.
+   * Equips the most minor potion so we aren't overusing potions.
+   * E.g We only get 20 poison when fighting spiders so equipping antidotes that recover 50 is unnecessary
+   * @returns a boolean stating whether we need to move back to our original location
+   */
+  async equipAntiEffectUtility(
+    utilityType: UtilityEffects,
+    mobEffect: SimpleEffectSchema,
+  ): Promise<boolean> {
+    const utility = this.utilitiesMap[utilityType];
+
+    // Find the best potion for the attack
+    for (let ind = 0; ind <= utility.length - 1; ind++) {
+      if (utility[ind].level > this.getCharacterLevel()) {
+        continue;
+      }
+      // ToDo: Figure out a way to check all effects for the value
+      if (
+        utility[ind].effects &&
+        utility[ind].effects[0].value < mobEffect.value
+      ) {
+        logger.debug(
+          `${utility[ind].code} only counteracts ${utility[ind].effects[0].value} ${mobEffect.code}. Skipping`,
+        );
+        continue;
+      }
+
+      let numNeeded: number = this.maxEquippedUtilities - this.data.utility2_slot_quantity;
+
+      const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
+
+      logger.debug(`Attempting to equip ${utility[ind].name}`);
+      if (numInInv >= numNeeded) {
+        logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
+        await this.equipNow(utility[ind].code, 'utility2', numNeeded);
+        return true;
+      } else if (numInInv > 0 && numInInv < numNeeded) {
+        logger.debug(
+          `Carrying ${numInInv} in inv. Equipping them and checking bank`,
+        );
+        await this.equipNow(utility[ind].code, 'utility2', numInInv);
+        numNeeded = numNeeded - numInInv;
+        logger.debug(`${numNeeded} needed from the bank`);
+      }
+      const numInBank = await this.checkQuantityOfItemInBank(utility[ind].code);
+      if (numInBank > 0) {
+        await this.withdrawNow(
+          Math.min(numInBank, numNeeded),
+          utility[ind].code,
+        );
+        await this.equipNow(
+          utility[ind].code,
+          'utility2',
+          Math.min(numInBank, numNeeded),
+        );
+        return true;
+      } else {
+        if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
+          logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
+          if (await this.craftNow(numNeeded, utility[ind].code)) {
+            return await this.equipNow(
+              utility[ind].code,
+              'utility1',
+              numNeeded,
+            );
+          } else {
+            logger.debug(`Can't craft ${utility[ind].name}`);
+            return false;
+          }
+        } else {
+          logger.debug(`Can't find any ${utility[ind].name}`);
         }
       }
     }

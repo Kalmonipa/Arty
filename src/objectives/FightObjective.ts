@@ -159,7 +159,7 @@ export class FightObjective extends Objective {
 
         await this.character.recoverHealth();
         // Move back after healing
-        await this.character.move(contentLocation); 
+        await this.character.move(contentLocation);
 
         // Check these after each fight in case we need to top up
         if (
@@ -200,7 +200,7 @@ export class FightObjective extends Objective {
           }
 
           await this.character.recoverHealth();
-          await this.character.move(contentLocation); 
+          await this.character.move(contentLocation);
 
           // Check amount of food in inventory to use after battles
           if (!(await this.character.checkFoodLevels())) {

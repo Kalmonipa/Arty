@@ -213,13 +213,11 @@ export class EvaluateGearObjective extends Objective {
   private async topUpSecondaryPots(mobInfo: MonsterSchema) {
     if (!mobInfo.effects || mobInfo.effects.length === 0) {
       return true;
-    } else if (mobInfo.effects.length > 1) {
-      logger.warn(
-        `${mobInfo.code} has more than 1 effect. Not sure what to do`,
+    } else if (mobInfo.effects.some((effect) => effect.code === 'poison')) {
+      const poisonEffect = mobInfo.effects.find(
+        (effect) => effect.code === 'poison',
       );
-      return false;
-    } else if (mobInfo.effects[0].code === 'poison') {
-      logger.info(`${mobInfo.name} has the ${mobInfo.effects[0].code} effect`);
+      logger.info(`${mobInfo.name} has the ${poisonEffect?.code} effect`);
       if (
         !this.character.data.utility2_slot_quantity ||
         (this.character.data.utility2_slot_quantity &&
@@ -227,7 +225,7 @@ export class EvaluateGearObjective extends Objective {
             this.character.minEquippedUtilities)
       ) {
         logger.info(`Equipping antidotes`);
-        return await this.character.equipUtility('antipoison', 'utility2');
+        return await this.character.equipAntiEffectUtility('antipoison', poisonEffect);
       } else {
         return true;
       }

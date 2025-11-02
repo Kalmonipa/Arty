@@ -55,7 +55,7 @@ export abstract class Objective {
     }
 
     // Create a child logger with objectiveId and rootId in default metadata
-    this.log = logger.child({ 
+    this.log = logger.child({
       objectiveId: this.objectiveId,
       rootId: this.rootId,
     });
@@ -177,7 +177,7 @@ export abstract class Objective {
       );
       this.rootId = parentJob?.rootId || this.parentId;
       // Update the logger with new rootId
-      this.log = logger.child({ 
+      this.log = logger.child({
         objectiveId: this.objectiveId,
         rootId: this.rootId,
       });

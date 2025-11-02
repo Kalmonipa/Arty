@@ -92,28 +92,40 @@ const customFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YYYYTHH:mm:ss.SSSZ' }),
   winston.format.errors({ stack: true }),
   winston.format.json(),
-  winston.format.printf(({ timestamp, level, message, character, objectiveId, rootId, ...meta }) => {
-    const logObject = {
+  winston.format.printf(
+    ({
       timestamp,
       level,
       message,
-      character: character || CharName,
-      ...(objectiveId && { objectiveId }),
-      ...(rootId && { rootId }),
-      ...meta,
-    };
-    return JSON.stringify(logObject);
-  }),
+      character,
+      objectiveId,
+      rootId,
+      ...meta
+    }) => {
+      const logObject = {
+        timestamp,
+        level,
+        message,
+        character: character || CharName,
+        ...(objectiveId && { objectiveId }),
+        ...(rootId && { rootId }),
+        ...meta,
+      };
+      return JSON.stringify(logObject);
+    },
+  ),
 );
 
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(({ timestamp, level, message, character, objectiveId }) => {
-    const char = character || CharName;
-    const objId = objectiveId ? ` [${objectiveId}]` : '';
-    return `[${timestamp}] [${char}]${objId} ${level.toUpperCase()}: ${message}`;
-  }),
+  winston.format.printf(
+    ({ timestamp, level, message, character, objectiveId }) => {
+      const char = character || CharName;
+      const objId = objectiveId ? ` [${objectiveId}]` : '';
+      return `[${timestamp}] [${char}]${objId} ${level.toUpperCase()}: ${message}`;
+    },
+  ),
 );
 
 export const logger = winston.createLogger({
