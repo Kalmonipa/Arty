@@ -120,10 +120,9 @@ const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.printf(
-    ({ timestamp, level, message, character, objectiveId }) => {
+    ({ timestamp, level, message, character }) => {
       const char = character || CharName;
-      const objId = objectiveId ? ` [${objectiveId}]` : '';
-      return `[${timestamp}] [${char}]${objId} ${level.toUpperCase()}: ${message}`;
+      return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
     },
   ),
 );
