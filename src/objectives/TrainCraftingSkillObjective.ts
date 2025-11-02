@@ -43,12 +43,6 @@ export class TrainCraftingSkillObjective extends Objective {
     while (charLevel < this.targetLevel) {
       if (!(await this.checkStatus())) return false;
 
-      // Steps:
-      // Find items to craft that are within 10 (?) levels
-      // Pick a random item to craft from the list
-      // Craft that item, one at a time
-      // Deposit into the bank
-
       const payload: GetAllItemsItemsGetParams = {
         craft_skill: this.skill,
         max_level: charLevel,
@@ -70,9 +64,24 @@ export class TrainCraftingSkillObjective extends Objective {
 
       const itemToCraft = craftableItemsList[randInd];
 
-      await this.character.craftNow(1, itemToCraft.code);
+      let numToCraft: number
+      switch (this.skill) {
+        case 'alchemy':
+        case 'cooking':
+        case 'mining':
+          numToCraft = 10
+          break;
+        case 'weaponcrafting':
+        case 'gearcrafting':
+          numToCraft = 2;
+          break;
+        default:
+          numToCraft = 1;
+      }
 
-      await this.character.depositNow(1, itemToCraft.code);
+      await this.character.craftNow(numToCraft, itemToCraft.code);
+
+      await this.character.depositNow(numToCraft, itemToCraft.code);
 
       charLevel = this.character.getCharacterLevel(this.skill);
     }
