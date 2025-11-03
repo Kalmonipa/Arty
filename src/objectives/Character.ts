@@ -147,7 +147,7 @@ export class Character {
   applicableResourceEvents = [
     'magic_apparition',
     'strange_apparition',
-    //'bandit_camp',
+    'bandit_camp',
   ];
 
   constructor(data: CharacterSchema) {
@@ -1629,10 +1629,7 @@ export class Character {
       [];
 
     for (const invItem of this.data.inventory) {
-      // Excluding apples so that we can use them for apple pie
-      if (invItem.code === 'apple') {
-        continue;
-      }
+
       const itemInfo = this.consumablesMap.heal.find(
         (item) => item.code === invItem.code,
       );
