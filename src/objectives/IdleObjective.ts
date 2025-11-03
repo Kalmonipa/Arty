@@ -125,6 +125,15 @@ export class IdleObjective extends Objective {
   }
 
   /**
+   * Looks at certain achievements to see if we can make progress towards any of them
+   * I have a feeling this might be mostly hardcoding for specific achievements.
+   * @returns true if successful, false if not
+   */
+  private checkAchievementProgress(): boolean {
+    return true
+  }
+
+  /**
    * Craft certain items and recycle items depending on role
    * @returns true if successful, false if not
    */

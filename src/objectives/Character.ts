@@ -1769,6 +1769,8 @@ export class Character {
       return true;
     }
 
+    // ToDo: when implementing logic for Sandwhisper Isle, withdraw a recall pot from the bank
+    // so you can teleport back instead of paying 1000 gold for the transition
     if (destination.name === 'Sandwhisper Isle') {
       logger.warn(`Movement to ${destination.name} is not enabled yet`);
       return false;
