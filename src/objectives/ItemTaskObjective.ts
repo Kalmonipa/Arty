@@ -56,7 +56,7 @@ export class ItemTaskObjective extends Objective {
       if (!(await this.checkStatus())) return false;
 
       if (
-        this.character.data.task === undefined ||
+        !this.character.data.task ||
         this.character.data.task === ''
       ) {
         await this.startNewTask('items');
