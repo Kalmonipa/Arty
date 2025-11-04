@@ -2433,6 +2433,10 @@ export class Character {
       case 499:
         await sleep(this.data.cooldown, 'cooldown');
         return true;
+      case 502: // Bad gateway from server
+        logger.warn('Sleeping for 5 minutes to avoid 502')
+        await sleep(300, 'HTTP error code 502');
+        return true;
       default:
         return false;
     }

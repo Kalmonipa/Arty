@@ -14,6 +14,7 @@ export class TidyBankObjective extends Objective {
     'gudgeon',
     'shrimp',
     'trout',
+    'bass',
     'raw_chicken',
     'raw_beef',
     'raw_wolf_meat',
