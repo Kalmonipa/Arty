@@ -79,9 +79,10 @@ export class TrainCraftingSkillObjective extends Objective {
           numToCraft = 1;
       }
 
-      await this.character.craftNow(numToCraft, itemToCraft.code);
-
-      await this.character.depositNow(numToCraft, itemToCraft.code);
+      if (await this.character.craftNow(numToCraft, itemToCraft.code)) {
+        // Only deposit if the craft was successful
+        await this.character.depositNow(numToCraft, itemToCraft.code);
+      }
 
       charLevel = this.character.getCharacterLevel(this.skill);
     }
