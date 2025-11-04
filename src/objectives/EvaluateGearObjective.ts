@@ -225,7 +225,10 @@ export class EvaluateGearObjective extends Objective {
             this.character.minEquippedUtilities)
       ) {
         logger.info(`Equipping antidotes`);
-        return await this.character.equipAntiEffectUtility('antipoison', poisonEffect);
+        return await this.character.equipAntiEffectUtility(
+          'antipoison',
+          poisonEffect,
+        );
       } else {
         return true;
       }

@@ -65,10 +65,7 @@ export class MonsterTaskObjective extends Objective {
   }
 
   private async doTask(): Promise<boolean> {
-    if (
-      !this.character.data.task ||
-      this.character.data.task === ''
-    ) {
+    if (!this.character.data.task || this.character.data.task === '') {
       await this.startNewTask('monsters');
     }
 

@@ -143,9 +143,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
     // Set up default mock responses
     (
-      getAllItemInformation as jest.MockedFunction<
-        typeof getAllItemInformation
-      >
+      getAllItemInformation as jest.MockedFunction<typeof getAllItemInformation>
     ).mockResolvedValue(mockCraftableItemsData);
   });
 
@@ -275,7 +273,10 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       await objective.run();
 
       // Assert
-      expect(mockCharacter.craftNow).toHaveBeenCalledWith(10, expect.any(String));
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(
+        10,
+        expect.any(String),
+      );
     });
 
     it('should craft 10 items for cooking skill', async () => {
@@ -303,7 +304,10 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       await objective.run();
 
       // Assert
-      expect(mockCharacter.craftNow).toHaveBeenCalledWith(10, expect.any(String));
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(
+        10,
+        expect.any(String),
+      );
     });
 
     it('should craft 2 items for weaponcrafting skill', async () => {
@@ -331,7 +335,10 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       await objective.run();
 
       // Assert
-      expect(mockCharacter.craftNow).toHaveBeenCalledWith(2, expect.any(String));
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(
+        2,
+        expect.any(String),
+      );
     });
 
     it('should craft 2 items for gearcrafting skill', async () => {
@@ -359,7 +366,10 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       await objective.run();
 
       // Assert
-      expect(mockCharacter.craftNow).toHaveBeenCalledWith(2, expect.any(String));
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(
+        2,
+        expect.any(String),
+      );
     });
 
     it('should craft 1 item for jewelrycrafting skill', async () => {
@@ -387,7 +397,10 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       await objective.run();
 
       // Assert
-      expect(mockCharacter.craftNow).toHaveBeenCalledWith(1, expect.any(String));
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(
+        1,
+        expect.any(String),
+      );
     });
 
     it('should deposit items after successful crafting', async () => {

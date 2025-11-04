@@ -135,8 +135,10 @@ export class EventObjective extends Objective {
         this.character.data.utility1_slot_quantity <=
         this.character.minEquippedUtilities
       ) {
+        const currentCombatWeapon = this.character.data.weapon_slot;
         if (await this.character.equipUtility('restore', 'utility1')) {
           // If we moved to the bank we need to move back to the monster location
+          await this.character.equipNow(currentCombatWeapon, 'weapon');
           await this.character.move(event.map);
         }
       }

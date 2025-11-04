@@ -64,12 +64,12 @@ export class TrainCraftingSkillObjective extends Objective {
 
       const itemToCraft = craftableItemsList[randInd];
 
-      let numToCraft: number
+      let numToCraft: number;
       switch (this.skill) {
         case 'alchemy':
         case 'cooking':
         case 'mining':
-          numToCraft = 10
+          numToCraft = 10;
           break;
         case 'weaponcrafting':
         case 'gearcrafting':

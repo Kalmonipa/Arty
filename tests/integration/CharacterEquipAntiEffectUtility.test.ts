@@ -96,11 +96,9 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       return item ? item.quantity : 0;
     }) as jest.MockedFunction<(code: string) => number>;
 
-    character.checkQuantityOfItemInBank = jest.fn(
-      async (): Promise<number> => {
-        return 0; // Default to 0, can be overridden in tests
-      },
-    ) as jest.MockedFunction<(code: string) => Promise<number>>;
+    character.checkQuantityOfItemInBank = jest.fn(async (): Promise<number> => {
+      return 0; // Default to 0, can be overridden in tests
+    }) as jest.MockedFunction<(code: string) => Promise<number>>;
 
     character.withdrawNow = jest.fn(
       async (quantity: number, code: string): Promise<boolean> => {
@@ -126,11 +124,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         return true;
       },
     ) as jest.MockedFunction<
-      (
-        code: string,
-        slot: string,
-        quantity?: number,
-      ) => Promise<boolean>
+      (code: string, slot: string, quantity?: number) => Promise<boolean>
     >;
 
     character.craftNow = jest.fn(
@@ -432,9 +426,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       // Create utilities map with only restore utilities
       character.utilitiesMap = {
         antipoison: [],
-        restore: [
-          createMockUtility('health_potion', 'Health Potion', 1, 0),
-        ],
+        restore: [createMockUtility('health_potion', 'Health Potion', 1, 0)],
         boost_dmg_air: [],
         boost_dmg_earth: [],
         boost_dmg_fire: [],

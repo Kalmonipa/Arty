@@ -1239,21 +1239,7 @@ export class Character {
           `Eating ${amountNeededToEat} ${bestFood.code} to recover ${healthStatus.difference} health`,
         );
 
-        const useResponse = await actionUse(this.data, {
-          code: bestFood.code,
-          quantity: amountNeededToEat,
-        });
-        if (useResponse instanceof ApiError) {
-          this.handleErrors(useResponse);
-          return false;
-        } else {
-          if (useResponse.data.character) {
-            this.data = useResponse.data.character;
-            return true;
-          } else {
-            logger.error('Use item response missing character data');
-          }
-        }
+        return await this.use(bestFood.code, amountNeededToEat);
       }
     }
     return true;
@@ -1357,7 +1343,8 @@ export class Character {
         continue;
       }
 
-      let numNeeded: number = this.maxEquippedUtilities - this.data.utility2_slot_quantity;
+      let numNeeded: number =
+        this.maxEquippedUtilities - this.data.utility2_slot_quantity;
 
       const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
 
@@ -1629,7 +1616,6 @@ export class Character {
       [];
 
     for (const invItem of this.data.inventory) {
-
       const itemInfo = this.consumablesMap.heal.find(
         (item) => item.code === invItem.code,
       );
@@ -1774,6 +1760,15 @@ export class Character {
     if (destination.name === 'Sandwhisper Isle') {
       logger.warn(`Movement to ${destination.name} is not enabled yet`);
       return false;
+    }
+
+    // y coord and greater is all Sandwhisper Isle maps
+    // ToDo: Check for recall pot in inv first. If none, then use transistion method
+    if (this.data.y >= 17 && destination.name != 'Sandwhisper Isle') {
+      logger.info(
+        `Using a Recall Potion to travel from Sandwhisper Isle to Mainland`,
+      );
+      await this.use('recall_potion', 1);
     }
 
     if (
@@ -1930,19 +1925,44 @@ export class Character {
   /**
    * @description moves the character to the destination if they are not already there
    */
-  async rest() {
+  async rest(): Promise<boolean> {
     const restResponse = await actionRest(this.data);
 
     if (restResponse instanceof ApiError) {
       this.handleErrors(restResponse);
+      return false;
     } else {
       logger.info(
         `Recovered ${restResponse.data.hp_restored} health from resting`,
       );
       if (restResponse.data.character) {
         this.data = restResponse.data.character;
+        return true;
       } else {
         logger.error('Rest response missing character data');
+        return false;
+      }
+    }
+  }
+
+  /**
+   * @description uses the specified item
+   */
+  async use(itemCode: string, quantity: number): Promise<boolean> {
+    const useResponse = await actionUse(this.data, {
+      code: itemCode,
+      quantity: quantity,
+    });
+    if (useResponse instanceof ApiError) {
+      this.handleErrors(useResponse);
+      return false;
+    } else {
+      if (useResponse.data.character) {
+        this.data = useResponse.data.character;
+        return true;
+      } else {
+        logger.error('Use item response missing character data');
+        return false;
       }
     }
   }

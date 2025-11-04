@@ -67,7 +67,9 @@ const createMockGear = (
   craft: null,
   tradeable: true,
   conditions: [],
-  effects: [{ code: effectType, value: 10, description: `${effectType} effect` }],
+  effects: [
+    { code: effectType, value: 10, description: `${effectType} effect` },
+  ],
 });
 
 const createMockWeapon = (
@@ -85,7 +87,9 @@ const createMockWeapon = (
   craft: null,
   tradeable: true,
   conditions: [],
-  effects: [{ code: effectType, value: 15, description: `${effectType} effect` }],
+  effects: [
+    { code: effectType, value: 15, description: `${effectType} effect` },
+  ],
 });
 
 const createMockShield = (
@@ -103,7 +107,9 @@ const createMockShield = (
   craft: null,
   tradeable: true,
   conditions: [],
-  effects: [{ code: effectType, value: 12, description: `${effectType} effect` }],
+  effects: [
+    { code: effectType, value: 12, description: `${effectType} effect` },
+  ],
 });
 
 // Simple mock character
@@ -119,15 +125,9 @@ class SimpleMockCharacter {
       createMockWeapon('air_sword', 'Air Sword', 10, 'attack_air'),
       createMockWeapon('earth_sword', 'Earth Sword', 10, 'attack_earth'),
     ],
-    mining: [
-      createMockWeapon('iron_pickaxe', 'Mining Pick', 10, 'dmg'),
-    ],
-    woodcutting: [
-      createMockWeapon('iron_axe', 'Woodcutting Axe', 10, 'dmg'),
-    ],
-    fishing: [
-      createMockWeapon('spruce_fishing_rod', 'Fishing Rod', 10, 'dmg'),
-    ],
+    mining: [createMockWeapon('iron_pickaxe', 'Mining Pick', 10, 'dmg')],
+    woodcutting: [createMockWeapon('iron_axe', 'Woodcutting Axe', 10, 'dmg')],
+    fishing: [createMockWeapon('spruce_fishing_rod', 'Fishing Rod', 10, 'dmg')],
     alchemy: [
       createMockWeapon('apprentice_gloves', 'Alchemy Staff', 10, 'dmg'),
     ],
@@ -135,13 +135,25 @@ class SimpleMockCharacter {
 
   amuletMap: Record<GearEffects, ItemSchema[]> = {
     dmg_air: [createMockGear('air_amulet', 'Air Amulet', 10, 'dmg_air')],
-    dmg_earth: [createMockGear('earth_amulet', 'Earth Amulet', 10, 'dmg_earth')],
+    dmg_earth: [
+      createMockGear('earth_amulet', 'Earth Amulet', 10, 'dmg_earth'),
+    ],
     dmg_fire: [createMockGear('fire_amulet', 'Fire Amulet', 10, 'dmg_fire')],
-    dmg_water: [createMockGear('water_amulet', 'Water Amulet', 10, 'dmg_water')],
-    res_air: [createMockGear('res_air_amulet', 'Res Air Amulet', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_amulet', 'Res Earth Amulet', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_amulet', 'Res Fire Amulet', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_amulet', 'Res Water Amulet', 10, 'res_water')],
+    dmg_water: [
+      createMockGear('water_amulet', 'Water Amulet', 10, 'dmg_water'),
+    ],
+    res_air: [
+      createMockGear('res_air_amulet', 'Res Air Amulet', 10, 'res_air'),
+    ],
+    res_earth: [
+      createMockGear('res_earth_amulet', 'Res Earth Amulet', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_amulet', 'Res Fire Amulet', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_amulet', 'Res Water Amulet', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -160,9 +172,15 @@ class SimpleMockCharacter {
     dmg_fire: [createMockGear('fire_armor', 'Fire Armor', 10, 'dmg_fire')],
     dmg_water: [createMockGear('water_armor', 'Water Armor', 10, 'dmg_water')],
     res_air: [createMockGear('res_air_armor', 'Res Air Armor', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_armor', 'Res Earth Armor', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_armor', 'Res Fire Armor', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_armor', 'Res Water Armor', 10, 'res_water')],
+    res_earth: [
+      createMockGear('res_earth_armor', 'Res Earth Armor', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_armor', 'Res Fire Armor', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_armor', 'Res Water Armor', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -177,13 +195,25 @@ class SimpleMockCharacter {
 
   helmetMap: Record<GearEffects, ItemSchema[]> = {
     dmg_air: [createMockGear('air_helmet', 'Air Helmet', 10, 'dmg_air')],
-    dmg_earth: [createMockGear('earth_helmet', 'Earth Helmet', 10, 'dmg_earth')],
+    dmg_earth: [
+      createMockGear('earth_helmet', 'Earth Helmet', 10, 'dmg_earth'),
+    ],
     dmg_fire: [createMockGear('fire_helmet', 'Fire Helmet', 10, 'dmg_fire')],
-    dmg_water: [createMockGear('water_helmet', 'Water Helmet', 10, 'dmg_water')],
-    res_air: [createMockGear('res_air_helmet', 'Res Air Helmet', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_helmet', 'Res Earth Helmet', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_helmet', 'Res Fire Helmet', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_helmet', 'Res Water Helmet', 10, 'res_water')],
+    dmg_water: [
+      createMockGear('water_helmet', 'Water Helmet', 10, 'dmg_water'),
+    ],
+    res_air: [
+      createMockGear('res_air_helmet', 'Res Air Helmet', 10, 'res_air'),
+    ],
+    res_earth: [
+      createMockGear('res_earth_helmet', 'Res Earth Helmet', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_helmet', 'Res Fire Helmet', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_helmet', 'Res Water Helmet', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -202,9 +232,15 @@ class SimpleMockCharacter {
     dmg_fire: [createMockGear('fire_legs', 'Fire Legs', 10, 'dmg_fire')],
     dmg_water: [createMockGear('water_legs', 'Water Legs', 10, 'dmg_water')],
     res_air: [createMockGear('res_air_legs', 'Res Air Legs', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_legs', 'Res Earth Legs', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_legs', 'Res Fire Legs', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_legs', 'Res Water Legs', 10, 'res_water')],
+    res_earth: [
+      createMockGear('res_earth_legs', 'Res Earth Legs', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_legs', 'Res Fire Legs', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_legs', 'Res Water Legs', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -223,9 +259,15 @@ class SimpleMockCharacter {
     dmg_fire: [createMockGear('fire_ring', 'Fire Ring', 10, 'dmg_fire')],
     dmg_water: [createMockGear('water_ring', 'Water Ring', 10, 'dmg_water')],
     res_air: [createMockGear('res_air_ring', 'Res Air Ring', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_ring', 'Res Earth Ring', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_ring', 'Res Fire Ring', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_ring', 'Res Water Ring', 10, 'res_water')],
+    res_earth: [
+      createMockGear('res_earth_ring', 'Res Earth Ring', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_ring', 'Res Fire Ring', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_ring', 'Res Water Ring', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -243,10 +285,18 @@ class SimpleMockCharacter {
     dmg_earth: [],
     dmg_fire: [],
     dmg_water: [],
-    res_air: [createMockShield('res_air_shield', 'Res Air Shield', 10, 'res_air')],
-    res_earth: [createMockShield('res_earth_shield', 'Res Earth Shield', 10, 'res_earth')],
-    res_fire: [createMockShield('res_fire_shield', 'Res Fire Shield', 10, 'res_fire')],
-    res_water: [createMockShield('res_water_shield', 'Res Water Shield', 10, 'res_water')],
+    res_air: [
+      createMockShield('res_air_shield', 'Res Air Shield', 10, 'res_air'),
+    ],
+    res_earth: [
+      createMockShield('res_earth_shield', 'Res Earth Shield', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockShield('res_fire_shield', 'Res Fire Shield', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockShield('res_water_shield', 'Res Water Shield', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -525,7 +575,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.equipUtility).toHaveBeenCalledWith('restore', 'utility1');
+      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
+        'restore',
+        'utility1',
+      );
     });
 
     it('should not top up health potions when quantity is sufficient', async () => {
@@ -673,7 +726,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(1, 'res_fire_shield');
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(
+        1,
+        'res_fire_shield',
+      );
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'res_fire_shield',
         'shield',
@@ -712,7 +768,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.equipNow).toHaveBeenCalledWith('fire_sword', 'weapon');
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'fire_sword',
+        'weapon',
+      );
     });
 
     it('should check bank for weapon if not in inventory', async () => {
@@ -733,11 +792,15 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue(monsterWithLowFireRes);
 
       // Weapon not in inventory
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        return code === 'fire_sword' ? 0 : mockCharacter.data.inventory.find(
-          (item: InventorySlot) => item.code === code,
-        )?.quantity || 0;
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          return code === 'fire_sword'
+            ? 0
+            : mockCharacter.data.inventory.find(
+                (item: InventorySlot) => item.code === code,
+              )?.quantity || 0;
+        },
+      );
       // Weapon is in bank
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
       // equipNow will handle the withdrawal via EquipObjective internally
@@ -755,8 +818,13 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       // checkCombatWeapon checks bank and then calls equipNow (which handles withdrawal)
-      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith('fire_sword');
-      expect(mockCharacter.equipNow).toHaveBeenCalledWith('fire_sword', 'weapon');
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
+        'fire_sword',
+      );
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'fire_sword',
+        'weapon',
+      );
     });
   });
 
@@ -833,7 +901,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.equipNow).toHaveBeenCalledWith('dmg_helmet', 'helmet');
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'dmg_helmet',
+        'helmet',
+      );
     });
   });
 
@@ -860,7 +931,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
   describe('Error handling', () => {
     it('should handle API errors when getting monster information', async () => {
       // Arrange
-      const apiError = new ApiError({ code: 404, message: 'Monster not found' });
+      const apiError = new ApiError({
+        code: 404,
+        message: 'Monster not found',
+      });
       (
         getMonsterInformation as jest.MockedFunction<
           typeof getMonsterInformation
@@ -926,7 +1000,12 @@ describe('EvaluateGearObjective Integration Tests', () => {
     it('should handle character level restrictions', async () => {
       // Arrange
       // Create gear with level higher than character level
-      const highLevelGear = createMockGear('high_helmet', 'High Helmet', 50, 'dmg');
+      const highLevelGear = createMockGear(
+        'high_helmet',
+        'High Helmet',
+        50,
+        'dmg',
+      );
       mockCharacter.helmetMap.dmg = [highLevelGear];
 
       mockCharacter.data.level = 10; // Character is level 10
@@ -981,7 +1060,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('should handle different gathering activity types', async () => {
-      const activityTypes: WeaponFlavours[] = ['mining', 'woodcutting', 'fishing'];
+      const activityTypes: WeaponFlavours[] = [
+        'mining',
+        'woodcutting',
+        'fishing',
+      ];
 
       for (const activityType of activityTypes) {
         // Arrange
@@ -996,7 +1079,9 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
         // Assert
         expect(result).toBeDefined();
-        expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(activityType);
+        expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(
+          activityType,
+        );
 
         // Reset for next iteration
         jest.clearAllMocks();

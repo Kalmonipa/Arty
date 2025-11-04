@@ -119,12 +119,10 @@ const customFormat = winston.format.combine(
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(
-    ({ timestamp, level, message, character }) => {
-      const char = character || CharName;
-      return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
-    },
-  ),
+  winston.format.printf(({ timestamp, level, message, character }) => {
+    const char = character || CharName;
+    return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
+  }),
 );
 
 export const logger = winston.createLogger({

@@ -130,7 +130,7 @@ export class IdleObjective extends Objective {
    * @returns true if successful, false if not
    */
   private checkAchievementProgress(): boolean {
-    return true
+    return true;
   }
 
   /**
