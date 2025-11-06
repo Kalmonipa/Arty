@@ -748,7 +748,7 @@ export class Character {
   /**
    * Sets job in the queue as active
    */
-  setActiveJob(index?: number): Objective {
+  async setActiveJob(index?: number): Promise<Objective> {
     if (!index) {
       index = 0;
     }
@@ -763,7 +763,7 @@ export class Character {
         `Setting ${this.jobList[index].objectiveId} as active, removing from main job queue`,
       );
       this.activeJob = this.jobList[index];
-      this.removeJob(this.jobList[index].objectiveId);
+      await this.removeJob(this.jobList[index].objectiveId);
     } else {
       this.activeJob = null;
       logger.warn(`Not able to assign a job to active`);
