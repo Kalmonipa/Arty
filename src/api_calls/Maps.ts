@@ -43,7 +43,7 @@ export async function getMaps(
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
-        message: `Unknown error from /maps: ${response}`,
+        message: `Unknown error from /maps`,
       });
     }
     return await response.json();

@@ -32,7 +32,7 @@ export async function getAllEvents(
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
-        message: `Unknown error from /events: ${response}`,
+        message: `Unknown error from /events`,
       });
     }
     return await response.json();
@@ -63,7 +63,7 @@ export async function getActiveEvents(
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
-        message: `Unknown error from /events/active: ${response}`,
+        message: `Unknown error from /events/active`,
       });
     }
     return await response.json();

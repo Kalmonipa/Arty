@@ -43,7 +43,7 @@ export async function getBankItems(
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
-        message: `Unknown error from /my/bank/items: ${response}`,
+        message: `Unknown error from /my/bank/items`,
       });
     }
     return await response.json();
