@@ -24,7 +24,7 @@ import {
   actionCancelTask,
   actionCompleteTask,
 } from '../../src/api_calls/Tasks.js';
-import { MapSchema } from '../../src/types/MapData.js';
+import { MapSchema } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {

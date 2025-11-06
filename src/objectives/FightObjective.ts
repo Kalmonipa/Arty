@@ -9,6 +9,7 @@ import { getMonsterInformation } from '../api_calls/Monsters.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
+  shouldEquipHealthPots = true;
   participants?: string[];
   runFightSim?: boolean;
 
@@ -27,15 +28,11 @@ export class FightObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
-    await this.character.evaluateDepositItemsInBank(
-      [this.target.code, this.character.preferredFood],
-      { x: this.character.data.x, y: this.character.data.y },
-    );
+    const foodItems = this.character.findFoodInInventory();
+    const foodCodes = foodItems.map((food) => food.code);
+    const itemsToKeep = [...foodCodes];
 
-    // Check amount of food in inventory to use after battles
-    // if (!(await this.character.checkFoodLevels())) {
-    //   await this.character.topUpFood();
-    // }
+    await this.character.evaluateDepositItemsInBank(itemsToKeep);
 
     await this.character.evaluateGear('combat', this.target.code);
 
@@ -49,17 +46,53 @@ export class FightObjective extends Objective {
       if (this.runFightSim) {
         const fakeSchema = this.character.createFakeCharacterSchema(
           this.character.data,
+          true,
+        );
+
+        logger.info(
+          `Simulating fight against ${this.target.code} with health pots`,
         );
         const simResult = await this.character.simulateFightNow(
           [fakeSchema],
           this.target.code,
         );
 
-        if (simResult === false) {
-          await this.character.trainCombatLevelNow(
-            this.character.data.level + 1,
+        if (simResult && fakeSchema.utility1_slot_quantity) {
+          const fakeSchema = this.character.createFakeCharacterSchema(
+            this.character.data,
+            false,
           );
-          return false;
+
+          logger.info(
+            `Simulating fight against ${this.target.code} without health pots`,
+          );
+
+          const simResultWithoutHealthPots =
+            await this.character.simulateFightNow(
+              [fakeSchema],
+              this.target.code,
+            );
+
+          if (simResultWithoutHealthPots) {
+            const utilOnePot = this.character.data.utility1_slot;
+            logger.info(`Unequipping ${utilOnePot} as not needed`);
+            this.shouldEquipHealthPots = false;
+            await this.character.unequipNow(
+              'utility1',
+              this.character.data.utility1_slot_quantity,
+            );
+            await this.character.depositNow(
+              this.character.data.utility1_slot_quantity,
+              utilOnePot,
+            );
+          }
+        }
+
+        if (simResult === false) {
+          // await this.character.trainCombatLevelNow(
+          //   this.character.data.level + 1,
+          // );
+          return true;
         }
       }
       return true;
@@ -101,7 +134,7 @@ export class FightObjective extends Objective {
 
       const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      await this.character.move(contentLocation);
 
       for (
         this.progress;
@@ -114,17 +147,25 @@ export class FightObjective extends Objective {
           `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
         );
 
+        // Get all food items to deposit
+        const foodItems = this.character.findFoodInInventory();
+        const foodCodes = foodItems.map((food) => food.code);
+        const itemsToKeep = [...foodCodes];
+
         await this.character.evaluateDepositItemsInBank(
-          [this.target.code, this.character.preferredFood],
+          itemsToKeep,
           contentLocation,
         );
 
         await this.character.recoverHealth();
+        // Move back after healing
+        await this.character.move(contentLocation);
 
         // Check these after each fight in case we need to top up
         if (
           this.character.data.utility1_slot_quantity <=
-          this.character.minEquippedUtilities
+            this.character.minEquippedUtilities &&
+          this.shouldEquipHealthPots
         ) {
           if (await this.character.equipUtility('restore', 'utility1')) {
             // If we moved to the bank we need to move back to the monster location
@@ -159,12 +200,10 @@ export class FightObjective extends Objective {
           }
 
           await this.character.recoverHealth();
+          await this.character.move(contentLocation);
 
           // Check amount of food in inventory to use after battles
-          if (
-            this.character.preferredFood &&
-            !(await this.character.checkFoodLevels())
-          ) {
+          if (!(await this.character.checkFoodLevels())) {
             await this.character.topUpFood(contentLocation);
           }
         }

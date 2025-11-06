@@ -3,12 +3,16 @@ import { jest } from '@jest/globals';
 
 // Mock winston logger to prevent console output during tests
 jest.mock('winston', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  })),
+  createLogger: jest.fn(() => {
+    const mockLogger = {
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      child: jest.fn((meta) => mockLogger), // Return self for child logger
+    };
+    return mockLogger;
+  }),
   format: {
     combine: jest.fn(),
     timestamp: jest.fn(),

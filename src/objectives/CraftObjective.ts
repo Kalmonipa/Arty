@@ -142,7 +142,7 @@ export class CraftObjective extends Objective {
               );
               if (!gathered) {
                 logger.warn(
-                  `Reathering ingredients for ${targetItem.code} has failed`,
+                  `Regathering ingredients for ${targetItem.code} has failed`,
                 );
                 break;
               }
@@ -151,10 +151,7 @@ export class CraftObjective extends Objective {
 
           if (!(await this.checkStatus())) return false;
 
-          await this.character.move({
-            x: contentLocation.x,
-            y: contentLocation.y,
-          });
+          await this.character.move(contentLocation);
 
           logger.info(
             `Crafting ${this.numItemsPerBatch} ${this.target.code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,
@@ -272,10 +269,10 @@ export class CraftObjective extends Objective {
 
             if (
               !(await this.character.gatherNow(
-                totalIngredNeededToCraft - numInInv,
+                totalIngredNeededToCraft,
                 craftingItem.code,
                 true,
-                false,
+                true,
               ))
             ) {
               logger.warn(
@@ -308,13 +305,13 @@ export class CraftObjective extends Objective {
           } else {
             logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
-            // We don't want to include what's in our inventory. We want to collect new
+            // Pass the total amount needed, let GatherObjective figure out how many to gather
             if (
               !(await this.character.gatherNow(
-                totalIngredNeededToCraft - numInInv,
+                totalIngredNeededToCraft,
                 craftingItem.code,
                 true,
-                false,
+                true,
               ))
             ) {
               logger.warn(
@@ -327,7 +324,9 @@ export class CraftObjective extends Objective {
           }
         }
 
-        this.character.removeItemFromItemsToKeep(craftingItem.code);
+        if (!this.parentId) {
+          this.character.removeItemFromItemsToKeep(craftingItem.code);
+        }
 
         // Ensure that we're carrying the correct amount of ingredients. They may have been deposited into bank
         numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
@@ -346,11 +345,12 @@ export class CraftObjective extends Objective {
           logger.info(
             `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
           );
-          return false;
         }
       }
     }
-    this.character.itemsToKeep = [];
+    if (!this.parentId) {
+      this.character.itemsToKeep = [];
+    }
     return true;
   }
 

@@ -25,10 +25,10 @@ export class ItemTaskObjective extends Objective {
   async run(): Promise<boolean> {
     let result = false;
 
-    for (let count = 0; count < this.quantity; count++) {
+    while (this.progress < this.quantity) {
       if (!(await this.checkStatus())) return false;
 
-      logger.info(`Completed ${count}/${this.quantity} tasks`);
+      logger.info(`Completed ${this.progress}/${this.quantity} tasks`);
       result = await this.doTask();
 
       this.progress++;
@@ -56,7 +56,7 @@ export class ItemTaskObjective extends Objective {
       if (!(await this.checkStatus())) return false;
 
       if (
-        this.character.data.task === undefined ||
+        !this.character.data.task ||
         this.character.data.task === ''
       ) {
         await this.startNewTask('items');
@@ -64,6 +64,19 @@ export class ItemTaskObjective extends Objective {
         logger.info(
           `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}. Collected ${this.character.data.task_progress} so far`,
         );
+      }
+
+      if (
+        this.character.data.task === 'strange_ore' ||
+        this.character.data.task === 'magic_wood' ||
+        this.character.data.task === 'magical_plank' ||
+        this.character.data.task === 'strangold_bar'
+      ) {
+        logger.info(
+          `${this.character.data.task} is an item we want to keep. Cancelling task`,
+        );
+        await this.cancelCurrentTask('items');
+        continue;
       }
 
       // get information on the requested item

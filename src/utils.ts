@@ -4,6 +4,7 @@ import {
   GatheringSkill,
   ItemSchema,
   ItemType,
+  MapSchema,
 } from './types/types.js';
 import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './objectives/Error.js';
@@ -22,6 +23,58 @@ export const MAX_COMBAT_LEVEL = 50;
 export const MAX_SKILL_LEVEL = 50;
 export const CRITICAL_MODIFIER = 0.5;
 
+/**
+ * Array of all the transition maps:
+ * - 571: mountain_6; to Mithril/Bat cave
+ * @todo Find a way to get this programmatically
+ */
+export const TransitionLocations: MapSchema[] = [
+  {
+    map_id: 571,
+    name: 'Mountain',
+    skin: 'mountain_6',
+    x: -2,
+    y: 6,
+    layer: 'overworld',
+    access: {
+      type: 'standard',
+      conditions: [],
+    },
+    interactions: {
+      content: null,
+      transition: {
+        map_id: 572,
+        x: -2,
+        y: 6,
+        layer: 'underground',
+        conditions: [],
+      },
+    },
+  },
+  {
+    map_id: 572,
+    name: 'Underground',
+    skin: 'mine_1',
+    x: -2,
+    y: 6,
+    layer: 'underground',
+    access: {
+      type: 'standard',
+      conditions: [],
+    },
+    interactions: {
+      content: null,
+      transition: {
+        map_id: 571,
+        x: -2,
+        y: 6,
+        layer: 'overworld',
+        conditions: [],
+      },
+    },
+  },
+];
+
 const logLevel = process.env.LOG_LEVEL || 'info';
 
 export const MyHeaders = new Headers({
@@ -39,25 +92,39 @@ const customFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YYYYTHH:mm:ss.SSSZ' }),
   winston.format.errors({ stack: true }),
   winston.format.json(),
-  winston.format.printf(({ timestamp, level, message, character, ...meta }) => {
-    const logObject = {
+  winston.format.printf(
+    ({
       timestamp,
       level,
       message,
-      character: character || CharName,
-      ...meta,
-    };
-    return JSON.stringify(logObject);
-  }),
+      character,
+      objectiveId,
+      rootId,
+      ...meta
+    }) => {
+      const logObject = {
+        timestamp,
+        level,
+        message,
+        character: character || CharName,
+        ...(objectiveId && { objectiveId }),
+        ...(rootId && { rootId }),
+        ...meta,
+      };
+      return JSON.stringify(logObject);
+    },
+  ),
 );
 
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(({ timestamp, level, message, character }) => {
-    const char = character || CharName;
-    return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
-  }),
+  winston.format.printf(
+    ({ timestamp, level, message, character }) => {
+      const char = character || CharName;
+      return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
+    },
+  ),
 );
 
 export const logger = winston.createLogger({

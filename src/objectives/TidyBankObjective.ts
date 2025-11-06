@@ -17,6 +17,7 @@ export class TidyBankObjective extends Objective {
     'raw_chicken',
     'raw_beef',
     'raw_wolf_meat',
+    'apple',
   ];
   rawOreList = [
     'copper_ore',
@@ -76,6 +77,7 @@ export class TidyBankObjective extends Objective {
    * @returns true if successful or false if it failed
    */
   private async cookFood(): Promise<boolean> {
+    logger.info(`Starting to cook uncooked food in bank`);
     for (const item of this.rawFoodList) {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
 
@@ -84,11 +86,11 @@ export class TidyBankObjective extends Objective {
         break;
       }
 
-      logger.info(`Found ${numInBank} ${item} in the bank.`);
-
-      if (numInBank == 0) {
-        break;
+      if (numInBank === 0) {
+        logger.info(`Found no ${item} in the bank. Moving on`);
+        continue;
       } else {
+        logger.info(`Found ${numInBank} ${item} in the bank.`);
         const itemToCraftSchema = await this.identifyCraftedItemFrom(
           item,
           'cooking',
@@ -103,7 +105,7 @@ export class TidyBankObjective extends Objective {
           numInBank / itemToCraftSchema.craft.items[0].quantity,
         );
 
-        return await this.character.craftNow(numToCraft, item);
+        await this.character.craftNow(numToCraft, itemToCraftSchema.code);
       }
     }
     logger.info(`Found no food in the bank to clean up`);
@@ -189,7 +191,8 @@ export class TidyBankObjective extends Objective {
         );
         continue;
       } else {
-        return craftedItemList[0];
+        logger.info(`Crafting ${craftItem.code} from ${ingredient}`);
+        return craftItem;
       }
     }
     return;

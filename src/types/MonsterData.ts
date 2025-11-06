@@ -1,4 +1,4 @@
-import { AttackType, ResistanceType } from './ItemData.js';
+import { AttackType, DamageType, ResistanceType } from './ItemData.js';
 
 export type MonsterAttack = {
   type: AttackType;
@@ -8,6 +8,7 @@ export type MonsterAttack = {
 
 export type MonsterResistance = {
   type: ResistanceType;
-  counterType: AttackType;
+  atkCounterType: AttackType;
+  dmgCounterType: DamageType;
   value: number;
 };

@@ -53,7 +53,7 @@ export class EquipObjective extends Objective {
         if (
           (await this.character.checkQuantityOfItemInBank(this.itemCode)) > 0
         ) {
-          await this.character.withdrawNow(this.quantity | 1, this.itemCode);
+          await this.character.withdrawNow(this.quantity || 1, this.itemCode);
         }
       }
 

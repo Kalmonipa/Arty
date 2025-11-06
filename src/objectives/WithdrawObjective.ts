@@ -46,7 +46,7 @@ export class WithdrawObjective extends Objective {
 
       const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-      await this.character.move({ x: contentLocation.x, y: contentLocation.y });
+      await this.character.move(contentLocation);
 
       const response = await actionWithdrawItem(this.character.data, [
         { quantity: this.target.quantity, code: this.target.code },

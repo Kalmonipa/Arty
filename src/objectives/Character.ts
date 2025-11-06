@@ -2,19 +2,21 @@ import {
   actionDepositItems,
   actionMove,
   actionRest,
+  actionTransition,
 } from '../api_calls/Actions.js';
 import { actionUse, getItemInformation } from '../api_calls/Items.js';
-import { getMaps } from '../api_calls/Maps.js';
+import { getMaps, getMapsById } from '../api_calls/Maps.js';
 import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
+  ActiveEventSchema,
   CharacterSchema,
   CraftSkill,
-  DestinationSchema,
   FakeCharacterSchema,
   GatheringSkill,
   ItemSchema,
   ItemSlot,
   MapSchema,
+  SimpleEffectSchema,
   SimpleItemSchema,
   Skill,
 } from '../types/types.js';
@@ -24,6 +26,7 @@ import {
   CharRole,
   logger,
   sleep,
+  TransitionLocations,
 } from '../utils.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -51,7 +54,6 @@ import {
   GearEffects,
   ConsumableEffects,
 } from '../types/ItemData.js';
-import { SimpleMapSchema } from '../types/MapData.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TidyBankObjective } from './TidyBankObjective.js';
 import { EvaluateGearObjective } from './EvaluateGearObjective.js';
@@ -124,11 +126,6 @@ export class Character {
    */
   minEquippedUtilities = 20;
   /**
-   * The code of the food we're currently using. Saving it as a var so
-   * I don't have to search my inv to figure out what to use
-   */
-  preferredFood: string;
-  /**
    * Desired number of food in inventory
    */
   desiredFoodCount = 50;
@@ -147,7 +144,11 @@ export class Character {
   /**
    * Events that we would like to participate in
    */
-  applicableResourceEvents = ['magic_apparition', 'strange_apparition'];
+  applicableResourceEvents = [
+    'magic_apparition',
+    'strange_apparition',
+    'bandit_camp',
+  ];
 
   constructor(data: CharacterSchema) {
     this.data = data;
@@ -341,6 +342,10 @@ export class Character {
         activityType: job.activityType,
         targetMob: job.targetMob,
       };
+    } else if (job instanceof EventObjective) {
+      return {
+        activeEvent: job.activeEvent,
+      };
     } else if (job instanceof ExpandBankObjective) {
       return {};
     } else if (job instanceof GatherObjective) {
@@ -367,6 +372,8 @@ export class Character {
       return { quantity: job.quantity };
     } else if (job instanceof MonsterTaskObjective) {
       return { quantity: job.quantity };
+    } else if (job instanceof RecycleObjective) {
+      return { target: job.target };
     } else if (job instanceof TrainCombatObjective) {
       return { targetLevel: job.targetLevel };
     } else if (job instanceof TrainCraftingSkillObjective) {
@@ -419,6 +426,12 @@ export class Character {
             specificData.targetMob as string,
           );
           break;
+        case 'EventObjective':
+          job = new EventObjective(
+            this,
+            specificData.activeEvent as ActiveEventSchema,
+          );
+          break;
         case 'ExpandBankObjective':
           job = new ExpandBankObjective(this);
           break;
@@ -468,6 +481,12 @@ export class Character {
           break;
         case 'MonsterTaskObjective':
           job = new MonsterTaskObjective(this, specificData.quantity as number);
+          break;
+        case 'RecycleObjective':
+          job = new RecycleObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
           break;
         case 'TrainCombatObjective':
           job = new TrainCombatObjective(
@@ -605,6 +624,8 @@ export class Character {
     // Set the parentId if provided
     if (parentId) {
       obj.parentId = parentId;
+      // Update rootId when parentId is set
+      obj.updateRootId();
       logger.debug(`Set parentId ${parentId} for job ${obj.objectiveId}`);
     }
 
@@ -615,7 +636,7 @@ export class Character {
         this.appendJob(obj);
       }
 
-      logger.info(
+      logger.debug(
         `Added job ${obj.objectiveId} to position ${prepend ? 0 : this.jobList.length - 1}${parentId ? `, parent: ${parentId}` : ''}`,
       );
 
@@ -664,7 +685,7 @@ export class Character {
 
     logger.debug(`Removing ${objectiveId} from position ${ind}`);
     const deletedObj = this.jobList.splice(ind, 1);
-    logger.info(`Removed ${deletedObj[0].objectiveId} from job queue`);
+    logger.debug(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
       for (const obj of this.jobList) {
@@ -760,6 +781,20 @@ export class Character {
         await this.appendJob(new IdleObjective(this, this.role));
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];
+
+        // Check if job is already completed (executed via executeJobNow)
+        if (
+          currentJob.status === 'complete' ||
+          currentJob.status === 'cancelled' ||
+          currentJob.status === 'failed'
+        ) {
+          logger.info(
+            `Removing completed job ${currentJob.objectiveId} with status: ${currentJob.status}`,
+          );
+          await this.removeJob(currentJob.objectiveId);
+          continue;
+        }
+
         this.currentExecutingJob = currentJob;
         logger.info(`Executing job ${currentJob.objectiveId}`);
         await currentJob.execute();
@@ -783,8 +818,23 @@ export class Character {
       return false;
     }
 
+    // Avoids creating an infinite loop
+    for (const job of this.jobList) {
+      if (job.objectiveId.includes('_event_')) {
+        logger.info(
+          `Event job ${job.objectiveId} already in queue. Not checking again`,
+        );
+        return false;
+      }
+    }
+
     for (const event of activeEventsResponse.data) {
       if (this.applicableResourceEvents.includes(event.code)) {
+        if (event.code === 'bandit_camp' && this.data.level < 25) {
+          logger.debug(`${this.data.name} is too low level for Bandit Camp`);
+          continue;
+        }
+
         const job = new EventObjective(this, event);
         return await this.executeJobNow(
           job,
@@ -900,6 +950,7 @@ export class Character {
    * @returns the amount found in the bank
    */
   async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
+    let numFound = 0;
     const bankItem = await getBankItems(contentCode);
     if (bankItem instanceof ApiError) {
       await this.handleErrors(bankItem);
@@ -907,16 +958,18 @@ export class Character {
     }
 
     if (bankItem.total === 0) {
-      return 0;
+      numFound = 0;
     } else if (bankItem.total === 1) {
-      return bankItem.data[0].quantity;
+      numFound = bankItem.data[0].quantity;
     } else {
       let total = 0;
       for (const item of bankItem.data) {
         total += item.quantity;
       }
-      return total;
+      numFound = total;
     }
+    logger.debug(`Found ${numFound} ${contentCode} in bank`);
+    return numFound;
   }
 
   async getAllBankItems(): Promise<SimpleItemSchema[]> {
@@ -970,7 +1023,10 @@ export class Character {
   /**
    * @description Creates a FakeCharacterSchema of the current character
    */
-  createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
+  createFakeCharacterSchema(
+    character: CharacterSchema,
+    includeUtility1?: boolean,
+  ): FakeCharacterSchema {
     const fakeChar: FakeCharacterSchema = {
       level: character.level,
       weapon_slot: character.weapon_slot,
@@ -989,7 +1045,7 @@ export class Character {
       utility1_slot: character.utility1_slot,
       utility2_slot: character.utility2_slot,
     };
-    if (character.utility1_slot) {
+    if (includeUtility1 && character.utility1_slot) {
       fakeChar.utility1_slot_quantity = character.utility1_slot_quantity;
     }
     if (character.utility2_slot) {
@@ -1120,7 +1176,7 @@ export class Character {
   }
 
   /**
-   * @description Eat the required amount of preferred food to recover fully
+   * @description Eat the required amount of food to recover fully
    */
   async recoverHealth(): Promise<boolean> {
     const healthStatus: HealthStatus = this.checkHealth();
@@ -1130,90 +1186,61 @@ export class Character {
         await this.rest();
         return true;
       } else {
-        const hasPreferredFood = await this.setPreferredFood();
-        if (!hasPreferredFood) {
+        // Find the best available food
+        let bestFood = await this.findBestFood();
+        if (!bestFood) {
           logger.warn(
-            `No food available in inventory or bank. Resting instead.`,
+            `No food available in inventory or bank. Gathering some instead.`,
+          );
+          // ToDo: Make this dynamically pick the food to gather
+          await this.craftNow(40, 'cooked_gudgeon', true, true);
+          bestFood = {
+            code: 'cooked_gudgeon',
+            quantity: 40,
+            healValue: 75,
+            source: 'inventory',
+          };
+        }
+
+        const healthStatus: HealthStatus = this.checkHealth();
+        let amountNeededToEat = Math.ceil(
+          healthStatus.difference / bestFood.healValue,
+        );
+
+        // If food is in bank, withdraw it first
+        if (bestFood.source === 'bank') {
+          const withdrawSuccess = await this.withdrawFoodIfNeeded(
+            bestFood,
+            amountNeededToEat,
+          );
+          if (!withdrawSuccess) {
+            logger.warn(
+              `Could not withdraw enough food from bank. Resting instead.`,
+            );
+            await this.rest();
+            return true;
+          }
+        }
+
+        // Check current inventory quantity after potential withdrawal
+        const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
+        if (currentQuantity === 0) {
+          logger.warn(
+            `No food available in inventory after withdrawal attempt. Resting instead.`,
           );
           await this.rest();
           return true;
         }
 
-        const healthStatus: HealthStatus = this.checkHealth();
-
-        const preferredFoodObj = this.consumablesMap.heal.find(
-          (food) => food.code === this.preferredFood,
-        );
-        const preferredFoodHealValue =
-          preferredFoodObj?.effects?.find((effect) => effect.code === 'heal')
-            ?.value ?? 0;
-
-        let amountNeededToEat = Math.ceil(
-          healthStatus.difference / preferredFoodHealValue,
-        );
-
-        const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-
-        // If we don't have enough food in inventory, try to withdraw from bank
-        if (numInInv < amountNeededToEat) {
-          logger.info(
-            `Only have ${numInInv} ${this.preferredFood} in inventory. Attempting to withdraw from bank.`,
-          );
-
-          const numInBank = await this.checkQuantityOfItemInBank(
-            this.preferredFood,
-          );
-          if (numInBank > 0) {
-            const amountToWithdraw = Math.min(
-              numInBank,
-              this.desiredFoodCount - numInInv,
-            );
-            logger.info(
-              `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`,
-            );
-            await this.withdrawNow(amountToWithdraw, this.preferredFood);
-
-            const newNumInInv = this.checkQuantityOfItemInInv(
-              this.preferredFood,
-            );
-            if (newNumInInv >= amountNeededToEat) {
-              amountNeededToEat = Math.min(amountNeededToEat, newNumInInv);
-            } else {
-              amountNeededToEat = newNumInInv;
-            }
-          } else {
-            logger.info(
-              `No ${this.preferredFood} in bank. Looking for alternative food.`,
-            );
-            const foundAlternative = await this.setPreferredFood();
-            if (!foundAlternative) {
-              logger.warn(`No alternative food found. Resting instead.`);
-              await this.rest();
-              return true;
-            }
-
-            const newNumInInv = this.checkQuantityOfItemInInv(
-              this.preferredFood,
-            );
-            if (newNumInInv === 0) {
-              await this.rest();
-              return true;
-            }
-            amountNeededToEat = Math.min(amountNeededToEat, newNumInInv);
-          }
-        } else if (amountNeededToEat > numInInv) {
-          logger.info(
-            `Only have ${numInInv} ${this.preferredFood} in inventory. Eating what we have.`,
-          );
-          amountNeededToEat = numInInv;
-        }
+        // Adjust amount to eat based on what's actually available
+        amountNeededToEat = Math.min(amountNeededToEat, currentQuantity);
 
         logger.info(
-          `Eating ${amountNeededToEat} ${this.preferredFood} to recover ${healthStatus.difference} health`,
+          `Eating ${amountNeededToEat} ${bestFood.code} to recover ${healthStatus.difference} health`,
         );
 
         const useResponse = await actionUse(this.data, {
-          code: this.preferredFood,
+          code: bestFood.code,
           quantity: amountNeededToEat,
         });
         if (useResponse instanceof ApiError) {
@@ -1260,8 +1287,8 @@ export class Character {
         logger.debug(`Attempting to equip ${utility[ind].name}`);
         if (numInInv >= numNeeded) {
           logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-          await this.equipNow(utility[ind].code, slot, numInInv);
-          return false;
+          await this.equipNow(utility[ind].code, slot, numNeeded);
+          return true;
         } else if (numInInv > 0 && numInInv < numNeeded) {
           logger.debug(
             `Carrying ${numInInv} in inv. Equipping them and checking bank`,
@@ -1285,6 +1312,94 @@ export class Character {
           );
           return true;
         } else {
+          if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
+            logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
+            if (await this.craftNow(numNeeded, utility[ind].code)) {
+              return await this.equipNow(utility[ind].code, slot, numNeeded);
+            } else {
+              logger.debug(`Can't craft ${utility[ind].name}`);
+              return false;
+            }
+          } else {
+            logger.debug(`Can't find any ${utility[ind].name}`);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * @description Equips a utility into slot 2 that will counteract the effect of a monster.
+   * Calculates how many potions we need to reach max number.
+   * Equips the most minor potion so we aren't overusing potions.
+   * E.g We only get 20 poison when fighting spiders so equipping antidotes that recover 50 is unnecessary
+   * @returns a boolean stating whether we need to move back to our original location
+   */
+  async equipAntiEffectUtility(
+    utilityType: UtilityEffects,
+    mobEffect: SimpleEffectSchema,
+  ): Promise<boolean> {
+    const utility = this.utilitiesMap[utilityType];
+
+    // Find the best potion for the attack
+    for (let ind = 0; ind <= utility.length - 1; ind++) {
+      if (utility[ind].level > this.getCharacterLevel()) {
+        continue;
+      }
+      // ToDo: Figure out a way to check all effects for the value
+      if (
+        utility[ind].effects &&
+        utility[ind].effects[0].value < mobEffect.value
+      ) {
+        logger.debug(
+          `${utility[ind].code} only counteracts ${utility[ind].effects[0].value} ${mobEffect.code}. Skipping`,
+        );
+        continue;
+      }
+
+      let numNeeded: number = this.maxEquippedUtilities - this.data.utility2_slot_quantity;
+
+      const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
+
+      logger.debug(`Attempting to equip ${utility[ind].name}`);
+      if (numInInv >= numNeeded) {
+        logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
+        await this.equipNow(utility[ind].code, 'utility2', numNeeded);
+        return true;
+      } else if (numInInv > 0 && numInInv < numNeeded) {
+        logger.debug(
+          `Carrying ${numInInv} in inv. Equipping them and checking bank`,
+        );
+        await this.equipNow(utility[ind].code, 'utility2', numInInv);
+        numNeeded = numNeeded - numInInv;
+        logger.debug(`${numNeeded} needed from the bank`);
+      }
+      const numInBank = await this.checkQuantityOfItemInBank(utility[ind].code);
+      if (numInBank > 0) {
+        await this.withdrawNow(
+          Math.min(numInBank, numNeeded),
+          utility[ind].code,
+        );
+        await this.equipNow(
+          utility[ind].code,
+          'utility2',
+          Math.min(numInBank, numNeeded),
+        );
+        return true;
+      } else {
+        if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
+          logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
+          if (await this.craftNow(numNeeded, utility[ind].code)) {
+            return await this.equipNow(
+              utility[ind].code,
+              'utility1',
+              numNeeded,
+            );
+          } else {
+            logger.debug(`Can't craft ${utility[ind].name}`);
+            return false;
+          }
+        } else {
           logger.debug(`Can't find any ${utility[ind].name}`);
         }
       }
@@ -1292,47 +1407,43 @@ export class Character {
   }
 
   /**
-   * @description top up the preferred food from the bank until we have the amount we want
+   * @description top up food from the bank until we have the desired amount
    * Moves back to the previous location if one is provided
    */
-  async topUpFood(priorLocation?: DestinationSchema) {
-    if (!this.preferredFood) {
-      logger.debug(`No preferred food set to top up`);
-      const hasPreferredFood = await this.setPreferredFood();
-      if (!hasPreferredFood) {
-        logger.warn(`No food available to top up`);
-        return;
-      }
+  async topUpFood(priorLocation?: MapSchema) {
+    // Find the best available food
+    const bestFood = await this.findBestFood();
+    if (!bestFood) {
+      logger.warn(`No food available to top up`);
+      return;
     }
 
-    // Check to make sure we have enough preferred food in the bank. If there's none, set a new preferred food
-    const numInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
-    if (numInBank === 0) {
-      logger.info(
-        `No ${this.preferredFood} in bank. Looking for alternative food.`,
+    // If food is in bank, withdraw it to reach desired count
+    if (bestFood.source === 'bank') {
+      const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
+      const numNeeded = Math.min(
+        bestFood.quantity,
+        this.desiredFoodCount - currentQuantity,
       );
-      const foundAlternative = await this.setPreferredFood();
-      if (!foundAlternative) {
-        logger.warn(`No alternative food found in bank`);
-        return;
+
+      if (numNeeded > 0) {
+        logger.info(
+          `Topping up ${bestFood.code}: withdrawing ${numNeeded} from bank (currently have ${currentQuantity} in inventory)`,
+        );
+        await this.withdrawNow(numNeeded, bestFood.code);
+      } else {
+        logger.debug(
+          `Already have enough ${bestFood.code} in inventory (${currentQuantity}/${this.desiredFoodCount})`,
+        );
       }
-    }
-
-    const numInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-    const numNeeded = Math.min(
-      await this.checkQuantityOfItemInBank(this.preferredFood),
-      this.desiredFoodCount - numInInv,
-    );
-
-    if (numNeeded > 0) {
-      logger.info(
-        `Topping up ${this.preferredFood}: withdrawing ${numNeeded} from bank (currently have ${numInInv} in inventory)`,
-      );
-      await this.withdrawNow(numNeeded, this.preferredFood);
     } else {
-      logger.debug(
-        `Already have enough ${this.preferredFood} in inventory (${numInInv}/${this.desiredFoodCount})`,
-      );
+      // Food is already in inventory, check if we need more
+      const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
+      if (currentQuantity < this.desiredFoodCount) {
+        logger.debug(
+          `Have ${currentQuantity} ${bestFood.code} in inventory, desired ${this.desiredFoodCount}`,
+        );
+      }
     }
 
     if (priorLocation) {
@@ -1357,7 +1468,7 @@ export class Character {
    */
   async evaluateDepositItemsInBank(
     exceptions?: string[],
-    priorLocation?: SimpleMapSchema,
+    priorLocation?: MapSchema,
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
     const usedInventorySpace = this.getInventoryFullness();
@@ -1374,14 +1485,18 @@ export class Character {
 
       const contentLocation = this.evaluateClosestMap(maps.data);
 
-      await this.move({ x: contentLocation.x, y: contentLocation.y });
+      await this.move(contentLocation);
 
       const itemsToDeposit: SimpleItemSchema[] = [];
       for (const item of this.data.inventory) {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
           continue;
-        } else if (exceptions && exceptions.includes(item.code)) {
+        } else if (
+          exceptions &&
+          exceptions.includes(item.code) &&
+          usedInventorySpace != 100
+        ) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.debug(`Adding ${item.quantity} ${item.code} to deposit list`);
@@ -1423,155 +1538,222 @@ export class Character {
   }
 
   /**
-   * @description Checks inventory for the desired food and tops it up if we need too
-   * Sets the preferred food if there isn't one already set
+   * @description Checks inventory for food and determines if we have enough
    * @returns {boolean} stating whether we have a good amount of food or not
    */
   async checkFoodLevels(): Promise<boolean> {
-    if (this.preferredFood) {
-      logger.debug(`Preferred food is ${this.preferredFood}`);
-      const amountCurrFood = this.checkQuantityOfItemInInv(this.preferredFood);
-      if (amountCurrFood > this.minFood) {
+    const inventoryFood = this.findFoodInInventory();
+    if (inventoryFood.length === 0) {
+      logger.debug(`No food found in inventory`);
+      return false;
+    }
+
+    // Check if any food in inventory meets minimum requirements
+    for (const food of inventoryFood) {
+      if (food.quantity > this.minFood) {
+        logger.debug(
+          `Found ${food.quantity} ${food.code} in inventory (min: ${this.minFood})`,
+        );
         return true;
-      } else {
-        return false;
       }
-    } else {
-      logger.debug(`No preferred food. Finding one`);
-      return await this.setPreferredFood();
-    }
-  }
-
-  /**
-   * @description Ensures the character has enough food for activities
-   * Will withdraw from bank if needed, or switch to alternative food if current preferred food is not available
-   * @returns {boolean} true if character has sufficient food, false if no food is available
-   */
-  async ensureFoodAvailable(): Promise<boolean> {
-    const hasPreferredFood = await this.setPreferredFood();
-    if (!hasPreferredFood) {
-      logger.warn(`No food available in inventory or bank`);
-      return false;
     }
 
-    const currentFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-
-    if (currentFoodInInv >= this.minFood) {
-      logger.debug(
-        `Have sufficient ${this.preferredFood} in inventory (${currentFoodInInv}/${this.minFood})`,
-      );
-      return true;
-    }
-
-    const foodInBank = await this.checkQuantityOfItemInBank(this.preferredFood);
-    if (foodInBank > 0) {
-      const amountToWithdraw = Math.min(
-        foodInBank,
-        this.desiredFoodCount - currentFoodInInv,
-      );
-      logger.info(
-        `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank to ensure sufficient food`,
-      );
-      await this.withdrawNow(amountToWithdraw, this.preferredFood);
-      return true;
-    }
-
-    logger.info(
-      `No ${this.preferredFood} in bank. Looking for alternative food.`,
+    logger.debug(
+      `No food in inventory meets minimum requirements (${this.minFood})`,
     );
-    const foundAlternative = await this.setPreferredFood();
-    if (!foundAlternative) {
-      logger.warn(`No alternative food found`);
-      return false;
-    }
-
-    const newFoodInInv = this.checkQuantityOfItemInInv(this.preferredFood);
-    if (newFoodInInv >= this.minFood) {
-      logger.info(
-        `Switched to ${this.preferredFood} which has sufficient quantity (${newFoodInInv})`,
-      );
-      return true;
-    }
-
-    const newFoodInBank = await this.checkQuantityOfItemInBank(
-      this.preferredFood,
-    );
-    if (newFoodInBank > 0) {
-      const amountToWithdraw = Math.min(
-        newFoodInBank,
-        this.desiredFoodCount - newFoodInInv,
-      );
-      logger.info(
-        `Withdrawing ${amountToWithdraw} ${this.preferredFood} from bank`,
-      );
-      await this.withdrawNow(amountToWithdraw, this.preferredFood);
-      return true;
-    }
-
-    logger.warn(`No food available for ${this.preferredFood}`);
     return false;
   }
 
   /**
-   * @description Preferred food is used to withdraw from the bank without having to figure out what food is available
-   * @returns true if successful, false otherwise
+   * @description Ensures the character has enough food for activities
+   * Will withdraw from bank if needed
+   * @returns {boolean} true if character has sufficient food, false if no food is available
    */
-  async setPreferredFood(): Promise<boolean> {
-    if (!this.data || !this.data.inventory) {
-      return false;
-    }
-
-    if (this.preferredFood) {
-      const currentFoodInInv = this.checkQuantityOfItemInInv(
-        this.preferredFood,
-      );
-      if (currentFoodInInv > this.minFood) {
+  async ensureFoodAvailable(): Promise<boolean> {
+    // First check if we already have enough food in inventory
+    const inventoryFood = this.findFoodInInventory();
+    for (const food of inventoryFood) {
+      if (food.quantity >= this.minFood) {
         logger.debug(
-          `Current preferred food ${this.preferredFood} has ${currentFoodInInv} in inventory, keeping it`,
+          `Have sufficient ${food.code} in inventory (${food.quantity}/${this.minFood})`,
         );
         return true;
       }
     }
 
-    // Look for food in inventory first
-    const foundItem = this.data.inventory.find((invItem) => {
-      return this.consumablesMap.heal.find(
-        (item) => invItem.code === item.code && item.level <= this.data.level,
-      );
-    });
-
-    if (foundItem && foundItem.quantity > this.minFood) {
-      logger.debug(
-        `Found ${foundItem.quantity} ${foundItem.code} in inventory. Setting it as the preferred food`,
-      );
-      this.preferredFood = foundItem.code;
-      return true;
+    // If not enough in inventory, find best food and withdraw if needed
+    const bestFood = await this.findBestFood();
+    if (!bestFood) {
+      logger.warn(`No food available in inventory or bank`);
+      return false;
     }
 
-    logger.debug(`Not enough food in inventory. Checking bank to find some`);
-    const bankItems = await this.getAllBankItems();
-
-    if (!bankItems || bankItems.length === 0) {
-      logger.info(`No items in the bank`);
-      return false;
-    } else {
-      const foundItem = bankItems.find((bankItem) => {
-        return this.consumablesMap.heal.find(
-          (item) =>
-            bankItem.code === item.code && item.level <= this.data.level,
+    // If food is in bank, withdraw it
+    if (bestFood.source === 'bank') {
+      const withdrawSuccess = await this.withdrawFoodIfNeeded(
+        bestFood,
+        this.minFood,
+      );
+      if (withdrawSuccess) {
+        logger.info(
+          `Withdrew ${bestFood.code} from bank to ensure sufficient food`,
         );
-      });
-
-      if (foundItem) {
-        logger.debug(
-          `Found ${foundItem.code} in the bank. Setting it as the preferred food`,
-        );
-        this.preferredFood = foundItem.code;
         return true;
       } else {
-        logger.info(`No food found in the bank`);
+        logger.warn(`Could not withdraw enough ${bestFood.code} from bank`);
         return false;
       }
+    }
+
+    // Food is in inventory but not enough
+    logger.warn(
+      `Not enough ${bestFood.code} in inventory (${bestFood.quantity}/${this.minFood})`,
+    );
+    return false;
+  }
+
+  /**
+   * @description Find food items in inventory that have heal effects
+   * @returns Array of food items with heal effects found in inventory
+   */
+  findFoodInInventory(): {
+    code: string;
+    quantity: number;
+    healValue: number;
+  }[] {
+    if (!this.data || !this.data.inventory) {
+      return [];
+    }
+
+    const foodItems: { code: string; quantity: number; healValue: number }[] =
+      [];
+
+    for (const invItem of this.data.inventory) {
+
+      const itemInfo = this.consumablesMap.heal.find(
+        (item) => item.code === invItem.code,
+      );
+      if (itemInfo && itemInfo.effects) {
+        const healEffect = itemInfo.effects.find(
+          (effect) => effect.code === 'heal',
+        );
+        if (
+          healEffect &&
+          invItem.quantity > 0 &&
+          itemInfo.level < this.data.level
+        ) {
+          foodItems.push({
+            code: invItem.code,
+            quantity: invItem.quantity,
+            healValue: healEffect.value,
+          });
+        }
+      }
+    }
+
+    return foodItems;
+  }
+
+  /**
+   * @description Find food items in bank that have heal effects
+   * @returns Array of food items with heal effects found in bank
+   */
+  async findFoodInBank(): Promise<
+    { code: string; quantity: number; healValue: number }[]
+  > {
+    const bankItems = await this.getAllBankItems();
+    if (!bankItems || bankItems.length === 0) {
+      return [];
+    }
+
+    const foodItems: { code: string; quantity: number; healValue: number }[] =
+      [];
+
+    for (const bankItem of bankItems) {
+      // Check if this item has heal effects
+      const itemInfo = this.consumablesMap.heal.find(
+        (item) => item.code === bankItem.code,
+      );
+      if (itemInfo && itemInfo.effects) {
+        const healEffect = itemInfo.effects.find(
+          (effect) => effect.code === 'heal',
+        );
+        if (
+          healEffect &&
+          bankItem.quantity > 0 &&
+          itemInfo.level < this.data.level
+        ) {
+          foodItems.push({
+            code: bankItem.code,
+            quantity: bankItem.quantity,
+            healValue: healEffect.value,
+          });
+        }
+      }
+    }
+
+    return foodItems;
+  }
+
+  /**
+   * @description Find the best food item available (inventory first, then bank)
+   * @returns Best food item or null if none found
+   */
+  async findBestFood(): Promise<{
+    code: string;
+    quantity: number;
+    healValue: number;
+    source: 'inventory' | 'bank';
+  } | null> {
+    // First check inventory
+    const inventoryFood = this.findFoodInInventory();
+    if (inventoryFood.length > 0) {
+      // Sort by heal value (descending) and return the best one
+      const bestFood = inventoryFood.sort(
+        (a, b) => b.healValue - a.healValue,
+      )[0];
+      return { ...bestFood, source: 'inventory' };
+    }
+
+    // If no food in inventory, check bank
+    const bankFood = await this.findFoodInBank();
+    if (bankFood.length > 0) {
+      // Sort by heal value (descending) and return the best one
+      const bestFood = bankFood.sort((a, b) => b.healValue - a.healValue)[0];
+      return { ...bestFood, source: 'bank' };
+    }
+
+    return null;
+  }
+
+  /**
+   * @description Withdraw food from bank if needed
+   * @param foodItem The food item to withdraw
+   * @param quantityNeeded How much food is needed
+   * @returns true if successful, false otherwise
+   */
+  async withdrawFoodIfNeeded(
+    foodItem: { code: string; quantity: number; healValue: number },
+    quantityNeeded: number,
+  ): Promise<boolean> {
+    const currentQuantity = this.checkQuantityOfItemInInv(foodItem.code);
+
+    if (currentQuantity >= quantityNeeded) {
+      return true; // Already have enough
+    }
+
+    const neededFromBank = quantityNeeded - currentQuantity;
+    const availableInBank = foodItem.quantity;
+
+    if (availableInBank >= neededFromBank) {
+      logger.info(`Withdrawing ${neededFromBank} ${foodItem.code} from bank`);
+      await this.withdrawNow(neededFromBank, foodItem.code);
+      return true;
+    } else {
+      logger.warn(
+        `Not enough ${foodItem.code} in bank (need ${neededFromBank}, have ${availableInBank})`,
+      );
+      return false;
     }
   }
 
@@ -1579,12 +1761,93 @@ export class Character {
    * @description moves the character to the destination if they are not already there
    * @todo Take in a map_id as an alternative to x,y coords
    */
-  async move(destination: DestinationSchema) {
-    if (this.data.x === destination.x && this.data.y === destination.y) {
-      return;
+  async move(destination: MapSchema): Promise<boolean> {
+    if (
+      (this.data.x === destination.x && this.data.y === destination.y) ||
+      this.data.map_id === destination.map_id
+    ) {
+      return true;
     }
 
-    logger.info(`Moving to x: ${destination.x}, y: ${destination.y}`);
+    // ToDo: when implementing logic for Sandwhisper Isle, withdraw a recall pot from the bank
+    // so you can teleport back instead of paying 1000 gold for the transition
+    if (destination.name === 'Sandwhisper Isle') {
+      logger.warn(`Movement to ${destination.name} is not enabled yet`);
+      return false;
+    }
+
+    if (
+      destination.layer === 'underground' &&
+      this.data.layer === 'overworld'
+    ) {
+      logger.info(
+        `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
+      );
+      const transitionMapLocation =
+        this.findOverworldToUndergroundTransitionPoint(destination);
+
+      logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
+
+      await this.move(transitionMapLocation);
+      const transitionResponse = await actionTransition(this.data);
+      if (transitionResponse instanceof ApiError) {
+        return this.handleErrors(transitionResponse);
+      } else {
+        logger.debug(
+          `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
+        );
+        if (
+          transitionResponse &&
+          transitionResponse.data &&
+          transitionResponse.data.character
+        ) {
+          this.data = transitionResponse.data.character;
+        } else {
+          logger.warn(
+            'Transition response missing character data, response structure:',
+            transitionResponse,
+          );
+        }
+      }
+    } else if (
+      destination.layer === 'overworld' &&
+      this.data.layer === 'underground'
+    ) {
+      logger.info(
+        `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
+      );
+
+      const transitionMapLocation =
+        this.findUndergroundToOverworldTransitionPoint();
+
+      logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
+
+      await this.move(transitionMapLocation);
+      const transitionResponse = await actionTransition(this.data);
+      if (transitionResponse instanceof ApiError) {
+        return this.handleErrors(transitionResponse);
+      } else {
+        logger.debug(
+          `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
+        );
+        if (
+          transitionResponse &&
+          transitionResponse.data &&
+          transitionResponse.data.character
+        ) {
+          this.data = transitionResponse.data.character;
+        } else {
+          logger.warn(
+            'Transition response missing character data, response structure:',
+            transitionResponse,
+          );
+        }
+      }
+    }
+
+    logger.info(
+      `Moving to ${destination.name} (id: ${destination.map_id}, x: ${destination.x}, y: ${destination.y})`,
+    );
 
     const moveResponse = await actionMove(this.data, {
       x: destination.x,
@@ -1592,14 +1855,76 @@ export class Character {
     });
 
     if (moveResponse instanceof ApiError) {
-      this.handleErrors(moveResponse);
+      return this.handleErrors(moveResponse);
     } else {
       if (moveResponse.data.character) {
         this.data = moveResponse.data.character;
+        return true;
       } else {
         logger.error('Move response missing character data');
+        return false;
       }
     }
+  }
+
+  /**
+   * @description Transitioning function to find the transition point that gets to where we want to go
+   */
+  private findOverworldToUndergroundTransitionPoint(
+    destination: MapSchema,
+  ): MapSchema {
+    let closestDistance = 1000000;
+    let closestMap: MapSchema;
+
+    TransitionLocations.forEach((transitionMap) => {
+      if (transitionMap.layer !== this.data.layer) {
+        return;
+      }
+      const dist =
+        Math.abs(destination.x - transitionMap.x) +
+        Math.abs(destination.y - transitionMap.y);
+      if (dist < closestDistance) {
+        closestDistance = dist;
+        closestMap = transitionMap;
+      }
+    });
+
+    if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
+      logger.info(
+        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+      );
+    }
+
+    return closestMap;
+  }
+
+  /**
+   * @description Transitioning function to find the transition point that gets to where we want to go
+   */
+  private findUndergroundToOverworldTransitionPoint(): MapSchema {
+    let closestDistance = 1000000;
+    let closestMap: MapSchema;
+
+    TransitionLocations.forEach((transitionMap) => {
+      if (transitionMap.layer !== this.data.layer) {
+        return;
+      }
+      const dist =
+        Math.abs(this.data.x - transitionMap.x) +
+        Math.abs(this.data.y - transitionMap.y);
+      if (dist < closestDistance) {
+        closestDistance = dist;
+        closestMap = transitionMap;
+      }
+    });
+
+    if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
+      logger.info(
+        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+      );
+    }
+
+    return closestMap;
   }
 
   /**
@@ -2071,13 +2396,20 @@ export class Character {
         return false;
       case 496: // Conditions not met
         return false;
-      case 497: // The character's inventory is full. Dump everything
+      case 497: {
+        // The character's inventory is full. Dump everything
+        const mapData = await getMapsById(this.data.map_id);
+        if (mapData instanceof ApiError) {
+          logger.error(`Failed to get current map data`);
+          return false;
+        }
         await this.evaluateDepositItemsInBank(
           this.itemsToKeep,
-          { x: this.data.x, y: this.data.y },
+          mapData.data,
           true,
         );
         return true;
+      }
       case 499:
         await sleep(this.data.cooldown, 'cooldown');
         return true;

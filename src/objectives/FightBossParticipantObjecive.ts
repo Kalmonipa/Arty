@@ -18,13 +18,162 @@ export class FightBossParticipantObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+<<<<<<< HEAD
     return true;
+=======
+    // Get all food items to deposit
+    const foodItems = this.character.findFoodInInventory();
+    const foodCodes = foodItems.map((food) => food.code);
+    const itemsToKeep = [...foodCodes];
+
+    await this.character.evaluateDepositItemsInBank(itemsToKeep);
+
+    await this.character.evaluateGear('combat', this.target.code);
+
+    const mobInfo = await getMonsterInformation(this.target.code);
+    if (mobInfo instanceof ApiError) {
+      return this.character.handleErrors(mobInfo);
+    }
+
+    // ToDo: allow the fight sim to sim boss fights with multiple characterss
+    if (mobInfo.data.type === 'normal') {
+      if (this.runFightSim) {
+        const fakeSchema = this.character.createFakeCharacterSchema(
+          this.character.data,
+        );
+        const simResult = await this.character.simulateFightNow(
+          [fakeSchema],
+          this.target.code,
+        );
+
+        if (simResult === false) {
+          // await this.character.trainCombatLevelNow(
+          //   this.character.data.level + 1,
+          // );
+          return false;
+        }
+      }
+      return true;
+    } else if (
+      (!this.participants || this.participants.length === 0) &&
+      mobInfo.data.type === 'boss'
+    ) {
+      logger.info(
+        `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
+      );
+      return false;
+    } else {
+      // For boss and elite monsters, skip fight simulation and return true
+      logger.info('thisis achhange');
+      return true;
+    }
+>>>>>>> origin/main
   }
 
   /**
    * @description Get prepared for the fight and send a notification to the leader to say they're ready
    */
   async run(): Promise<boolean> {
+<<<<<<< HEAD
     return true;
+=======
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      if (!(await this.checkStatus())) return false;
+
+      logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
+
+      logger.info(`Finding location of ${this.target.code}`);
+
+      const maps = await getMaps({ content_code: this.target.code });
+      if (maps instanceof ApiError) {
+        return this.character.handleErrors(maps);
+      }
+
+      if (maps.data.length === 0) {
+        logger.error(`Cannot find any maps for ${this.target.code}`);
+        return false;
+      }
+
+      const contentLocation = this.character.evaluateClosestMap(maps.data);
+
+      await this.character.move(contentLocation);
+
+      for (
+        this.progress;
+        this.progress < this.target.quantity;
+        this.progress++
+      ) {
+        if (!(await this.checkStatus())) return false;
+
+        logger.info(
+          `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
+        );
+
+        // Get all food items to deposit
+        const foodItems = this.character.findFoodInInventory();
+        const foodCodes = foodItems.map((food) => food.code);
+        const itemsToKeep = [...foodCodes];
+
+        await this.character.evaluateDepositItemsInBank(
+          itemsToKeep,
+          contentLocation,
+        );
+
+        await this.character.recoverHealth();
+
+        // Check these after each fight in case we need to top up
+        if (
+          this.character.data.utility1_slot_quantity <=
+          this.character.minEquippedUtilities
+        ) {
+          if (await this.character.equipUtility('restore', 'utility1')) {
+            // If we moved to the bank we need to move back to the monster location
+            await this.character.move(contentLocation);
+          }
+        }
+
+        const response = await actionFight(
+          this.character.data,
+          this.participants,
+        );
+
+        if (response instanceof ApiError) {
+          const shouldRetry = await this.character.handleErrors(response);
+
+          if (!shouldRetry || attempt === this.maxRetries) {
+            logger.error(`Fight failed after ${attempt} attempts`);
+            return false;
+          }
+          this.progress--;
+          continue;
+        } else {
+          if (response.data.characters) {
+            const charData = response.data.characters.find(
+              (char) => char.name === this.character.data.name,
+            );
+
+            this.character.data = charData;
+          } else {
+            logger.error('Fight response missing character data');
+            return false;
+          }
+
+          await this.character.recoverHealth();
+
+          // Check amount of food in inventory to use after battles
+          if (!(await this.character.checkFoodLevels())) {
+            await this.character.topUpFood(contentLocation);
+          }
+        }
+
+        await this.character.saveJobQueue();
+      }
+
+      logger.debug(
+        `Successfully fought ${this.target.quantity} ${this.target.code}`,
+      );
+      return true;
+    }
+>>>>>>> origin/main
   }
 }

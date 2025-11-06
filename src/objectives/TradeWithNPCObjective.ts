@@ -9,8 +9,8 @@ import { NPCItem, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
+import { GatherObjective } from './GatherObjective.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
-import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { Objective } from './Objective.js';
 
 /**
@@ -77,6 +77,8 @@ export class TradeObjective extends Objective {
     const targetNpc = npcItems[0].npc;
     const buyPrice = npcItems[0].buy_price;
 
+    if (!(await this.checkStatus())) return false;
+
     // Calculate crystals needed
     let currencyNeeded = this.quantity * buyPrice;
 
@@ -95,31 +97,44 @@ export class TradeObjective extends Objective {
       const numInBank = await this.character.checkQuantityOfItemInBank(
         this.currency,
       );
+      logger.info(
+        `Found ${numInBank}/${currencyNeeded} ${this.currency} in the bank to trade with`,
+      );
       if (numInBank >= currencyNeeded) {
         await this.character.withdrawNow(currencyNeeded, this.currency);
       } else if (this.currency === 'tasks_coin') {
+        let taskAttempts = 0;
+        const maxTaskAttempts = 20;
+
         while (
-          this.character.checkQuantityOfItemInInv(this.currency) <
-          currencyNeeded
-        )
-          if (Math.floor(Math.random() * 2) === 0) {
-            await this.character.executeJobNow(
-              new MonsterTaskObjective(this.character, 1),
-              true,
-              true,
-              this.objectiveId,
-            );
-          } else {
-            await this.character.executeJobNow(
-              new ItemTaskObjective(this.character, 1),
-              true,
-              true,
-              this.objectiveId,
-            );
-          }
+          (await this.character.checkQuantityOfItemInBank(this.currency)) <
+            currencyNeeded &&
+          taskAttempts < maxTaskAttempts
+        ) {
+          if (!(await this.checkStatus())) return false;
+          taskAttempts++;
+          await this.character.executeJobNow(
+            new ItemTaskObjective(this.character, 1),
+            true,
+            true,
+            this.objectiveId,
+          );
+        }
+
+        if (taskAttempts >= maxTaskAttempts) {
+          logger.warn(
+            `Reached maximum task attempts (${maxTaskAttempts}) for ${this.currency}`,
+          );
+          return false;
+        }
       } else {
-        logger.warn(`Collecting ${this.currency} feature not implemented yet`);
-        return false;
+        logger.info(`Attempting to gather ${this.currency}`);
+        await this.character.executeJobNow(
+          new GatherObjective(this.character, {
+            code: this.currency,
+            quantity: currencyNeeded,
+          }),
+        );
       }
     }
     await this.findNpc(targetNpc);
@@ -152,7 +167,7 @@ export class TradeObjective extends Objective {
    * @description Find and move to NPC
    */
   async findNpc(npcCode: string) {
-    logger.warn(`Finding location of ${npcCode}`);
+    logger.info(`Finding location of ${npcCode}`);
     // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
     // Make it into it's own function and just call it
     const maps = await getMaps({
@@ -170,6 +185,6 @@ export class TradeObjective extends Objective {
 
     const traderLocation = this.character.evaluateClosestMap(maps.data);
 
-    await this.character.move({ x: traderLocation.x, y: traderLocation.y });
+    await this.character.move(traderLocation);
   }
 }
