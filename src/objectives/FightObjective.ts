@@ -188,7 +188,7 @@ export class FightObjective extends Objective {
           this.progress--;
           continue;
         } else {
-          if (response.data.characters) {
+          if (response.data && response.data.characters) {
             const charData = response.data.characters.find(
               (char) => char.name === this.character.data.name,
             );
