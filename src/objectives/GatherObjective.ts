@@ -339,7 +339,9 @@ export class GatherObjective extends Objective {
           return res;
         }
       }
-      logger.warn(`${this.character.data.name} level is not high enough to gather ${code}`)
+      logger.warn(
+        `${this.character.data.name} level is not high enough to gather ${code}`,
+      );
       return undefined;
     })();
 

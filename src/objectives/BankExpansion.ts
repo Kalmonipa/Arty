@@ -59,7 +59,7 @@ export class ExpandBankObjective extends Objective {
       leftoverGold
     ) {
       logger.debug(
-        `Purchasing an upgrade wouldn't leave us with ${leftoverGold}. Not purchasing`,
+        `Purchasing an upgrade would leave us with ${leftoverGold}. Not purchasing`,
       );
       return true;
     }

@@ -39,38 +39,7 @@ export class FightBossParticipantObjective extends Objective {
       return this.character.handleErrors(mobInfo);
     }
 
-    // ToDo: allow the fight sim to sim boss fights with multiple characterss
-    if (mobInfo.data.type === 'normal') {
-      if (this.runFightSim) {
-        const fakeSchema = this.character.createFakeCharacterSchema(
-          this.character.data,
-        );
-        const simResult = await this.character.simulateFightNow(
-          [fakeSchema],
-          this.target.code,
-        );
-
-        if (simResult === false) {
-          // await this.character.trainCombatLevelNow(
-          //   this.character.data.level + 1,
-          // );
-          return false;
-        }
-      }
-      return true;
-    } else if (
-      (!this.participants || this.participants.length === 0) &&
-      mobInfo.data.type === 'boss'
-    ) {
-      logger.info(
-        `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
-      );
-      return false;
-    } else {
-      // For boss and elite monsters, skip fight simulation and return true
-      logger.info('thisis achhange');
-      return true;
-    }
+    return true;
   }
 
   /**
