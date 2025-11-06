@@ -40,6 +40,9 @@ export class ItemTaskObjective extends Objective {
         code: 'tasks_coin',
         quantity: numCoinsInInv,
       }),
+      true,
+      true,
+      this.objectiveId,
     );
 
     return result;
