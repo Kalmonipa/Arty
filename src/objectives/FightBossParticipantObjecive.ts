@@ -18,9 +18,6 @@ export class FightBossParticipantObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
-<<<<<<< HEAD
-    return true;
-=======
     // Get all food items to deposit
     const foodItems = this.character.findFoodInInventory();
     const foodCodes = foodItems.map((food) => food.code);
@@ -67,16 +64,14 @@ export class FightBossParticipantObjective extends Objective {
       logger.info('thisis achhange');
       return true;
     }
->>>>>>> origin/main
   }
 
   /**
    * @description Get prepared for the fight and send a notification to the leader to say they're ready
+   * Run an evaluateGear objective to get the correct gear for the fight
+   * 
    */
   async run(): Promise<boolean> {
-<<<<<<< HEAD
-    return true;
-=======
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (!(await this.checkStatus())) return false;
 
@@ -174,6 +169,5 @@ export class FightBossParticipantObjective extends Objective {
       );
       return true;
     }
->>>>>>> origin/main
   }
 }
