@@ -148,6 +148,7 @@ export class Character {
     'magic_apparition',
     'strange_apparition',
     'bandit_camp',
+    'portal_demon'
   ];
 
   constructor(data: CharacterSchema) {
@@ -831,7 +832,10 @@ export class Character {
     for (const event of activeEventsResponse.data) {
       if (this.applicableResourceEvents.includes(event.code)) {
         if (event.code === 'bandit_camp' && this.data.level < 25) {
-          logger.debug(`${this.data.name} is too low level for Bandit Camp`);
+          logger.debug(`${this.data.name} is too low level for ${event.name}`);
+          continue;
+        } else if (event.code === 'portal_demon' && this.data.level < 30) {
+          logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
         }
 

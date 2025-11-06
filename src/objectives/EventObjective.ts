@@ -30,6 +30,7 @@ export class EventObjective extends Objective {
       case 'strange_apparition':
         return await this.gatherResources(this.activeEvent);
       case 'bandit_camp':
+      case 'portal_demon':
         return await this.fightMobs(this.activeEvent);
       default:
         logger.info(`Event ${this.activeEvent.code} not configured yet.`);
