@@ -208,6 +208,11 @@ export class FightObjective extends Objective {
             return false;
           }
 
+          if (response.data.fight.result === 'loss') {
+            logger.info(`Previous fight was a loss so will equip health potions for future fights`)
+            this.shouldEquipHealthPots = true
+          }
+
           await this.character.recoverHealth();
           // If we start gathering then we may have a gathering tool equipped instead of a weapon
           // so we want to re-equip our fighting weapon
