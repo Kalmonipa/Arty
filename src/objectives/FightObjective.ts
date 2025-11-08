@@ -13,6 +13,8 @@ export class FightObjective extends Objective {
   participants?: string[];
   runFightSim?: boolean;
 
+  combatWeapon: string;
+
   constructor(
     character: Character,
     target: ObjectiveTargets,
@@ -35,6 +37,8 @@ export class FightObjective extends Objective {
     await this.character.evaluateDepositItemsInBank(itemsToKeep);
 
     await this.character.evaluateGear('combat', this.target.code);
+
+    this.combatWeapon = this.character.data.weapon_slot;
 
     const mobInfo = await getMonsterInformation(this.target.code);
     if (mobInfo instanceof ApiError) {
@@ -157,11 +161,12 @@ export class FightObjective extends Objective {
           contentLocation,
         );
 
-        const combatWeapon = this.character.data.weapon_slot;
         await this.character.recoverHealth();
         // If we start gathering then we may have a gathering tool equipped instead of a weapon
         // so we want to re-equip our fighting weapon
-        await this.character.equipNow(combatWeapon, 'weapon');
+        if (this.character.data.weapon_slot !== this.combatWeapon) {
+          await this.character.equipNow(this.combatWeapon, 'weapon');
+        }
         // Move back after healing
         await this.character.move(contentLocation);
 
@@ -206,7 +211,9 @@ export class FightObjective extends Objective {
           await this.character.recoverHealth();
           // If we start gathering then we may have a gathering tool equipped instead of a weapon
           // so we want to re-equip our fighting weapon
-          await this.character.equipNow(combatWeapon, 'weapon');
+          if (this.character.data.weapon_slot !== this.combatWeapon) {
+            await this.character.equipNow(this.combatWeapon, 'weapon');
+          }
           // then move back to the fighting location
           await this.character.move(contentLocation);
 
