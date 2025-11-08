@@ -157,7 +157,11 @@ export class FightObjective extends Objective {
           contentLocation,
         );
 
+        const combatWeapon = this.character.data.weapon_slot;
         await this.character.recoverHealth();
+        // If we start gathering then we may have a gathering tool equipped instead of a weapon
+        // so we want to re-equip our fighting weapon
+        await this.character.equipNow(combatWeapon, 'weapon');
         // Move back after healing
         await this.character.move(contentLocation);
 
@@ -200,6 +204,10 @@ export class FightObjective extends Objective {
           }
 
           await this.character.recoverHealth();
+          // If we start gathering then we may have a gathering tool equipped instead of a weapon
+          // so we want to re-equip our fighting weapon
+          await this.character.equipNow(combatWeapon, 'weapon');
+          // then move back to the fighting location
           await this.character.move(contentLocation);
 
           // Check amount of food in inventory to use after battles

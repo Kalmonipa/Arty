@@ -148,7 +148,7 @@ export class Character {
     'magic_apparition',
     'strange_apparition',
     'bandit_camp',
-    'portal_demon'
+    'portal_demon',
   ];
 
   constructor(data: CharacterSchema) {

@@ -57,6 +57,13 @@ class SimpleMockCharacter {
     },
   );
 
+  equipNow = jest.fn(
+    async (itemName: string, itemSlot: ItemSlot, quantity?: number): Promise<boolean> => {
+      this.data.weapon_slot = itemName
+      return true
+    }
+  )
+
   unequipNow = jest.fn(
     async (itemSlot: ItemSlot, quantity: number): Promise<boolean> => {
       this.data.utility1_slot = '';

@@ -138,15 +138,24 @@ export class TradeObjective extends Objective {
       }
     }
 
-    const numCurrInInv = this.character.checkQuantityOfItemInInv(this.currency)
+    const numCurrInInv = this.character.checkQuantityOfItemInInv(this.currency);
     if (numCurrInInv < currencyNeeded) {
-      const numInBank = await this.character.checkQuantityOfItemInBank(this.currency)
+      const numInBank = await this.character.checkQuantityOfItemInBank(
+        this.currency,
+      );
       if (numInBank < currencyNeeded - numCurrInInv) {
-        logger.warn(`Our collected ${this.currency} have gone missing. Only ${numInBank} in the bank`)
+        logger.warn(
+          `Our collected ${this.currency} have gone missing. Only ${numInBank} in the bank`,
+        );
         return false;
       }
-      logger.info(`Only ${numCurrInInv} in inventory. Withdrawing ${currencyNeeded - numCurrInInv} ${this.currency} from bank`)
-      await this.character.withdrawNow(currencyNeeded - numCurrInInv, this.currency)
+      logger.info(
+        `Only ${numCurrInInv} in inventory. Withdrawing ${currencyNeeded - numCurrInInv} ${this.currency} from bank`,
+      );
+      await this.character.withdrawNow(
+        currencyNeeded - numCurrInInv,
+        this.currency,
+      );
     }
 
     await this.findNpc(targetNpc);
