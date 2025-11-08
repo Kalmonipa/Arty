@@ -4,7 +4,7 @@ import {
   actionRest,
   actionTransition,
 } from '../api_calls/Actions.js';
-import { actionUse, getItemInformation } from '../api_calls/Items.js';
+import { actionUse, getAllItemInformation, getItemInformation } from '../api_calls/Items.js';
 import { getMaps, getMapsById } from '../api_calls/Maps.js';
 import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
@@ -67,6 +67,7 @@ import { RecycleObjective } from './RecycleObjective.js';
 import { ExpandBankObjective } from './BankExpansion.js';
 import { getActiveEvents } from '../api_calls/Events.js';
 import { EventObjective } from './EventObjective.js';
+import { getAllResourceInformation } from '../api_calls/Resources.js';
 
 export class Character {
   data: CharacterSchema;
@@ -1196,10 +1197,13 @@ export class Character {
           logger.warn(
             `No food available in inventory or bank. Gathering some instead.`,
           );
-          // ToDo: Make this dynamically pick the food to gather
-          await this.craftNow(40, 'cooked_gudgeon', true, true);
+
+          const fishToCook = await this.identifyFoodToEat()
+          logger.info(`Found ${fishToCook}. Crafting 40 of them`)
+
+          await this.craftNow(40, fishToCook, true, true);
           bestFood = {
-            code: 'cooked_gudgeon',
+            code: fishToCook,
             quantity: 40,
             healValue: 75,
             source: 'inventory',
@@ -1440,6 +1444,38 @@ export class Character {
     if (priorLocation) {
       await this.move(priorLocation);
     }
+  }
+
+  async identifyFoodToEat(): Promise<string> {
+    const defaultFish = 'cooked_gudgeon'
+
+    const fishResourceInfo = await getAllResourceInformation({skill: 'fishing', max_level: this.data.fishing_level})
+    if (fishResourceInfo instanceof ApiError) {
+      await this.handleErrors(fishResourceInfo)
+      return defaultFish;
+    }
+    if (fishResourceInfo.data.length === 0) {
+      logger.warn(`Found no fish to gather. Defaulting to ${defaultFish}`)
+      return defaultFish
+    }
+
+    const fish = fishResourceInfo.data[fishResourceInfo.data.length - 1].drops.find(fishResource => fishResource.rate === 1).code
+    logger.info(`Gathering ${fish} to recover health`)
+
+    // We intentionally use fishing_level as the max level here to avoid cases where cooking skill might be too high for us to gather
+    // the resources needed to cook it.
+    const cookedItemInfo = await getAllItemInformation({craft_material: fish, craft_skill: 'cooking', max_level: this.data.fishing_level})
+    if (cookedItemInfo instanceof ApiError) {
+      await this.handleErrors(cookedItemInfo)
+      return defaultFish;
+    }
+
+    if (cookedItemInfo.data.length === 0) {
+      logger.warn(`Found no fish to cook. Defaulting to cooked_gudgeon`)
+      return defaultFish
+    }
+
+    return cookedItemInfo.data[cookedItemInfo.data.length - 1].code
   }
 
   /********
