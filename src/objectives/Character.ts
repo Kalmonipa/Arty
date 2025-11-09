@@ -1455,7 +1455,7 @@ export class Character {
 
     const fishResourceInfo = await getAllResourceInformation({
       skill: 'fishing',
-      max_level: this.data.fishing_level,
+      max_level: this.data.level,
     });
     if (fishResourceInfo instanceof ApiError) {
       await this.handleErrors(fishResourceInfo);
@@ -1476,7 +1476,7 @@ export class Character {
     const cookedItemInfo = await getAllItemInformation({
       craft_material: fish,
       craft_skill: 'cooking',
-      max_level: this.data.fishing_level,
+      max_level: this.data.level,
     });
     if (cookedItemInfo instanceof ApiError) {
       await this.handleErrors(cookedItemInfo);

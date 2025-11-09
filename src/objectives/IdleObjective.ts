@@ -164,20 +164,13 @@ export class IdleObjective extends Objective {
       'cooked_salmon',
     ];
 
-    if (this.role === 'alchemist') {
-      for (const potion of this.character.utilitiesMap['restore']) {
-        if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
-          const numInBank = await this.character.checkQuantityOfItemInBank(
-            potion.code,
-          );
-          if (numInBank < minimumInBank) {
-            await this.character.craftNow(
-              minimumInBank - numInBank,
-              potion.code,
-            );
-          }
-        }
+    for (const potion of this.character.utilitiesMap['restore']) {
+      if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
+        await this.character.craftNow(50, potion.code);
       }
+    }
+
+    if (this.role === 'alchemist') {
       for (const potion of this.character.utilitiesMap['antipoison']) {
         if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
           const numInBank = await this.character.checkQuantityOfItemInBank(

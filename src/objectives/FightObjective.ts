@@ -209,8 +209,10 @@ export class FightObjective extends Objective {
           }
 
           if (response.data.fight.result === 'loss') {
-            logger.info(`Previous fight was a loss so will equip health potions for future fights`)
-            this.shouldEquipHealthPots = true
+            logger.info(
+              `Previous fight was a loss so will equip health potions for future fights`,
+            );
+            this.shouldEquipHealthPots = true;
           }
 
           await this.character.recoverHealth();
