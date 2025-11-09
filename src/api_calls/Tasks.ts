@@ -119,7 +119,10 @@ export async function actionCancelTask(
 
     logger.info(`Cancelled current task.`);
 
-    await sleep(result.data.cooldown.remaining_seconds, result.data.cooldown.reason);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {
