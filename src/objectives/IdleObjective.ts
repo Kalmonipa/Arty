@@ -164,9 +164,16 @@ export class IdleObjective extends Objective {
       'cooked_salmon',
     ];
 
-    for (const potion of this.character.utilitiesMap['restore']) {
-      if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
+    // Every character should craft 50 of the highest healing potion they can craft and use
+    // to try and always have some stocked up in the bank
+    for (const potion of this.character.utilitiesMap['restore'].reverse()) {
+      if (
+        potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
+        potion.craft.level <= this.character.getCharacterLevel()
+      ) {
+        logger.info(`Crafting 50 ${potion.code}`)
         await this.character.craftNow(50, potion.code);
+        break;
       }
     }
 
