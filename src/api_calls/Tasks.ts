@@ -3,6 +3,7 @@ import {
   CharacterSchema,
   RewardDataResponseSchema,
   SimpleItemSchema,
+  TaskCancelledResponseSchema,
   TaskCancelledSchema,
   TaskResponseSchema,
   TaskTradeResponseSchema,
@@ -78,7 +79,7 @@ export async function actionAcceptNewTask(
 
 export async function actionCancelTask(
   character: CharacterSchema,
-): Promise<TaskCancelledSchema | ApiError> {
+): Promise<TaskCancelledResponseSchema | ApiError> {
   const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
@@ -114,11 +115,11 @@ export async function actionCancelTask(
       });
     }
 
-    const result: TaskCancelledSchema = await response.json();
+    const result: TaskCancelledResponseSchema = await response.json();
 
     logger.info(`Cancelled current task.`);
 
-    await sleep(result.cooldown.remaining_seconds, result.cooldown.reason);
+    await sleep(result.data.cooldown.remaining_seconds, result.data.cooldown.reason);
 
     return result;
   } catch (error) {

@@ -236,7 +236,7 @@ export abstract class Objective {
     if (response instanceof ApiError) {
       await this.character.handleErrors(response);
     } else {
-      this.character.data = response.character;
+      this.character.data = response.data.character;
     }
   }
 
