@@ -324,10 +324,6 @@ export class CraftObjective extends Objective {
           }
         }
 
-        if (!this.parentId) {
-          this.character.removeItemFromItemsToKeep(craftingItem.code);
-        }
-
         // Ensure that we're carrying the correct amount of ingredients. They may have been deposited into bank
         numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
         numInBank = await this.character.checkQuantityOfItemInBank(
@@ -348,9 +344,8 @@ export class CraftObjective extends Objective {
         }
       }
     }
-    if (!this.parentId) {
-      this.character.itemsToKeep = [];
-    }
+    this.character.itemsToKeep = [];
+
     return true;
   }
 

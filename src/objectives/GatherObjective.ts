@@ -135,11 +135,6 @@ export class GatherObjective extends Objective {
 
       logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
-      // Add the gathering item to the exclusion list
-      // if (!this.character.itemsToKeep.includes(code)) {
-      //   this.character.itemsToKeep.push(code);
-      // }
-
       // Check our equipment to see if we can equip something useful
       const resourceDetails: ItemSchema | ApiError =
         await getItemInformation(code);
@@ -212,9 +207,6 @@ export class GatherObjective extends Objective {
           return true;
         }
       }
-    }
-    if (!this.parentId) {
-      this.character.removeItemFromItemsToKeep(this.target.code);
     }
   }
 

@@ -10,7 +10,7 @@ import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './objectives/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import dotenv from 'dotenv';
-import { Role } from './types/CharacterData.js';
+import { Role, ROLES } from './types/CharacterData.js';
 
 dotenv.config({ quiet: true });
 
@@ -280,4 +280,8 @@ export async function buildListOf(
   });
 
   return itemMap;
+}
+
+export function isRole(value: unknown): value is Role {
+  return typeof value === 'string' && ROLES.includes(value as Role);
 }

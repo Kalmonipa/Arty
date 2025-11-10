@@ -63,8 +63,6 @@ export class IdleObjective extends Objective {
         if (this.checkIdleJobIsLast()) return true;
         break;
       case 'gearcrafter':
-        // We want our gearcrafter to be able to craft gear for our fighter so ideally we'd craft stuff above our level
-        // ToDo: This might run into issues with gathering mob drops if the gearcrafter isn't high enough to fight them
         if (
           this.character.getCharacterLevel('gearcrafting') <
           this.character.getCharacterLevel()
@@ -171,7 +169,7 @@ export class IdleObjective extends Objective {
         potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
         potion.craft.level <= this.character.getCharacterLevel()
       ) {
-        logger.info(`Crafting 50 ${potion.code}`)
+        logger.info(`Crafting 50 ${potion.code}`);
         await this.character.craftNow(50, potion.code);
         break;
       }
