@@ -49,6 +49,7 @@ export class GatherObjective extends Objective {
 
     let numInInv = 0;
     let numInBank = 0;
+    this.progress = 0;
 
     if (this.target.code === 'wooden_stick') {
       logger.info(`${this.target.code} is not gatherable`);
@@ -111,9 +112,6 @@ export class GatherObjective extends Objective {
     }
 
     logger.info(`Need to gather ${stillNeeded} more ${this.target.code}`);
-
-    // Reset progress to 0 for clean tracking
-    this.progress = 0;
 
     return await this.gather(stillNeeded, this.target.code);
   }
@@ -231,7 +229,6 @@ export class GatherObjective extends Objective {
         await this.character.handleErrors(response);
         return false;
       } else {
-        // Ensure response has the expected structure before accessing nested properties
         if (response && response.data && response.data.character) {
           this.character.data = response.data.character;
           if (
