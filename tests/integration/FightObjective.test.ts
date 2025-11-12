@@ -23,7 +23,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 import { actionFight } from '../../src/api_calls/Actions.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
-import { ItemSlot } from '../../src/types/types.js';
+import { ItemSlot, Skill } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -31,6 +31,87 @@ class SimpleMockCharacter {
   minEquippedUtilities = 5;
   currentExecutingJob?: { objectiveId: string };
   createdTrainCombatObjective?: { parentId?: string; targetLevel: number };
+
+  utilitiesMap = {
+    restore: [
+      {
+        name: 'Small Health Potion',
+        code: 'small_health_potion',
+        level: 5,
+        type: 'utility',
+        subtype: 'potion',
+        description:
+          'A compact potion that restores a bit of health when most needed. Fits in any pocket.',
+        conditions: [
+          {
+            code: 'level',
+            operator: 'gt',
+            value: 4,
+          },
+        ],
+        effects: [
+          {
+            code: 'restore',
+            value: 30,
+            description:
+              'Restores 30 HP at the start of the turn if the player has lost more than 50% of their health points.',
+          },
+        ],
+        craft: {
+          skill: 'alchemy',
+          level: 5,
+          items: [
+            {
+              code: 'sunflower',
+              quantity: 3,
+            },
+          ],
+          quantity: 1,
+        },
+        tradeable: true,
+      },
+      {
+        name: 'Minor Health Potion',
+        code: 'minor_health_potion',
+        level: 20,
+        type: 'utility',
+        subtype: 'potion',
+        description:
+          'A small but effective potion. Restores a fair amount of health in a pinch.',
+        conditions: [
+          {
+            code: 'level',
+            operator: 'gt',
+            value: 19,
+          },
+        ],
+        effects: [
+          {
+            code: 'restore',
+            value: 70,
+            description:
+              'Restores 70 HP at the start of the turn if the player has lost more than 50% of their health points.',
+          },
+        ],
+        craft: {
+          skill: 'alchemy',
+          level: 20,
+          items: [
+            {
+              code: 'nettle_leaf',
+              quantity: 2,
+            },
+            {
+              code: 'algae',
+              quantity: 1,
+            },
+          ],
+          quantity: 1,
+        },
+        tradeable: true,
+      },
+    ],
+  };
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
@@ -150,6 +231,15 @@ class SimpleMockCharacter {
       return null;
     },
   );
+
+  getCharacterLevel = jest.fn((skillName?: Skill): number => {
+    switch (skillName) {
+      case 'alchemy':
+        return 12;
+      default:
+        return 14;
+    }
+  });
 
   withdrawFoodIfNeeded = jest.fn(async (): Promise<boolean> => {
     // Mock implementation

@@ -575,10 +575,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
-        'restore',
-        'utility1',
-      );
+      expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
     });
 
     it('should not top up health potions when quantity is sufficient', async () => {

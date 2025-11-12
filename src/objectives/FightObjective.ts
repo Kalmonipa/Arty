@@ -53,15 +53,29 @@ export class FightObjective extends Objective {
           true,
         );
 
+        // Find the highest potion that we could equip (and craft if needed) for the fight
+        let potionNeeded: string = 'small_health_potion';
+        for (const potion of this.character.utilitiesMap['restore'].reverse()) {
+          if (
+            potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
+            potion.craft.level <= this.character.getCharacterLevel()
+          ) {
+            potionNeeded = potion.code;
+            break;
+          }
+        }
+        fakeSchema.utility1_slot = potionNeeded;
+        fakeSchema.utility1_slot_quantity = 100;
+
         logger.info(
           `Simulating fight against ${this.target.code} with health pots`,
         );
-        const simResult = await this.character.simulateFightNow(
+        const shouldFightWithHealthPots = await this.character.simulateFightNow(
           [fakeSchema],
           this.target.code,
         );
 
-        if (simResult && fakeSchema.utility1_slot_quantity) {
+        if (shouldFightWithHealthPots && fakeSchema.utility1_slot_quantity) {
           const fakeSchema = this.character.createFakeCharacterSchema(
             this.character.data,
             false,
@@ -71,13 +85,13 @@ export class FightObjective extends Objective {
             `Simulating fight against ${this.target.code} without health pots`,
           );
 
-          const simResultWithoutHealthPots =
+          const shouldFightWithoutHealthPots =
             await this.character.simulateFightNow(
               [fakeSchema],
               this.target.code,
             );
 
-          if (simResultWithoutHealthPots) {
+          if (shouldFightWithoutHealthPots) {
             const utilOnePot = this.character.data.utility1_slot;
             logger.info(`Unequipping ${utilOnePot} as not needed`);
             this.shouldEquipHealthPots = false;
@@ -89,13 +103,15 @@ export class FightObjective extends Objective {
               this.character.data.utility1_slot_quantity,
               utilOnePot,
             );
+          } else if (
+            !shouldFightWithoutHealthPots &&
+            shouldFightWithHealthPots
+          ) {
+            await this.character.topUpHealthPots();
           }
         }
 
-        if (simResult === false) {
-          // await this.character.trainCombatLevelNow(
-          //   this.character.data.level + 1,
-          // );
+        if (shouldFightWithHealthPots === false) {
           return true;
         }
       }
@@ -110,7 +126,6 @@ export class FightObjective extends Objective {
       return false;
     } else {
       // For boss and elite monsters, skip fight simulation and return true
-      logger.info('thisis achhange');
       return true;
     }
   }
