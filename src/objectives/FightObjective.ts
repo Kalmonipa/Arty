@@ -91,7 +91,7 @@ export class FightObjective extends Objective {
               this.target.code,
             );
 
-          if (shouldFightWithoutHealthPots) {
+          if (shouldFightWithoutHealthPots && this.character.data.utility1_slot) {
             const utilOnePot = this.character.data.utility1_slot;
             logger.info(`Unequipping ${utilOnePot} as not needed`);
             this.shouldEquipHealthPots = false;
