@@ -31,6 +31,7 @@ export class EventObjective extends Objective {
         return await this.gatherResources(this.activeEvent);
       case 'bandit_camp':
       case 'portal_demon':
+      case 'corrupted_ogre':
         return await this.fightMobs(this.activeEvent);
       default:
         logger.info(`Event ${this.activeEvent.code} not configured yet.`);
@@ -115,6 +116,7 @@ export class EventObjective extends Objective {
       'combat',
       event.map.interactions.content.code,
     );
+    const preferredWeapon = this.character.data.weapon_slot;
 
     const expirationTime = new Date(event.expiration).getTime();
     while (Date.now() < expirationTime) {
@@ -136,10 +138,9 @@ export class EventObjective extends Objective {
         this.character.data.utility1_slot_quantity <=
         this.character.minEquippedUtilities
       ) {
-        const currentCombatWeapon = this.character.data.weapon_slot;
         if (await this.character.equipUtility('restore', 'utility1')) {
           // If we moved to the bank we need to move back to the monster location
-          await this.character.equipNow(currentCombatWeapon, 'weapon');
+          await this.character.equipNow(preferredWeapon, 'weapon');
           await this.character.move(event.map);
         }
       }

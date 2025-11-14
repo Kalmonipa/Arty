@@ -154,6 +154,7 @@ export class Character {
     'strange_apparition',
     'bandit_camp',
     'portal_demon',
+    'corrupted_ogre',
   ];
 
   constructor(data: CharacterSchema) {
@@ -840,6 +841,9 @@ export class Character {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
         } else if (event.code === 'portal_demon' && this.data.level < 30) {
+          logger.debug(`${this.data.name} is too low level for ${event.name}`);
+          continue;
+        } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
         }
