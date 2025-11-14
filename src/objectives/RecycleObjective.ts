@@ -33,16 +33,6 @@ export class RecycleObjective extends Objective {
    * @todo Add retry logic
    */
   async run(): Promise<boolean> {
-    // ToDo:
-    // [x] Should I check to make sure the amount is actually in the bank first?
-    // [x] Withdraw the items from the bank
-    // [x] Find the right workshop map
-    // [x] Move to that workshop
-    // [x] Recycle items
-    // [x] Deposit the resulting items into the bank
-    // [] Calculate how many resulting items we can carry, batch it based on the result
-    //      - i.e recycling 90 iron_armor would result in 180 iron_bar which is too many
-
     let result = false;
 
     if (!(await this.checkStatus())) return false;
@@ -81,8 +71,6 @@ export class RecycleObjective extends Objective {
       const contentLocation = this.character.evaluateClosestMap(maps.data);
 
       await this.character.move(contentLocation);
-
-      logger.info(`Recycling ${this.target.quantity} ${this.target.code}`);
 
       const recycleResult = await actionRecycle(
         this.character.data,

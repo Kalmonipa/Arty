@@ -860,6 +860,17 @@ export class Character {
     return false;
   }
 
+  /**
+   * @description Equips 100 health potions into the utility 1 slot
+   * utility 1 is reserved for health potions
+   * @returns
+   */
+  async topUpHealthPots(): Promise<boolean> {
+    if (this.data.utility1_slot_quantity <= this.minEquippedUtilities) {
+      return await this.equipUtility('restore', 'utility1');
+    }
+  }
+
   /********
    * Character detail functions
    ********/
@@ -1459,7 +1470,7 @@ export class Character {
 
     const fishResourceInfo = await getAllResourceInformation({
       skill: 'fishing',
-      max_level: this.data.fishing_level,
+      max_level: this.data.level,
     });
     if (fishResourceInfo instanceof ApiError) {
       await this.handleErrors(fishResourceInfo);
@@ -1480,7 +1491,7 @@ export class Character {
     const cookedItemInfo = await getAllItemInformation({
       craft_material: fish,
       craft_skill: 'cooking',
-      max_level: this.data.fishing_level,
+      max_level: this.data.level,
     });
     if (cookedItemInfo instanceof ApiError) {
       await this.handleErrors(cookedItemInfo);
@@ -1521,6 +1532,10 @@ export class Character {
       makeSpaceForOtherItems
     ) {
       logger.warn(`Inventory is almost full. Depositing items`);
+      logger.info(`Items to keep:`);
+      for (const item in this.itemsToKeep) {
+        logger.info(`  - ${item}`);
+      }
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
         logger.warn(`Failed to get bank map`);

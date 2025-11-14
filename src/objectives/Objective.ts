@@ -147,11 +147,6 @@ export abstract class Objective {
    * @description Sets the status of the job to 'complete'
    */
   completeJob(wasSuccess: boolean) {
-    if (!this.parentId) {
-      this.log.info(`Clearing itemsToKeep`);
-      this.character.itemsToKeep = [];
-    }
-
     if (wasSuccess) {
       this.log.info(`Setting status of ${this.objectiveId} to 'complete'`);
       this.status = 'complete';
@@ -236,7 +231,7 @@ export abstract class Objective {
     if (response instanceof ApiError) {
       await this.character.handleErrors(response);
     } else {
-      this.character.data = response.character;
+      this.character.data = response.data.character;
     }
   }
 

@@ -49,6 +49,7 @@ export class GatherObjective extends Objective {
 
     let numInInv = 0;
     let numInBank = 0;
+    this.progress = 0;
 
     if (this.target.code === 'wooden_stick') {
       logger.info(`${this.target.code} is not gatherable`);
@@ -112,9 +113,6 @@ export class GatherObjective extends Objective {
 
     logger.info(`Need to gather ${stillNeeded} more ${this.target.code}`);
 
-    // Reset progress to 0 for clean tracking
-    this.progress = 0;
-
     return await this.gather(stillNeeded, this.target.code);
   }
 
@@ -134,11 +132,6 @@ export class GatherObjective extends Objective {
       if (!(await this.checkStatus())) return false;
 
       logger.info(`Gather attempt ${attempt}/${maxRetries}`);
-
-      // Add the gathering item to the exclusion list
-      // if (!this.character.itemsToKeep.includes(code)) {
-      //   this.character.itemsToKeep.push(code);
-      // }
 
       // Check our equipment to see if we can equip something useful
       const resourceDetails: ItemSchema | ApiError =
@@ -213,9 +206,6 @@ export class GatherObjective extends Objective {
         }
       }
     }
-    if (!this.parentId) {
-      this.character.removeItemFromItemsToKeep(this.target.code);
-    }
   }
 
   async gatherItemLoop(
@@ -239,7 +229,6 @@ export class GatherObjective extends Objective {
         await this.character.handleErrors(response);
         return false;
       } else {
-        // Ensure response has the expected structure before accessing nested properties
         if (response && response.data && response.data.character) {
           this.character.data = response.data.character;
           if (

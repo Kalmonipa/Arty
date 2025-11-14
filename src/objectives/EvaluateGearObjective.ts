@@ -126,7 +126,7 @@ export class EvaluateGearObjective extends Objective {
       },
     ].sort((a, b) => a.value - b.value);
 
-    await this.topUpHealthPots();
+    //await this.topUpHealthPots();
 
     // This would take in the effects property to see what the best potion to equip
     await this.topUpSecondaryPots(mobInfo.data);
@@ -181,13 +181,13 @@ export class EvaluateGearObjective extends Objective {
     // Check boots
     await this.checkGearOfType('boots', 'hp', charLevel);
 
-    // Check health potions in utility slot 1
-    if (
-      this.character.data.utility1_slot_quantity <=
-      this.character.minEquippedUtilities
-    ) {
-      await this.character.equipUtility('restore', 'utility1');
-    }
+    // // Check health potions in utility slot 1
+    // if (
+    //   this.character.data.utility1_slot_quantity <=
+    //   this.character.minEquippedUtilities
+    // ) {
+    //   await this.character.equipUtility('restore', 'utility1');
+    // }
 
     return true;
   }

@@ -24,6 +24,16 @@ export type Role =
   | 'miner'
   | 'weaponcrafter';
 
+export const ROLES: Role[] = [
+  'alchemist',
+  'fisherman',
+  'gearcrafter',
+  'jewelrycrafter',
+  'lumberjack',
+  'miner',
+  'weaponcrafter',
+];
+
 export type JobResponse = {
   message: string;
   character: string;
