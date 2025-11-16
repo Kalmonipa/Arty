@@ -1,7 +1,12 @@
 import { getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
-import { isGatheringSkill, logger } from '../utils.js';
+import {
+  isGatheringSkill,
+  logger,
+  MAX_COMBAT_LEVEL,
+  MAX_SKILL_LEVEL,
+} from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
@@ -147,8 +152,8 @@ export class IdleObjective extends Objective {
 
   /**
    * Ensure that we have a minimum amount of certain items in the bank
-   * - 1k Health potions of varying levels
-   * - 1k Food of varying levels
+   * - 100 Health potions of varying levels
+   * - 100 Food of varying levels
    * - x Task coins (maybe?)
    */
   private async topUpBank(): Promise<boolean> {
@@ -247,6 +252,13 @@ export class IdleObjective extends Objective {
    */
   private async trainSkill(skill?: Skill): Promise<boolean> {
     let job: Objective;
+
+    if (this.character.getCharacterLevel(skill) === MAX_SKILL_LEVEL) {
+      logger.info(
+        `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+      );
+      return true;
+    }
 
     if (!skill) {
       job = new TrainCombatObjective(

@@ -14,6 +14,7 @@ import { ApiError } from './objectives/Error.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
 import BankRouter from './routes/Bank.js';
+import CharacterRouter from './routes/Character.js';
 
 async function main() {
   const charData = await getCharacter(CharName);
@@ -45,6 +46,7 @@ async function main() {
   app.use('/task', TaskRouter(char));
   app.use('/trade', TradeRouter(char));
   app.use('/train', TrainSkillRouter(char));
+  app.use('/character', CharacterRouter(char));
 
   app.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);
