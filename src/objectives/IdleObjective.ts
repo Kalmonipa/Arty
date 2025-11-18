@@ -1,12 +1,7 @@
 import { getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
-import {
-  isGatheringSkill,
-  logger,
-  MAX_COMBAT_LEVEL,
-  MAX_SKILL_LEVEL,
-} from '../utils.js';
+import { isGatheringSkill, logger, MAX_SKILL_LEVEL } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
@@ -253,9 +248,21 @@ export class IdleObjective extends Objective {
   private async trainSkill(skill?: Skill): Promise<boolean> {
     let job: Objective;
 
+    // If the skill is at max level then we don't want to try level up
     if (this.character.getCharacterLevel(skill) === MAX_SKILL_LEVEL) {
       logger.info(
         `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+      );
+      return true;
+    }
+
+    // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
+    if (
+      this.character.getCharacterLevel(skill) >
+      this.character.getCharacterLevel() + 10
+    ) {
+      logger.info(
+        `${skill} level (${this.character.getCharacterLevel(skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel()}. Not training`,
       );
       return true;
     }
