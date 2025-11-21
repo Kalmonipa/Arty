@@ -1406,7 +1406,7 @@ export class Character {
           if (await this.craftNow(numNeeded, utility[ind].code)) {
             return await this.equipNow(
               utility[ind].code,
-              'utility1',
+              'utility2',
               numNeeded,
             );
           } else {
@@ -2422,10 +2422,10 @@ export class Character {
   }
 
   /**
-   * @description Tidy up the bank. Will be moved to be part of the idle tasks
+   * @description Tidy up the bank
    */
-  async tidyUpBank() {
-    const job = new TidyBankObjective(this, this.role);
+  async tidyUpBank(role: Role) {
+    const job = new TidyBankObjective(this, role);
     await this.executeJobNow(
       job,
       true,

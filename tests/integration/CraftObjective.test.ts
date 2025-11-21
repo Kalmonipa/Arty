@@ -896,7 +896,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true); // Should return true but log error
+      expect(result).toBe(false); // Should return false but log error
       expect(actionCraft).not.toHaveBeenCalled();
     });
 

@@ -12,7 +12,6 @@ import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { Objective } from './Objective.js';
-import { TidyBankObjective } from './TidyBankObjective.js';
 import { TrainCombatObjective } from './TrainCombatObjective.js';
 import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
@@ -36,7 +35,7 @@ export class IdleObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
-    await this.cleanUpBank();
+    await this.character.tidyUpBank(this.character.role);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.depositGoldIntoBank(1000);
@@ -134,20 +133,6 @@ export class IdleObjective extends Objective {
    */
   private checkAchievementProgress(): boolean {
     return true;
-  }
-
-  /**
-   * Craft certain items and recycle items depending on role
-   * @returns true if successful, false if not
-   */
-  private async cleanUpBank(): Promise<boolean> {
-    const job = new TidyBankObjective(this.character, this.role);
-    return await this.character.executeJobNow(
-      job,
-      true,
-      true,
-      this.objectiveId,
-    );
   }
 
   /**

@@ -84,6 +84,9 @@ export class TrainCraftingSkillObjective extends Objective {
         await this.character.depositNow(numToCraft, itemToCraft.code);
       }
 
+      // Recycle excess gear to get materials
+      await this.character.tidyUpBank(this.character.role)
+
       charLevel = this.character.getCharacterLevel(this.skill);
     }
     return true;
