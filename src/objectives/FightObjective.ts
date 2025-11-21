@@ -61,7 +61,10 @@ export class FightObjective extends Objective {
             potion.craft.level <= this.character.getCharacterLevel()
           ) {
             potionNeeded = potion.code;
+            logger.debug(`Chose to equip ${potion.code}`)
             break;
+          } else {
+            logger.debug(`${potion.code} is too high level or cannot be crafted`)
           }
         }
         fakeSchema.utility1_slot = potionNeeded;
