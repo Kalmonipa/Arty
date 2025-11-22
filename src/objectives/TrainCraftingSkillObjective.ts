@@ -40,6 +40,7 @@ export class TrainCraftingSkillObjective extends Objective {
 
   async run(): Promise<boolean> {
     let charLevel = this.character.getCharacterLevel(this.skill);
+
     while (charLevel < this.targetLevel) {
       if (!(await this.checkStatus())) return false;
 
@@ -85,7 +86,7 @@ export class TrainCraftingSkillObjective extends Objective {
       }
 
       // Recycle excess gear to get materials
-      await this.character.tidyUpBank(this.character.role)
+      await this.character.tidyUpBank(this.character.role);
 
       charLevel = this.character.getCharacterLevel(this.skill);
     }

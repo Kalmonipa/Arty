@@ -82,7 +82,9 @@ export class CraftObjective extends Objective {
         if (!(await this.checkStatus())) return false;
 
         if (!targetItem.craft) {
-          logger.warn(`Item ${targetItem.code} has no craft information. Failing`);
+          logger.warn(
+            `Item ${targetItem.code} has no craft information. Failing`,
+          );
           return false;
         }
 

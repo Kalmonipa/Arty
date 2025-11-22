@@ -117,7 +117,7 @@ class SimpleMockCharacter {
     }
   };
 
-  tidyUpBank = (role: Role): void => {}
+  tidyUpBank = (role: Role): void => {};
 }
 
 // Mock craftable items data

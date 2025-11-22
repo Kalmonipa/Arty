@@ -44,11 +44,15 @@ export class IdleObjective extends Objective {
     await this.topUpBank();
     if (this.checkIdleJobIsLast()) return true;
 
+    // Weapon, gear and jewelrycrafters should do monster tasks to at least attempt to increase combat level
+    // Defaults to item tasks which are simpler
     if (
       (this.role === 'weaponcrafter' &&
         this.character.data.level < this.character.data.weaponcrafting_level) ||
       (this.role === 'gearcrafter' &&
-        this.character.data.level < this.character.data.gearcrafting_level)
+        this.character.data.level < this.character.data.gearcrafting_level) ||
+      (this.role === 'jewelrycrafter' &&
+        this.character.data.level < this.character.data.jewelrycrafting_level)
     ) {
       await this.doMonsterTask(5);
       if (this.checkIdleJobIsLast()) return true;
@@ -57,6 +61,9 @@ export class IdleObjective extends Objective {
       if (this.checkIdleJobIsLast()) return true;
     }
 
+    // Train skills depending on their role
+    // If the skill gets 5 levels ahead of their combat level then they won't train the skill any further
+    // There's no need for skills to get too far ahead of combat level
     switch (this.role) {
       case 'alchemist':
         await this.trainSkill('alchemy');
@@ -66,6 +73,16 @@ export class IdleObjective extends Objective {
         await this.trainSkill('fishing');
         if (this.checkIdleJobIsLast()) return true;
         break;
+      case 'lumberjack':
+        await this.trainSkill('woodcutting');
+        if (this.checkIdleJobIsLast()) return true;
+        break;
+      case 'miner':
+        await this.trainSkill('mining');
+        if (this.checkIdleJobIsLast()) return true;
+        break;
+
+      // Crafting skills should aim to be at the combat level
       case 'gearcrafter':
         if (
           this.character.getCharacterLevel('gearcrafting') <
@@ -78,22 +95,19 @@ export class IdleObjective extends Objective {
           if (this.checkIdleJobIsLast()) return true;
         }
         break;
-
       case 'jewelrycrafter':
-        await this.trainSkill('jewelrycrafting');
-        if (this.checkIdleJobIsLast()) return true;
-        break;
-
-      case 'lumberjack':
-        await this.trainSkill('woodcutting');
-        if (this.checkIdleJobIsLast()) return true;
-        break;
-      case 'miner':
-        await this.trainSkill('mining');
-        if (this.checkIdleJobIsLast()) return true;
+        if (
+          this.character.getCharacterLevel('jewelrycrafting') <
+          this.character.getCharacterLevel()
+        ) {
+          await this.trainSkill('jewelrycrafting');
+          if (this.checkIdleJobIsLast()) return true;
+        } else {
+          await this.trainSkill();
+          if (this.checkIdleJobIsLast()) return true;
+        }
         break;
       case 'weaponcrafter':
-        // We want our weaponcrafting to be at least our character level (if not above??)
         if (
           this.character.getCharacterLevel('weaponcrafting') <
           this.character.getCharacterLevel()
@@ -237,10 +251,16 @@ export class IdleObjective extends Objective {
    */
   private async trainSkill(skill?: Skill): Promise<boolean> {
     let job: Objective;
+    let skillLevel = this.character.getCharacterLevel(skill);
 
-    if (this.character.getCharacterLevel(skill) === MAX_SKILL_LEVEL) {
+    if (skillLevel === MAX_SKILL_LEVEL) {
       logger.info(
         `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+      );
+      return true;
+    } else if (skillLevel >= this.character.getCharacterLevel() + 5) {
+      logger.info(
+        `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel()}). Not training ${skill}`,
       );
       return true;
     }
