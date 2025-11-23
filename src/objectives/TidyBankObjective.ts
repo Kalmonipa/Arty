@@ -301,20 +301,20 @@ export class TidyBankObjective extends Objective {
       );
       if (!content) {
         logger.info(`No ${gear.code} found in the bank`);
-        break;
+        continue;;
       }
       const numInBank = content.quantity;
 
       if (numInBank === undefined) {
         logger.info(`${gear.code} not found in bank`);
-        break;
+        continue;
       }
 
       if (numInBank <= maxNumberNeededInBank) {
         logger.info(
           `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
         );
-        break;
+        continue;
       }
 
       await this.character.recycleItemNow(
