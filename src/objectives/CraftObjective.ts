@@ -60,7 +60,7 @@ export class CraftObjective extends Objective {
   async run(): Promise<boolean> {
     if (this.target.quantity === 0) {
       logger.info(
-        `Already have the requested amount of ${this.target.code}. Completing job`,
+        `Already have the requested amount (${this.target.quantity}) of ${this.target.code}. Completing job`,
       );
       return true;
     }
@@ -82,8 +82,10 @@ export class CraftObjective extends Objective {
         if (!(await this.checkStatus())) return false;
 
         if (!targetItem.craft) {
-          logger.warn(`Item has no craft information`);
-          return true;
+          logger.warn(
+            `Item ${targetItem.code} has no craft information. Failing`,
+          );
+          return false;
         }
 
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
@@ -103,7 +105,7 @@ export class CraftObjective extends Objective {
 
         if (maps.data.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
-          return true;
+          return false;
         }
 
         const contentLocation = this.character.evaluateClosestMap(maps.data);
