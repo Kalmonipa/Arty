@@ -1531,11 +1531,7 @@ export class Character {
       usedInventorySpace >= this.data.inventory_max_items * 0.9 ||
       makeSpaceForOtherItems
     ) {
-      logger.warn(`Inventory is almost full. Depositing items`);
-      logger.info(`Items to keep:`);
-      for (const item in this.itemsToKeep) {
-        logger.info(`  - ${item}`);
-      }
+      logger.warn(`Inventory is almost full. Depositing all items`);
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
         logger.warn(`Failed to get bank map`);
