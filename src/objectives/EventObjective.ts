@@ -33,6 +33,8 @@ export class EventObjective extends Objective {
       case 'portal_demon':
       case 'corrupted_ogre':
         return await this.fightMobs(this.activeEvent);
+      case 'fish_merchant':
+        return await this.sellToNpc(this.activeEvent)
       default:
         logger.info(`Event ${this.activeEvent.code} not configured yet.`);
         return false;
@@ -164,5 +166,23 @@ export class EventObjective extends Objective {
     }
 
     return true;
+  }
+
+  /**
+   * @description Sell specific items to an NPC
+   * Currently only supports selling to the fish merchant
+   */
+  private async sellToNpc(event: ActiveEventSchema): Promise<boolean> {
+    const itemsToSell = ['shell', 'golden_shrimp', 'holey_boot', 'small_pearls']
+
+    // Find any items in the bank
+    // Withdraw
+    // Move to the merchant
+    // Sell items
+    // Repeat above until all is sold
+    // Deposit gold into the bank
+
+
+    return true
   }
 }
