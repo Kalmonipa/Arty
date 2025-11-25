@@ -110,7 +110,12 @@ export class CraftObjective extends Objective {
 
         const contentLocation = this.character.evaluateClosestMap(maps.data);
 
-        for (let batch = 0; batch < this.numBatches; batch++) {
+        for (let batch = 1; batch <= this.numBatches; batch++) {
+          if (this.progress >= this.target.quantity) {
+            logger.info(`Successfully crafted ${this.progress} ${this.target.code}`)
+            return true;
+          }
+
           logger.info(`Crafting batch ${batch}/${this.numBatches}`);
 
           if (!(await this.checkStatus())) return false;
