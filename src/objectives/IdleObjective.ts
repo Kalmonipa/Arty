@@ -247,13 +247,21 @@ export class IdleObjective extends Objective {
   private async trainSkill(skill?: Skill): Promise<boolean> {
     let job: Objective;
     const skillLevel = this.character.getCharacterLevel(skill);
+    // Crafting skills should stay relatively close to combat level. Gathering skills can go further above
+    const maxLevelGap = [
+      'weaponcrafting',
+      'gearcrafting',
+      'jewelrycrafting',
+    ].includes(skill)
+      ? 0
+      : 5;
 
     if (skillLevel === MAX_SKILL_LEVEL) {
       logger.info(
         `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
       return true;
-    } else if (skillLevel >= this.character.getCharacterLevel() + 5) {
+    } else if (skillLevel >= this.character.getCharacterLevel() + maxLevelGap) {
       logger.info(
         `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel()}). Not training ${skill}`,
       );

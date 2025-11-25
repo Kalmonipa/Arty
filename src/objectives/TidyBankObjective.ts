@@ -301,7 +301,7 @@ export class TidyBankObjective extends Objective {
       );
       if (!content) {
         logger.info(`No ${gear.code} found in the bank`);
-        continue;;
+        continue;
       }
       const numInBank = content.quantity;
 
