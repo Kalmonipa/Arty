@@ -187,10 +187,16 @@ export class EventObjective extends Objective {
       if (numInBank > 0) {
         logger.info(`Attempting to sell ${numInBank} ${item} to Fish Merchant`);
 
+        let numToWithdraw = numInBank
+
+        if (numToWithdraw > this.character.data.inventory_max_items) {
+          numToWithdraw = this.character.data.inventory_max_items * 0.9
+        }
+
         // Withdraw
-        if (!(await this.character.withdrawNow(numInBank, item))) {
-          logger.warn(`Withdraw ${numInBank} ${item} failed. Moving on`);
-          return;
+        if (!(await this.character.withdrawNow(numToWithdraw, item))) {
+          logger.warn(`Withdraw ${numToWithdraw} ${item} failed. Moving on`);
+          continue;
         }
 
         // Move to the merchant. This step is also done in TradeWithNpcObjective but
