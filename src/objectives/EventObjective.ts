@@ -208,7 +208,7 @@ export class EventObjective extends Objective {
         // );
         // await this.character.move(event.map);
         // Sell items
-        await this.character.tradeWithNpcNow('sell', numInBank, item);
+        await this.character.tradeWithNpcNow('sell', numToWithdraw, item);
       }
     }
 
