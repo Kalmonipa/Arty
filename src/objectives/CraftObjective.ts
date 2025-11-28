@@ -112,7 +112,9 @@ export class CraftObjective extends Objective {
 
         for (let batch = 1; batch <= this.numBatches; batch++) {
           if (this.progress >= this.target.quantity) {
-            logger.info(`Successfully crafted ${this.progress} ${this.target.code}`)
+            logger.info(
+              `Successfully crafted ${this.progress} ${this.target.code}`,
+            );
             return true;
           }
 
@@ -228,8 +230,7 @@ export class CraftObjective extends Objective {
         `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
       );
 
-      logger.info(`Adding ${craftingItem.code} to exceptions list`);
-      this.character.itemsToKeep.push(craftingItem.code);
+      this.character.addItemToItemsToKeep(craftingItem.code);
 
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
         craftingItem.code,

@@ -1140,6 +1140,20 @@ export class Character {
     }
   }
 
+  /**
+   * @description Add item to itemsToKeep list
+   */
+  addItemToItemsToKeep(itemCode: string) {
+    if (this.itemsToKeep.includes(itemCode)) {
+      logger.info(`${itemCode} already in exceptions list`);
+      return;
+    } else {
+      logger.debug(`Adding ${itemCode} to itemsToKeep list`);
+      this.itemsToKeep.push(itemCode);
+      return;
+    }
+  }
+
   /********
    * Item functions
    ********/
@@ -1549,8 +1563,8 @@ export class Character {
           continue;
         } else if (
           exceptions &&
-          exceptions.includes(item.code) &&
-          usedInventorySpace != 100
+          exceptions.includes(item.code) //&&
+          // usedInventorySpace != 100
         ) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
