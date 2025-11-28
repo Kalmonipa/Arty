@@ -44,20 +44,21 @@ export class TradeObjective extends Objective {
   }
 
   async run(): Promise<boolean> {
-    // Figure out who trades the item
     const npcItems = await getAllNpcItems({ code: this.itemCode });
 
     if (npcItems instanceof ApiError) {
       return await this.character.handleErrors(npcItems);
     } else {
       if (this.tradeType === 'buy') {
-        // Buy/sell that amount using buyFromNPC or sellToNPC
         return await this.buyFromNpc(npcItems.data, {
           code: this.itemCode,
           quantity: this.quantity,
         });
       } else if (this.tradeType === 'sell') {
-        logger.warn(`Sell to NPC not implemented yet`);
+        return await this.sellToNpc(npcItems.data[0].npc, {
+          code: this.itemCode,
+          quantity: this.quantity,
+        });
       }
     }
 
@@ -170,11 +171,12 @@ export class TradeObjective extends Objective {
   }
 
   /**
-   * @description Find the NPC and sell to them
+   * @description Sells to the NPC. The char must already be on the same map as the NPC
    */
   async sellToNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
     await this.findNpc(npcCode);
 
+    logger.info(`Selling ${items.quantity} ${items.code} to ${npcCode}`);
     const sellResponse = await actionSellItem(this.character.data, items);
     if (sellResponse instanceof ApiError) {
       return this.character.handleErrors(sellResponse);

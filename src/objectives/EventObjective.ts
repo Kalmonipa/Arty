@@ -171,6 +171,7 @@ export class EventObjective extends Objective {
   /**
    * @description Sell specific items to an NPC
    * Currently only supports selling to the fish merchant
+   * @todo Withdraw as much as we can at once to reduce travel time. Currently it withdraws and sells each item individually
    */
   private async sellToNpc(event: ActiveEventSchema): Promise<boolean> {
     const itemsToSell = [
@@ -181,11 +182,29 @@ export class EventObjective extends Objective {
     ];
 
     // Find any items in the bank
-    // Withdraw
-    // Move to the merchant
-    // Sell items
-    // Repeat above until all is sold
-    // Deposit gold into the bank
+    for (const item in itemsToSell) {
+      const numInBank = await this.character.checkQuantityOfItemInBank(item);
+      if (numInBank > 0) {
+        logger.info(`Attempting to sell ${numInBank} ${item} to Fish Merchant`);
+
+        // Withdraw
+        if (!(await this.character.withdrawNow(numInBank, item))) {
+          logger.warn(`Withdraw ${numInBank} ${item} failed. Moving on`);
+          continue;
+        }
+
+        // Move to the merchant. This step is also done in TradeWithNpcObjective but
+        // doing it here as a backup. I'll remove this if it's confirmed to work
+        logger.info(
+          `Moving to Fish Merchant at ${event.map.map_id} (x: ${event.map.x}, y: ${event.map.y})`,
+        );
+        await this.character.move(event.map);
+        // Sell items
+        await this.character.tradeWithNpcNow('sell', numInBank, item);
+      }
+    }
+
+    await this.character.deposit(0, 'gold');
 
     return true;
   }

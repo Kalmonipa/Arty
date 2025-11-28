@@ -77,6 +77,10 @@ export class DepositObjective extends Objective {
         | BankGoldTransactionResponseSchema;
 
       if (this.target.code === 'gold') {
+        if (this.target.quantity === 0) {
+          this.target.quantity = this.character.data.gold;
+        }
+
         response = await actionDepositGold(
           this.character.data,
           this.target.quantity,

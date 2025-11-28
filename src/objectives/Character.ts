@@ -147,6 +147,11 @@ export class Character {
    */
   role: Role;
   /**
+   * Last epoch time traded with Fish Merchant
+   */
+  fishMerchantTradeDate: number = Math.round(Date.now() / 1000);
+
+  /**
    * Events that we would like to participate in
    */
   applicableResourceEvents = [
@@ -155,6 +160,7 @@ export class Character {
     'bandit_camp',
     'portal_demon',
     'corrupted_ogre',
+    'fish_merchant',
   ];
 
   constructor(data: CharacterSchema) {
@@ -837,6 +843,9 @@ export class Character {
 
     for (const event of activeEventsResponse.data) {
       if (this.applicableResourceEvents.includes(event.code)) {
+        // Storing timestamp so we can only check some events every so often (e.g. once a day)
+        const currentTimestamp = Math.round(Date.now() / 1000);
+
         if (event.code === 'bandit_camp' && this.data.level < 25) {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
@@ -845,6 +854,18 @@ export class Character {
           continue;
         } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
+          continue;
+        } else if (
+          event.code === 'fish_merchant' &&
+          (this.role !== 'fisherman' ||
+            currentTimestamp < this.fishMerchantTradeDate + 86400)
+        ) {
+          logger.debug(
+            `${this.data.name} is not a fisherman (${this.role}) or has already attempted a trade with fish merchant within the last 24 hours`,
+          );
+          logger.debug(
+            `Last trade attempt was ${this.fishMerchantTradeDate}, current is ${currentTimestamp}`,
+          );
           continue;
         }
 

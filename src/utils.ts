@@ -17,6 +17,14 @@ dotenv.config({ quiet: true });
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 export const ApiToken = getEnv('API_TOKEN');
 
+export const AllCharNames = [
+  'LongLegLarry',
+  'JumpyJimmy',
+  'ZippyZoe',
+  'TimidTom',
+  'BouncyBella',
+];
+
 export const CharName = getEnv('CHARACTER_NAME');
 export const CharRole = getEnv('ROLE').toLowerCase() as Role;
 export const MAX_COMBAT_LEVEL = 50;
@@ -25,7 +33,8 @@ export const CRITICAL_MODIFIER = 0.5;
 
 /**
  * Array of all the transition maps:
- * - 571: mountain_6; to Mithril/Bat cave
+ * - 571: mountain_6 = to Mithril/Bat cave
+ * - 572: mine_1 = from Mithril/Bat cave
  * @todo Find a way to get this programmatically
  */
 export const TransitionLocations: MapSchema[] = [
