@@ -33,6 +33,7 @@ export class ItemTaskObjective extends Objective {
 
       const numCoinsInInv =
         this.character.checkQuantityOfItemInInv('tasks_coin');
+
       await this.character.executeJobNow(
         new DepositObjective(this.character, {
           code: 'tasks_coin',
@@ -66,6 +67,8 @@ export class ItemTaskObjective extends Objective {
           `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}. Collected ${this.character.data.task_progress} so far`,
         );
       }
+
+      this.character.addItemToItemsToKeep(this.character.data.task);
 
       if (
         this.character.data.task === 'strange_ore' ||
@@ -193,6 +196,7 @@ export class ItemTaskObjective extends Objective {
         this.character.data.task_total === this.character.data.task_progress
       ) {
         await this.handInTask('items');
+        this.character.removeItemFromItemsToKeep(this.character.data.task);
         return true;
       }
     }

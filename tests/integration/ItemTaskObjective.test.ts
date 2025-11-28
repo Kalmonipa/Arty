@@ -80,15 +80,6 @@ class SimpleMockCharacter {
     return true;
   });
 
-  // startNewTask is a method of the Objective class, not Character
-  // We'll mock it on the Objective instance instead
-
-  // handInTask is a method of the Objective class, not Character
-  // We'll mock it on the Objective instance instead
-
-  // moveToTaskMaster is a method of the Objective class, not Character
-  // We'll mock it on the Objective instance instead
-
   craftNow = jest.fn(
     async (quantity: number, itemCode: string): Promise<boolean> => {
       // Mock crafting
@@ -104,6 +95,14 @@ class SimpleMockCharacter {
       return true;
     },
   );
+
+  removeItemFromItemsToKeep = jest.fn((): void => {
+    // Mock implementation
+  });
+
+  addItemToItemsToKeep = jest.fn((): void => {
+    // Nothing here
+  });
 
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
