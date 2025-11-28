@@ -148,8 +148,9 @@ export class Character {
   role: Role;
   /**
    * Last epoch time traded with Fish Merchant
+   * Set it to a day ago as the initial value
    */
-  fishMerchantTradeDate: number = Math.round(Date.now() / 1000);
+  fishMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
 
   /**
    * Events that we would like to participate in
