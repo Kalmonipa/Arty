@@ -187,10 +187,12 @@ export class EventObjective extends Objective {
       if (numInBank > 0) {
         logger.info(`Attempting to sell ${numInBank} ${item} to Fish Merchant`);
 
-        let numToWithdraw = numInBank
+        let numToWithdraw = numInBank;
 
         if (numToWithdraw > this.character.data.inventory_max_items) {
-          numToWithdraw = this.character.data.inventory_max_items * 0.9
+          numToWithdraw = Math.floor(
+            this.character.data.inventory_max_items * 0.9,
+          );
         }
 
         // Withdraw
@@ -199,16 +201,16 @@ export class EventObjective extends Objective {
           continue;
         }
 
-        // Move to the merchant. This step is also done in TradeWithNpcObjective but
-        // doing it here as a backup. I'll remove this if it's confirmed to work
-        logger.info(
-          `Moving to Fish Merchant at ${event.map.map_id} (x: ${event.map.x}, y: ${event.map.y})`,
-        );
-        await this.character.move(event.map);
+        // // Move to the merchant. This step is also done in TradeWithNpcObjective but
+        // // doing it here as a backup. I'll remove this if it's confirmed to work
+        // logger.info(
+        //   `Moving to Fish Merchant at map ID ${event.map.map_id} (x: ${event.map.x}, y: ${event.map.y})`,
+        // );
+        // await this.character.move(event.map);
         // Sell items
         await this.character.tradeWithNpcNow('sell', numInBank, item);
       }
-    };
+    }
 
     await this.character.deposit(0, 'gold');
 

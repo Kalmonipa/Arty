@@ -11,7 +11,7 @@ import {
   NPCSchema,
   SimpleItemSchema,
 } from '../types/types.js';
-import { ApiUrl, MyHeaders, sleep } from '../utils.js';
+import { ApiUrl, logger, MyHeaders, sleep } from '../utils.js';
 
 /**
  * @description buy items into the npc. Character must be at the same map as the NPC
@@ -101,6 +101,10 @@ export async function actionSellItem(
       switch (response.status) {
         case 404:
           message = 'Item not found.';
+          break;
+        case 422:
+          logger.warn(`Payload ${JSON.stringify(items)} failed`);
+          message = 'Invalid payload';
           break;
         case 442:
           message = 'This item cannot be sold.';
