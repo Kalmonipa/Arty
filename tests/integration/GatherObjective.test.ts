@@ -186,6 +186,10 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
+  checkForActiveEvents = jest.fn((): boolean => {
+    return true;
+  })
+
   getCharacterLevel = jest.fn((skillName?: string): number => {
     switch (skillName) {
       case 'alchemy':
