@@ -223,7 +223,7 @@ export class GatherObjective extends Objective {
         await this.character.evaluateDepositItemsInBank(exceptions, location);
 
         // Check this during gathering jobs so we don't miss out
-        await this.character.checkForActiveEvents()
+        await this.character.checkForActiveEvents();
       }
 
       const response = await actionGather(this.character.data);

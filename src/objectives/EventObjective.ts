@@ -34,7 +34,7 @@ export class EventObjective extends Objective {
       case 'corrupted_ogre':
         return await this.fightMobs(this.activeEvent);
       case 'fish_merchant':
-        return await this.sellToNpc(this.activeEvent);
+        return await this.sellToFishMerchant(this.activeEvent);
       default:
         logger.info(`Event ${this.activeEvent.code} not configured yet.`);
         return false;
@@ -173,7 +173,7 @@ export class EventObjective extends Objective {
    * Currently only supports selling to the fish merchant
    * @todo Withdraw as much as we can at once to reduce travel time. Currently it withdraws and sells each item individually
    */
-  private async sellToNpc(event: ActiveEventSchema): Promise<boolean> {
+  private async sellToFishMerchant(event: ActiveEventSchema): Promise<boolean> {
     const itemsToSell = [
       'shell',
       'golden_shrimp',
@@ -205,6 +205,8 @@ export class EventObjective extends Objective {
     }
 
     await this.character.deposit(0, 'gold');
+
+    this.character.fishMerchantTradeDate = Math.round(Date.now() / 1000);
 
     return true;
   }

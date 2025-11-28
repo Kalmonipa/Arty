@@ -188,7 +188,7 @@ class SimpleMockCharacter {
 
   checkForActiveEvents = jest.fn((): boolean => {
     return true;
-  })
+  });
 
   getCharacterLevel = jest.fn((skillName?: string): number => {
     switch (skillName) {
