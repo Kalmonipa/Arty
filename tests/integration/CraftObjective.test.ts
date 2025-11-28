@@ -104,6 +104,10 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
+  addItemToItemsToKeep = jest.fn((): void => {
+    // Nothing here
+  })
+
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
       (item: InventorySlot) => item.code === code,
