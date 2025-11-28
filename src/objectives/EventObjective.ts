@@ -182,7 +182,7 @@ export class EventObjective extends Objective {
     ];
 
     // Find any items in the bank
-    itemsToSell.forEach(async (item) => {
+    for (const item of itemsToSell) {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
       if (numInBank > 0) {
         logger.info(`Attempting to sell ${numInBank} ${item} to Fish Merchant`);
@@ -202,7 +202,7 @@ export class EventObjective extends Objective {
         // Sell items
         await this.character.tradeWithNpcNow('sell', numInBank, item);
       }
-    });
+    };
 
     await this.character.deposit(0, 'gold');
 
