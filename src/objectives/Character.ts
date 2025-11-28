@@ -149,6 +149,7 @@ export class Character {
   /**
    * Last epoch time traded with Fish Merchant
    * Set it to a day ago as the initial value
+   * ToDo: save this to state so that it persists
    */
   fishMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
 

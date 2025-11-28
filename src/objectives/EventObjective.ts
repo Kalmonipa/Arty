@@ -182,7 +182,7 @@ export class EventObjective extends Objective {
     ];
 
     // Find any items in the bank
-    for (const item in itemsToSell) {
+    itemsToSell.forEach(async (item) => {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
       if (numInBank > 0) {
         logger.info(`Attempting to sell ${numInBank} ${item} to Fish Merchant`);
@@ -190,7 +190,7 @@ export class EventObjective extends Objective {
         // Withdraw
         if (!(await this.character.withdrawNow(numInBank, item))) {
           logger.warn(`Withdraw ${numInBank} ${item} failed. Moving on`);
-          continue;
+          return;
         }
 
         // Move to the merchant. This step is also done in TradeWithNpcObjective but
@@ -202,7 +202,7 @@ export class EventObjective extends Objective {
         // Sell items
         await this.character.tradeWithNpcNow('sell', numInBank, item);
       }
-    }
+    });
 
     await this.character.deposit(0, 'gold');
 
