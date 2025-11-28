@@ -102,10 +102,6 @@ export async function actionSellItem(
         case 404:
           message = 'Item not found.';
           break;
-        case 422:
-          logger.warn(`Payload ${JSON.stringify(items)} failed`);
-          message = 'Invalid payload';
-          break;
         case 442:
           message = 'This item cannot be sold.';
           break;

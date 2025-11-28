@@ -201,12 +201,6 @@ export class EventObjective extends Objective {
           continue;
         }
 
-        // // Move to the merchant. This step is also done in TradeWithNpcObjective but
-        // // doing it here as a backup. I'll remove this if it's confirmed to work
-        // logger.info(
-        //   `Moving to Fish Merchant at map ID ${event.map.map_id} (x: ${event.map.x}, y: ${event.map.y})`,
-        // );
-        // await this.character.move(event.map);
         // Sell items
         await this.character.tradeWithNpcNow('sell', numToWithdraw, item);
       }
