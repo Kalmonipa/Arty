@@ -1569,6 +1569,10 @@ export class Character {
       makeSpaceForOtherItems
     ) {
       logger.warn(`Inventory is almost full. Depositing all items`);
+      logger.info(`Items to keep:`);
+      for (const item of this.itemsToKeep) {
+        logger.info(`  - ${item}`);
+      }
       const maps = await getMaps({ content_type: 'bank' });
       if (maps instanceof ApiError) {
         logger.warn(`Failed to get bank map`);
