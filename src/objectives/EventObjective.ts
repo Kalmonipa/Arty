@@ -206,7 +206,7 @@ export class EventObjective extends Objective {
       }
     }
 
-    await this.character.deposit(0, 'gold');
+    await this.character.depositNow(0, 'gold');
 
     this.character.fishMerchantTradeDate = Math.round(Date.now() / 1000);
 
