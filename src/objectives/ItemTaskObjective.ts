@@ -195,8 +195,8 @@ export class ItemTaskObjective extends Objective {
       if (
         this.character.data.task_total === this.character.data.task_progress
       ) {
-        await this.handInTask('items');
         this.character.removeItemFromItemsToKeep(this.character.data.task);
+        await this.handInTask('items');
         return true;
       }
     }
