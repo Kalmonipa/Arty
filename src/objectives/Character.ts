@@ -72,6 +72,12 @@ import { ExpandBankObjective } from './BankExpansion.js';
 import { getActiveEvents } from '../api_calls/Events.js';
 import { EventObjective } from './EventObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
+import {
+  Overworld,
+  RecallPotion,
+  SandWhisperIsle,
+  Underground,
+} from '../names.js';
 
 export class Character {
   data: CharacterSchema;
@@ -1866,24 +1872,41 @@ export class Character {
 
     // ToDo: when implementing logic for Sandwhisper Isle, withdraw a recall pot from the bank
     // so you can teleport back instead of paying 1000 gold for the transition
-    if (destination.name === 'Sandwhisper Isle') {
-      logger.warn(`Movement to ${destination.name} is not enabled yet`);
-      return false;
-    }
-
-    // y coord and greater is all Sandwhisper Isle maps
-    // ToDo: Check for recall pot in inv first. If none, then use transistion method
-    if (this.data.y >= 17 && destination.name != 'Sandwhisper Isle') {
-      logger.info(
-        `Using a Recall Potion to travel from Sandwhisper Isle to Mainland`,
+    if (destination.name === SandWhisperIsle) {
+      if (
+        this.checkQuantityOfItemInInv(RecallPotion) === 0 &&
+        (await this.checkQuantityOfItemInBank(RecallPotion)) > 0
+      ) {
+        await this.withdrawNow(1, RecallPotion);
+      } else {
+        logger.info(`Withdrawing 2000 gold before travelling to Sandwhisper`)
+        await this.withdrawNow(2000, 'gold')
+      }
+      // ToDo: Don't hardcode the transition map ID
+      await this.move(
+        TransitionLocations.find((mapSchema) => mapSchema.map_id === 1093),
       );
-      await this.use('recall_potion', 1);
+      await this.transition();
     }
 
-    if (
-      destination.layer === 'underground' &&
-      this.data.layer === 'overworld'
-    ) {
+    // y coord 17 and greater is all Sandwhisper Isle maps
+    if (this.data.y >= 17 && destination.name != SandWhisperIsle) {
+      if (this.checkQuantityOfItemInInv(RecallPotion) > 0) {
+        logger.info(
+          `Using a Recall Potion to travel from Sandwhisper Isle to Mainland`,
+        );
+        await this.use(RecallPotion, 1);
+      } else {
+        logger.info(`No recall potion available. Transitioning via boat`)
+        // ToDo: Don't hardcode the transition map ID
+        await this.move(
+          TransitionLocations.find((mapSchema) => mapSchema.map_id === 1336),
+        );
+        await this.transition();
+      }
+    }
+
+    if (destination.layer === Underground && this.data.layer === Overworld) {
       logger.info(
         `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
       );
@@ -1893,29 +1916,10 @@ export class Character {
       logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
 
       await this.move(transitionMapLocation);
-      const transitionResponse = await actionTransition(this.data);
-      if (transitionResponse instanceof ApiError) {
-        return this.handleErrors(transitionResponse);
-      } else {
-        logger.debug(
-          `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
-        );
-        if (
-          transitionResponse &&
-          transitionResponse.data &&
-          transitionResponse.data.character
-        ) {
-          this.data = transitionResponse.data.character;
-        } else {
-          logger.warn(
-            'Transition response missing character data, response structure:',
-            transitionResponse,
-          );
-        }
-      }
+      await this.transition();
     } else if (
-      destination.layer === 'overworld' &&
-      this.data.layer === 'underground'
+      destination.layer === Overworld &&
+      this.data.layer === Underground
     ) {
       logger.info(
         `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
@@ -1927,26 +1931,7 @@ export class Character {
       logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
 
       await this.move(transitionMapLocation);
-      const transitionResponse = await actionTransition(this.data);
-      if (transitionResponse instanceof ApiError) {
-        return this.handleErrors(transitionResponse);
-      } else {
-        logger.debug(
-          `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
-        );
-        if (
-          transitionResponse &&
-          transitionResponse.data &&
-          transitionResponse.data.character
-        ) {
-          this.data = transitionResponse.data.character;
-        } else {
-          logger.warn(
-            'Transition response missing character data, response structure:',
-            transitionResponse,
-          );
-        }
-      }
+      await this.transition();
     }
 
     logger.info(
@@ -1966,6 +1951,35 @@ export class Character {
         return true;
       } else {
         logger.error('Move response missing character data');
+        return false;
+      }
+    }
+  }
+
+  /**
+   * @description Transition at the current map. Must be on a transition map before calling this
+   */
+  private async transition(): Promise<boolean> {
+    const transitionResponse = await actionTransition(this.data);
+    if (transitionResponse instanceof ApiError) {
+      this.handleErrors(transitionResponse);
+      return false;
+    } else {
+      logger.debug(
+        `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
+      );
+      if (
+        transitionResponse &&
+        transitionResponse.data &&
+        transitionResponse.data.character
+      ) {
+        this.data = transitionResponse.data.character;
+        return true;
+      } else {
+        logger.warn(
+          'Transition response missing character data, response structure:',
+          transitionResponse,
+        );
         return false;
       }
     }

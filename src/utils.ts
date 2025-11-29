@@ -35,6 +35,8 @@ export const CRITICAL_MODIFIER = 0.5;
  * Array of all the transition maps:
  * - 571: mountain_6 = to Mithril/Bat cave
  * - 572: mine_1 = from Mithril/Bat cave
+ * - 1092: forest_coastline1 = Mainland to Sandwhisper Isle
+ * - 1336: desertisland_16 = Sandwhisper Isle to Mainland
  * @todo Find a way to get this programmatically
  */
 export const TransitionLocations: MapSchema[] = [
@@ -79,6 +81,62 @@ export const TransitionLocations: MapSchema[] = [
         y: 6,
         layer: 'overworld',
         conditions: [],
+      },
+    },
+  },
+  {
+    map_id: 1093,
+    name: 'Forest',
+    skin: 'forest_coastline1',
+    x: 2,
+    y: 16,
+    layer: 'overworld',
+    access: {
+      type: 'standard',
+      conditions: [],
+    },
+    interactions: {
+      content: null,
+      transition: {
+        map_id: 1336,
+        x: -2,
+        y: 21,
+        layer: 'overworld',
+        conditions: [
+          {
+            code: 'gold',
+            operator: 'cost',
+            value: '1000',
+          },
+        ],
+      },
+    },
+  },
+  {
+    map_id: 1336,
+    name: 'Sandwhisper Isle',
+    skin: 'desertisland_16',
+    x: -2,
+    y: 21,
+    layer: 'overworld',
+    access: {
+      type: 'standard',
+      conditions: [],
+    },
+    interactions: {
+      content: null,
+      transition: {
+        map_id: 1093,
+        x: 2,
+        y: 16,
+        layer: 'overworld',
+        conditions: [
+          {
+            code: 'gold',
+            operator: 'cost',
+            value: '1000',
+          },
+        ],
       },
     },
   },
