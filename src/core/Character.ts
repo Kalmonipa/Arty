@@ -1628,13 +1628,35 @@ export class Character {
           continue;
         } else if (
           exceptions &&
-          exceptions.includes(item.code) //&&
-          // usedInventorySpace != 100
+          exceptions.includes(item.code)
         ) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.debug(`Adding ${item.quantity} ${item.code} to deposit list`);
           itemsToDeposit.push({ code: item.code, quantity: item.quantity });
+        }
+      }
+
+      // Check if we're actually depositing anything. If not then error and deposit the first item
+      let numToDepost: number = 0;
+      for (const item of itemsToDeposit) {
+        numToDepost += item.quantity;
+      }
+      if (numToDepost === 0) {
+        logger.error(
+          `Not depositing anything when inventory is full. There's probably an issue with itemsToKeep`,
+        );
+        for (const item of this.data.inventory) {
+          if (item.quantity === 0) {
+            // If the item slot is empty we can ignore
+            continue;
+          } else {
+            logger.info(
+              `Adding ${item.quantity} ${item.code} to deposit list`,
+            );
+            itemsToDeposit.push({ code: item.code, quantity: item.quantity });
+            break;
+          }
         }
       }
 
@@ -2565,9 +2587,10 @@ export class Character {
       case 499:
         await sleep(this.data.cooldown, 'cooldown');
         return true;
+      case 500: // Bad gateway from server
       case 502: // Bad gateway from server
-        logger.warn('Sleeping for 5 minutes to avoid 502');
-        await sleep(300, 'HTTP error code 502');
+        logger.warn('Sleeping for 5 minutes to avoid 5xx errors');
+        await sleep(300, 'HTTP error code 5xx');
         return true;
       default:
         return false;
