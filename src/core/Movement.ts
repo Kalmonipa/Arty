@@ -90,6 +90,7 @@ export async function transitionToUndergroundMine(character: Character) {
   if (!(await character.transition())) {
     return false;
   }
+  return true;
 }
 
 /**
@@ -108,4 +109,5 @@ export async function transitionToOverworld(character: Character) {
   if (!(await character.transition())) {
     return false;
   }
+  return true;
 }

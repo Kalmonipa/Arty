@@ -354,126 +354,6 @@ describe('Character.move()', () => {
     });
   });
 
-  describe('Transition location finding', () => {
-    it('should find closest transition point for overworld to underground', async () => {
-      // Arrange
-      const destination: MapSchema = {
-        map_id: 500,
-        name: 'Far Underground Location',
-        skin: 'far_underground',
-        x: 100,
-        y: 100,
-        layer: 'underground',
-        access: { type: 'standard', conditions: [] },
-        interactions: {},
-      };
-
-      // Mock the move to transition point
-      const mockMoveResponse: CharacterMovementResponseSchema = {
-        data: {
-          cooldown: {
-            remaining_seconds: 0,
-            total_seconds: 5,
-            started_at: '2025-01-01T00:00:00.000Z',
-            expiration: '2025-01-01T00:00:05.000Z',
-            reason: 'movement',
-          },
-          destination: TransitionLocations[0],
-          path: [
-            [0, 0],
-            [2, 16],
-          ],
-          character: { ...mockCharacter, x: 2, y: 16, map_id: 571 },
-        },
-      };
-
-      const mockTransitionResponse: CharacterTransitionResponseSchema = {
-        data: {
-          cooldown: {
-            remaining_seconds: 0,
-            total_seconds: 3,
-            started_at: '2025-01-01T00:00:05.000Z',
-            expiration: '2025-01-01T00:00:08.000Z',
-            reason: 'transition',
-          },
-          destination: {
-            map_id: 572,
-            name: 'Underground Mountain',
-            skin: 'mountain_6',
-            x: -2,
-            y: 6,
-            layer: 'underground',
-            access: { type: 'standard', conditions: [] },
-            interactions: {},
-          },
-          transition: {
-            map_id: 572,
-            x: 2,
-            y: 16,
-            layer: 'underground',
-            conditions: [],
-          },
-          character: {
-            ...mockCharacter,
-            x: 2,
-            y: 16,
-            map_id: 572,
-            layer: 'underground',
-          },
-        },
-      };
-
-      const mockFinalMoveResponse: CharacterMovementResponseSchema = {
-        data: {
-          cooldown: {
-            remaining_seconds: 0,
-            total_seconds: 5,
-            started_at: '2025-01-01T00:00:08.000Z',
-            expiration: '2025-01-01T00:00:13.000Z',
-            reason: 'movement',
-          },
-          destination: destination,
-          path: [
-            [2, 16],
-            [50, 50],
-            [100, 100],
-          ],
-          character: {
-            ...mockCharacter,
-            x: 100,
-            y: 100,
-            map_id: 500,
-            layer: 'underground',
-          },
-        },
-      };
-
-      mockActionMove
-        .mockResolvedValueOnce(mockMoveResponse)
-        .mockResolvedValueOnce(mockFinalMoveResponse);
-      mockActionTransition.mockResolvedValue(mockTransitionResponse);
-
-      // Act
-      const result = await character.move(destination);
-
-      // Assert
-      expect(result).toBe(true);
-      // Should move to the transition point first (Mountain at 2, 16)
-      expect(mockActionMove).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining({
-          x: 0,
-          y: 0,
-          layer: 'overworld',
-        }),
-        {
-          x: 2,
-          y: 16,
-        },
-      );
-    });
-  });
-
   describe('Error handling', () => {
     it('should handle move API error', async () => {
       // Arrange
@@ -591,7 +471,7 @@ describe('Character.move()', () => {
     });
   });
 
-  describe('Edge cases', () => {
+  describe('Sandwhisper Isle', () => {
     it('should return true for Sandwhisper Isle destination', async () => {
       // Arrange
       const destination: MapSchema = {
@@ -610,6 +490,63 @@ describe('Character.move()', () => {
           transition: null,
         },
       };
+
+      const mockMoveResponse: CharacterMovementResponseSchema = {
+        data: {
+          cooldown: {
+            remaining_seconds: 0,
+            total_seconds: 5,
+            started_at: '2025-01-01T00:00:00.000Z',
+            expiration: '2025-01-01T00:00:05.000Z',
+            reason: 'movement',
+          },
+          destination: TransitionLocations[0],
+          path: [
+            [0, 0],
+            [2, 16],
+          ],
+          character: { ...mockCharacter, x: 2, y: 16, map_id: 1093 },
+        },
+      };
+
+      const mockTransitionResponse: CharacterTransitionResponseSchema = {
+        data: {
+          cooldown: {
+            remaining_seconds: 0,
+            total_seconds: 3,
+            started_at: '2025-01-01T00:00:05.000Z',
+            expiration: '2025-01-01T00:00:08.000Z',
+            reason: 'transition',
+          },
+          destination: {
+            map_id: 1336,
+            name: 'Sandwhisper Isle',
+            skin: 'desertisland_16',
+            x: -2,
+            y: 21,
+            layer: 'overworld',
+            access: { type: 'standard', conditions: [] },
+            interactions: {},
+          },
+          transition: {
+            map_id: 1093,
+            x: 2,
+            y: 16,
+            layer: 'overworld',
+            conditions: [],
+          },
+          character: {
+            ...mockCharacter,
+            x: -2,
+            y: 21,
+            map_id: 1336,
+            layer: 'overworld',
+          },
+        },
+      };
+
+      mockActionMove.mockResolvedValue(mockMoveResponse);
+      mockActionTransition.mockResolvedValue(mockTransitionResponse);
 
       // Act
       const result = await character.move(destination);

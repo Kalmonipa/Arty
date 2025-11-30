@@ -9,7 +9,7 @@ jest.mock('../../src/api_calls/Items', () => ({
   actionEquipItem: jest.fn(),
 }));
 
-jest.mock('../../src/objectives/CraftObjective', () => ({
+jest.mock('../../src/core/CraftObjective', () => ({
   CraftObjective: jest.fn(),
 }));
 

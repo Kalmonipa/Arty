@@ -37,7 +37,7 @@ export const CRITICAL_MODIFIER = 0.5;
  * Array of all the transition maps:
  * - 571: mountain_6 = to Mithril/Bat cave
  * - 572: mine_1 = from Mithril/Bat cave
- * - 1092: forest_coastline1 = Mainland to Sandwhisper Isle
+ * - 1093: forest_coastline1 = Mainland to Sandwhisper Isle
  * - 1336: desertisland_16 = Sandwhisper Isle to Mainland
  * @todo Find a way to get this programmatically
  */

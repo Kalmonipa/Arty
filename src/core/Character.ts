@@ -1875,6 +1875,9 @@ export class Character {
    * @todo Take in a map_id as an alternative to x,y coords
    */
   async move(destination: MapSchema): Promise<boolean> {
+    console.log(
+      `Moving to ${destination.name} (${destination.map_id}) in layer ${destination.layer}`,
+    );
     if (
       (this.data.x === destination.x && this.data.y === destination.y) ||
       this.data.map_id === destination.map_id
@@ -1883,7 +1886,9 @@ export class Character {
     }
 
     if (destination.name === SandWhisperIsle) {
+      console.log('Made it here');
       const moveResult = await transitionToSandwhisperIsle(this);
+      console.log(`Move result is ${moveResult}`);
       if (!moveResult) {
         logger.error(`Failed to move to SandWhisper Isle transition point`);
         return false;
@@ -1911,7 +1916,8 @@ export class Character {
         logger.error(`Failed to move to Underground transition point`);
         return false;
       }
-    } else if ( // We're Underground and would like to get to Overworld
+    } else if (
+      // We're Underground and would like to get to Overworld
       destination.layer === Overworld &&
       this.data.layer === Underground
     ) {
