@@ -1,10 +1,5 @@
 import { ApiError } from '../core/Error.js';
-import {
-  getRequestOptions,
-  logger,
-  MyHeaders,
-  sleep,
-} from '../utils.js';
+import { getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 import {
   BankExtensionTransactionResponseSchema,

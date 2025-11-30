@@ -4,9 +4,7 @@ import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
-import {
-  logger,
-} from './utils.js';
+import { logger } from './utils.js';
 import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';

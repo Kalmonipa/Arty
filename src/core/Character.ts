@@ -71,11 +71,7 @@ import { ExpandBankObjective } from './BankExpansion.js';
 import { getActiveEvents } from '../api_calls/Events.js';
 import { EventObjective } from './EventObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import {
-  Overworld,
-  SandWhisperIsle,
-  Underground,
-} from '../names.js';
+import { Overworld, SandWhisperIsle, Underground } from '../names.js';
 import {
   transitionToMainland,
   transitionToOverworld,
@@ -167,6 +163,16 @@ export class Character {
   fishMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
 
   /**
+   * Lowest levels in the village. Used as a guide on what level gear we need and what
+   * we can recycle
+   */
+  lowestCharLevel: number;
+  lowestAlchemyLevel: number;
+  lowestFishingLevel: number;
+  lowestMiningLevel: number;
+  lowestWoodcuttingLevel: number;
+
+  /**
    * Events that we would like to participate in
    */
   applicableResourceEvents = [
@@ -203,7 +209,23 @@ export class Character {
     this.weaponMap = await buildListOfWeapons();
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
-    this.allCharacterDetails = allCharacterDetails
+    this.allCharacterDetails = allCharacterDetails;
+
+    this.lowestCharLevel = allCharacterDetails.reduce((prev, curr) =>
+      prev.level < curr.level ? prev : curr,
+    ).level;
+    this.lowestAlchemyLevel = allCharacterDetails.reduce((prev, curr) =>
+      prev.alchemy_level < curr.alchemy_level ? prev : curr,
+    ).alchemy_level;
+    this.lowestFishingLevel = allCharacterDetails.reduce((prev, curr) =>
+      prev.fishing_level < curr.fishing_level ? prev : curr,
+    ).fishing_level;
+    this.lowestMiningLevel = allCharacterDetails.reduce((prev, curr) =>
+      prev.mining_level < curr.mining_level ? prev : curr,
+    ).mining_level;
+    this.lowestWoodcuttingLevel = allCharacterDetails.reduce((prev, curr) =>
+      prev.woodcutting_level < curr.woodcutting_level ? prev : curr,
+    ).woodcutting_level;
 
     this.role = CharRole;
 
