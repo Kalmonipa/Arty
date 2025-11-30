@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { FightObjective } from '../../src/objectives/FightObjective.js';
+import { FightObjective } from '../../src/core/FightObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { HealthStatus } from '../../src/types/CharacterData.js';
 

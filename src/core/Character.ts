@@ -28,6 +28,7 @@ import {
   buildListOf,
   buildListOfWeapons,
   CharRole,
+  GetCharacterData,
   logger,
   sleep,
   TransitionLocations,
@@ -78,6 +79,12 @@ import {
   SandWhisperIsle,
   Underground,
 } from '../names.js';
+import {
+  transitionToMainland,
+  transitionToOverworld,
+  transitionToSandwhisperIsle,
+  transitionToUndergroundMine,
+} from './Movement.js';
 
 export class Character {
   data: CharacterSchema;
@@ -118,6 +125,8 @@ export class Character {
   consumablesMap?: Record<ConsumableEffects, ItemSchema[]>;
   utilitiesMap?: Record<UtilityEffects, ItemSchema[]>;
   weaponMap?: Record<WeaponFlavours, ItemSchema[]>;
+
+  allCharacterDetails?: CharacterSchema[];
 
   /**
    * True when character is not doing anything
@@ -194,6 +203,9 @@ export class Character {
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
     this.weaponMap = await buildListOfWeapons();
+
+    // Pulls all characters information so we can make judgements about equipment, potions, etc
+    this.allCharacterDetails = await GetCharacterData();
 
     this.role = CharRole;
 
@@ -1309,7 +1321,7 @@ export class Character {
           `Eating ${amountNeededToEat} ${bestFood.code} to recover ${healthStatus.difference} health`,
         );
 
-        return await this.use(bestFood.code, amountNeededToEat);
+        return await this.useItem(bestFood.code, amountNeededToEat);
       }
     }
     return true;
@@ -1870,68 +1882,44 @@ export class Character {
       return true;
     }
 
-    // ToDo: when implementing logic for Sandwhisper Isle, withdraw a recall pot from the bank
-    // so you can teleport back instead of paying 1000 gold for the transition
     if (destination.name === SandWhisperIsle) {
-      if (
-        this.checkQuantityOfItemInInv(RecallPotion) === 0 &&
-        (await this.checkQuantityOfItemInBank(RecallPotion)) > 0
-      ) {
-        await this.withdrawNow(1, RecallPotion);
-      } else {
-        logger.info(`Withdrawing 2000 gold before travelling to Sandwhisper`)
-        await this.withdrawNow(2000, 'gold')
+      const moveResult = await transitionToSandwhisperIsle(this);
+      if (!moveResult) {
+        logger.error(`Failed to move to SandWhisper Isle transition point`);
+        return false;
       }
-      // ToDo: Don't hardcode the transition map ID
-      await this.move(
-        TransitionLocations.find((mapSchema) => mapSchema.map_id === 1093),
-      );
-      await this.transition();
     }
 
-    // y coord 17 and greater is all Sandwhisper Isle maps
+    // y coord 17 and greater is all Sandwhisper Isle maps so can cheese it here a bit
     if (this.data.y >= 17 && destination.name != SandWhisperIsle) {
-      if (this.checkQuantityOfItemInInv(RecallPotion) > 0) {
-        logger.info(
-          `Using a Recall Potion to travel from Sandwhisper Isle to Mainland`,
+      const moveResult = await transitionToMainland(this);
+      if (!moveResult) {
+        logger.error(
+          `Failed to move to Mainland transition point or use recall potion`,
         );
-        await this.use(RecallPotion, 1);
-      } else {
-        logger.info(`No recall potion available. Transitioning via boat`)
-        // ToDo: Don't hardcode the transition map ID
-        await this.move(
-          TransitionLocations.find((mapSchema) => mapSchema.map_id === 1336),
-        );
-        await this.transition();
+        return false;
       }
     }
 
+    // We're in Overworld and would like to get to Underground
     if (destination.layer === Underground && this.data.layer === Overworld) {
       logger.info(
         `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
       );
-      const transitionMapLocation =
-        this.findOverworldToUndergroundTransitionPoint(destination);
-
-      logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
-
-      await this.move(transitionMapLocation);
-      await this.transition();
-    } else if (
+      const moveResult = await transitionToUndergroundMine(this);
+      if (!moveResult) {
+        logger.error(`Failed to move to Underground transition point`);
+        return false;
+      }
+    } else if ( // We're Underground and would like to get to Overworld
       destination.layer === Overworld &&
       this.data.layer === Underground
     ) {
-      logger.info(
-        `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
-      );
-
-      const transitionMapLocation =
-        this.findUndergroundToOverworldTransitionPoint();
-
-      logger.info(`Moving to ${transitionMapLocation.map_id} to transition`);
-
-      await this.move(transitionMapLocation);
-      await this.transition();
+      const moveResult = await transitionToOverworld(this);
+      if (!moveResult) {
+        logger.error(`Failed to move to Overworld transition point`);
+        return false;
+      }
     }
 
     logger.info(
@@ -1959,7 +1947,7 @@ export class Character {
   /**
    * @description Transition at the current map. Must be on a transition map before calling this
    */
-  private async transition(): Promise<boolean> {
+  async transition(): Promise<boolean> {
     const transitionResponse = await actionTransition(this.data);
     if (transitionResponse instanceof ApiError) {
       this.handleErrors(transitionResponse);
@@ -2071,7 +2059,7 @@ export class Character {
   /**
    * @description uses the specified item
    */
-  async use(itemCode: string, quantity: number): Promise<boolean> {
+  async useItem(itemCode: string, quantity: number): Promise<boolean> {
     const useResponse = await actionUse(this.data, {
       code: itemCode,
       quantity: quantity,

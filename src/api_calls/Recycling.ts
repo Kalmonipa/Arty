@@ -1,4 +1,4 @@
-import { ApiError } from '../objectives/Error.js';
+import { ApiError } from '../core/Error.js';
 import { CharacterSchema, RecyclingResponseSchema } from '../types/types.js';
 import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
 

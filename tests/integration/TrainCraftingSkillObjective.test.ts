@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { TrainCraftingSkillObjective } from '../../src/objectives/TrainCraftingSkillObjective.js';
+import { TrainCraftingSkillObjective } from '../../src/core/TrainCraftingSkillObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot, Role } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 import { ItemSchema, CraftSkill } from '../../src/types/types.js';
 
 // Mock the API modules

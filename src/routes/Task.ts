@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../objectives/Character.js';
-import { Objective } from '../objectives/Objective.js';
-import { MonsterTaskObjective } from '../objectives/MonsterTaskObjective.js';
-import { ItemTaskObjective } from '../objectives/ItemTaskObjective.js';
+import { Character } from '../core/Character.js';
+import { Objective } from '../core/Objective.js';
+import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
+import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 
 export default function TaskRouter(char: Character) {
   const router = Router();

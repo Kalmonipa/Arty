@@ -1,5 +1,6 @@
 import winston from 'winston';
 import {
+  CharacterSchema,
   DataPageItemSchema,
   GatheringSkill,
   ItemSchema,
@@ -7,10 +8,11 @@ import {
   MapSchema,
 } from './types/types.js';
 import { getAllItemInformation } from './api_calls/Items.js';
-import { ApiError } from './objectives/Error.js';
+import { ApiError } from './core/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import dotenv from 'dotenv';
 import { Role, ROLES } from './types/CharacterData.js';
+import { getCharacter } from './api_calls/Character.js';
 
 dotenv.config({ quiet: true });
 
@@ -351,4 +353,22 @@ export async function buildListOf(
 
 export function isRole(value: unknown): value is Role {
   return typeof value === 'string' && ROLES.includes(value as Role);
+}
+
+export async function GetCharacterData(): Promise<CharacterSchema[]> {
+  let charDetails: CharacterSchema[] = [];
+
+  for (const character of AllCharNames) {
+    const charDetail = await getCharacter(character);
+    if (charDetail instanceof ApiError) {
+      logger.error(
+        `Failed to get data for ${character}: [${charDetail.error.code}] ${charDetail.message}`,
+      );
+      break;
+    }
+
+    charDetails.push(charDetail);
+  }
+
+  return charDetails;
 }

@@ -1,20 +1,21 @@
-import { Character } from './objectives/Character.js';
+import { Character } from './core/Character.js';
 import { getCharacter } from './api_calls/Character.js';
 import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
-import { ApiUrl, CharName, logger } from './utils.js';
+import { ApiUrl, CharName, GetCharacterData, logger } from './utils.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
 import EquipRouter from './routes/Equip.js';
 import FightRouter from './routes/Fight.js';
 import RecycleRouter from './routes/Recycle.js';
-import { ApiError } from './objectives/Error.js';
+import { ApiError } from './core/Error.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
 import BankRouter from './routes/Bank.js';
 import CharacterRouter from './routes/Character.js';
+import { CharacterSchema } from './types/types.js';
 
 async function main() {
   const charData = await getCharacter(CharName);

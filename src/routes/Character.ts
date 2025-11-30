@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../objectives/Character.js';
+import { Character } from '../core/Character.js';
 import { isRole } from '../utils.js';
 import { ROLES } from '../types/CharacterData.js';
 

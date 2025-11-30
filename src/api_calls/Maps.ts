@@ -1,4 +1,4 @@
-import { ApiError } from '../objectives/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   GetAllMapsMapsGetParams,
   DataPageMapSchema,

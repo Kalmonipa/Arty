@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../objectives/Character.js';
-import { WithdrawObjective } from '../objectives/WithdrawObjective.js';
+import { Character } from '../core/Character.js';
+import { WithdrawObjective } from '../core/WithdrawObjective.js';
 
 export default function WithdrawRouter(char: Character) {
   const router = Router();

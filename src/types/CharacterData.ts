@@ -1,4 +1,4 @@
-import { Objective } from '../objectives/Objective.js';
+import { Objective } from '../core/Objective.js';
 
 /**
  * @param percentage The percentage of health we are currently on

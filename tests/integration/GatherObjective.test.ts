@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { GatherObjective } from '../../src/objectives/GatherObjective.js';
+import { GatherObjective } from '../../src/core/GatherObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 import {
   CharacterSchema,
   DataPageMapSchema,

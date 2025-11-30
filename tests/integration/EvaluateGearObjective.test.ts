@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { EvaluateGearObjective } from '../../src/objectives/EvaluateGearObjective.js';
+import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 import { ItemSlot, ItemSchema, MonsterSchema } from '../../src/types/types.js';
 import { GearEffects, WeaponFlavours } from '../../src/types/ItemData.js';
 

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Character } from '../../src/objectives/Character.js';
+import { Character } from '../../src/core/Character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ItemSchema, SimpleEffectSchema } from '../../src/types/types.js';
