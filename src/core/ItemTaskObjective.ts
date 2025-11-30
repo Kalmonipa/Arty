@@ -79,6 +79,7 @@ export class ItemTaskObjective extends Objective {
         logger.info(
           `${this.character.data.task} is an item we want to keep. Cancelling task`,
         );
+        this.character.removeItemFromItemsToKeep(this.character.data.task);
         await this.cancelCurrentTask('items');
         continue;
       }
@@ -102,7 +103,7 @@ export class ItemTaskObjective extends Objective {
       ) {
         if (!(await this.checkStatus())) return false;
 
-        // If we need to collect less than 80, gather that amount, otherwise gather 90% of their inventory space
+        // Gather the remaining items for the task, or fill up the remaining inv space
         const numToGather = Math.min(
           this.character.data.task_total - this.character.data.task_progress,
           Math.ceil(this.character.data.inventory_max_items * 0.9),
@@ -124,36 +125,14 @@ export class ItemTaskObjective extends Objective {
         );
 
         if (numToGather <= numGathered) {
-          logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
-          await this.moveToTaskMaster('items');
-
-          const taskTradeResponse: ApiError | TaskTradeResponseSchema =
-            await actionTasksTrade(this.character.data, {
-              code: this.character.data.task,
-              quantity: numToGather,
-            });
-          if (taskTradeResponse instanceof ApiError) {
-            logger.warn(taskTradeResponse.message);
-            const shouldRetry =
-              await this.character.handleErrors(taskTradeResponse);
-
-            if (!shouldRetry || attempt === this.maxRetries) {
-              logger.error(`Item task failed after ${attempt} attempts`);
-              return false;
-            }
-            // Break out of while loop to retry the entire attempt
-            break;
-          } else {
-            if (taskTradeResponse.data.character) {
-              this.character.data = taskTradeResponse.data.character;
-            } else {
-              logger.error('Task trade response missing character data');
-              // Break out of the while loop to prevent infinite loop
-              break;
-            }
+          if (!(await this.tradeWithTasksMaster(numToGather))) {
+            this.character.removeItemFromItemsToKeep(this.character.data.task);
+            return false;
           }
         } else if (taskInfo.craft) {
-          logger.debug(`${taskInfo.code} is a crafted item. Crafting...`);
+          logger.debug(
+            `${taskInfo.code} is a crafted item. Crafting ${numToGather}`,
+          );
           if (
             !(await this.character.craftNow(
               numToGather,
@@ -161,14 +140,18 @@ export class ItemTaskObjective extends Objective {
             ))
           ) {
             if (attempt >= this.maxRetries) {
-              //await this.cancelCurrentTask('items');
+              this.character.removeItemFromItemsToKeep(
+                this.character.data.task,
+              );
               return false;
             } else {
               break;
             }
           }
         } else {
-          logger.debug(`${taskInfo.code} is a gather resource. Gathering...`);
+          logger.debug(
+            `${taskInfo.code} is a gather resource. Gathering ${numToGather}`,
+          );
           // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
           // This happens sometimes with fish when our cooking level is high
           // but fishing might be too low to actually gather the required ingredient
@@ -181,7 +164,9 @@ export class ItemTaskObjective extends Objective {
             ))
           ) {
             if (attempt >= this.maxRetries) {
-              //await this.cancelCurrentTask('items');
+              this.character.removeItemFromItemsToKeep(
+                this.character.data.task,
+              );
               return false;
             } else {
               break;
@@ -201,5 +186,28 @@ export class ItemTaskObjective extends Objective {
       }
     }
     return false;
+  }
+
+  private async tradeWithTasksMaster(numToGather: number): Promise<boolean> {
+    logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
+    await this.moveToTaskMaster('items');
+
+    const taskTradeResponse: ApiError | TaskTradeResponseSchema =
+      await actionTasksTrade(this.character.data, {
+        code: this.character.data.task,
+        quantity: numToGather,
+      });
+    if (taskTradeResponse instanceof ApiError) {
+      logger.warn(taskTradeResponse.message);
+      return this.character.handleErrors(taskTradeResponse);
+    } else {
+      if (taskTradeResponse.data.character) {
+        this.character.data = taskTradeResponse.data.character;
+      } else {
+        logger.error('Task trade response missing character data');
+        return false;
+      }
+      return true;
+    }
   }
 }

@@ -279,7 +279,7 @@ export class TidyBankObjective extends Objective {
   }
 
   /**
-   * @description Recycle any excess jewelry if there are more than 5 in the bank
+   * @description Recycle any excess gear if there are more than 5 in the bank
    */
   private async recycleExcessEquipment(skill: CraftSkill): Promise<boolean> {
     const maxNumberNeededInBank = 5;
