@@ -1,6 +1,7 @@
 import { ApiError } from '../core/Error.js';
 import { CharacterSchema, RecyclingResponseSchema } from '../types/types.js';
-import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
+import { MyHeaders, logger, sleep } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 
 export async function actionRecycle(
   character: CharacterSchema,

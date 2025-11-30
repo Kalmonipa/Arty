@@ -4,7 +4,10 @@ import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
-import { ApiUrl, CharName, GetCharacterData, logger } from './utils.js';
+import {
+  logger,
+} from './utils.js';
+import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
 import EquipRouter from './routes/Equip.js';
@@ -16,17 +19,28 @@ import TradeRouter from './routes/Trade.js';
 import BankRouter from './routes/Bank.js';
 import CharacterRouter from './routes/Character.js';
 import { CharacterSchema } from './types/types.js';
+import { AllCharNames, CharName } from './constants.js';
 
 async function main() {
-  const charData = await getCharacter(CharName);
-  if (charData instanceof ApiError) {
-    logger.error(`Failed to get character data`);
-    return;
-  } else {
-    logger.debug(`Gathered data for ${charData.name}`);
+  let charDetails: CharacterSchema[] = [];
+
+  for (const character of AllCharNames) {
+    const charDetail = await getCharacter(character);
+    if (charDetail instanceof ApiError) {
+      logger.error(
+        `Failed to get data for ${character}: [${charDetail.error.code}] ${charDetail.message}`,
+      );
+      break;
+    }
+    logger.debug(`Gathered data for ${charDetail.name}`);
+
+    charDetails.push(charDetail);
   }
-  const char = new Character(charData);
-  await char.init();
+
+  const char = new Character(
+    charDetails.find((charData) => charData.name === CharName),
+  );
+  await char.init(charDetails);
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {
     logger.info(`-- Using Test server --`);

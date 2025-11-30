@@ -1,7 +1,8 @@
 import { getAllItemInformation } from '../api_calls/Items.js';
+import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
-import { isGatheringSkill, logger, MAX_SKILL_LEVEL } from '../utils.js';
+import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';

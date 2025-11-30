@@ -5,7 +5,8 @@ import {
   GetAllActiveEventsEventsActiveGetParams,
   GetAllEventsEventsGetParams,
 } from '../types/types.js';
-import { ApiUrl, MyHeaders } from '../utils.js';
+import { MyHeaders } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 
 export async function getAllEvents(
   params: GetAllEventsEventsGetParams,

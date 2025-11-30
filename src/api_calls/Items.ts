@@ -1,5 +1,6 @@
 import { ApiError } from '../core/Error.js';
-import { ApiUrl, getRequestOptions, MyHeaders, sleep } from '../utils.js';
+import { getRequestOptions, MyHeaders, sleep } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 import {
   CharacterSchema,
   DataPageItemSchema,

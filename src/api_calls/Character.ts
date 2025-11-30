@@ -1,6 +1,7 @@
 import { ApiError } from '../core/Error.js';
 import { CharacterSchema } from '../types/types.js';
-import { ApiUrl, MyHeaders } from '../utils.js';
+import { MyHeaders } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 
 /**
  * @description returns the character information

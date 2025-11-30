@@ -8,7 +8,8 @@ import {
   TaskResponseSchema,
   TaskTradeResponseSchema,
 } from '../types/types.js';
-import { ApiUrl, MyHeaders, logger, sleep } from '../utils.js';
+import { MyHeaders, logger, sleep } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 
 export async function actionAcceptNewTask(
   character: CharacterSchema,

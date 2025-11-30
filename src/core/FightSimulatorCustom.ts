@@ -1,7 +1,8 @@
 import { getMonsterInformation } from '../api_calls/Monsters.js';
+import { CRITICAL_MODIFIER } from '../constants.js';
 import { TurnsDetails } from '../types/FightData.js';
 import { CharacterSchema, MonsterSchema } from '../types/types.js';
-import { CRITICAL_MODIFIER, logger } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';

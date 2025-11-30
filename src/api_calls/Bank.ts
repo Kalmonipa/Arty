@@ -1,11 +1,11 @@
 import { ApiError } from '../core/Error.js';
 import {
-  ApiUrl,
   getRequestOptions,
   logger,
   MyHeaders,
   sleep,
 } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 import {
   BankExtensionTransactionResponseSchema,
   BankGoldTransactionResponseSchema,

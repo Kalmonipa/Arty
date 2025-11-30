@@ -4,7 +4,8 @@ import {
   DataPageMapSchema,
   MapResponseSchema,
 } from '../types/types.js';
-import { ApiUrl, MyHeaders } from '../utils.js';
+import { MyHeaders } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 
 export async function getMaps(
   params: GetAllMapsMapsGetParams,

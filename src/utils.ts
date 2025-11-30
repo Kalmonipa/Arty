@@ -10,28 +10,9 @@ import {
 import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './core/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
-import dotenv from 'dotenv';
 import { Role, ROLES } from './types/CharacterData.js';
 import { getCharacter } from './api_calls/Character.js';
-
-dotenv.config({ quiet: true });
-
-export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
-export const ApiToken = getEnv('API_TOKEN');
-
-export const AllCharNames = [
-  'LongLegLarry',
-  'JumpyJimmy',
-  'ZippyZoe',
-  'TimidTom',
-  'BouncyBella',
-];
-
-export const CharName = getEnv('CHARACTER_NAME');
-export const CharRole = getEnv('ROLE').toLowerCase() as Role;
-export const MAX_COMBAT_LEVEL = 50;
-export const MAX_SKILL_LEVEL = 50;
-export const CRITICAL_MODIFIER = 0.5;
+import { CharName, AllCharNames, ApiToken } from './constants.js';
 
 /**
  * Array of all the transition maps:

@@ -11,7 +11,8 @@ import {
   NPCSchema,
   SimpleItemSchema,
 } from '../types/types.js';
-import { ApiUrl, logger, MyHeaders, sleep } from '../utils.js';
+import { logger, MyHeaders, sleep } from '../utils.js';
+import { ApiUrl } from '../constants.js';
 
 /**
  * @description buy items into the npc. Character must be at the same map as the NPC

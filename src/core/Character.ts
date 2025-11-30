@@ -27,8 +27,6 @@ import {
 import {
   buildListOf,
   buildListOfWeapons,
-  CharRole,
-  GetCharacterData,
   logger,
   sleep,
   TransitionLocations,
@@ -75,7 +73,6 @@ import { EventObjective } from './EventObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import {
   Overworld,
-  RecallPotion,
   SandWhisperIsle,
   Underground,
 } from '../names.js';
@@ -85,6 +82,7 @@ import {
   transitionToSandwhisperIsle,
   transitionToUndergroundMine,
 } from './Movement.js';
+import { CharRole } from '../constants.js';
 
 export class Character {
   data: CharacterSchema;
@@ -192,7 +190,7 @@ export class Character {
   /**
    * @description function that builds some data sets to use later on
    */
-  async init() {
+  async init(allCharacterDetails: CharacterSchema[]) {
     this.armorMap = await buildListOf('body_armor');
     this.amuletMap = await buildListOf('amulet');
     this.bootsMap = await buildListOf('boots');
@@ -205,7 +203,7 @@ export class Character {
     this.weaponMap = await buildListOfWeapons();
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
-    this.allCharacterDetails = await GetCharacterData();
+    this.allCharacterDetails = allCharacterDetails
 
     this.role = CharRole;
 
