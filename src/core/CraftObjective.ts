@@ -85,6 +85,7 @@ export class CraftObjective extends Objective {
           logger.warn(
             `Item ${targetItem.code} has no craft information. Failing`,
           );
+          this.character.removeItemFromItemsToKeep(targetItem.code)
           return false;
         }
 
@@ -132,6 +133,8 @@ export class CraftObjective extends Objective {
           }
 
           for (const craftItem of targetItem.craft.items) {
+            this.character.addItemToItemsToKeep(craftItem.code)
+
             const numInInvAfterGathering =
               this.character.checkQuantityOfItemInInv(craftItem.code);
             logger.debug(
@@ -153,6 +156,7 @@ export class CraftObjective extends Objective {
                 logger.warn(
                   `Regathering ingredients for ${targetItem.code} has failed`,
                 );
+                this.character.removeItemFromItemsToKeep(craftItem.code)
                 break;
               }
             }
@@ -230,14 +234,13 @@ export class CraftObjective extends Objective {
         `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
       );
 
-      this.character.addItemToItemsToKeep(craftingItem.code);
-
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
         craftingItem.code,
       );
 
       if (craftingItemInfo instanceof ApiError) {
         await this.character.handleErrors(craftingItemInfo);
+        this.character.removeItemFromItemsToKeep(craftingItem.code)
       } else {
         let numInInv = this.character.checkQuantityOfItemInInv(
           craftingItem.code,
@@ -352,7 +355,6 @@ export class CraftObjective extends Objective {
         }
       }
     }
-    this.character.itemsToKeep = [];
 
     return true;
   }

@@ -164,13 +164,14 @@ export class IdleObjective extends Objective {
 
     // Every character should craft 50 of the highest healing potion they can craft and use
     // to try and always have some stocked up in the bank
+    let minToCreate = this.character.role === 'alchemist' ? 200: 100
     for (const potion of this.character.utilitiesMap['restore'].reverse()) {
       if (
         potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
         potion.craft.level <= this.character.getCharacterLevel()
       ) {
-        logger.info(`Crafting 50 ${potion.code}`);
-        await this.character.craftNow(50, potion.code);
+        logger.info(`Crafting ${minToCreate} ${potion.code}`);
+        await this.character.craftNow(minToCreate, potion.code);
         break;
       }
     }
