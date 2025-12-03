@@ -209,6 +209,7 @@ export class EvaluateGearObjective extends Objective {
   /**
    * @description Equips other potions (antidote, damage boost etc) into utility 2 slot
    * @todo Equip damage, resistance, etc pots if available
+   * @todo Only equip antidotes if we need them. Higher level chars probably don't need antidotes
    */
   private async topUpSecondaryPots(mobInfo: MonsterSchema) {
     if (!mobInfo.effects || mobInfo.effects.length === 0) {

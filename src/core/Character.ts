@@ -1626,10 +1626,7 @@ export class Character {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
           continue;
-        } else if (
-          exceptions &&
-          exceptions.includes(item.code)
-        ) {
+        } else if (exceptions && exceptions.includes(item.code)) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.debug(`Adding ${item.quantity} ${item.code} to deposit list`);
@@ -1651,9 +1648,7 @@ export class Character {
             // If the item slot is empty we can ignore
             continue;
           } else {
-            logger.info(
-              `Adding ${item.quantity} ${item.code} to deposit list`,
-            );
+            logger.info(`Adding ${item.quantity} ${item.code} to deposit list`);
             itemsToDeposit.push({ code: item.code, quantity: item.quantity });
             break;
           }
