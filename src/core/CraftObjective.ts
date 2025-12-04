@@ -192,6 +192,10 @@ export class CraftObjective extends Objective {
               logger.error('Craft response missing character data');
             }
 
+            for (const ingredient of targetItem.craft?.items) {
+              this.character.removeItemFromItemsToKeep(ingredient.code);
+            }
+
             if (this.numBatches > 1) {
               logger.debug(`Depositing items from batch ${batch}`);
               await this.character.depositNow(
@@ -203,9 +207,6 @@ export class CraftObjective extends Objective {
             logger.info(
               `Successfully crafted ${this.numItemsPerBatch} ${this.target.code}`,
             );
-            for (const ingredient of targetItem.craft?.items) {
-              this.character.removeItemFromItemsToKeep(ingredient.code);
-            }
           }
         }
         if (
