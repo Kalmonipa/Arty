@@ -129,7 +129,7 @@ export class EvaluateGearObjective extends Objective {
     //await this.topUpHealthPots();
 
     // This would take in the effects property to see what the best potion to equip
-    await this.topUpSecondaryPots(mobInfo.data);
+    // await this.topUpSecondaryPots(mobInfo.data);
 
     logger.debug(`Finding best shield`);
     let equipResult: boolean;

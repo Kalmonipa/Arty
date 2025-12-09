@@ -6,6 +6,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
+import { MonsterSchema, SimpleEffectSchema } from '../types/types.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
@@ -45,86 +46,7 @@ export class FightObjective extends Objective {
       return this.character.handleErrors(mobInfo);
     }
 
-    // ToDo: allow the fight sim to sim boss fights with multiple characterss
-    if (mobInfo.data.type === 'normal') {
-      if (this.runFightSim) {
-        const fakeSchema = this.character.createFakeCharacterSchema(
-          this.character.data,
-          true,
-        );
-
-        // Find the highest potion that we could equip (and craft if needed) for the fight
-        let potionNeeded: string = 'small_health_potion';
-        for (const potion of this.character.utilitiesMap['restore'].reverse()) {
-          if (
-            potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
-            potion.craft.level <= this.character.getCharacterLevel()
-          ) {
-            potionNeeded = potion.code;
-            logger.debug(`Chose to equip ${potion.code}`);
-            break;
-          } else {
-            logger.debug(
-              `${potion.code} is too high level or cannot be crafted`,
-            );
-          }
-        }
-        fakeSchema.utility1_slot = potionNeeded;
-        fakeSchema.utility1_slot_quantity = 100;
-
-        logger.info(
-          `Simulating fight against ${this.target.code} with health pots`,
-        );
-        const shouldFightWithHealthPots = await this.character.simulateFightNow(
-          [fakeSchema],
-          this.target.code,
-        );
-
-        if (shouldFightWithHealthPots && fakeSchema.utility1_slot_quantity) {
-          const fakeSchema = this.character.createFakeCharacterSchema(
-            this.character.data,
-            false,
-          );
-
-          logger.info(
-            `Simulating fight against ${this.target.code} without health pots`,
-          );
-
-          const shouldFightWithoutHealthPots =
-            await this.character.simulateFightNow(
-              [fakeSchema],
-              this.target.code,
-            );
-
-          if (
-            shouldFightWithoutHealthPots &&
-            this.character.data.utility1_slot
-          ) {
-            const utilOnePot = this.character.data.utility1_slot;
-            logger.info(`Unequipping ${utilOnePot} as not needed`);
-            this.shouldEquipHealthPots = false;
-            await this.character.unequipNow(
-              'utility1',
-              this.character.data.utility1_slot_quantity,
-            );
-            await this.character.depositNow(
-              this.character.data.utility1_slot_quantity,
-              utilOnePot,
-            );
-          } else if (
-            !shouldFightWithoutHealthPots &&
-            shouldFightWithHealthPots
-          ) {
-            await this.character.topUpHealthPots();
-          }
-        }
-
-        if (shouldFightWithHealthPots === false) {
-          return true;
-        }
-      }
-      return true;
-    } else if (
+    if (
       (!this.participants || this.participants.length === 0) &&
       mobInfo.data.type === 'boss'
     ) {
@@ -132,10 +54,109 @@ export class FightObjective extends Objective {
         `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
       );
       return false;
-    } else {
-      // For boss and elite monsters, skip fight simulation and return true
-      return true;
     }
+
+    if (this.runFightSim) {
+      const fakeSchema = this.character.createFakeCharacterSchema(
+        this.character.data,
+      );
+
+      logger.info(
+        `Simulating fight against ${this.target.code} with no utilities`,
+      );
+      if (
+        await this.character.simulateFightNow([fakeSchema], this.target.code)
+      ) {
+        return true;
+      }
+
+      // Check if the mob has poison effect and check if we can win without antidotes
+      let mobPoisonEffect: SimpleEffectSchema;
+      if (mobInfo.data.effects) {
+        mobPoisonEffect = mobInfo.data.effects.find(
+          (effect) => effect.code === 'poison',
+        );
+      }
+      if (mobPoisonEffect) {
+        const antidoteToEquip = this.character.utilitiesMap['antipoison'].find(
+          (potion) =>
+            potion.effects.find(
+              (effect) => effect.value === mobPoisonEffect.value,
+            ),
+        );
+        fakeSchema.utility2_slot = antidoteToEquip.code;
+        fakeSchema.utility2_slot_quantity = 100;
+
+        logger.info(
+          `Simulating fight against ${this.target.code} with antidote pots`,
+        );
+
+        if (
+          await this.character.simulateFightNow([fakeSchema], this.target.code)
+        ) {
+          return true;
+        }
+      }
+
+      // Find the highest potion that we could equip (and craft if needed) for the fight
+      let potionNeeded: string = this.character.utilitiesMap['restore'][0].code; // Usually small_health_potion
+      for (const potion of this.character.utilitiesMap['restore'].reverse()) {
+        if (
+          potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
+          potion.craft.level <= this.character.getCharacterLevel()
+        ) {
+          potionNeeded = potion.code;
+          logger.debug(`Chose to equip ${potion.code}`);
+          break;
+        } else {
+          logger.debug(`${potion.code} is too high level or cannot be crafted`);
+        }
+      }
+      fakeSchema.utility1_slot = potionNeeded;
+      fakeSchema.utility1_slot_quantity = 100;
+
+      logger.info(
+        `Simulating fight against ${this.target.code} with health pots`,
+      );
+      const shouldFightWithHealthPots = await this.character.simulateFightNow(
+        [fakeSchema],
+        this.target.code,
+      );
+
+      if (shouldFightWithHealthPots && fakeSchema.utility1_slot_quantity) {
+        const fakeSchema = this.character.createFakeCharacterSchema(
+          this.character.data,
+        );
+
+        logger.info(
+          `Simulating fight against ${this.target.code} without health pots`,
+        );
+
+        const shouldFightWithoutHealthPots =
+          await this.character.simulateFightNow([fakeSchema], this.target.code);
+
+        if (shouldFightWithoutHealthPots && this.character.data.utility1_slot) {
+          const utilOnePot = this.character.data.utility1_slot;
+          logger.info(`Unequipping ${utilOnePot} as not needed`);
+          this.shouldEquipHealthPots = false;
+          await this.character.unequipNow(
+            'utility1',
+            this.character.data.utility1_slot_quantity,
+          );
+          await this.character.depositNow(
+            this.character.data.utility1_slot_quantity,
+            utilOnePot,
+          );
+        } else if (!shouldFightWithoutHealthPots && shouldFightWithHealthPots) {
+          await this.character.topUpHealthPots();
+        }
+      }
+
+      if (shouldFightWithHealthPots === false) {
+        return true;
+      }
+    }
+    return true;
   }
 
   /**
@@ -260,6 +281,41 @@ export class FightObjective extends Objective {
         `Successfully fought ${this.target.quantity} ${this.target.code}`,
       );
       return true;
+    }
+  }
+
+  /**
+   * @description Equips other potions (antidote, damage boost etc) into utility 2 slot
+   * @todo Equip damage, resistance, etc pots if available
+   * @todo Only equip antidotes if we need them. Higher level chars probably don't need antidotes
+   */
+  private async topUpSecondaryPots(mobInfo: MonsterSchema): Promise<boolean> {
+    if (!mobInfo.effects || mobInfo.effects.length === 0) {
+      return true;
+    } else if (mobInfo.effects.some((effect) => effect.code === 'poison')) {
+      const poisonEffect = mobInfo.effects.find(
+        (effect) => effect.code === 'poison',
+      );
+      logger.info(`${mobInfo.name} has the ${poisonEffect?.code} effect`);
+      if (
+        !this.character.data.utility2_slot_quantity ||
+        (this.character.data.utility2_slot_quantity &&
+          this.character.data.utility2_slot_quantity <
+            this.character.minEquippedUtilities)
+      ) {
+        logger.info(`Equipping antidotes`);
+        return await this.character.equipAntiEffectUtility(
+          'antipoison',
+          poisonEffect,
+        );
+      } else {
+        return true;
+      }
+    } else {
+      logger.info(
+        `Counter of ${mobInfo.effects[0].code} from ${mobInfo.code} not found.`,
+      );
+      return false;
     }
   }
 }

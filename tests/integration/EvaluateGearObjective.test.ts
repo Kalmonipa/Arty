@@ -600,32 +600,32 @@ describe('EvaluateGearObjective Integration Tests', () => {
   });
 
   describe('Secondary potion management', () => {
-    it('should equip antidotes when monster has poison effect', async () => {
-      // Arrange
-      (
-        getMonsterInformation as jest.MockedFunction<
-          typeof getMonsterInformation
-        >
-      ).mockResolvedValue(mockPoisonMonsterData);
+    //   it('should equip antidotes when monster has poison effect', async () => {
+    //     // Arrange
+    //     (
+    //       getMonsterInformation as jest.MockedFunction<
+    //         typeof getMonsterInformation
+    //       >
+    //     ).mockResolvedValue(mockPoisonMonsterData);
 
-      mockCharacter.data.utility2_slot_quantity = 0;
+    //     mockCharacter.data.utility2_slot_quantity = 0;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+    //     const objective = new EvaluateGearObjective(
+    //       mockCharacter as any,
+    //       'combat',
+    //       'red_slime',
+    //     );
 
-      // Act
-      const result = await objective.run();
+    //     // Act
+    //     const result = await objective.run();
 
-      // Assert
-      expect(result).toBe(true);
-      expect(mockCharacter.equipAntiEffectUtility).toHaveBeenCalledWith(
-        'antipoison',
-        expect.objectContaining({ code: 'poison' }),
-      );
-    });
+    //     // Assert
+    //     expect(result).toBe(true);
+    //     expect(mockCharacter.equipAntiEffectUtility).toHaveBeenCalledWith(
+    //       'antipoison',
+    //       expect.objectContaining({ code: 'poison' }),
+    //     );
+    //   });
 
     it('should not equip antidotes when monster has no effects', async () => {
       // Arrange

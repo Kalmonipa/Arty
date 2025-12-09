@@ -1108,10 +1108,7 @@ export class Character {
   /**
    * @description Creates a FakeCharacterSchema of the current character
    */
-  createFakeCharacterSchema(
-    character: CharacterSchema,
-    includeUtility1?: boolean,
-  ): FakeCharacterSchema {
+  createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
     const fakeChar: FakeCharacterSchema = {
       level: character.level,
       weapon_slot: character.weapon_slot,
@@ -1130,12 +1127,12 @@ export class Character {
       utility1_slot: character.utility1_slot,
       utility2_slot: character.utility2_slot,
     };
-    if (includeUtility1 && character.utility1_slot) {
-      fakeChar.utility1_slot_quantity = character.utility1_slot_quantity;
-    }
-    if (character.utility2_slot) {
-      fakeChar.utility2_slot_quantity = character.utility2_slot_quantity;
-    }
+    // if (includeUtility1 && character.utility1_slot) {
+    //   fakeChar.utility1_slot_quantity = character.utility1_slot_quantity;
+    // }
+    // if (character.utility2_slot) {
+    //   fakeChar.utility2_slot_quantity = character.utility2_slot_quantity;
+    // }
     logger.debug(JSON.stringify(fakeChar));
     return fakeChar;
   }
@@ -1648,8 +1645,13 @@ export class Character {
             // If the item slot is empty we can ignore
             continue;
           } else {
-            logger.info(`Adding ${this.data.inventory[index].quantity} ${this.data.inventory[index].code} to deposit list`);
-            itemsToDeposit.push({ code: this.data.inventory[index].code, quantity: this.data.inventory[index].quantity });
+            logger.info(
+              `Adding ${this.data.inventory[index].quantity} ${this.data.inventory[index].code} to deposit list`,
+            );
+            itemsToDeposit.push({
+              code: this.data.inventory[index].code,
+              quantity: this.data.inventory[index].quantity,
+            });
             break;
           }
         }

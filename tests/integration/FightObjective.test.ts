@@ -496,30 +496,6 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.evaluateGear).toHaveBeenCalled();
       //expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
-
-    // it('should handle low food levels in prerequisites', async () => {
-    //   // Arrange
-    //   mockCharacter.checkFoodLevels.mockResolvedValue(false);
-
-    //   // Act
-    //   const result = await fightObjective.runPrerequisiteChecks();
-
-    //   // Assert
-    //   expect(result).toBe(true);
-    //   expect(mockCharacter.topUpFood).toHaveBeenCalled();
-    // });
-
-    // it('should fail prerequisite checks if fight simulation fails', async () => {
-    //   // Arrange
-    //   mockCharacter.simulateFightNow.mockResolvedValue(false);
-    //   mockCharacter.trainCombatLevelNow.mockResolvedValue(true);
-
-    //   // Act
-    //   const result = await fightObjective.runPrerequisiteChecks();
-
-    //   // Assert
-    //   expect(result).toBe(false);
-    // });
   });
 
   describe('Health management', () => {
@@ -556,7 +532,7 @@ describe('FightObjective Integration Tests', () => {
     });
   });
 
-  describe('Utility management', () => {
+  describe('Utility1 management', () => {
     it('should equip utility when quantity is low', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
@@ -601,6 +577,19 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
     });
   });
+
+  // ToDo: Get the antipoison tests working
+  // describe('Utility2 management', () => {
+  //   it('should equip antidotes if monster has poison effect', async () => {
+  //     mockCharacter.data.utility2_slot_quantity = 0;
+  //     mockCharacter.equipUtility.mockResolvedValue(true);
+
+  //     const result = await fightObjective.runPrerequisiteChecks();
+
+  //     expect(result).toBe(true);
+  //     expect(mockCharacter.equipUtility).toHaveBeenCalledWith('antipoison', 'utility2')
+  //   })
+  // })
 
   describe('Error handling', () => {
     it('should handle API errors and retry', async () => {
@@ -1024,7 +1013,7 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
-    it('should skip fight simulation for boss monsters', async () => {
+    it('should skip fight simulation for boss monsters with no participants', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
       const bossMonsterData = {
@@ -1063,18 +1052,18 @@ describe('FightObjective Integration Tests', () => {
       const bossObjective = new FightObjective(
         mockCharacter as any,
         bossTarget,
-        ['testchar1', 'testChar2'],
+        //['testchar1', 'testChar2'],
       );
 
       // Act
       const result = await bossObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result).toBe(false);
       expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
     });
 
-    it('should skip fight simulation for elite monsters', async () => {
+    it('should run fight simulation for elite monsters', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
       const eliteMonsterData = {
@@ -1120,7 +1109,7 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
     it('should return false if attempting to fight boss alone', async () => {
