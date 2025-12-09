@@ -293,6 +293,7 @@ export class CraftObjective extends Objective {
               logger.warn(
                 `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
               );
+              this.character.removeItemFromItemsToKeep(craftingItem.code);
               return false;
             }
 
@@ -313,6 +314,7 @@ export class CraftObjective extends Objective {
               logger.warn(
                 `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
               );
+              this.character.removeItemFromItemsToKeep(craftingItem.code);
               return false;
             }
 
@@ -332,6 +334,7 @@ export class CraftObjective extends Objective {
               logger.warn(
                 `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
               );
+              this.character.removeItemFromItemsToKeep(craftingItem.code);
               return false;
             }
 
