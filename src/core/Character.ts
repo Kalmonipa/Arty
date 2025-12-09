@@ -1643,13 +1643,13 @@ export class Character {
         logger.error(
           `Not depositing anything when inventory is full. There's probably an issue with itemsToKeep`,
         );
-        for (const item of this.data.inventory) {
-          if (item.quantity === 0) {
+        for (let index = this.data.inventory.length - 1; index >= 0; index--) {
+          if (this.data.inventory[index].quantity === 0) {
             // If the item slot is empty we can ignore
             continue;
           } else {
-            logger.info(`Adding ${item.quantity} ${item.code} to deposit list`);
-            itemsToDeposit.push({ code: item.code, quantity: item.quantity });
+            logger.info(`Adding ${this.data.inventory[index].quantity} ${this.data.inventory[index].code} to deposit list`);
+            itemsToDeposit.push({ code: this.data.inventory[index].code, quantity: this.data.inventory[index].quantity });
             break;
           }
         }
