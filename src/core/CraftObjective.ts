@@ -30,6 +30,7 @@ export class CraftObjective extends Objective {
     super(character, `craft_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'Craft';
     this.target = target;
     this.checkBank = checkBank;
     this.includeInventory =

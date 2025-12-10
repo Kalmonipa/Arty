@@ -23,6 +23,7 @@ export class FightSimulator extends Objective {
     debugLogs?: boolean,
   ) {
     super(character, `fight_sim_${targetMobCode}`, 'not_started');
+    this.jobFlavour = 'FightSimulator';
     this.mockCharacters = mockCharacters;
     this.targetMobCode = targetMobCode;
     this.iterations = iterations !== undefined ? iterations : 10;

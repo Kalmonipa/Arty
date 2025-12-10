@@ -12,6 +12,7 @@ export class UnequipObjective extends Objective {
   constructor(character: Character, itemSlot: ItemSlot, quantity?: number) {
     super(character, `unequip_${itemSlot}`, 'not_started');
     this.character = character;
+    this.jobFlavour = 'Unequip';
     this.itemSlot = itemSlot;
     this.quantity = quantity;
   }

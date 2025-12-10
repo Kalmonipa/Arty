@@ -16,6 +16,7 @@ export class WithdrawObjective extends Objective {
       'not_started',
     );
     this.character = character;
+    this.jobFlavour = 'Withdraw';
     this.target = target;
   }
 

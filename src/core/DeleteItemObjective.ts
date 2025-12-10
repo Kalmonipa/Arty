@@ -15,6 +15,7 @@ export class DeleteItemObjective extends Objective {
     super(character, `delete_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'DeleteItem';
     this.target = target;
   }
 

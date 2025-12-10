@@ -29,6 +29,7 @@ export class TrainCraftingSkillObjective extends Objective {
   ) {
     super(character, `train_${targetLevel}_${skill}`, 'not_started');
     this.character = character;
+    this.jobFlavour = 'TrainCraftingSkill';
     this.targetLevel = targetLevel;
     this.skill = skill;
     this.levelRange = levelRange ?? 4;

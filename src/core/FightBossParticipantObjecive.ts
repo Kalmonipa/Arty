@@ -20,6 +20,7 @@ export class FightBossParticipantObjective extends Objective {
     super(character, `fight_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'FightBossParticipant';
     this.target = target;
     this.participants = participants;
   }

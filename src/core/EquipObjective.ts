@@ -18,6 +18,7 @@ export class EquipObjective extends Objective {
   ) {
     super(character, `equip_${itemCode}_${itemSlot}`, 'not_started');
     this.character = character;
+    this.jobFlavour = 'Equip';
     this.itemCode = itemCode;
     this.itemSlot = itemSlot;
     this.quantity = quantity;

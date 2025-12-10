@@ -92,6 +92,7 @@ export async function actionSellItem(
     body: JSON.stringify(items),
   };
 
+  // ToDo: remove this
   logger.info(`Payload: ${JSON.stringify(items)}`);
 
   const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/npc/sell`);

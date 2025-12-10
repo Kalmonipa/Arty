@@ -15,6 +15,7 @@ export class ExpandBankObjective extends Objective {
     super(character, `expand_bank`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'ExpandBank';
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

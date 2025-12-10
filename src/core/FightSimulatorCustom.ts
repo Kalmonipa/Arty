@@ -36,6 +36,7 @@ export class FightSimulatorCustom extends Objective {
       'not_started',
     );
     this.mockCharacter = mockCharacter;
+    this.jobFlavour = 'FightSimulatorCustom';
     this.targetMobCode = targetMobName;
     this.targetMobSchema = targetMobSchema;
     this.iterations = iterations !== undefined ? iterations : 10;

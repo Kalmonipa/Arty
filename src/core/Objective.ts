@@ -14,6 +14,7 @@ import { TaskType } from '../types/types.js';
 export abstract class Objective {
   character: Character;
   objectiveId: string;
+  jobFlavour: string;
   progress: number;
   status: ObjectiveStatus;
   maxRetries: number = 3;

@@ -25,6 +25,7 @@ export class FightObjective extends Objective {
     super(character, `fight_${target.quantity}_${target.code}`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'Fight';
     this.target = target;
     this.participants = participants;
     this.runFightSim = runFightSim ?? true;

@@ -35,6 +35,7 @@ export class TidyBankObjective extends Objective {
     super(character, `tidy_${role}_bank`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'TidyBank';
     this.role = role;
   }
 

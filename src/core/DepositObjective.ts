@@ -24,6 +24,7 @@ export class DepositObjective extends Objective {
     );
 
     this.character = character;
+    this.jobFlavour = 'Deposit';
     this.target = target;
   }
 

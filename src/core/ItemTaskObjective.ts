@@ -15,6 +15,7 @@ export class ItemTaskObjective extends Objective {
     super(character, `task_${quantity}_items`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'ItemTask';
     this.quantity = quantity;
   }
 

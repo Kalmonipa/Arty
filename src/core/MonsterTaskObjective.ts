@@ -13,6 +13,7 @@ export class MonsterTaskObjective extends Objective {
     super(character, `task_${quantity}_monsters`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'MonsterTask';
     this.quantity = quantity;
   }
 

@@ -34,6 +34,7 @@ export class TradeObjective extends Objective {
     super(character, `${tradeType}_${quantity}_${itemCode}`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'Trade';
     this.tradeType = tradeType;
     this.itemCode = itemCode;
     this.quantity = quantity;

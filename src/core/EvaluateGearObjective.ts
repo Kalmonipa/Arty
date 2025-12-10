@@ -24,6 +24,7 @@ export class EvaluateGearObjective extends Objective {
     super(character, `evaluate_${activityType}_gear`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'EvaluateGear';
     this.activityType = activityType;
     this.targetMob = targetMob;
   }

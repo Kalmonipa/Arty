@@ -15,6 +15,7 @@ export class TrainCombatObjective extends Objective {
   constructor(character: Character, targetLevel: number) {
     super(character, `train_${targetLevel}_combat`, 'not_started');
     this.character = character;
+    this.jobFlavour = 'TrainCombat';
     this.targetLevel = targetLevel;
     this.skill = 'combat';
   }

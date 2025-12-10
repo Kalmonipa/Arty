@@ -29,6 +29,7 @@ export class GatherObjective extends Objective {
   ) {
     super(character, `gather_${target.quantity}_${target.code}`, 'not_started');
     this.character = character;
+    this.jobFlavour = 'Gather';
     this.target = target;
     this.checkBank = checkBank;
     this.includeInventory =

@@ -21,6 +21,7 @@ export class RecycleObjective extends Objective {
     );
 
     this.character = character;
+    this.jobFlavour = 'Recycle';
     this.target = target;
   }
 

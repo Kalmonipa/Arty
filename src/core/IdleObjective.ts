@@ -19,6 +19,7 @@ export class IdleObjective extends Objective {
     super(character, `idle_${role}_objective`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'Idle';
     this.role = role;
   }
 

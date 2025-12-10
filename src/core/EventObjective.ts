@@ -17,6 +17,7 @@ export class EventObjective extends Objective {
     super(character, `${activeEvent.code}_event`, 'not_started');
 
     this.character = character;
+    this.jobFlavour = 'Event';
     this.activeEvent = activeEvent;
   }
 
