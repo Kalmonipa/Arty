@@ -94,7 +94,7 @@ export async function actionSellItem(
 
   logger.info(`Payload: ${JSON.stringify(items)}`);
 
-  const apiUrl = new URL(`${ApiUrl}/my/${character.name}}/action/npc/sell`);
+  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/npc/sell`);
 
   try {
     const response = await fetch(apiUrl, requestOptions);
