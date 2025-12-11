@@ -885,6 +885,7 @@ export class Character {
           logger.info(
             `Event ${job.objectiveId} expired at ${eventExpiration}. Cancelling`,
           );
+          await this.cancelJobAndChildren(job.objectiveId)
           return false;
         }
 
