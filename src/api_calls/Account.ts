@@ -1,3 +1,4 @@
+import { ApiError } from '../core/Error.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
 import { SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
@@ -67,10 +68,22 @@ export async function requestCraftItem(
   };
 
   try {
+    logger.info(
+      `Trying POST http://${charName.toLowerCase}:3000/craft with ${target.quantity} ${target.code}`,
+    );
+
     const response = await fetch(
       `http://${charName.toLowerCase}:3000/craft`,
       requestOptions,
     );
+
+    if (!response.ok) {
+      throw new ApiError({
+        code: response.status,
+        message: `Failed to reach ${charName}`,
+      });
+    }
+
     const data = await response.json();
 
     logger.info(data.message);

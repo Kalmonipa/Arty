@@ -119,14 +119,18 @@ export class CraftObjective extends Objective {
               return false;
             }
             logger.info(
-              `Requesting ${this.target.quantity} ${targetItem.code} from ${crafter.name}`,
+              `Requesting ${this.target.quantity} ${targetItem.code} from ${crafter.name} and continuing`,
             );
-            await requestCraftItem(crafter.name, {
+            let response = await requestCraftItem(crafter.name, {
               code: this.target.code,
               quantity: this.target.quantity,
             });
+            if (response instanceof ApiError) {
+              logger.error(response.error);
+              return false;
+            }
 
-            continue;
+            return true;
           }
         }
 
