@@ -44,15 +44,14 @@ export default function CharacterRouter(char: Character) {
         character: char.data.name,
         idle: char.isIdle,
         jobsInQueue: char.jobList.length,
-        currentJob: char.activeJob || 'none'
+        currentJob: char.activeJob || 'none',
       });
-    }
-  catch (error) {
+    } catch (error) {
       return res
         .status(500)
         .json({ error: error.message || 'Internal server error.' });
     }
-})
+  });
 
   return router;
 }
