@@ -898,6 +898,7 @@ export class Character {
         // Storing timestamp so we can only check some events every so often (e.g. once a day)
         const currentTimestamp = Math.round(Date.now() / 1000);
 
+        // ToDo: Make this better
         if (event.code === 'bandit_camp' && this.data.level < 25) {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
@@ -908,6 +909,15 @@ export class Character {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
         } else if (event.code === 'corrupted_owlbear' && this.data.level < 30) {
+          logger.debug(`${this.data.name} is too low level for ${event.name}`);
+          continue;
+        } else if (event.code === 'portal_efreet_sultan' && this.data.level < 42) {
+          logger.debug(`${this.data.name} is too low level for ${event.name}`);
+          continue;
+        } else if (event.code === 'corrupted_portal' && this.data.level < 45) {
+          logger.debug(`${this.data.name} is too low level for ${event.name}`);
+          continue;
+        } else if (event.code === 'attacking_the_island' && this.data.level < 45) {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
         } else if (
