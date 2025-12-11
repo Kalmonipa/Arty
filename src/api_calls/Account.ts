@@ -1,7 +1,7 @@
 import { ApiError } from '../core/Error.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
 import { SimpleItemSchema } from '../types/types.js';
-import { logger } from '../utils.js';
+import { logger, MyHeaders } from '../utils.js';
 
 /**
  * @description returns all characters in the account
@@ -65,6 +65,7 @@ export async function requestCraftItem(
   const requestOptions = {
     method: 'POST',
     body: JSON.stringify({ itemCode: target.code, quantity: target.quantity }),
+    MyHeaders
   };
 
   try {
