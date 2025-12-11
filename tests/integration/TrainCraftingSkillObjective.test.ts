@@ -3,7 +3,11 @@ import { TrainCraftingSkillObjective } from '../../src/core/TrainCraftingSkillOb
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot, Role } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
-import { ItemSchema, CraftSkill } from '../../src/types/types.js';
+import {
+  ItemSchema,
+  CraftSkill,
+  CharacterSchema,
+} from '../../src/types/types.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Items', () => ({
@@ -40,22 +44,24 @@ const createMockCraftableItem = (
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
 
-  getCharacterLevel = jest.fn((skillName?: string): number => {
-    switch (skillName) {
-      case 'alchemy':
-        return this.data.alchemy_level;
-      case 'cooking':
-        return this.data.cooking_level;
-      case 'weaponcrafting':
-        return this.data.weaponcrafting_level;
-      case 'gearcrafting':
-        return this.data.gearcrafting_level;
-      case 'jewelrycrafting':
-        return this.data.jewelrycrafting_level;
-      default:
-        return this.data.level;
-    }
-  });
+  getCharacterLevel = jest.fn(
+    (char: CharacterSchema, skillName?: string): number => {
+      switch (skillName) {
+        case 'alchemy':
+          return this.data.alchemy_level;
+        case 'cooking':
+          return this.data.cooking_level;
+        case 'weaponcrafting':
+          return this.data.weaponcrafting_level;
+        case 'gearcrafting':
+          return this.data.gearcrafting_level;
+        case 'jewelrycrafting':
+          return this.data.jewelrycrafting_level;
+        default:
+          return this.data.level;
+      }
+    },
+  );
 
   craftNow = jest.fn(
     async (quantity: number, code: string): Promise<boolean> => {
@@ -220,12 +226,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should successfully train alchemy skill to target level', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       // Mock level progression - reach target after one craft
       mockCharacter.craftNow.mockImplementation(async () => {
@@ -253,12 +261,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should craft 10 items for alchemy skill', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 5;
@@ -284,12 +294,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should craft 10 items for cooking skill', async () => {
       // Arrange
       mockCharacter.data.cooking_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'cooking') {
-          return mockCharacter.data.cooking_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'cooking') {
+            return mockCharacter.data.cooking_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.cooking_level = 5;
@@ -315,12 +327,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should craft 2 items for weaponcrafting skill', async () => {
       // Arrange
       mockCharacter.data.weaponcrafting_level = 5;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'weaponcrafting') {
-          return mockCharacter.data.weaponcrafting_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'weaponcrafting') {
+            return mockCharacter.data.weaponcrafting_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.weaponcrafting_level = 10;
@@ -346,12 +360,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should craft 2 items for gearcrafting skill', async () => {
       // Arrange
       mockCharacter.data.gearcrafting_level = 3;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'gearcrafting') {
-          return mockCharacter.data.gearcrafting_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'gearcrafting') {
+            return mockCharacter.data.gearcrafting_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.gearcrafting_level = 8;
@@ -377,12 +393,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should craft 1 item for jewelrycrafting skill', async () => {
       // Arrange
       mockCharacter.data.jewelrycrafting_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'jewelrycrafting') {
-          return mockCharacter.data.jewelrycrafting_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'jewelrycrafting') {
+            return mockCharacter.data.jewelrycrafting_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.jewelrycrafting_level = 5;
@@ -408,12 +426,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should deposit items after successful crafting', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
@@ -441,12 +461,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should not deposit items if crafting fails', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       // Mock craft to fail first time, then succeed to prevent infinite loop
       let callCount = 0;
@@ -480,12 +502,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should query items within level range', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 10;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
@@ -513,12 +537,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should handle level range at level 0', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 0;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 5;
@@ -546,12 +572,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should use custom level range when provided', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 10;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
@@ -581,12 +609,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should randomly select from available craftable items', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       const multipleItemsData = {
         data: [
@@ -639,12 +669,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
         .mockResolvedValueOnce(mockCraftableItemsData);
 
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
       // If handleErrors returns true, it means retry, so it will continue
       // If it returns false, it means abort
       mockCharacter.handleErrors.mockResolvedValue(false); // Abort on error
@@ -684,12 +716,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       ).mockResolvedValue(emptyItemsData);
 
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       // Clear craftNow mock to ensure it's not called
       mockCharacter.craftNow.mockReset();
@@ -712,12 +746,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should handle crafting failures gracefully', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       // Mock craft to fail first few times, then succeed to prevent infinite loop
       let callCount = 0;
@@ -753,12 +789,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should update character level after each craft', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       let craftCount = 0;
       mockCharacter.craftNow.mockImplementation(async () => {
@@ -783,7 +821,10 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       // Assert
       // Should check level multiple times (before loop, after each craft)
-      expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith('alchemy');
+      expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(
+        mockCharacter.data,
+        'alchemy',
+      );
       expect(mockCharacter.data.alchemy_level).toBe(15);
       expect(mockCharacter.craftNow).toHaveBeenCalled();
     });
@@ -791,12 +832,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should continue crafting until target level is reached', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 10;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       let craftCount = 0;
       mockCharacter.craftNow.mockImplementation(async () => {
@@ -851,12 +894,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       // Test alchemy
       jest.clearAllMocks();
       mockCharacter.data.alchemy_level = 1;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 5;
@@ -881,12 +926,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       jest.clearAllMocks();
       mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
       mockCharacter.data.weaponcrafting_level = 5;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'weaponcrafting') {
-          return mockCharacter.data.weaponcrafting_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'weaponcrafting') {
+            return mockCharacter.data.weaponcrafting_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.weaponcrafting_level = 10;
@@ -911,12 +958,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
     it('should handle level progression that exceeds target', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 14;
-      mockCharacter.getCharacterLevel.mockImplementation((skill?: string) => {
-        if (skill === 'alchemy') {
-          return mockCharacter.data.alchemy_level;
-        }
-        return mockCharacter.data.level;
-      });
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === 'alchemy') {
+            return mockCharacter.data.alchemy_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
 
       mockCharacter.craftNow.mockImplementation(async () => {
         // Level up beyond target

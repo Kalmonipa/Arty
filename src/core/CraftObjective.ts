@@ -1,12 +1,18 @@
 import { actionCraft } from '../api_calls/Actions.js';
 import { getMaps } from '../api_calls/Maps.js';
-import { logger } from '../utils.js';
+import { isSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import { ItemSchema, SimpleItemSchema } from '../types/types.js';
+import {
+  GatheringSkill,
+  ItemSchema,
+  SimpleItemSchema,
+  Skill,
+} from '../types/types.js';
+import { requestCraftItem } from '../api_calls/Account.js';
 
 /**
  * @description Crafts the requested amount of the item
@@ -88,6 +94,40 @@ export class CraftObjective extends Objective {
           );
           this.character.removeItemFromItemsToKeep(targetItem.code);
           return false;
+        }
+
+        // Check if the character has the skill level required to craft
+        if (targetItem.craft && targetItem.craft.skill) {
+          let charSkillLevel: number = this.character.getCharacterLevel(
+            this.character.data,
+            targetItem.craft.skill,
+          );
+
+          if (charSkillLevel < targetItem.craft.level) {
+            logger.warn(
+              `Character ${this.character.data.name} has ${targetItem.craft.skill} level ${charSkillLevel} but needs level ${targetItem.craft.level} to craft ${targetItem.code}`,
+            );
+            let crafter = this.character.allCharacterDetails.find(
+              (char) =>
+                this.character.getCharacterLevel(char, targetItem.craft.skill) >
+                targetItem.craft.level,
+            );
+            if (!crafter) {
+              logger.warn(
+                `Found no character capable of crafting ${targetItem.code}`,
+              );
+              return false;
+            }
+            logger.info(
+              `Requesting ${this.target.quantity} ${targetItem.code} from ${crafter.name}`,
+            );
+            await requestCraftItem(crafter.name, {
+              code: this.target.code,
+              quantity: this.target.quantity,
+            });
+
+            continue;
+          }
         }
 
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
@@ -235,10 +275,6 @@ export class CraftObjective extends Objective {
     itemsPerBatch: number,
   ): Promise<boolean> {
     for (const craftingItem of craftingItems) {
-      logger.debug(
-        `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
-      );
-
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
         craftingItem.code,
       );
@@ -246,121 +282,122 @@ export class CraftObjective extends Objective {
       if (craftingItemInfo instanceof ApiError) {
         await this.character.handleErrors(craftingItemInfo);
         this.character.removeItemFromItemsToKeep(craftingItem.code);
-      } else {
-        let numInInv = this.character.checkQuantityOfItemInInv(
+        return false;
+      }
+
+      logger.debug(
+        `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
+      );
+
+      let numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
+
+      let numInBank = await this.character.checkQuantityOfItemInBank(
+        craftingItem.code,
+      );
+
+      const totalIngredNeededToCraft = craftingItem.quantity * itemsPerBatch;
+
+      if (numInInv >= totalIngredNeededToCraft) {
+        logger.info(
+          `${numInInv} ${craftingItem.code} in inventory already. No need to collect more`,
+        );
+        continue;
+      } else if (numInInv > 0) {
+        logger.info(
+          `${numInInv} ${craftingItem.code} in inventory already. Finding more`,
+        );
+      }
+      if (numInBank >= totalIngredNeededToCraft - numInInv) {
+        logger.info(`Found ${numInBank} ${craftingItem.code} in the bank`);
+        await this.character.withdrawNow(
+          totalIngredNeededToCraft - numInInv,
           craftingItem.code,
         );
 
-        let numInBank = await this.character.checkQuantityOfItemInBank(
-          craftingItem.code,
-        );
-
-        const totalIngredNeededToCraft = craftingItem.quantity * itemsPerBatch;
-
-        if (numInInv >= totalIngredNeededToCraft) {
-          logger.info(
-            `${numInInv} ${craftingItem.code} in inventory already. No need to collect more`,
-          );
-          continue;
-        } else if (numInInv > 0) {
-          logger.info(
-            `${numInInv} ${craftingItem.code} in inventory already. Finding more`,
-          );
-        }
-        if (numInBank >= totalIngredNeededToCraft - numInInv) {
-          logger.info(`Found ${numInBank} ${craftingItem.code} in the bank`);
-          await this.character.withdrawNow(
-            totalIngredNeededToCraft - numInInv,
-            craftingItem.code,
-          );
-
-          numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
-        }
-
-        if (numInInv < totalIngredNeededToCraft) {
-          if (!(await this.checkStatus())) return false;
-
-          if (craftingItemInfo.subtype === 'mob') {
-            logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
-
-            if (
-              !(await this.character.gatherNow(
-                totalIngredNeededToCraft,
-                craftingItem.code,
-                true,
-                true,
-              ))
-            ) {
-              logger.warn(
-                `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
-              );
-              this.character.removeItemListfromItemsToKeep(craftingItems);
-              return false;
-            }
-
-            if (!(await this.checkStatus())) return false;
-          } else if (craftingItemInfo.craft !== null) {
-            logger.debug(
-              `Resource ${craftingItemInfo.code} is a craftable item`,
-            );
-
-            if (
-              !(await this.character.craftNow(
-                totalIngredNeededToCraft - numInInv,
-                craftingItem.code,
-                true,
-                false,
-              ))
-            ) {
-              logger.warn(
-                `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
-              );
-              this.character.removeItemListfromItemsToKeep(craftingItems);
-              return false;
-            }
-
-            if (!(await this.checkStatus())) return false;
-          } else {
-            logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
-
-            // Pass the total amount needed, let GatherObjective figure out how many to gather
-            if (
-              !(await this.character.gatherNow(
-                totalIngredNeededToCraft,
-                craftingItem.code,
-                true,
-                true,
-              ))
-            ) {
-              logger.warn(
-                `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
-              );
-              this.character.removeItemListfromItemsToKeep(craftingItems);
-              return false;
-            }
-
-            if (!(await this.checkStatus())) return false;
-          }
-        }
-
-        // Ensure that we're carrying the correct amount of ingredients. They may have been deposited into bank
         numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
-        numInBank = await this.character.checkQuantityOfItemInBank(
+      }
+
+      if (numInInv < totalIngredNeededToCraft) {
+        if (!(await this.checkStatus())) return false;
+
+        if (craftingItemInfo.subtype === 'mob') {
+          logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
+
+          if (
+            !(await this.character.gatherNow(
+              totalIngredNeededToCraft,
+              craftingItem.code,
+              true,
+              true,
+            ))
+          ) {
+            logger.warn(
+              `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
+            );
+            this.character.removeItemListfromItemsToKeep(craftingItems);
+            return false;
+          }
+
+          if (!(await this.checkStatus())) return false;
+        } else if (craftingItemInfo.craft !== null) {
+          logger.debug(`Resource ${craftingItemInfo.code} is a craftable item`);
+
+          if (
+            !(await this.character.craftNow(
+              totalIngredNeededToCraft - numInInv,
+              craftingItem.code,
+              true,
+              false,
+            ))
+          ) {
+            logger.warn(
+              `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
+            );
+            this.character.removeItemListfromItemsToKeep(craftingItems);
+            return false;
+          }
+
+          if (!(await this.checkStatus())) return false;
+        } else {
+          logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
+
+          // Pass the total amount needed, let GatherObjective figure out how many to gather
+          if (
+            !(await this.character.gatherNow(
+              totalIngredNeededToCraft,
+              craftingItem.code,
+              true,
+              true,
+            ))
+          ) {
+            logger.warn(
+              `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
+            );
+            this.character.removeItemListfromItemsToKeep(craftingItems);
+            return false;
+          }
+
+          if (!(await this.checkStatus())) return false;
+        }
+      }
+
+      // Ensure that we're carrying the correct amount of ingredients. They may have been deposited into bank
+      numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
+      numInBank = await this.character.checkQuantityOfItemInBank(
+        craftingItem.code,
+      );
+      if (numInInv >= totalIngredNeededToCraft) {
+        logger.info(`${numInInv} in inventory. Moving on to craft`);
+        continue;
+      } else if (numInBank >= totalIngredNeededToCraft - numInInv) {
+        return await this.character.withdrawNow(
+          totalIngredNeededToCraft - numInInv,
           craftingItem.code,
         );
-        if (numInInv >= totalIngredNeededToCraft) {
-          logger.info(`${numInInv} in inventory. Moving on to craft`);
-          continue;
-        } else if (numInBank >= totalIngredNeededToCraft - numInInv) {
-          return await this.character.withdrawNow(
-            totalIngredNeededToCraft - numInInv,
-            craftingItem.code,
-          );
-        } else {
-          logger.info(
-            `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
-          );
-        }
+      } else {
+        logger.info(
+          `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
+        );
       }
     }
 

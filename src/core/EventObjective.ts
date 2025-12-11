@@ -54,6 +54,7 @@ export class EventObjective extends Objective {
     }
 
     const charSkillLevel = this.character.getCharacterLevel(
+      this.character.data,
       resourceInfoResponse.data.skill,
     );
     const requiredLevel = resourceInfoResponse.data.level;

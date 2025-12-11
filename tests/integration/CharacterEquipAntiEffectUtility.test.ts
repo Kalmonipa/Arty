@@ -2,7 +2,11 @@ import { jest } from '@jest/globals';
 import { Character } from '../../src/core/Character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ItemSchema, SimpleEffectSchema } from '../../src/types/types.js';
+import {
+  CharacterSchema,
+  ItemSchema,
+  SimpleEffectSchema,
+} from '../../src/types/types.js';
 
 // Mock the necessary modules
 jest.mock('../../src/api_calls/Items', () => ({
@@ -137,12 +141,16 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       (quantity: number, code: string) => Promise<boolean>
     >;
 
-    character.getCharacterLevel = jest.fn((skillName?: string): number => {
-      if (skillName === 'alchemy') {
-        return character.data.alchemy_level;
-      }
-      return character.data.level;
-    }) as jest.MockedFunction<(skillName?: string) => number>;
+    character.getCharacterLevel = jest.fn(
+      (char: CharacterSchema, skillName?: string): number => {
+        if (skillName === 'alchemy') {
+          return char.alchemy_level;
+        }
+        return char.level;
+      },
+    ) as jest.MockedFunction<
+      (char?: CharacterSchema, skillName?: string) => number
+    >;
 
     // Expose helper function for tests
     (character as any).addItemToInventory = addItemToInventory;

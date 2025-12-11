@@ -1,4 +1,5 @@
 import { Objective } from '../core/Objective.js';
+import { ObjectiveStatus } from './ObjectiveData.js';
 
 /**
  * @param percentage The percentage of health we are currently on
@@ -39,4 +40,14 @@ export type JobResponse = {
   character: string;
   cancelledJobs?: string[];
   jobs: Objective[];
+};
+
+export type CraftResponse = {
+  message: string;
+  character: string;
+  job: {
+    id: string;
+    target: string;
+    status: ObjectiveStatus;
+  };
 };

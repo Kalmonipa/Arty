@@ -1,6 +1,7 @@
 import winston from 'winston';
 import {
   CharacterSchema,
+  CraftSkill,
   DataPageItemSchema,
   GatheringSkill,
   ItemSchema,
@@ -285,12 +286,36 @@ export async function buildListOfWeapons(): Promise<
 }
 
 /**
+ * @description checks to see if we're working with any skill
+ */
+export function isSkill(value: string): value is CraftSkill | GatheringSkill {
+  return isCraftingSkill(value) || isGatheringSkill(value);
+}
+
+/**
  * @description checks to see if we're working with a gathering skill
  * @param value the skill to check
  * @returns true if the provided skill is a gathering skill
  */
 export function isGatheringSkill(value: string): value is GatheringSkill {
   return ['fishing', 'woodcutting', 'mining', 'alchemy'].includes(value);
+}
+
+/**
+ * @description checks to see if we're working with a crafting skill
+ * @param value the skill to check
+ * @returns true if the provided skill is a crafting skill
+ */
+export function isCraftingSkill(value: string): value is CraftSkill {
+  return [
+    'mining',
+    'woodcutting',
+    'weaponcrafting',
+    'gearcrafting',
+    'jewelrycrafting',
+    'cooking',
+    'alchemy',
+  ].includes(value);
 }
 
 /**

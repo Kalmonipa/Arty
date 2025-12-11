@@ -141,6 +141,10 @@ class SimpleMockCharacter {
   isCancelled = jest.fn((): boolean => {
     return false;
   });
+
+  getCharacterLevel = jest.fn((): number => {
+    return 10;
+  });
 }
 
 // Mock response data

@@ -174,7 +174,10 @@ export class TidyBankObjective extends Objective {
     const craftedItemList = await getAllItemInformation({
       craft_material: ingredient,
       craft_skill: craftSkill,
-      max_level: this.character.getCharacterLevel(craftSkill),
+      max_level: this.character.getCharacterLevel(
+        this.character.data,
+        craftSkill,
+      ),
     });
     if (craftedItemList instanceof ApiError) {
       this.character.handleErrors(craftedItemList);
@@ -287,7 +290,7 @@ export class TidyBankObjective extends Objective {
 
     const itemListResponse = await getAllItemInformation({
       craft_skill: skill,
-      max_level: this.character.getCharacterLevel(skill),
+      max_level: this.character.getCharacterLevel(this.character.data, skill),
     });
     if (itemListResponse instanceof ApiError) {
       this.character.handleErrors(itemListResponse);

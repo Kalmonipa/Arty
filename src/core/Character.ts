@@ -983,26 +983,26 @@ export class Character {
    * @description gets the level of a specific skill. Returns the character level if no parameter passed in
    * @returns {number}
    */
-  getCharacterLevel(skillName?: Skill): number {
+  getCharacterLevel(char: CharacterSchema, skillName?: Skill): number {
     switch (skillName) {
       case 'alchemy':
-        return this.data.alchemy_level;
+        return char.alchemy_level;
       case 'cooking':
-        return this.data.cooking_level;
+        return char.cooking_level;
       case 'fishing':
-        return this.data.fishing_level;
+        return char.fishing_level;
       case 'gearcrafting':
-        return this.data.gearcrafting_level;
+        return char.gearcrafting_level;
       case 'jewelrycrafting':
-        return this.data.jewelrycrafting_level;
+        return char.jewelrycrafting_level;
       case 'mining':
-        return this.data.mining_level;
+        return char.mining_level;
       case 'weaponcrafting':
-        return this.data.weaponcrafting_level;
+        return char.weaponcrafting_level;
       case 'woodcutting':
-        return this.data.woodcutting_level;
+        return char.woodcutting_level;
       default:
-        return this.data.level;
+        return char.level;
     }
   }
 
@@ -1377,7 +1377,7 @@ export class Character {
     const utility = this.utilitiesMap[utilityType];
 
     for (let ind = utility.length - 1; ind >= 0; ind--) {
-      if (utility[ind].level <= this.getCharacterLevel()) {
+      if (utility[ind].level <= this.getCharacterLevel(this.data)) {
         let numNeeded: number;
         if (slot === 'utility1') {
           numNeeded =
@@ -1417,7 +1417,9 @@ export class Character {
           );
           return true;
         } else {
-          if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
+          if (
+            utility[ind].level <= this.getCharacterLevel(this.data, 'alchemy')
+          ) {
             logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
             if (await this.craftNow(numNeeded, utility[ind].code)) {
               return await this.equipNow(utility[ind].code, slot, numNeeded);
@@ -1448,7 +1450,7 @@ export class Character {
 
     // Find the best potion for the attack
     for (let ind = 0; ind <= utility.length - 1; ind++) {
-      if (utility[ind].level > this.getCharacterLevel()) {
+      if (utility[ind].level > this.getCharacterLevel(this.data)) {
         continue;
       }
       // ToDo: Figure out a way to check all effects for the value
@@ -1493,7 +1495,9 @@ export class Character {
         );
         return true;
       } else {
-        if (utility[ind].level <= this.getCharacterLevel('alchemy')) {
+        if (
+          utility[ind].level <= this.getCharacterLevel(this.data, 'alchemy')
+        ) {
           logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
           if (await this.craftNow(numNeeded, utility[ind].code)) {
             return await this.equipNow(

@@ -103,8 +103,10 @@ export class FightObjective extends Objective {
       let potionNeeded: string = this.character.utilitiesMap['restore'][0].code; // Usually small_health_potion
       for (const potion of this.character.utilitiesMap['restore'].reverse()) {
         if (
-          potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
-          potion.craft.level <= this.character.getCharacterLevel()
+          potion.craft.level <=
+            this.character.getCharacterLevel(this.character.data, 'alchemy') &&
+          potion.craft.level <=
+            this.character.getCharacterLevel(this.character.data)
         ) {
           potionNeeded = potion.code;
           logger.debug(`Chose to equip ${potion.code}`);

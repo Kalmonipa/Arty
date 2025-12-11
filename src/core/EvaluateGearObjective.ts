@@ -44,8 +44,11 @@ export class EvaluateGearObjective extends Objective {
 
       const charLevel =
         this.activityType === 'combat'
-          ? this.character.getCharacterLevel()
-          : this.character.getCharacterLevel(this.activityType);
+          ? this.character.getCharacterLevel(this.character.data)
+          : this.character.getCharacterLevel(
+              this.character.data,
+              this.activityType,
+            );
 
       // Just check the weapon if we're doing a gathering task
       // ToDo: Find prospecting/wisdom gear for non-combat activities

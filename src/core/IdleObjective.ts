@@ -82,8 +82,10 @@ export class IdleObjective extends Objective {
       // Crafting skills should aim to be at the combat level
       case 'gearcrafter':
         if (
-          this.character.getCharacterLevel('gearcrafting') <
-          this.character.getCharacterLevel()
+          this.character.getCharacterLevel(
+            this.character.data,
+            'gearcrafting',
+          ) < this.character.getCharacterLevel(this.character.data)
         ) {
           await this.trainSkill('gearcrafting');
           if (this.checkIdleJobIsLast()) return true;
@@ -94,8 +96,10 @@ export class IdleObjective extends Objective {
         break;
       case 'jewelrycrafter':
         if (
-          this.character.getCharacterLevel('jewelrycrafting') <
-          this.character.getCharacterLevel()
+          this.character.getCharacterLevel(
+            this.character.data,
+            'jewelrycrafting',
+          ) < this.character.getCharacterLevel(this.character.data)
         ) {
           await this.trainSkill('jewelrycrafting');
           if (this.checkIdleJobIsLast()) return true;
@@ -106,8 +110,10 @@ export class IdleObjective extends Objective {
         break;
       case 'weaponcrafter':
         if (
-          this.character.getCharacterLevel('weaponcrafting') <
-          this.character.getCharacterLevel()
+          this.character.getCharacterLevel(
+            this.character.data,
+            'weaponcrafting',
+          ) < this.character.getCharacterLevel(this.character.data)
         ) {
           await this.trainSkill('weaponcrafting');
           if (this.checkIdleJobIsLast()) return true;
@@ -168,8 +174,10 @@ export class IdleObjective extends Objective {
     let minToCreate = this.character.role === 'alchemist' ? 200 : 100;
     for (const potion of this.character.utilitiesMap['restore'].reverse()) {
       if (
-        potion.craft.level <= this.character.getCharacterLevel('alchemy') &&
-        potion.craft.level <= this.character.getCharacterLevel()
+        potion.craft.level <=
+          this.character.getCharacterLevel(this.character.data, 'alchemy') &&
+        potion.craft.level <=
+          this.character.getCharacterLevel(this.character.data)
       ) {
         logger.info(`Crafting ${minToCreate} ${potion.code}`);
         await this.character.craftNow(minToCreate, potion.code);
@@ -179,7 +187,10 @@ export class IdleObjective extends Objective {
 
     if (this.role === 'alchemist') {
       for (const potion of this.character.utilitiesMap['antipoison']) {
-        if (potion.craft.level < this.character.getCharacterLevel('alchemy')) {
+        if (
+          potion.craft.level <
+          this.character.getCharacterLevel(this.character.data, 'alchemy')
+        ) {
           const numInBank = await this.character.checkQuantityOfItemInBank(
             potion.code,
           );
@@ -195,7 +206,10 @@ export class IdleObjective extends Objective {
       for (const fish of this.character.consumablesMap['heal'].filter(
         (consumable) => listOfFish.includes(consumable.code),
       )) {
-        if (fish.craft.level < this.character.getCharacterLevel('fishing')) {
+        if (
+          fish.craft.level <
+          this.character.getCharacterLevel(this.character.data, 'fishing')
+        ) {
           // If we can cook the fish, get the number in the bank
           const numInBank = await this.character.checkQuantityOfItemInBank(
             fish.code,
@@ -249,7 +263,10 @@ export class IdleObjective extends Objective {
    */
   private async trainSkill(skill?: Skill): Promise<boolean> {
     let job: Objective;
-    const skillLevel = this.character.getCharacterLevel(skill);
+    const skillLevel = this.character.getCharacterLevel(
+      this.character.data,
+      skill,
+    );
     // Crafting skills should stay relatively close to combat level. Gathering skills can go further above
     const maxLevelGap = [
       'weaponcrafting',
@@ -264,20 +281,23 @@ export class IdleObjective extends Objective {
         `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
       return true;
-    } else if (skillLevel >= this.character.getCharacterLevel() + maxLevelGap) {
+    } else if (
+      skillLevel >=
+      this.character.getCharacterLevel(this.character.data) + maxLevelGap
+    ) {
       logger.info(
-        `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel()}). Not training ${skill}`,
+        `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel(this.character.data)}). Not training ${skill}`,
       );
       return true;
     }
 
     // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
     if (
-      this.character.getCharacterLevel(skill) >
-      this.character.getCharacterLevel() + 10
+      this.character.getCharacterLevel(this.character.data, skill) >
+      this.character.getCharacterLevel(this.character.data) + 10
     ) {
       logger.info(
-        `${skill} level (${this.character.getCharacterLevel(skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel()}. Not training`,
+        `${skill} level (${this.character.getCharacterLevel(this.character.data, skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel(this.character.data)}. Not training`,
       );
       return true;
     }
@@ -291,13 +311,13 @@ export class IdleObjective extends Objective {
       job = new TrainGatheringSkillObjective(
         this.character,
         skill,
-        this.character.getCharacterLevel(skill) + 1,
+        this.character.getCharacterLevel(this.character.data, skill) + 1,
       );
     } else {
       job = new TrainCraftingSkillObjective(
         this.character,
         skill,
-        this.character.getCharacterLevel(skill) + 1,
+        this.character.getCharacterLevel(this.character.data, skill) + 1,
       );
     }
     return await this.character.executeJobNow(

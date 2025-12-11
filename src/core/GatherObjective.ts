@@ -328,7 +328,10 @@ export class GatherObjective extends Objective {
     const resource = (() => {
       for (let i = resources.data.length - 1; i >= 0; i--) {
         const res = resources.data[i];
-        if (res.level <= this.character.getCharacterLevel(res.skill)) {
+        if (
+          res.level <=
+          this.character.getCharacterLevel(this.character.data, res.skill)
+        ) {
           return res;
         }
       }

@@ -23,7 +23,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 import { actionFight } from '../../src/api_calls/Actions.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
-import { ItemSlot, Skill } from '../../src/types/types.js';
+import { CharacterSchema, ItemSlot, Skill } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -232,14 +232,16 @@ class SimpleMockCharacter {
     },
   );
 
-  getCharacterLevel = jest.fn((skillName?: Skill): number => {
-    switch (skillName) {
-      case 'alchemy':
-        return 12;
-      default:
-        return 14;
-    }
-  });
+  getCharacterLevel = jest.fn(
+    (char?: CharacterSchema, skillName?: Skill): number => {
+      switch (skillName) {
+        case 'alchemy':
+          return 12;
+        default:
+          return 14;
+      }
+    },
+  );
 
   withdrawFoodIfNeeded = jest.fn(async (): Promise<boolean> => {
     // Mock implementation

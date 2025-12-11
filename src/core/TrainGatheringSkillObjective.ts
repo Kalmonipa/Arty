@@ -31,7 +31,10 @@ export class TrainGatheringSkillObjective extends Objective {
   }
 
   async run(): Promise<boolean> {
-    let charLevel = this.character.getCharacterLevel(this.skill);
+    let charLevel = this.character.getCharacterLevel(
+      this.character.data,
+      this.skill,
+    );
     while (charLevel < this.targetLevel) {
       if (!(await this.checkStatus())) return false;
 
@@ -69,7 +72,10 @@ export class TrainGatheringSkillObjective extends Objective {
 
       await this.character.depositAllItems();
 
-      charLevel = this.character.getCharacterLevel(this.skill);
+      charLevel = this.character.getCharacterLevel(
+        this.character.data,
+        this.skill,
+      );
     }
     return true;
   }
@@ -99,7 +105,10 @@ export class TrainGatheringSkillObjective extends Objective {
     ) {
       const skillNeeded = potentialCraftableItems.data[0].craft.skill;
       const levelNeeded = potentialCraftableItems.data[0].craft.level;
-      const charLevel = this.character.getCharacterLevel(skillNeeded);
+      const charLevel = this.character.getCharacterLevel(
+        this.character.data,
+        skillNeeded,
+      );
       if (charLevel > potentialCraftableItems.data[0].craft.level) {
         const craftableQuantity = Math.floor(
           ingredientQuantity /

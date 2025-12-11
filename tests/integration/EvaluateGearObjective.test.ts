@@ -3,7 +3,12 @@ import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
-import { ItemSlot, ItemSchema, MonsterSchema } from '../../src/types/types.js';
+import {
+  ItemSlot,
+  ItemSchema,
+  MonsterSchema,
+  CharacterSchema,
+} from '../../src/types/types.js';
 import { GearEffects, WeaponFlavours } from '../../src/types/ItemData.js';
 
 // Mock the API modules
@@ -362,18 +367,20 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  getCharacterLevel = jest.fn((skillName?: string): number => {
-    switch (skillName) {
-      case 'mining':
-        return this.data.mining_level;
-      case 'woodcutting':
-        return this.data.woodcutting_level;
-      case 'fishing':
-        return this.data.fishing_level;
-      default:
-        return this.data.level;
-    }
-  });
+  getCharacterLevel = jest.fn(
+    (char: CharacterSchema, skillName?: string): number => {
+      switch (skillName) {
+        case 'mining':
+          return char.mining_level;
+        case 'woodcutting':
+          return char.woodcutting_level;
+        case 'fishing':
+          return char.fishing_level;
+        default:
+          return char.level;
+      }
+    },
+  );
 
   getCharacterGearIn = jest.fn((itemSlot: ItemSlot): string => {
     switch (itemSlot) {
@@ -537,7 +544,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(getMonsterInformation).not.toHaveBeenCalled();
-      expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith('mining');
+      expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(
+        mockCharacter.data,
+        'mining',
+      );
     });
 
     it('should handle gathering weapon already equipped', async () => {
@@ -1077,6 +1087,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
         // Assert
         expect(result).toBeDefined();
         expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(
+          mockCharacter.data,
           activityType,
         );
 

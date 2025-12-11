@@ -1,4 +1,5 @@
-import { JobResponse } from '../types/CharacterData.js';
+import { CraftResponse, JobResponse } from '../types/CharacterData.js';
+import { SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 
 /**
@@ -39,6 +40,35 @@ export async function resumeCharacter(charName: string): Promise<JobResponse> {
   try {
     const response = await fetch(
       `http://${charName.toLowerCase}:3000/jobs/resume`,
+      requestOptions,
+    );
+    const data = await response.json();
+
+    logger.info(data.message);
+
+    return data;
+  } catch (error) {
+    return error;
+  }
+}
+
+/**
+ * @description Requests another character to craft an item
+ * @param charName
+ * @param itemID
+ */
+export async function requestCraftItem(
+  charName: string,
+  target: SimpleItemSchema,
+): Promise<CraftResponse> {
+  const requestOptions = {
+    method: 'POST',
+    body: JSON.stringify({ itemCode: target.code, quantity: target.quantity }),
+  };
+
+  try {
+    const response = await fetch(
+      `http://${charName.toLowerCase}:3000/craft`,
       requestOptions,
     );
     const data = await response.json();

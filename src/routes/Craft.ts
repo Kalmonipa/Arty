@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { CraftObjective } from '../core/CraftObjective.js';
 import { Character } from '../core/Character.js';
+import { CraftResponse } from '../types/CharacterData.js';
 
 export default function CraftRouter(char: Character) {
   const router = Router();
@@ -30,7 +31,7 @@ export default function CraftRouter(char: Character) {
       await char.appendJob(job);
 
       return res.status(201).json({
-        message: `Craft job ${job.objectiveId} added to queue.`,
+        message: `Craft job ${job.objectiveId} added to ${char.data.name}s queue.`,
         character: char.data.name,
         job: {
           id: job.objectiveId,

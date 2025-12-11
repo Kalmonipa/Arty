@@ -26,7 +26,7 @@ export class TrainCombatObjective extends Objective {
 
   async run(): Promise<boolean> {
     let attempts = 0;
-    let charLevel = this.character.getCharacterLevel();
+    let charLevel = this.character.getCharacterLevel(this.character.data);
 
     if (!(await this.checkStatus())) return false;
 
@@ -73,7 +73,7 @@ export class TrainCombatObjective extends Objective {
 
           if (fightResult) {
             fightSuccessful = true;
-            charLevel = this.character.getCharacterLevel();
+            charLevel = this.character.getCharacterLevel(this.character.data);
 
             if (charLevel >= this.targetLevel) {
               logger.info(`Train to combat level ${this.targetLevel} achieved`);
