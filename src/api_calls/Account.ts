@@ -65,7 +65,7 @@ export async function requestCraftItem(
   const requestOptions = {
     method: 'POST',
     body: JSON.stringify({ itemCode: target.code, quantity: target.quantity }),
-    MyHeaders
+    MyHeaders,
   };
 
   try {

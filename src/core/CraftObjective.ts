@@ -126,7 +126,9 @@ export class CraftObjective extends Objective {
               quantity: this.target.quantity,
             });
             if (response instanceof ApiError) {
-              logger.error(`${response.error} | Code: [${response.error.code}]`);
+              logger.error(
+                `${response.error} | Code: [${response.error.code}]`,
+              );
               return false;
             }
 

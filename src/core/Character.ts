@@ -163,6 +163,13 @@ export class Character {
   fishMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
 
   /**
+   * Save a timestamp when we check for events
+   * We'd only like to check for events every 5 minutes
+   * Initial value is 5 minutes ago
+   */
+  lastEventCheckTimestamp: number = Math.round(Date.now() / 1000) - 300;
+
+  /**
    * Lowest levels in the village. Used as a guide on what level gear we need and what
    * we can recycle
    */
@@ -865,6 +872,14 @@ export class Character {
    * @description Checks if there are any active jobs and creates an EventObjective to do it
    */
   async checkForActiveEvents(): Promise<boolean> {
+    const currTime = Math.round(Date.now() / 1000);
+    if (this.lastEventCheckTimestamp + 300 < currTime) {
+      logger.debug(
+        `Last event check (${this.lastEventCheckTimestamp}) was within the last 300 seconds (${currTime}). Not checking again`,
+      );
+      return false;
+    }
+
     const activeEventsResponse = await getActiveEvents({});
     if (activeEventsResponse instanceof ApiError) {
       await this.handleErrors(activeEventsResponse);
@@ -885,7 +900,7 @@ export class Character {
           logger.info(
             `Event ${job.objectiveId} expired at ${eventExpiration}. Cancelling`,
           );
-          await this.cancelJobAndChildren(job.objectiveId)
+          await this.cancelJobAndChildren(job.objectiveId);
           return false;
         }
 
@@ -894,54 +909,58 @@ export class Character {
     }
 
     for (const event of activeEventsResponse.data) {
-      if (this.applicableResourceEvents.includes(event.code)) {
-        // Storing timestamp so we can only check some events every so often (e.g. once a day)
-        const currentTimestamp = Math.round(Date.now() / 1000);
+      // Storing timestamp so we can only check some events every so often (e.g. once a day)
+      const currentTimestamp = Math.round(Date.now() / 1000);
 
-        // ToDo: Make this better
-        if (event.code === 'bandit_camp' && this.data.level < 25) {
-          logger.debug(`${this.data.name} is too low level for ${event.name}`);
-          continue;
-        } else if (event.code === 'portal_demon' && this.data.level < 30) {
-          logger.debug(`${this.data.name} is too low level for ${event.name}`);
-          continue;
-        } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
-          logger.debug(`${this.data.name} is too low level for ${event.name}`);
-          continue;
-        } else if (event.code === 'corrupted_owlbear' && this.data.level < 30) {
-          logger.debug(`${this.data.name} is too low level for ${event.name}`);
-          continue;
-        } else if (event.code === 'portal_efreet_sultan' && this.data.level < 42) {
-          logger.debug(`${this.data.name} is too low level for ${event.name}`);
-          continue;
-        } else if (event.code === 'corrupted_portal' && this.data.level < 45) {
-          logger.debug(`${this.data.name} is too low level for ${event.name}`);
-          continue;
-        } else if (event.code === 'attacking_the_island' && this.data.level < 45) {
-          logger.debug(`${this.data.name} is too low level for ${event.name}`);
-          continue;
-        } else if (
-          event.code === 'fish_merchant' &&
-          (this.role !== 'fisherman' ||
-            currentTimestamp < this.fishMerchantTradeDate + 86400)
-        ) {
-          logger.debug(
-            `${this.data.name} is not a fisherman (${this.role}) or has already attempted a trade with fish merchant within the last 24 hours`,
-          );
-          logger.debug(
-            `Last trade attempt was ${this.fishMerchantTradeDate}, current is ${currentTimestamp}`,
-          );
-          continue;
-        }
-
-        const job = new EventObjective(this, event);
-        return await this.executeJobNow(
-          job,
-          true,
-          true,
-          this.currentExecutingJob.objectiveId,
+      // ToDo: Make this better
+      if (event.code === 'bandit_camp' && this.data.level < 25) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (event.code === 'portal_demon' && this.data.level < 30) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (event.code === 'corrupted_owlbear' && this.data.level < 30) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (
+        event.code === 'portal_efreet_sultan' &&
+        this.data.level < 42
+      ) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (event.code === 'corrupted_portal' && this.data.level < 45) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (
+        event.code === 'attacking_the_island' &&
+        this.data.level < 45
+      ) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (
+        event.code === 'fish_merchant' &&
+        (this.role !== 'fisherman' ||
+          currentTimestamp < this.fishMerchantTradeDate + 86400)
+      ) {
+        logger.debug(
+          `${this.data.name} is not a fisherman (${this.role}) or has already attempted a trade with fish merchant within the last 24 hours`,
         );
+        logger.debug(
+          `Last trade attempt was ${this.fishMerchantTradeDate}, current is ${currentTimestamp}`,
+        );
+        continue;
       }
+
+      const job = new EventObjective(this, event);
+      return await this.executeJobNow(
+        job,
+        true,
+        true,
+        this.currentExecutingJob.objectiveId,
+      );
     }
     return false;
   }
