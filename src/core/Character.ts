@@ -907,6 +907,9 @@ export class Character {
         } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
           logger.debug(`${this.data.name} is too low level for ${event.name}`);
           continue;
+        } else if (event.code === 'corrupted_owlbear' && this.data.level < 30) {
+          logger.debug(`${this.data.name} is too low level for ${event.name}`);
+          continue;
         } else if (
           event.code === 'fish_merchant' &&
           (this.role !== 'fisherman' ||
