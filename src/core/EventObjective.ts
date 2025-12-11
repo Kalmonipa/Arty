@@ -165,6 +165,13 @@ export class EventObjective extends Objective {
           return false;
         }
       }
+
+      if (response.data.fight.result === 'loss') {
+        logger.info(`Skipping event checks for 60 minutes`);
+        this.character.lastEventCheckTimestamp =
+          Math.round(Date.now() / 1000) + 3600;
+        return false;
+      }
     }
 
     return true;

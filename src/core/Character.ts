@@ -872,19 +872,19 @@ export class Character {
    * @description Checks if there are any active jobs and creates an EventObjective to do it
    */
   async checkForActiveEvents(): Promise<boolean> {
-    const currTime = Math.round(Date.now() / 1000);
-    if (this.lastEventCheckTimestamp + 300 < currTime) {
+    const currentTimestamp = Math.round(Date.now() / 1000);
+    if (this.lastEventCheckTimestamp + 300 < currentTimestamp) {
       logger.debug(
-        `Last event check (${this.lastEventCheckTimestamp}) was within the last 300 seconds (${currTime}). Not checking again`,
+        `Last event check (${this.lastEventCheckTimestamp}) was within the last 300 seconds (${currentTimestamp}). Not checking again`,
       );
-      this.lastEventCheckTimestamp = currTime;
+      this.lastEventCheckTimestamp = currentTimestamp;
       return false;
     }
 
     const activeEventsResponse = await getActiveEvents({});
     if (activeEventsResponse instanceof ApiError) {
       await this.handleErrors(activeEventsResponse);
-      this.lastEventCheckTimestamp = currTime;
+      this.lastEventCheckTimestamp = currentTimestamp;
       return false;
     }
 
@@ -903,19 +903,16 @@ export class Character {
             `Event ${job.objectiveId} expired at ${eventExpiration}. Cancelling`,
           );
           await this.cancelJobAndChildren(job.objectiveId);
-          this.lastEventCheckTimestamp = currTime;
+          this.lastEventCheckTimestamp = currentTimestamp;
           return false;
         }
 
-        this.lastEventCheckTimestamp = currTime;
+        this.lastEventCheckTimestamp = currentTimestamp;
         return false;
       }
     }
 
     for (const event of activeEventsResponse.data) {
-      // Storing timestamp so we can only check some events every so often (e.g. once a day)
-      const currentTimestamp = Math.round(Date.now() / 1000);
-
       // ToDo: Make this better
       if (event.code === 'bandit_camp' && this.data.level < 25) {
         logger.debug(`${this.data.name} is too low level for ${event.name}`);
@@ -958,7 +955,7 @@ export class Character {
         continue;
       }
 
-      this.lastEventCheckTimestamp = currTime;
+      this.lastEventCheckTimestamp = currentTimestamp;
 
       const job = new EventObjective(this, event);
       return await this.executeJobNow(
@@ -968,7 +965,7 @@ export class Character {
         this.currentExecutingJob.objectiveId,
       );
     }
-    this.lastEventCheckTimestamp = currTime;
+    this.lastEventCheckTimestamp = currentTimestamp;
     return false;
   }
 
