@@ -877,12 +877,14 @@ export class Character {
       logger.debug(
         `Last event check (${this.lastEventCheckTimestamp}) was within the last 300 seconds (${currTime}). Not checking again`,
       );
+      this.lastEventCheckTimestamp = currTime;
       return false;
     }
 
     const activeEventsResponse = await getActiveEvents({});
     if (activeEventsResponse instanceof ApiError) {
       await this.handleErrors(activeEventsResponse);
+      this.lastEventCheckTimestamp = currTime;
       return false;
     }
 
@@ -901,9 +903,11 @@ export class Character {
             `Event ${job.objectiveId} expired at ${eventExpiration}. Cancelling`,
           );
           await this.cancelJobAndChildren(job.objectiveId);
+          this.lastEventCheckTimestamp = currTime;
           return false;
         }
 
+        this.lastEventCheckTimestamp = currTime;
         return false;
       }
     }
@@ -954,6 +958,8 @@ export class Character {
         continue;
       }
 
+      this.lastEventCheckTimestamp = currTime;
+
       const job = new EventObjective(this, event);
       return await this.executeJobNow(
         job,
@@ -962,6 +968,7 @@ export class Character {
         this.currentExecutingJob.objectiveId,
       );
     }
+    this.lastEventCheckTimestamp = currTime;
     return false;
   }
 
