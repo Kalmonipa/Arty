@@ -69,11 +69,11 @@ export async function requestCraftItem(
 
   try {
     logger.info(
-      `Trying POST http://${charName.toLowerCase}:3000/craft with ${target.quantity} ${target.code}`,
+      `Trying POST http://${charName.toLowerCase()}:3000/craft with ${target.quantity} ${target.code}`,
     );
 
     const response = await fetch(
-      `http://${charName.toLowerCase}:3000/craft`,
+      `http://${charName.toLowerCase()}:3000/craft`,
       requestOptions,
     );
 
