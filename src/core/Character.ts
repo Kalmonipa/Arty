@@ -873,10 +873,21 @@ export class Character {
 
     // Avoids creating an infinite loop
     for (const job of this.jobList) {
-      if (job.objectiveId.includes('_event_')) {
+      logger.debug(`Checking Job ${job.objectiveId}`);
+      if (job instanceof EventObjective) {
         logger.info(
-          `Event job ${job.objectiveId} already in queue. Not checking again`,
+          `Event job ${job.objectiveId} already in queue. Not starting a new event`,
         );
+
+        const eventExpiration = new Date(job.activeEvent.expiration).getTime();
+
+        if (Date.now() > eventExpiration) {
+          logger.info(
+            `Event ${job.objectiveId} expired at ${eventExpiration}. Cancelling`,
+          );
+          return false;
+        }
+
         return false;
       }
     }
@@ -1195,6 +1206,15 @@ export class Character {
       this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1);
     } else {
       logger.debug(`Can't remove item code ${itemCode} from itemsToKeep list`);
+    }
+  }
+
+  /**
+   * @description Removes a list of items from the itemsToKeep list
+   */
+  removeItemListfromItemsToKeep(items: SimpleItemSchema[]) {
+    for (const item of items) {
+      this.removeItemFromItemsToKeep(item.code);
     }
   }
 
