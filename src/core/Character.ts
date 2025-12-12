@@ -873,11 +873,10 @@ export class Character {
    */
   async checkForActiveEvents(): Promise<boolean> {
     const currentTimestamp = Math.round(Date.now() / 1000);
-    if (this.lastEventCheckTimestamp + 300 < currentTimestamp) {
+    if (this.lastEventCheckTimestamp + 300 >= currentTimestamp) {
       logger.debug(
         `Last event check (${this.lastEventCheckTimestamp}) was within the last 300 seconds (${currentTimestamp}). Not checking again`,
       );
-      this.lastEventCheckTimestamp = currentTimestamp;
       return false;
     }
 

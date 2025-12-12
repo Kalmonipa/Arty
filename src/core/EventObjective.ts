@@ -38,6 +38,7 @@ export class EventObjective extends Objective {
         return await this.sellToFishMerchant(this.activeEvent);
       default:
         logger.info(`Event ${this.activeEvent.code} not configured yet.`);
+        this.character.lastEventCheckTimestamp = Math.round(Date.now() / 1000);
         return false;
     }
   }
