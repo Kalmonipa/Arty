@@ -35,7 +35,7 @@ export class IdleObjective extends Objective {
     await this.character.tidyUpBank(this.character.role);
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.depositGoldIntoBank(1000);
+    await this.depositGoldIntoBank(2000);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.topUpBank();

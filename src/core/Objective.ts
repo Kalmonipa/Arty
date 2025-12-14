@@ -325,14 +325,14 @@ export abstract class Objective {
   }
 
   /**
-   * @description Deposits gold into the bank if they have more than the desired amount
+   * @description Deposits gold into the bank if they have more than the specified amount
    * @returns
    */
   protected async depositGoldIntoBank(maxGoldInInv: number): Promise<boolean> {
     const numGoldInInv = this.character.data.gold;
 
     if (numGoldInInv > maxGoldInInv) {
-      return await this.character.depositNow(numGoldInInv, 'gold');
+      return await this.character.depositNow(numGoldInInv - 2000, 'gold');
     }
 
     return true;
