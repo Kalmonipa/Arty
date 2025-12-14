@@ -345,7 +345,8 @@ export class CraftObjective extends Objective {
           }
 
           if (!(await this.checkStatus())) return false;
-        } else if (craftingItemInfo.craft !== null) {
+          // ToDo: Find a better way to handle items that are craftable and gatherable (i.e. sap)
+        } else if (craftingItemInfo.craft !== null && craftingItemInfo.code !== 'sap') {
           logger.debug(`Resource ${craftingItemInfo.code} is a craftable item`);
 
           if (
