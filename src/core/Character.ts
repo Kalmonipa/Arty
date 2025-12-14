@@ -1222,6 +1222,11 @@ export class Character {
     }
 
     maps.forEach((map) => {
+      // ToDo: Check the achievements to see if we can access the Sandwhisper Isle bank
+      if (map.map_id === 1234) {
+        logger.debug(`Sandwhisper Isle bank not unlocked. Skipping`);
+        return;
+      }
       const dist =
         Math.abs(this.data.x - map.x) + Math.abs(this.data.y - map.y);
       if (dist < closestDistance) {
