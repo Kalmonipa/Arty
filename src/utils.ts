@@ -27,8 +27,10 @@ export async function TransitionLocations(): Promise<MapSchema[]> {
     );
     return [];
   }
+  logger.info(`Found ${allMaps.data.length} total maps`)
+
   const transitionLocations = allMaps.data.filter(
-    (maps) => maps.interactions.transition,
+    (map) => map.interactions.transition !== undefined && map.interactions.transition !== null,
   );
 
   logger.info(`Found ${transitionLocations.length} transition maps`);

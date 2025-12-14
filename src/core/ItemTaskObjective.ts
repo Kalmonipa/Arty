@@ -32,18 +32,20 @@ export class ItemTaskObjective extends Objective {
       logger.info(`Completed ${this.progress}/${this.quantity} tasks`);
       result = await this.doTask();
 
-      const numCoinsInInv =
-        this.character.checkQuantityOfItemInInv('tasks_coin');
+      if (result) {
+        const numCoinsInInv =
+          this.character.checkQuantityOfItemInInv('tasks_coin');
 
-      await this.character.executeJobNow(
-        new DepositObjective(this.character, {
-          code: 'tasks_coin',
-          quantity: numCoinsInInv,
-        }),
-        true,
-        true,
-        this.objectiveId,
-      );
+        await this.character.executeJobNow(
+          new DepositObjective(this.character, {
+            code: 'tasks_coin',
+            quantity: numCoinsInInv,
+          }),
+          true,
+          true,
+          this.objectiveId,
+        );
+      }
 
       this.progress++;
     }
