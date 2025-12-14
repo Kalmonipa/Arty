@@ -71,11 +71,17 @@ import { ExpandBankObjective } from './BankExpansion.js';
 import { getActiveEvents } from '../api_calls/Events.js';
 import { EventObjective } from './EventObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { Overworld, SandWhisperIsle, Underground } from '../names.js';
+import {
+  Overworld,
+  SandWhisperIsle,
+  SandwhisperMine,
+  Underground,
+} from '../names.js';
 import {
   transitionToMainland,
   transitionToOverworld,
   transitionToSandwhisperIsle,
+  transitionToSandwhisperMine,
   transitionToUndergroundMine,
 } from './Movement.js';
 import { CharRole } from '../constants.js';
@@ -119,6 +125,8 @@ export class Character {
   consumablesMap?: Record<ConsumableEffects, ItemSchema[]>;
   utilitiesMap?: Record<UtilityEffects, ItemSchema[]>;
   weaponMap?: Record<WeaponFlavours, ItemSchema[]>;
+
+  transitionLocations: MapSchema[];
 
   allCharacterDetails?: CharacterSchema[];
 
@@ -214,6 +222,8 @@ export class Character {
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
     this.weaponMap = await buildListOfWeapons();
+
+    this.transitionLocations = await TransitionLocations();
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
     this.allCharacterDetails = allCharacterDetails;
@@ -1987,6 +1997,17 @@ export class Character {
         logger.error(`Failed to move to SandWhisper Isle transition point`);
         return false;
       }
+    } else if (destination.name === SandwhisperMine) {
+      let moveResult = await transitionToSandwhisperIsle(this);
+      if (!moveResult) {
+        logger.error(`Failed to move to SandWhisper Isle transition point`);
+        return false;
+      }
+      moveResult = await transitionToSandwhisperMine(this);
+      if (!moveResult) {
+        logger.error(`Failed to move to SandWhisper Mine transition point`);
+        return false;
+      }
     }
 
     // y coord 17 and greater is all Sandwhisper Isle maps so can cheese it here a bit
@@ -2000,7 +2021,7 @@ export class Character {
       }
     }
 
-    // We're in Overworld and would like to get to Underground
+    // We're on the mainland in Overworld and would like to get to Underground Mine
     if (destination.layer === Underground && this.data.layer === Overworld) {
       logger.info(
         `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
@@ -2071,66 +2092,6 @@ export class Character {
         return false;
       }
     }
-  }
-
-  /**
-   * @description Transitioning function to find the transition point that gets to where we want to go
-   */
-  private findOverworldToUndergroundTransitionPoint(
-    destination: MapSchema,
-  ): MapSchema {
-    let closestDistance = 1000000;
-    let closestMap: MapSchema;
-
-    TransitionLocations.forEach((transitionMap) => {
-      if (transitionMap.layer !== this.data.layer) {
-        return;
-      }
-      const dist =
-        Math.abs(destination.x - transitionMap.x) +
-        Math.abs(destination.y - transitionMap.y);
-      if (dist < closestDistance) {
-        closestDistance = dist;
-        closestMap = transitionMap;
-      }
-    });
-
-    if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
-      logger.info(
-        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
-      );
-    }
-
-    return closestMap;
-  }
-
-  /**
-   * @description Transitioning function to find the transition point that gets to where we want to go
-   */
-  private findUndergroundToOverworldTransitionPoint(): MapSchema {
-    let closestDistance = 1000000;
-    let closestMap: MapSchema;
-
-    TransitionLocations.forEach((transitionMap) => {
-      if (transitionMap.layer !== this.data.layer) {
-        return;
-      }
-      const dist =
-        Math.abs(this.data.x - transitionMap.x) +
-        Math.abs(this.data.y - transitionMap.y);
-      if (dist < closestDistance) {
-        closestDistance = dist;
-        closestMap = transitionMap;
-      }
-    });
-
-    if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
-      logger.info(
-        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
-      );
-    }
-
-    return closestMap;
   }
 
   /**

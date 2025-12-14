@@ -176,7 +176,7 @@ export class CraftObjective extends Objective {
           );
           if (!gathered) {
             logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
-            break;
+            return false;
           }
 
           for (const craftItem of targetItem.craft.items) {

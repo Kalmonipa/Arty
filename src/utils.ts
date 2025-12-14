@@ -14,6 +14,27 @@ import { WeaponFlavours } from './types/ItemData.js';
 import { Role, ROLES } from './types/CharacterData.js';
 import { getCharacter } from './api_calls/Character.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
+import { getMaps } from './api_calls/Maps.js';
+
+/**
+ * @description Array of all transition maps
+ */
+export async function TransitionLocations(): Promise<MapSchema[]> {
+  const allMaps = await getMaps({});
+  if (allMaps instanceof ApiError) {
+    logger.error(
+      `Failed to get all maps: ${allMaps.error.message} [Code ${allMaps.error.code}]`,
+    );
+    return [];
+  }
+  const transitionLocations = allMaps.data.filter(
+    (maps) => maps.interactions.transition,
+  );
+
+  logger.info(`Found ${transitionLocations.length} transition maps`);
+
+  return transitionLocations;
+}
 
 /**
  * Array of all the transition maps:
@@ -23,7 +44,7 @@ import { CharName, AllCharNames, ApiToken } from './constants.js';
  * - 1336: desertisland_16 = Sandwhisper Isle to Mainland
  * @todo Find a way to get this programmatically
  */
-export const TransitionLocations: MapSchema[] = [
+export const TransitionLocationsHardcoded: MapSchema[] = [
   {
     map_id: 571,
     name: 'Mountain',

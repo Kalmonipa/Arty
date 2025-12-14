@@ -1,6 +1,5 @@
 import { RecallPotion } from '../names.js';
-import { DestinationSchema, MapSchema } from '../types/types.js';
-import { logger, TransitionLocations } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 
 /**
@@ -25,6 +24,7 @@ export async function transitionToSandwhisperIsle(
     recallPotsInBank > 0
   ) {
     await character.withdrawNow(1, RecallPotion);
+    character.addItemToItemsToKeep(RecallPotion);
     await character.withdrawNow(1000, 'gold');
   } else if (recallPotsInInv > 0) {
     // Otherwise we have a recall pot in inv so just withdraw 1k gold
@@ -34,7 +34,9 @@ export async function transitionToSandwhisperIsle(
   // ToDo: Don't hardcode the transition map ID
   if (
     !(await character.move(
-      TransitionLocations.find((mapSchema) => mapSchema.map_id === 1093),
+      character.transitionLocations.find(
+        (mapSchema) => mapSchema.map_id === 1093,
+      ),
     ))
   ) {
     return false;
@@ -62,7 +64,9 @@ export async function transitionToMainland(
     // ToDo: Don't hardcode the transition map ID
     if (
       !(await character.move(
-        TransitionLocations.find((mapSchema) => mapSchema.map_id === 1336),
+        character.transitionLocations.find(
+          (mapSchema) => mapSchema.map_id === 1336,
+        ),
       ))
     ) {
       return false;
@@ -82,7 +86,9 @@ export async function transitionToMainland(
 export async function transitionToUndergroundMine(character: Character) {
   if (
     !(await character.move(
-      TransitionLocations.find((mapSchema) => mapSchema.map_id === 571),
+      character.transitionLocations.find(
+        (mapSchema) => mapSchema.map_id === 571,
+      ),
     ))
   ) {
     return false;
@@ -101,7 +107,30 @@ export async function transitionToUndergroundMine(character: Character) {
 export async function transitionToOverworld(character: Character) {
   if (
     !(await character.move(
-      TransitionLocations.find((mapSchema) => mapSchema.map_id === 572),
+      character.transitionLocations.find(
+        (mapSchema) => mapSchema.map_id === 572,
+      ),
+    ))
+  ) {
+    return false;
+  }
+  if (!(await character.transition())) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * @description Move to the Sandwhisper Isle -> Sandwhisper Mine transition point
+ * Assumes the char is on Sandwhisper Isle
+ * @returns true if successful, false if not
+ */
+export async function transitionToSandwhisperMine(character: Character) {
+  if (
+    !(await character.move(
+      character.transitionLocations.find(
+        (mapSchema) => mapSchema.map_id === 1177,
+      ),
     ))
   ) {
     return false;

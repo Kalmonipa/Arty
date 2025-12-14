@@ -144,6 +144,10 @@ export class ItemTaskObjective extends Objective {
               this.character.removeItemFromItemsToKeep(
                 this.character.data.task,
               );
+              logger.warn(
+                `Cancelling ${this.character.data.task} collection task`,
+              );
+              await this.cancelCurrentTask('items');
               return false;
             } else {
               break;

@@ -7,6 +7,7 @@ export const RecallPotion = 'recall_potion';
  * @description Map Areas
  */
 export const SandWhisperIsle = 'Sandwhisper Isle';
+export const SandwhisperMine = 'Sandwhisper Mine';
 
 /**
  * @description Layers

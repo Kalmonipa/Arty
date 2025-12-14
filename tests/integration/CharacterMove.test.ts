@@ -9,7 +9,6 @@ import {
   CharacterSchema,
   InventorySlot,
 } from '../../src/types/types.js';
-import { TransitionLocations } from '../../src/utils.js';
 
 // Mock the API calls
 jest.mock('../../src/api_calls/Actions.js', () => ({
@@ -62,6 +61,109 @@ describe('Character.move()', () => {
         return true;
       },
     );
+
+    character.transitionLocations = [
+      {
+        map_id: 571,
+        name: 'Mountain',
+        skin: 'mountain_6',
+        x: -2,
+        y: 6,
+        layer: 'overworld',
+        access: {
+          type: 'standard',
+          conditions: [],
+        },
+        interactions: {
+          content: null,
+          transition: {
+            map_id: 572,
+            x: -2,
+            y: 6,
+            layer: 'underground',
+            conditions: [],
+          },
+        },
+      },
+      {
+        map_id: 572,
+        name: 'Underground',
+        skin: 'mine_1',
+        x: -2,
+        y: 6,
+        layer: 'underground',
+        access: {
+          type: 'standard',
+          conditions: [],
+        },
+        interactions: {
+          content: null,
+          transition: {
+            map_id: 571,
+            x: -2,
+            y: 6,
+            layer: 'overworld',
+            conditions: [],
+          },
+        },
+      },
+      {
+        map_id: 1093,
+        name: 'Forest',
+        skin: 'forest_coastline1',
+        x: 2,
+        y: 16,
+        layer: 'overworld',
+        access: {
+          type: 'standard',
+          conditions: [],
+        },
+        interactions: {
+          content: null,
+          transition: {
+            map_id: 1336,
+            x: -2,
+            y: 21,
+            layer: 'overworld',
+            conditions: [
+              {
+                code: 'gold',
+                operator: 'cost',
+                value: '1000',
+              },
+            ],
+          },
+        },
+      },
+      {
+        map_id: 1336,
+        name: 'Sandwhisper Isle',
+        skin: 'desertisland_16',
+        x: -2,
+        y: 21,
+        layer: 'overworld',
+        access: {
+          type: 'standard',
+          conditions: [],
+        },
+        interactions: {
+          content: null,
+          transition: {
+            map_id: 1093,
+            x: 2,
+            y: 16,
+            layer: 'overworld',
+            conditions: [
+              {
+                code: 'gold',
+                operator: 'cost',
+                value: '1000',
+              },
+            ],
+          },
+        },
+      },
+    ];
   });
 
   describe('Same layer movement', () => {
@@ -226,7 +328,7 @@ describe('Character.move()', () => {
         interactions: {},
       };
 
-      const transitionLocation = TransitionLocations[0]; // Mountain transition point
+      const transitionLocation = character.transitionLocations[0]; // Mountain transition point
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {
           cooldown: {
@@ -403,7 +505,7 @@ describe('Character.move()', () => {
             expiration: '2025-01-01T00:00:05.000Z',
             reason: 'movement',
           },
-          destination: TransitionLocations[0],
+          destination: character.transitionLocations[0],
           path: [
             [0, 0],
             [-2, 6],
@@ -500,7 +602,7 @@ describe('Character.move()', () => {
             expiration: '2025-01-01T00:00:05.000Z',
             reason: 'movement',
           },
-          destination: TransitionLocations[0],
+          destination: character.transitionLocations[0],
           path: [
             [0, 0],
             [2, 16],
