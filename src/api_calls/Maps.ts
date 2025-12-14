@@ -3,8 +3,9 @@ import {
   GetAllMapsMapsGetParams,
   DataPageMapSchema,
   MapResponseSchema,
+  MapSchema,
 } from '../types/types.js';
-import { MyHeaders } from '../utils.js';
+import { logger, MyHeaders } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 
 export async function getMaps(
@@ -84,4 +85,31 @@ export async function getMapsById(
   } catch (error) {
     return error as ApiError;
   }
+}
+
+export async function getAllMaps(
+  params: GetAllMapsMapsGetParams,
+): Promise<MapSchema[]> {
+  let allMaps: MapSchema[] = [];
+
+  const allMapsResponse = await getMaps(params);
+  if (allMapsResponse instanceof ApiError) {
+    logger.error(`Failed to get all maps`);
+    return [];
+  }
+
+  allMaps = allMapsResponse.data;
+
+  if (allMapsResponse.pages > 1) {
+    for (let pages = 2; pages <= allMapsResponse.pages; pages++) {
+      const mapPage = await getMaps({ size: 100, page: pages });
+      if (mapPage instanceof ApiError) {
+        await this.handleErrors(mapPage);
+        return [];
+      }
+      allMaps.push(...mapPage.data);
+    }
+  }
+
+  return allMaps;
 }

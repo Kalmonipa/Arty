@@ -1,15 +1,16 @@
 import { TransitionLocations } from '../../src/utils.js';
-import { getMaps } from '../../src/api_calls/Maps.js';
+import { getAllMaps, getMaps } from '../../src/api_calls/Maps.js';
 import { MapSchema } from '../../src/types/types.js';
 import { ApiError } from '../../src/core/Error.js';
 
 jest.mock('../../src/api_calls/Maps.js', () => ({
   getMaps: jest.fn(),
+  getAllMaps: jest.fn(),
   getMapsById: jest.fn(),
 }));
 
 // Cast the mocked function for correct typing
-const mockedGetMaps = getMaps as jest.Mock;
+const mockedGetAllMaps = getAllMaps as jest.Mock;
 
 describe('TransitionLocations', () => {
   // Define a minimal TransitionSchema object
@@ -41,26 +42,23 @@ describe('TransitionLocations', () => {
   };
 
   const mockMapWithoutTransition: MapSchema = {
-        map_id: 1285,
-        name: 'Sandwhisper Isle',
-        skin: 'desertisland_15',
-        x: -2,
-        y: 20,
-        layer: 'overworld',
-        access: {
-          type: 'standard',
-          conditions: [],
-        },
-        interactions: {
-          content: null,
-          transition: null,
-        },
+    map_id: 1285,
+    name: 'Sandwhisper Isle',
+    skin: 'desertisland_15',
+    x: -2,
+    y: 20,
+    layer: 'overworld',
+    access: {
+      type: 'standard',
+      conditions: [],
+    },
+    interactions: {
+      content: null,
+      transition: null,
+    },
   };
 
-  const mockMaps = [
-    mockMapWithTransition,
-    mockMapWithoutTransition,
-  ];
+  const mockMaps = [mockMapWithTransition, mockMapWithoutTransition];
 
   beforeEach(() => {
     // Clear all mocks before each test to ensure isolation
@@ -71,13 +69,13 @@ describe('TransitionLocations', () => {
 
   test('should correctly filter maps with an existing transition property', async () => {
     // Arrange: Mock the API to return the mixed list of maps
-    mockedGetMaps.mockResolvedValue({ data: mockMaps });
+    mockedGetAllMaps.mockResolvedValue(mockMaps );
 
     // Act
     const result = await TransitionLocations();
 
     // Assert
-    expect(mockedGetMaps).toHaveBeenCalled();
+    expect(mockedGetAllMaps).toHaveBeenCalled();
     // Only 'Map A' should be in the result
     expect(result).toHaveLength(1);
     expect(result[0].map_id).toBe(571);
@@ -89,7 +87,7 @@ describe('TransitionLocations', () => {
   test('should return an empty array if no maps have a transition property', async () => {
     // Arrange: Mock the API to return only maps without transitions
     const noTransitionMaps = [mockMapWithoutTransition];
-    mockedGetMaps.mockResolvedValue({ data: noTransitionMaps });
+    mockedGetAllMaps.mockResolvedValue(noTransitionMaps);
 
     // Act
     const result = await TransitionLocations();

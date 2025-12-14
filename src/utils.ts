@@ -14,140 +14,26 @@ import { WeaponFlavours } from './types/ItemData.js';
 import { Role, ROLES } from './types/CharacterData.js';
 import { getCharacter } from './api_calls/Character.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
-import { getMaps } from './api_calls/Maps.js';
+import { getAllMaps, getMaps } from './api_calls/Maps.js';
 
 /**
  * @description Array of all transition maps
  */
 export async function TransitionLocations(): Promise<MapSchema[]> {
-  const allMaps = await getMaps({});
-  if (allMaps instanceof ApiError) {
-    logger.error(
-      `Failed to get all maps: ${allMaps.error.message} [Code ${allMaps.error.code}]`,
-    );
-    return [];
-  }
-  logger.info(`Found ${allMaps.data.length} total maps`)
+  const allMaps = await getAllMaps({});
 
-  const transitionLocations = allMaps.data.filter(
-    (map) => map.interactions.transition !== undefined && map.interactions.transition !== null,
+  logger.info(`Found ${allMaps.length} total maps`);
+
+  const transitionLocations = allMaps.filter(
+    (map) =>
+      map.interactions.transition !== undefined &&
+      map.interactions.transition !== null,
   );
 
   logger.info(`Found ${transitionLocations.length} transition maps`);
 
   return transitionLocations;
 }
-
-/**
- * Array of all the transition maps:
- * - 571: mountain_6 = to Mithril/Bat cave
- * - 572: mine_1 = from Mithril/Bat cave
- * - 1093: forest_coastline1 = Mainland to Sandwhisper Isle
- * - 1336: desertisland_16 = Sandwhisper Isle to Mainland
- * @todo Find a way to get this programmatically
- */
-export const TransitionLocationsHardcoded: MapSchema[] = [
-  {
-    map_id: 571,
-    name: 'Mountain',
-    skin: 'mountain_6',
-    x: -2,
-    y: 6,
-    layer: 'overworld',
-    access: {
-      type: 'standard',
-      conditions: [],
-    },
-    interactions: {
-      content: null,
-      transition: {
-        map_id: 572,
-        x: -2,
-        y: 6,
-        layer: 'underground',
-        conditions: [],
-      },
-    },
-  },
-  {
-    map_id: 572,
-    name: 'Underground',
-    skin: 'mine_1',
-    x: -2,
-    y: 6,
-    layer: 'underground',
-    access: {
-      type: 'standard',
-      conditions: [],
-    },
-    interactions: {
-      content: null,
-      transition: {
-        map_id: 571,
-        x: -2,
-        y: 6,
-        layer: 'overworld',
-        conditions: [],
-      },
-    },
-  },
-  {
-    map_id: 1093,
-    name: 'Forest',
-    skin: 'forest_coastline1',
-    x: 2,
-    y: 16,
-    layer: 'overworld',
-    access: {
-      type: 'standard',
-      conditions: [],
-    },
-    interactions: {
-      content: null,
-      transition: {
-        map_id: 1336,
-        x: -2,
-        y: 21,
-        layer: 'overworld',
-        conditions: [
-          {
-            code: 'gold',
-            operator: 'cost',
-            value: '1000',
-          },
-        ],
-      },
-    },
-  },
-  {
-    map_id: 1336,
-    name: 'Sandwhisper Isle',
-    skin: 'desertisland_16',
-    x: -2,
-    y: 21,
-    layer: 'overworld',
-    access: {
-      type: 'standard',
-      conditions: [],
-    },
-    interactions: {
-      content: null,
-      transition: {
-        map_id: 1093,
-        x: 2,
-        y: 16,
-        layer: 'overworld',
-        conditions: [
-          {
-            code: 'gold',
-            operator: 'cost',
-            value: '1000',
-          },
-        ],
-      },
-    },
-  },
-];
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 
