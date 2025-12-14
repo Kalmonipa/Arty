@@ -191,7 +191,7 @@ export class GatherObjective extends Objective {
         } else {
           return true;
         }
-      } else if (resourceDetails.craft) {
+      } else if (resourceDetails.craft && resourceDetails.code !== 'sap') {
         if (!(await this.character.craftNow(quantity, resourceDetails.code))) {
           attempt++;
           continue;

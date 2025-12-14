@@ -176,7 +176,7 @@ export class EventObjective extends Objective {
     }
 
     // Top up health pots after the event so that we're prepared for the next one
-    await this.character.topUpHealthPots()
+    await this.character.topUpHealthPots();
 
     return true;
   }
