@@ -69,7 +69,7 @@ describe('TransitionLocations', () => {
 
   test('should correctly filter maps with an existing transition property', async () => {
     // Arrange: Mock the API to return the mixed list of maps
-    mockedGetAllMaps.mockResolvedValue(mockMaps );
+    mockedGetAllMaps.mockResolvedValue(mockMaps);
 
     // Act
     const result = await TransitionLocations();

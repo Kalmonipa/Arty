@@ -1,4 +1,5 @@
 import { actionWithdrawItem } from '../api_calls/Actions.js';
+import { actionDepositGold, actionWithdrawGold } from '../api_calls/Bank.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { logger } from '../utils.js';
@@ -49,6 +50,23 @@ export class WithdrawObjective extends Objective {
 
       await this.character.move(contentLocation);
 
+      // If we're withdrawing gold, do it and return early
+      if (this.target.code === 'gold') {
+        const response = await actionWithdrawGold(
+          this.character.data,
+          this.target.quantity,
+        );
+        if (response instanceof ApiError) {
+          logger.warn(`Withdraw gold attempt failed`);
+          return;
+        }
+
+        logger.info(`Withdrew ${this.target.quantity} gold`);
+
+        return true;
+      }
+
+      // Otherwise withdraw the item
       const response = await actionWithdrawItem(this.character.data, [
         { quantity: this.target.quantity, code: this.target.code },
       ]);
