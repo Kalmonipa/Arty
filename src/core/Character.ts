@@ -1424,6 +1424,7 @@ export class Character {
     const utility = this.utilitiesMap[utilityType];
 
     for (let ind = utility.length - 1; ind >= 0; ind--) {
+      logger.debug(`Evaluating ${utility[ind].code}`)
       if (utility[ind].level <= this.getCharacterLevel(this.data)) {
         let numNeeded: number;
         if (slot === 'utility1') {

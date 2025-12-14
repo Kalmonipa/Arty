@@ -119,26 +119,26 @@ export class FightObjective extends Objective {
       fakeSchema.utility1_slot_quantity = 100;
 
       logger.info(
-        `Simulating fight against ${this.target.code} with health pots`,
+        `Simulating fight against ${this.target.code} with ${potionNeeded}`,
       );
       const shouldFightWithHealthPots = await this.character.simulateFightNow(
         [fakeSchema],
         this.target.code,
       );
 
-      if (shouldFightWithHealthPots && fakeSchema.utility1_slot_quantity) {
+      if (shouldFightWithHealthPots) {
         const fakeSchema = this.character.createFakeCharacterSchema(
           this.character.data,
         );
 
         logger.info(
-          `Simulating fight against ${this.target.code} without health pots`,
+          `Simulating fight against ${this.target.code} without ${potionNeeded}`,
         );
 
         const shouldFightWithoutHealthPots =
           await this.character.simulateFightNow([fakeSchema], this.target.code);
 
-        if (shouldFightWithoutHealthPots && this.character.data.utility1_slot) {
+        if (shouldFightWithoutHealthPots) {
           const utilOnePot = this.character.data.utility1_slot;
           logger.info(`Unequipping ${utilOnePot} as not needed`);
           this.shouldEquipHealthPots = false;
