@@ -753,9 +753,9 @@ export class Character {
       return false;
     }
 
-    logger.debug(`Removing ${objectiveId} from position ${ind}`);
+    //logger.debug(`Removing ${objectiveId} from position ${ind}`);
     const deletedObj = this.jobList.splice(ind, 1);
-    logger.debug(`Removed ${deletedObj[0].objectiveId} from job queue`);
+    //logger.debug(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
       for (const obj of this.jobList) {
@@ -2070,9 +2070,6 @@ export class Character {
       this.handleErrors(transitionResponse);
       return false;
     } else {
-      logger.debug(
-        `Transition response structure: ${JSON.stringify(transitionResponse, null, 2)}`,
-      );
       if (
         transitionResponse &&
         transitionResponse.data &&

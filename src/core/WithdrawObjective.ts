@@ -61,8 +61,6 @@ export class WithdrawObjective extends Objective {
           return;
         }
 
-        logger.info(`Withdrew ${this.target.quantity} gold`);
-
         return true;
       }
 
