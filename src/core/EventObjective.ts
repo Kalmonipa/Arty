@@ -26,6 +26,7 @@ export class EventObjective extends Objective {
   }
 
   async run() {
+    // ToDo: use content.type to determine what type of event it is rather than hardcoding names
     switch (this.activeEvent.code) {
       case 'magic_apparition':
       case 'strange_apparition':
@@ -33,6 +34,7 @@ export class EventObjective extends Objective {
       case 'bandit_camp':
       case 'portal_demon':
       case 'corrupted_ogre':
+      case 'corrupted_owlbear':
         return await this.fightMobs(this.activeEvent);
       case 'fish_merchant':
         return await this.sellToFishMerchant(this.activeEvent);
@@ -110,6 +112,7 @@ export class EventObjective extends Objective {
 
   /**
    * @description Fight the event mob
+   * @todo Determine if the character can fight the mob within this event rather than hardcoding in CheckForActiveEvents
    */
   private async fightMobs(event: ActiveEventSchema): Promise<boolean> {
     if (!event.map.interactions.content) {

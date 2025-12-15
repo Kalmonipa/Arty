@@ -1424,7 +1424,7 @@ export class Character {
     const utility = this.utilitiesMap[utilityType];
 
     for (let ind = utility.length - 1; ind >= 0; ind--) {
-      logger.debug(`Evaluating ${utility[ind].code}`)
+      logger.debug(`Evaluating ${utility[ind].code}`);
       if (utility[ind].level <= this.getCharacterLevel(this.data)) {
         let numNeeded: number;
         if (slot === 'utility1') {
@@ -1942,9 +1942,16 @@ export class Character {
     // If no food in inventory, check bank
     const bankFood = await this.findFoodInBank();
     if (bankFood.length > 0) {
-      // Sort by heal value (descending) and return the best one
-      const bestFood = bankFood.sort((a, b) => b.healValue - a.healValue)[0];
-      return { ...bestFood, source: 'bank' };
+      if (bankFood.find((food) => food.code === 'cheese')) {
+        return {
+          ...bankFood.find((food) => food.code === 'cheese'),
+          source: 'bank',
+        };
+      } else {
+        // Sort by heal value (descending) and return the best one
+        const bestFood = bankFood.sort((a, b) => b.healValue - a.healValue)[0];
+        return { ...bestFood, source: 'bank' };
+      }
     }
 
     return null;
