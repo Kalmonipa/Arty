@@ -1942,9 +1942,11 @@ export class Character {
     // If no food in inventory, check bank
     const bankFood = await this.findFoodInBank();
     if (bankFood.length > 0) {
-      if (bankFood.find((food) => food.code === 'cheese')) {
+      // Prefer cheese over anything else if we have it
+      const cheese = bankFood.find((food) => food.code === 'cheese');
+      if (cheese) {
         return {
-          ...bankFood.find((food) => food.code === 'cheese'),
+          ...cheese,
           source: 'bank',
         };
       } else {
