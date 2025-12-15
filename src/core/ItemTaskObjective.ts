@@ -79,12 +79,20 @@ export class ItemTaskObjective extends Objective {
         this.character.data.task === 'magical_plank' ||
         this.character.data.task === 'strangold_bar'
       ) {
-        logger.info(
-          `${this.character.data.task} is an item we want to keep. Cancelling task`,
-        );
-        this.character.removeItemFromItemsToKeep(this.character.data.task);
-        await this.cancelCurrentTask('items');
-        continue;
+        if (
+          (await this.character.checkQuantityOfItemInBank('tasks_coin')) > 0
+        ) {
+          logger.info(
+            `${this.character.data.task} is an item we want to keep. Cancelling task`,
+          );
+          this.character.removeItemFromItemsToKeep(this.character.data.task);
+          await this.cancelCurrentTask('items');
+          continue;
+        } else {
+          logger.info(
+            `Not enough task coins to cancel. Continuing to collect ${this.character.data.task}`,
+          );
+        }
       }
 
       // get information on the requested item

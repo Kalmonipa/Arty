@@ -30,9 +30,7 @@ export async function AllMaps(): Promise<MapSchema[]> {
 /**
  * @description Array of all transition maps
  */
-export function TransitionLocations(
-  allMaps: MapSchema[],
-): MapSchema[] {
+export function TransitionLocations(allMaps: MapSchema[]): MapSchema[] {
   const transitionLocations = allMaps.filter(
     (map) =>
       map.interactions.transition !== undefined &&
