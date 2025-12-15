@@ -971,18 +971,16 @@ export class Character {
         continue;
       }
 
-      this.lastEventCheckTimestamp = currentTimestamp;
-
-      const job = new EventObjective(this, event);
-      return await this.executeJobNow(
-        job,
+      await this.executeJobNow(
+        new EventObjective(this, event),
         true,
         true,
         this.currentExecutingJob.objectiveId,
       );
     }
+    
     this.lastEventCheckTimestamp = currentTimestamp;
-    return false;
+    return true;
   }
 
   /**
