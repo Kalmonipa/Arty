@@ -3,8 +3,13 @@ import { Objective } from './Objective.js';
 import { ApiError } from './Error.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
-import { ActiveEventSchema } from '../types/types.js';
+import {
+  ActiveEventSchema,
+  DestinationSchema,
+  MapSchema,
+} from '../types/types.js';
 import { actionFight, actionGather } from '../api_calls/Actions.js';
+import { getMapsById } from '../api_calls/Maps.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -12,6 +17,11 @@ import { actionFight, actionGather } from '../api_calls/Actions.js';
  */
 export class EventObjective extends Objective {
   activeEvent: ActiveEventSchema;
+  /**
+   * @description The location of the character before the event started.
+   * This is used to move back to once the event expires, to resume prior activities
+   */
+  previousLocation: MapSchema;
 
   constructor(character: Character, activeEvent: ActiveEventSchema) {
     super(character, `${activeEvent.code}_event`, 'not_started');
@@ -22,6 +32,10 @@ export class EventObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+    this.previousLocation = this.character.allMaps.find(
+      (map) => map.map_id === this.character.data.map_id,
+    );
+
     return true;
   }
 

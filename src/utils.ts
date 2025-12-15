@@ -17,13 +17,22 @@ import { CharName, AllCharNames, ApiToken } from './constants.js';
 import { getAllMaps, getMaps } from './api_calls/Maps.js';
 
 /**
- * @description Array of all transition maps
+ * @description Array of all maps
  */
-export async function TransitionLocations(): Promise<MapSchema[]> {
+export async function AllMaps(): Promise<MapSchema[]> {
   const allMaps = await getAllMaps({});
 
   logger.info(`Found ${allMaps.length} total maps`);
 
+  return allMaps;
+}
+
+/**
+ * @description Array of all transition maps
+ */
+export function TransitionLocations(
+  allMaps: MapSchema[],
+): MapSchema[] {
   const transitionLocations = allMaps.filter(
     (map) =>
       map.interactions.transition !== undefined &&

@@ -25,6 +25,7 @@ import {
   Skill,
 } from '../types/types.js';
 import {
+  AllMaps,
   buildListOf,
   buildListOfWeapons,
   logger,
@@ -113,6 +114,7 @@ export class Character {
 
   /**
    * Game state that we can refer to without API calls
+   * @todo Should just make these available as a constant rather than a property of the Character
    */
   amuletMap?: Record<GearEffects, ItemSchema[]>;
   armorMap?: Record<GearEffects, ItemSchema[]>;
@@ -126,6 +128,7 @@ export class Character {
   utilitiesMap?: Record<UtilityEffects, ItemSchema[]>;
   weaponMap?: Record<WeaponFlavours, ItemSchema[]>;
 
+  allMaps: MapSchema[];
   transitionLocations: MapSchema[];
 
   allCharacterDetails?: CharacterSchema[];
@@ -223,7 +226,8 @@ export class Character {
     this.utilitiesMap = await buildListOf('utility');
     this.weaponMap = await buildListOfWeapons();
 
-    this.transitionLocations = await TransitionLocations();
+    this.allMaps = await AllMaps();
+    this.transitionLocations = TransitionLocations(this.allMaps);
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
     this.allCharacterDetails = allCharacterDetails;
@@ -909,10 +913,13 @@ export class Character {
 
         if (Date.now() > eventExpiration) {
           logger.info(
-            `Event ${job.objectiveId} expired at ${eventExpiration}. Cancelling`,
+            `Event ${job.objectiveId} expired at ${eventExpiration}. Moving back to map ${job.previousLocation.map_id} (x: ${job.previousLocation.x}, y: ${job.previousLocation.y})`,
           );
           await this.cancelJobAndChildren(job.objectiveId);
           this.lastEventCheckTimestamp = currentTimestamp;
+
+          await this.move(job.previousLocation);
+
           return false;
         }
 

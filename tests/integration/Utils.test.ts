@@ -68,15 +68,11 @@ describe('TransitionLocations', () => {
   // --- Test Cases ---
 
   test('should correctly filter maps with an existing transition property', async () => {
-    // Arrange: Mock the API to return the mixed list of maps
-    mockedGetAllMaps.mockResolvedValue(mockMaps);
-
     // Act
-    const result = await TransitionLocations();
+    const result = TransitionLocations(mockMaps);
 
     // Assert
-    expect(mockedGetAllMaps).toHaveBeenCalled();
-    // Only 'Map A' should be in the result
+    // Only 'Sandwhisper Isle' should be in the result
     expect(result).toHaveLength(1);
     expect(result[0].map_id).toBe(571);
     expect(result[0].name).toBe('Mountain');
@@ -90,7 +86,7 @@ describe('TransitionLocations', () => {
     mockedGetAllMaps.mockResolvedValue(noTransitionMaps);
 
     // Act
-    const result = await TransitionLocations();
+    const result = TransitionLocations(noTransitionMaps);
 
     // Assert
     expect(result).toHaveLength(0);
