@@ -79,6 +79,7 @@ import {
   Underground,
 } from '../names.js';
 import {
+  transitionFromSandwhisperMine,
   transitionToMainland,
   transitionToOverworld,
   transitionToSandwhisperIsle,
@@ -978,7 +979,7 @@ export class Character {
         this.currentExecutingJob.objectiveId,
       );
     }
-    
+
     this.lastEventCheckTimestamp = currentTimestamp;
     return true;
   }
@@ -1242,7 +1243,7 @@ export class Character {
 
     if (this.data.x !== closestMap.x && this.data.y !== closestMap.y) {
       logger.info(
-        `Closest ${closestMap.name} is at x: ${closestMap.x}, y: ${closestMap.y}`,
+        `Closest ${closestMap.skin} is at x: ${closestMap.x}, y: ${closestMap.y}`,
       );
     }
 
@@ -2026,8 +2027,26 @@ export class Character {
       }
     }
 
+    if (
+      this.data.y >= 17 &&
+      this.data.layer === Underground &&
+      destination.layer === Overworld
+    ) {
+      const moveResult = await transitionFromSandwhisperMine(this);
+      if (!moveResult) {
+        logger.error(
+          `Failed to move to Sandwhisper Mine -> Isle transition point`,
+        );
+        return false;
+      }
+    }
+
     // y coord 17 and greater is all Sandwhisper Isle maps so can cheese it here a bit
-    if (this.data.y >= 17 && destination.name != SandWhisperIsle) {
+    if (
+      this.data.y >= 17 &&
+      destination.name != SandWhisperIsle &&
+      this.data.layer === Overworld
+    ) {
       const moveResult = await transitionToMainland(this);
       if (!moveResult) {
         logger.error(

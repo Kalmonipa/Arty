@@ -140,3 +140,24 @@ export async function transitionToSandwhisperMine(character: Character) {
   }
   return true;
 }
+
+/**
+ * @description Move to the Sandwhisper Mine -> Sandwhisper Isle transition point
+ * Assumes the char is in Sandwhisper Mine
+ * @returns true if successful, false if not
+ */
+export async function transitionFromSandwhisperMine(character: Character) {
+  if (
+    !(await character.move(
+      character.transitionLocations.find(
+        (mapSchema) => mapSchema.map_id === 1178,
+      ),
+    ))
+  ) {
+    return false;
+  }
+  if (!(await character.transition())) {
+    return false;
+  }
+  return true;
+}
