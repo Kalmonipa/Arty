@@ -84,6 +84,8 @@ export async function transitionToMainland(
  * @returns true if successful, false if not
  */
 export async function transitionToUndergroundMine(character: Character) {
+  logger.info(`Moving from Overworld -> Underground Mine`);
+
   if (
     !(await character.move(
       character.transitionLocations.find(
@@ -105,6 +107,8 @@ export async function transitionToUndergroundMine(character: Character) {
  * @returns true if successful, false if not
  */
 export async function transitionToOverworld(character: Character) {
+  logger.info(`Moving from Underground Mine -> Overworld`);
+
   if (
     !(await character.move(
       character.transitionLocations.find(
@@ -126,6 +130,8 @@ export async function transitionToOverworld(character: Character) {
  * @returns true if successful, false if not
  */
 export async function transitionToSandwhisperMine(character: Character) {
+  logger.info(`Moving from Sandwhisper Isle -> Sandwhisper Mine`);
+
   if (
     !(await character.move(
       character.transitionLocations.find(
@@ -147,6 +153,7 @@ export async function transitionToSandwhisperMine(character: Character) {
  * @returns true if successful, false if not
  */
 export async function transitionFromSandwhisperMine(character: Character) {
+  logger.info(`Moving from Sandwhisper Mine -> Sandwhisper Isle`);
   if (
     !(await character.move(
       character.transitionLocations.find(

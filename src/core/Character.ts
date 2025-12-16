@@ -2008,13 +2008,13 @@ export class Character {
       return true;
     }
 
-    if (destination.name === SandWhisperIsle) {
+    if (this.data.y < 17 && destination.name === SandWhisperIsle) {
       const moveResult = await transitionToSandwhisperIsle(this);
       if (!moveResult) {
         logger.error(`Failed to move to SandWhisper Isle transition point`);
         return false;
       }
-    } else if (destination.name === SandwhisperMine) {
+    } else if (this.data.y < 17 && destination.name === SandwhisperMine) {
       let moveResult = await transitionToSandwhisperIsle(this);
       if (!moveResult) {
         logger.error(`Failed to move to SandWhisper Isle transition point`);
