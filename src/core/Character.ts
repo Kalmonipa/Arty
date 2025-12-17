@@ -186,6 +186,7 @@ export class Character {
    * we can recycle
    */
   lowestCharLevel: number;
+  highestCharLevel: number;
   lowestAlchemyLevel: number;
   lowestFishingLevel: number;
   lowestMiningLevel: number;
@@ -235,6 +236,9 @@ export class Character {
 
     this.lowestCharLevel = allCharacterDetails.reduce((prev, curr) =>
       prev.level < curr.level ? prev : curr,
+    ).level;
+    this.highestCharLevel = allCharacterDetails.reduce((prev, curr) =>
+      prev.level > curr.level ? prev : curr,
     ).level;
     this.lowestAlchemyLevel = allCharacterDetails.reduce((prev, curr) =>
       prev.alchemy_level < curr.alchemy_level ? prev : curr,

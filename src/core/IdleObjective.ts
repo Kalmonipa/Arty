@@ -53,7 +53,7 @@ export class IdleObjective extends Objective {
     ) {
       await this.doMonsterTask(5);
       if (this.checkIdleJobIsLast()) return true;
-    } else {
+    } else if (this.role !== 'alchemist') {
       await this.doItemTask(5);
       if (this.checkIdleJobIsLast()) return true;
     }
@@ -161,6 +161,7 @@ export class IdleObjective extends Objective {
   private async topUpBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
     const minimumInBank = 100;
+
     const listOfFish = [
       'cooked_gudgeon',
       'cooked_shrimp',
@@ -169,23 +170,23 @@ export class IdleObjective extends Objective {
       'cooked_salmon',
     ];
 
-    // Every character should craft 50 of the highest healing potion they can craft and use
-    // to try and always have some stocked up in the bank
-    let minToCreate = this.character.role === 'alchemist' ? 200 : 100;
-    for (const potion of this.character.utilitiesMap['restore'].reverse()) {
-      if (
-        potion.craft.level <=
-          this.character.getCharacterLevel(this.character.data, 'alchemy') &&
-        potion.craft.level <=
-          this.character.getCharacterLevel(this.character.data)
-      ) {
-        logger.info(`Crafting ${minToCreate} ${potion.code}`);
-        await this.character.craftNow(minToCreate, potion.code);
-        break;
-      }
-    }
-
+    // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
+    // and the ceiling being either the alchemists alchemy level or the highest character level
     if (this.role === 'alchemist') {
+      const minPotionsToCraft = 200;
+      for (const potion of this.character.utilitiesMap['restore'].reverse()) {
+        if (
+          potion.craft.level <=
+            this.character.getCharacterLevel(this.character.data, 'alchemy') &&
+          potion.craft.level <= this.character.highestCharLevel &&
+          potion.craft.level >= this.character.lowestCharLevel
+        ) {
+          logger.info(`Crafting ${minPotionsToCraft} ${potion.code}`);
+          await this.character.craftNow(minPotionsToCraft, potion.code);
+          break;
+        }
+      }
+
       for (const potion of this.character.utilitiesMap['antipoison']) {
         if (
           potion.craft.level <
