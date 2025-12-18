@@ -23,19 +23,26 @@ export class EventObjective extends Objective {
    */
   previousLocation: MapSchema;
 
-  constructor(character: Character, activeEvent: ActiveEventSchema) {
+  constructor(
+    character: Character,
+    activeEvent: ActiveEventSchema,
+    previousLocation?: MapSchema,
+  ) {
     super(character, `${activeEvent.code}_event`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'Event';
     this.activeEvent = activeEvent;
+    if (previousLocation) {
+      this.previousLocation = previousLocation;
+    } else {
+      this.previousLocation = this.character.allMaps.find(
+        (map) => map.map_id === this.character.data.map_id,
+      );
+    }
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
-    this.previousLocation = this.character.allMaps.find(
-      (map) => map.map_id === this.character.data.map_id,
-    );
-
     return true;
   }
 

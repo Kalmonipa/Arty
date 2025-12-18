@@ -424,6 +424,7 @@ export class Character {
     } else if (job instanceof EventObjective) {
       return {
         activeEvent: job.activeEvent,
+        previousLocation: job.previousLocation,
       };
     } else if (job instanceof ExpandBankObjective) {
       return {};
