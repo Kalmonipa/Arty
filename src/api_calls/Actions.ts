@@ -251,6 +251,9 @@ export async function actionGather(
         case 499:
           message = 'The character is in cooldown.';
           break;
+        case 598:
+          message = 'Resource not found on this map.';
+          break;
         default:
           message = 'Unknown error from /action/gathering';
           break;

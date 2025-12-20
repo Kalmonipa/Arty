@@ -510,6 +510,7 @@ export class Character {
           job = new EventObjective(
             this,
             specificData.activeEvent as ActiveEventSchema,
+            specificData.previousLocation as MapSchema,
           );
           break;
         case 'ExpandBankObjective':
