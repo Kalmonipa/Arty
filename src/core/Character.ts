@@ -185,7 +185,7 @@ export class Character {
    * Set to true for the character to check events
    * If false, character will ignore events
    */
-  enableEvents: boolean;
+  enableEvents: boolean = true;
 
   /**
    * Lowest levels in the village. Used as a guide on what level gear we need and what
