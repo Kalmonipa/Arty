@@ -182,6 +182,12 @@ export class Character {
   lastEventCheckTimestamp: number = Math.round(Date.now() / 1000) - 300;
 
   /**
+   * Set to true for the character to check events
+   * If false, character will ignore events
+   */
+  enableEvents: boolean;
+
+  /**
    * Lowest levels in the village. Used as a guide on what level gear we need and what
    * we can recycle
    */

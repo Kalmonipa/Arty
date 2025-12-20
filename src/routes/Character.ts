@@ -37,14 +37,41 @@ export default function CharacterRouter(char: Character) {
     }
   });
 
+  router.post('/change-event-status', async (req: Request, res: Response) => {
+    try {
+      const eventStatus: boolean = req.body.eventStatus;
+
+      const oldStatus = char.enableEvents;
+
+      char.enableEvents = eventStatus;
+
+      return res.status(201).json({
+        message: `${char.data.name} enable events status is ${eventStatus} (previously ${oldStatus})`,
+        character: char.data.name,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
+   * Returns some information on the character
+   * Idle status
+   * Number of jobs in queue
+   * Current job
+   * Whether events are enabled or disabled
+   */
   router.get('/info', async (req: Request, res: Response) => {
     try {
       return res.status(200).json({
         message: `Information for ${char.data.name}`,
         character: char.data.name,
+        currentJob: char.activeJob || 'none',
+        enableEvents: char.enableEvents,
         idle: char.isIdle,
         jobsInQueue: char.jobList.length,
-        currentJob: char.activeJob || 'none',
       });
     } catch (error) {
       return res

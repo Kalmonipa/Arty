@@ -102,7 +102,9 @@ export abstract class Objective {
   async runSharedPrereqChecks(): Promise<boolean> {
     await this.character.cooldownStatus();
 
-    await this.character.checkForActiveEvents();
+    if (this.character.enableEvents) {
+      await this.character.checkForActiveEvents();
+    }
 
     return true;
   }
