@@ -87,6 +87,7 @@ import {
   transitionToUndergroundMine,
 } from './Movement.js';
 import { CharRole } from '../constants.js';
+import { getIgnoreEventList } from './CharacterConfig.js';
 
 export class Character {
   data: CharacterSchema;
@@ -986,6 +987,13 @@ export class Character {
         logger.debug(
           `Last trade attempt was ${this.fishMerchantTradeDate}, current is ${currentTimestamp}`,
         );
+        continue;
+      }
+
+      const ignoredEvents = await getIgnoreEventList()
+
+      if (ignoredEvents.includes(event.code)) {
+        logger.info(`Event ${event.code} is ignored via DB`)
         continue;
       }
 
