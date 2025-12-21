@@ -353,6 +353,8 @@ export class Character {
       const jobQueueData = {
         characterName: this.data.name,
         timestamp: new Date().toISOString(),
+        enableEvents: this.enableEvents,
+        itemsToKeep: this.itemsToKeep,
         jobs: this.jobList.map((job) => this.serializeJob(job)),
       };
 
@@ -378,6 +380,9 @@ export class Character {
 
       // Clear current job list
       this.jobList = [];
+
+      this.enableEvents = jobQueueData.enableEvents;
+      this.itemsToKeep = jobQueueData.itemsToKeep;
 
       // Deserialize and add jobs
       for (const jobData of jobQueueData.jobs) {
