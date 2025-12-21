@@ -1001,8 +1001,12 @@ export class Character {
    * utility 1 is reserved for health potions
    * @returns
    */
-  async topUpHealthPots(): Promise<boolean> {
-    if (this.data.utility1_slot_quantity <= this.minEquippedUtilities) {
+  async topUpHealthPots(potionToEquip?: string): Promise<boolean> {
+    if (potionToEquip) {
+      const numToEquip =
+        this.maxEquippedUtilities - this.data.utility1_slot_quantity;
+      return await this.equipNow(potionToEquip, 'utility1', numToEquip);
+    } else if (this.data.utility1_slot_quantity <= this.minEquippedUtilities) {
       return await this.equipUtility('restore', 'utility1');
     }
   }
