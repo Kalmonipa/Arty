@@ -12,6 +12,8 @@ env:
   API_TOKEN: some-test-token
   CHARACTER_NAME: some-character
   ROLE: some-role
+  DB_HOST: some-host
+  DB_PASSWORD: some-pass
 
 jobs:
   build-and-push:
