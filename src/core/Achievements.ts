@@ -15,37 +15,31 @@ import { getMapsById } from '../api_calls/Maps.js';
  * @description Performs the necessary steps to complete an achievement
  */
 export class AchievementObjective extends Objective {
-  activeEvent: ActiveEventSchema;
-  /**
-   * @description The location of the character before the event started.
-   * This is used to move back to once the event expires, to resume prior activities
-   */
-  previousLocation: MapSchema;
+  achievementName: string
 
   constructor(
     character: Character,
-    activeEvent: ActiveEventSchema,
-    previousLocation?: MapSchema,
+    achievementName: string,
   ) {
-    super(character, `${activeEvent.code}_event`, 'not_started');
+    super(character, `achievement_${achievementName}`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'Event';
-    this.activeEvent = activeEvent;
-    if (previousLocation) {
-      this.previousLocation = previousLocation;
-    } else {
-      this.previousLocation = this.character.allMaps.find(
-        (map) => map.map_id === this.character.data.map_id,
-      );
-    }
+    this.achievementName = achievementName;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
+    // Check if the achievement is completed
     return true;
   }
 
   async run() {
+    /**
+     * 1. Get achievement requirements (start with gathering achievements)
+     * 2. Fullfill gathering task on a loop, checking if we've completed the achievement after each loop
+     *    This shouldn't need an API call each time.
+     * 3. When we think it's complete, check against the API to ensure
+     */
     return true;
   }
 }
