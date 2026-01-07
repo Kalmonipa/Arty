@@ -9,10 +9,10 @@ export interface GlobalConfig {
 }
 
 const pool = new Pool({
-    host: getEnv(process.env.DB_HOST),
+    host: getEnv('DB_HOST'),
     port: parseInt(process.env.DB_PORT || '5432'),
     user: process.env.DB_USER || 'oliver',
-    password: getEnv(process.env.DB_PASSWORD),
+    password: getEnv('DB_PASSWORD'),
     database: process.env.DB_NAME || 'oliver',
     max: 10,
 });
