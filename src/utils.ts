@@ -190,7 +190,7 @@ export async function buildListOfWeapons(): Promise<
         if (gatherSkills.includes(effect.code as GatheringSkill)) {
           const skillArray = weaponMap[effect.code as GatheringSkill];
           if (skillArray && !skillArray.includes(weapon)) {
-            //logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
+            logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
             skillArray.push(weapon);
           }
         }

@@ -286,8 +286,7 @@ export class EvaluateGearObjective extends Objective {
   }
 
   /**
-   * @todo Compare the strengths/weaknesses of the target mob if combat, and find best weapon for that
-   * Otherwise equips the best available weapon for the gathering skill
+   * @todo Compare the strengths/weaknesses of the target resource, and find best weapon for that
    * @param activityType
    */
   private async checkGatheringWeapon(
