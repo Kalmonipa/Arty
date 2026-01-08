@@ -166,11 +166,14 @@ export async function buildListOfWeapons(): Promise<
   weaponMap['combat'] = [];
 
   const allWeapons: ApiError | DataPageItemSchema = await getAllItemInformation(
-    { type: 'weapon' },
+    { type: 'weapon', size: 100 },
   );
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
+  }
+  if (allWeapons.pages > 1) {
+    logger.error(`Weapon list in buildListOfWeapons is ${allWeapons.pages} long. I should add logic to check multiple pages`)
   }
 
   allWeapons.data.forEach((weapon) => {
@@ -249,12 +252,16 @@ export async function buildListOf(
 
   const allItems: ApiError | DataPageItemSchema = await getAllItemInformation({
     type: itemType,
+    size: 100
   });
   if (allItems instanceof ApiError) {
     logger.error(
       `Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`,
     );
     return {};
+  }
+    if (allItems.pages > 1) {
+    logger.error(`Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`)
   }
 
   allItems.data.forEach((item) => {
