@@ -1719,7 +1719,7 @@ export class Character {
       logger.warn(`Inventory is almost full. Depositing all items`);
       logger.info(`Items to keep:`);
       // Quick hack to prevent panics. No clue why it's not  
-      if (this.itemsToKeep || this.itemsToKeep.length === 0) {
+      if (!this.itemsToKeep) {
         this.itemsToKeep = []
       }
       for (const item of this.itemsToKeep) {
