@@ -1283,6 +1283,9 @@ export class Character {
    * @description Remove an item from the itemsToKeep list
    */
   removeItemFromItemsToKeep(itemCode: string) {
+    if (!this.itemsToKeep) { // Hacky fix for undefined itemsToKeep
+      this.itemsToKeep = []
+    }
     if (this.itemsToKeep.includes(itemCode)) {
       logger.info(`Removing ${itemCode} from exceptions list`);
       this.itemsToKeep.splice(this.itemsToKeep.indexOf(itemCode), 1);
@@ -1304,6 +1307,9 @@ export class Character {
    * @description Add item to itemsToKeep list
    */
   addItemToItemsToKeep(itemCode: string) {
+    if (!this.itemsToKeep) { // Hacky fix for undefined itemsToKeep
+      this.itemsToKeep = []
+    }
     if (this.itemsToKeep.includes(itemCode)) {
       logger.info(`${itemCode} already in exceptions list`);
       return;
@@ -1712,6 +1718,10 @@ export class Character {
     ) {
       logger.warn(`Inventory is almost full. Depositing all items`);
       logger.info(`Items to keep:`);
+      // Quick hack to prevent panics. No clue why it's not  
+      if (this.itemsToKeep || this.itemsToKeep.length === 0) {
+        this.itemsToKeep = []
+      }
       for (const item of this.itemsToKeep) {
         logger.info(`  - ${item}`);
       }
