@@ -1987,11 +1987,12 @@ export class Character {
     // If no food in inventory, check bank
     const bankFood = await this.findFoodInBank();
     if (bankFood.length > 0) {
-      // Prefer cheese over anything else if we have it
-      const cheese = bankFood.find((food) => food.code === 'cheese');
-      if (cheese) {
+      // Prefer cheese or fish_soup over anything else if we have it for the achievements
+      // ToDo: Only do this if we need to complete the achievement
+      const achievementFoods = bankFood.find((food) => food.code === 'cheese' || food.code === 'fish_soup');
+      if (achievementFoods) {
         return {
-          ...cheese,
+          ...achievementFoods,
           source: 'bank',
         };
       } else {
