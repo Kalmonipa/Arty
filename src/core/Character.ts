@@ -1957,7 +1957,6 @@ export class Character {
           bankItem.quantity > 0 &&
           itemInfo.level <= this.data.level
         ) {
-          logger.debug(`Adding ${bankItem.code} to foodItems array`);
           foodItems.push({
             code: bankItem.code,
             quantity: bankItem.quantity,
@@ -1982,7 +1981,6 @@ export class Character {
   } | null> {
     // First check inventory
     const inventoryFood = this.findFoodInInventory();
-    logger.debug(`${inventoryFood.length} types of food found in inventory`)
     if (inventoryFood.length > 0) {
       // Sort by heal value (descending) and return the best one
       const bestFood = inventoryFood.sort(
@@ -1994,13 +1992,12 @@ export class Character {
 
     // If no food in inventory, check bank
     const bankFood = await this.findFoodInBank();
-    logger.debug(`${bankFood.length} types of food found in bank`)
 
     if (bankFood.length > 0) {
       // Prefer cheese or fish_soup over anything else if we have it for the achievements
       // ToDo: Only do this if we need to complete the achievement
       const achievementFoods = bankFood.find(
-        (food) => food.code === 'fish_soup',
+        (food) =>  food.code === 'cheese' || food.code === 'fish_soup',
       );
       if (achievementFoods) {
         logger.debug(
