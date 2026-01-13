@@ -58,7 +58,7 @@ export class TrainCombatObjective extends Objective {
       for (let ind = mobs.data.length - 1; ind >= 0; ind--) {
         const mob = mobs.data[ind];
 
-        await this.character.evaluateGear('combat', mob.code)
+        await this.character.evaluateGear('combat', mob.code);
 
         const fightSimResult = await this.character.simulateFightNow(
           [fakeSchema],

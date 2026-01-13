@@ -990,10 +990,10 @@ export class Character {
         continue;
       }
 
-      const ignoredEvents = await getIgnoreEventList()
+      const ignoredEvents = await getIgnoreEventList();
 
       if (ignoredEvents.includes(event.code)) {
-        logger.info(`Event ${event.code} is ignored via DB`)
+        logger.info(`Event ${event.code} is ignored via DB`);
         continue;
       }
 
@@ -1159,8 +1159,8 @@ export class Character {
     }
 
     bankItems = bankItemResponse.data;
-    logger.debug(`Found ${bankItems.length} items in the bank`)
-    logger.debug(`There are ${bankItemResponse.pages} pages of items found`)
+    logger.debug(`Found ${bankItems.length} items in the bank`);
+    logger.debug(`There are ${bankItemResponse.pages} pages of items found`);
 
     if (bankItemResponse.pages > 1) {
       for (let pages = 2; pages <= bankItemResponse.pages; pages++) {
@@ -1285,8 +1285,9 @@ export class Character {
    * @description Remove an item from the itemsToKeep list
    */
   removeItemFromItemsToKeep(itemCode: string) {
-    if (!this.itemsToKeep) { // Hacky fix for undefined itemsToKeep
-      this.itemsToKeep = []
+    if (!this.itemsToKeep) {
+      // Hacky fix for undefined itemsToKeep
+      this.itemsToKeep = [];
     }
     if (this.itemsToKeep.includes(itemCode)) {
       logger.info(`Removing ${itemCode} from exceptions list`);
@@ -1309,8 +1310,9 @@ export class Character {
    * @description Add item to itemsToKeep list
    */
   addItemToItemsToKeep(itemCode: string) {
-    if (!this.itemsToKeep) { // Hacky fix for undefined itemsToKeep
-      this.itemsToKeep = []
+    if (!this.itemsToKeep) {
+      // Hacky fix for undefined itemsToKeep
+      this.itemsToKeep = [];
     }
     if (this.itemsToKeep.includes(itemCode)) {
       logger.info(`${itemCode} already in exceptions list`);
@@ -1720,9 +1722,9 @@ export class Character {
     ) {
       logger.warn(`Inventory is almost full. Depositing all items`);
       logger.info(`Items to keep:`);
-      // Quick hack to prevent panics. No clue why it's not  
+      // Quick hack to prevent panics. No clue why it's not
       if (!this.itemsToKeep) {
-        this.itemsToKeep = []
+        this.itemsToKeep = [];
       }
       for (const item of this.itemsToKeep) {
         logger.info(`  - ${item}`);
@@ -1954,7 +1956,7 @@ export class Character {
           bankItem.quantity > 0 &&
           itemInfo.level < this.data.level
         ) {
-          logger.debug(`Adding ${bankItem.code} to foodItems array`)
+          logger.debug(`Adding ${bankItem.code} to foodItems array`);
           foodItems.push({
             code: bankItem.code,
             quantity: bankItem.quantity,
@@ -1984,6 +1986,7 @@ export class Character {
       const bestFood = inventoryFood.sort(
         (a, b) => b.healValue - a.healValue,
       )[0];
+      logger.debug(`Found ${bestFood.code} as best food in inventory`);
       return { ...bestFood, source: 'inventory' };
     }
 
@@ -1992,8 +1995,14 @@ export class Character {
     if (bankFood.length > 0) {
       // Prefer cheese or fish_soup over anything else if we have it for the achievements
       // ToDo: Only do this if we need to complete the achievement
-      const achievementFoods = bankFood.find((food) => food.code === 'fish_soup');
+      const achievementFoods = bankFood.find(
+        (food) => food.code === 'fish_soup',
+      );
       if (achievementFoods) {
+        logger.debug(
+          `Found ${achievementFoods.code} as best food in inventory (achievement food)`,
+        );
+
         return {
           ...achievementFoods,
           source: 'bank',
@@ -2001,6 +2010,8 @@ export class Character {
       } else {
         // Sort by heal value (descending) and return the best one
         const bestFood = bankFood.sort((a, b) => b.healValue - a.healValue)[0];
+        logger.debug(`Found ${bestFood.code} as best food in bank`);
+
         return { ...bestFood, source: 'bank' };
       }
     }

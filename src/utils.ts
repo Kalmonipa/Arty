@@ -173,7 +173,9 @@ export async function buildListOfWeapons(): Promise<
     return;
   }
   if (allWeapons.pages > 1) {
-    logger.error(`Weapon list in buildListOfWeapons is ${allWeapons.pages} long. I should add logic to check multiple pages`)
+    logger.error(
+      `Weapon list in buildListOfWeapons is ${allWeapons.pages} long. I should add logic to check multiple pages`,
+    );
   }
 
   allWeapons.data.forEach((weapon) => {
@@ -251,7 +253,7 @@ export async function buildListOf(
 
   const allItems: ApiError | DataPageItemSchema = await getAllItemInformation({
     type: itemType,
-    size: 100
+    size: 100,
   });
   if (allItems instanceof ApiError) {
     logger.error(
@@ -259,8 +261,10 @@ export async function buildListOf(
     );
     return {};
   }
-    if (allItems.pages > 1) {
-    logger.error(`Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`)
+  if (allItems.pages > 1) {
+    logger.error(
+      `Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`,
+    );
   }
 
   allItems.data.forEach((item) => {

@@ -15,12 +15,9 @@ import { getMapsById } from '../api_calls/Maps.js';
  * @description Performs the necessary steps to complete an achievement
  */
 export class AchievementObjective extends Objective {
-  achievementName: string
+  achievementName: string;
 
-  constructor(
-    character: Character,
-    achievementName: string,
-  ) {
+  constructor(character: Character, achievementName: string) {
     super(character, `achievement_${achievementName}`, 'not_started');
 
     this.character = character;
