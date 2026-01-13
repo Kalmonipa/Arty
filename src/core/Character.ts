@@ -1896,6 +1896,7 @@ export class Character {
     healValue: number;
   }[] {
     if (!this.data || !this.data.inventory) {
+      logger.warn(`No data found in findFoodInInventory`)
       return [];
     }
 
@@ -1981,6 +1982,7 @@ export class Character {
   } | null> {
     // First check inventory
     const inventoryFood = this.findFoodInInventory();
+    logger.debug(`${inventoryFood.length} types of food found in inventory`)
     if (inventoryFood.length > 0) {
       // Sort by heal value (descending) and return the best one
       const bestFood = inventoryFood.sort(
@@ -1992,6 +1994,8 @@ export class Character {
 
     // If no food in inventory, check bank
     const bankFood = await this.findFoodInBank();
+    logger.debug(`${bankFood.length} types of food found in bank`)
+
     if (bankFood.length > 0) {
       // Prefer cheese or fish_soup over anything else if we have it for the achievements
       // ToDo: Only do this if we need to complete the achievement
