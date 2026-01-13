@@ -1159,6 +1159,8 @@ export class Character {
     }
 
     bankItems = bankItemResponse.data;
+    logger.debug(`Found ${bankItems.length} items in the bank`)
+    logger.debug(`There are ${bankItemResponse.pages} pages of items found`)
 
     if (bankItemResponse.pages > 1) {
       for (let pages = 2; pages <= bankItemResponse.pages; pages++) {
@@ -1952,6 +1954,7 @@ export class Character {
           bankItem.quantity > 0 &&
           itemInfo.level < this.data.level
         ) {
+          logger.debug(`Adding ${bankItem.code} to foodItems array`)
           foodItems.push({
             code: bankItem.code,
             quantity: bankItem.quantity,
