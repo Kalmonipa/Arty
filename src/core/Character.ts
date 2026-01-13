@@ -1914,7 +1914,7 @@ export class Character {
         if (
           healEffect &&
           invItem.quantity > 0 &&
-          itemInfo.level < this.data.level
+          itemInfo.level <= this.data.level
         ) {
           foodItems.push({
             code: invItem.code,
@@ -1955,7 +1955,7 @@ export class Character {
         if (
           healEffect &&
           bankItem.quantity > 0 &&
-          itemInfo.level < this.data.level
+          itemInfo.level <= this.data.level
         ) {
           logger.debug(`Adding ${bankItem.code} to foodItems array`);
           foodItems.push({
