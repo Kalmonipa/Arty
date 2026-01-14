@@ -949,17 +949,25 @@ export class Character {
 
     for (const event of activeEventsResponse.data) {
       // ToDo: Make this better
-      if (event.code === 'bandit_camp' && this.data.level < 25) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+      if (this.data.name === 'LongLegLarry' && event.code !== 'cult_of_darkness') {
+        logger.debug(`${this.data.name} is only seeking cult_of_darkness events. Ignoring everything else`)
         continue;
-      } else if (event.code === 'portal_demon' && this.data.level < 30) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+      }
+
+      if (event.code === 'bandit_camp' && this.data.level < 25 && this.data.level > 35) {
+        logger.debug(`${this.data.name} is outside the level range (25-35) for ${event.name}`);
+        continue;
+      } else if (event.code === 'portal_demon' && this.data.level < 30 && this.data.level > 40) {
+        logger.debug(`${this.data.name} is outside the level range (30-40) for ${event.name}`);
         continue;
       } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
         logger.debug(`${this.data.name} is too low level for ${event.name}`);
         continue;
       } else if (event.code === 'corrupted_owlbear' && this.data.level < 30) {
         logger.debug(`${this.data.name} is too low level for ${event.name}`);
+        continue;
+      } else if (event.code === 'cult_of_darkness' && this.data.level < 40) {
+        logger.debug(`${this.data.name} is too low level for ${event.name}`)
         continue;
       } else if (
         event.code === 'portal_efreet_sultan' &&

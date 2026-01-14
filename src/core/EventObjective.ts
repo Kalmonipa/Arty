@@ -56,6 +56,7 @@ export class EventObjective extends Objective {
       case 'portal_demon':
       case 'corrupted_ogre':
       case 'corrupted_owlbear':
+      case 'cult_of_darkness':
         return await this.fightMobs(this.activeEvent);
       case 'fish_merchant':
         return await this.sellToFishMerchant(this.activeEvent);
