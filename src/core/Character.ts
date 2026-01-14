@@ -200,16 +200,9 @@ export class Character {
   lowestWoodcuttingLevel: number;
 
   /**
-   * Events that we would like to participate in
+   * Events that we would like to ignore
    */
-  applicableResourceEvents = [
-    'magic_apparition',
-    'strange_apparition',
-    'bandit_camp',
-    'portal_demon',
-    'corrupted_ogre',
-    'fish_merchant',
-  ];
+  ignoredEvents = [];
 
   constructor(data: CharacterSchema) {
     this.data = data;
