@@ -1468,10 +1468,12 @@ export class Character {
     slot: ItemSlot,
   ): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
-
-    for (let ind = utility.length - 1; ind >= 0; ind--) {
-      logger.debug(`Evaluating ${utility[ind].code}`);
-      if (utility[ind].level <= this.getCharacterLevel(this.data)) {
+    
+    for (const potion of utility.reverse()) {
+    //for (let ind = utility.length - 1; ind >= 0; ind--) {
+    //  const potion = utility[ind]
+      logger.debug(`Evaluating ${potion.code}`);
+      if (potion.level <= this.getCharacterLevel(this.data)) {
         let numNeeded: number;
         if (slot === 'utility1') {
           numNeeded =
@@ -1481,48 +1483,48 @@ export class Character {
             this.maxEquippedUtilities - this.data.utility2_slot_quantity;
         }
 
-        const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
+        const numInInv = this.checkQuantityOfItemInInv(potion.code);
 
-        logger.debug(`Attempting to equip ${utility[ind].name}`);
+        logger.debug(`Attempting to equip ${potion.name}`);
         if (numInInv >= numNeeded) {
           logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-          await this.equipNow(utility[ind].code, slot, numNeeded);
+          await this.equipNow(potion.code, slot, numNeeded);
           return true;
         } else if (numInInv > 0 && numInInv < numNeeded) {
           logger.debug(
             `Carrying ${numInInv} in inv. Equipping them and checking bank`,
           );
-          await this.equipNow(utility[ind].code, slot, numInInv);
+          await this.equipNow(potion.code, slot, numInInv);
           numNeeded = numNeeded - numInInv;
           logger.debug(`${numNeeded} needed from the bank`);
         }
         const numInBank = await this.checkQuantityOfItemInBank(
-          utility[ind].code,
+          potion.code,
         );
         if (numInBank > 0) {
           await this.withdrawNow(
             Math.min(numInBank, numNeeded),
-            utility[ind].code,
+            potion.code,
           );
           await this.equipNow(
-            utility[ind].code,
+            potion.code,
             slot,
             Math.min(numInBank, numNeeded),
           );
           return true;
         } else {
           if (
-            utility[ind].level <= this.getCharacterLevel(this.data, 'alchemy')
+            potion.level <= this.getCharacterLevel(this.data, 'alchemy')
           ) {
-            logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
-            if (await this.craftNow(numNeeded, utility[ind].code)) {
-              return await this.equipNow(utility[ind].code, slot, numNeeded);
+            logger.debug(`Can't find any ${potion.name}. Crafting`);
+            if (await this.craftNow(numNeeded, potion.code)) {
+              return await this.equipNow(potion.code, slot, numNeeded);
             } else {
-              logger.debug(`Can't craft ${utility[ind].name}`);
+              logger.debug(`Can't craft ${potion.name}`);
               return false;
             }
           } else {
-            logger.debug(`Can't find any ${utility[ind].name}`);
+            logger.debug(`Can't find any ${potion.name}`);
           }
         }
       }
