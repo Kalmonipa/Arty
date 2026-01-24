@@ -1,10 +1,9 @@
 import { Pool, QueryResult } from 'pg';
 import { getEnv } from './utils.js';
 
-// Define the structure of your global_config table rows
 export interface GlobalConfig {
   key: string;
-  value: any; // We use 'any' or a specific union type for the JSONB content
+  value: any;
   updated_at: Date;
 }
 
@@ -23,7 +22,6 @@ pool.on('error', (err: Error) => {
 });
 
 export const db = {
-  // A type-safe query wrapper
   query: <T extends any>(
     text: string,
     params?: any[],

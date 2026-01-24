@@ -942,16 +942,33 @@ export class Character {
 
     for (const event of activeEventsResponse.data) {
       // ToDo: Make this better
-      if (this.data.name === 'LongLegLarry' && event.code !== 'cult_of_darkness') {
-        logger.debug(`${this.data.name} is only seeking cult_of_darkness events. Ignoring everything else`)
+      if (
+        this.data.name === 'LongLegLarry' &&
+        event.code !== 'cult_of_darkness'
+      ) {
+        logger.debug(
+          `${this.data.name} is only seeking cult_of_darkness events. Ignoring everything else`,
+        );
         continue;
       }
 
-      if (event.code === 'bandit_camp' && this.data.level < 25 && this.data.level > 35) {
-        logger.debug(`${this.data.name} is outside the level range (25-35) for ${event.name}`);
+      if (
+        event.code === 'bandit_camp' &&
+        this.data.level < 25 &&
+        this.data.level > 35
+      ) {
+        logger.debug(
+          `${this.data.name} is outside the level range (25-35) for ${event.name}`,
+        );
         continue;
-      } else if (event.code === 'portal_demon' && this.data.level < 30 && this.data.level > 40) {
-        logger.debug(`${this.data.name} is outside the level range (30-40) for ${event.name}`);
+      } else if (
+        event.code === 'portal_demon' &&
+        this.data.level < 30 &&
+        this.data.level > 40
+      ) {
+        logger.debug(
+          `${this.data.name} is outside the level range (30-40) for ${event.name}`,
+        );
         continue;
       } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
         logger.debug(`${this.data.name} is too low level for ${event.name}`);
@@ -960,7 +977,7 @@ export class Character {
         logger.debug(`${this.data.name} is too low level for ${event.name}`);
         continue;
       } else if (event.code === 'cult_of_darkness' && this.data.level < 40) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`)
+        logger.debug(`${this.data.name} is too low level for ${event.name}`);
         continue;
       } else if (
         event.code === 'portal_efreet_sultan' &&
@@ -1468,10 +1485,10 @@ export class Character {
     slot: ItemSlot,
   ): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
-    
+
     for (const potion of utility.reverse()) {
-    //for (let ind = utility.length - 1; ind >= 0; ind--) {
-    //  const potion = utility[ind]
+      //for (let ind = utility.length - 1; ind >= 0; ind--) {
+      //  const potion = utility[ind]
       logger.debug(`Evaluating ${potion.code}`);
       if (potion.level <= this.getCharacterLevel(this.data)) {
         let numNeeded: number;
@@ -1498,14 +1515,9 @@ export class Character {
           numNeeded = numNeeded - numInInv;
           logger.debug(`${numNeeded} needed from the bank`);
         }
-        const numInBank = await this.checkQuantityOfItemInBank(
-          potion.code,
-        );
+        const numInBank = await this.checkQuantityOfItemInBank(potion.code);
         if (numInBank > 0) {
-          await this.withdrawNow(
-            Math.min(numInBank, numNeeded),
-            potion.code,
-          );
+          await this.withdrawNow(Math.min(numInBank, numNeeded), potion.code);
           await this.equipNow(
             potion.code,
             slot,
@@ -1513,9 +1525,7 @@ export class Character {
           );
           return true;
         } else {
-          if (
-            potion.level <= this.getCharacterLevel(this.data, 'alchemy')
-          ) {
+          if (potion.level <= this.getCharacterLevel(this.data, 'alchemy')) {
             logger.debug(`Can't find any ${potion.name}. Crafting`);
             if (await this.craftNow(numNeeded, potion.code)) {
               return await this.equipNow(potion.code, slot, numNeeded);
@@ -1899,7 +1909,7 @@ export class Character {
     healValue: number;
   }[] {
     if (!this.data || !this.data.inventory) {
-      logger.warn(`No data found in findFoodInInventory`)
+      logger.warn(`No data found in findFoodInInventory`);
       return [];
     }
 
@@ -2000,7 +2010,7 @@ export class Character {
       // Prefer cheese or fish_soup over anything else if we have it for the achievements
       // ToDo: Only do this if we need to complete the achievement
       const achievementFoods = bankFood.find(
-        (food) =>  food.code === 'cheese' || food.code === 'fish_soup',
+        (food) => food.code === 'cheese' || food.code === 'fish_soup',
       );
       if (achievementFoods) {
         logger.debug(

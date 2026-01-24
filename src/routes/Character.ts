@@ -87,25 +87,24 @@ export default function CharacterRouter(char: Character) {
    */
   router.get('/reset', async (req: Request, res: Response) => {
     try {
-      let charData = await getCharacter(char.data.name)
+      let charData = await getCharacter(char.data.name);
       if (charData instanceof ApiError) {
         logger.error(
           `Failed to get data for ${char.data.name}: [${charData.error.code}] ${charData.message}`,
         );
-        return res.status(charData.error.code).json(charData.message)
+        return res.status(charData.error.code).json(charData.message);
       }
 
-      char.data = charData
+      char.data = charData;
 
       return res.status(200).json({
         message: `Character state for ${char.data.name} reset successfully`,
         character: char.data.name,
-      })
-
+      });
     } catch (error) {
       return res
         .status(500)
-        .json({ error: error.message || 'Internal server error.' })
+        .json({ error: error.message || 'Internal server error.' });
     }
   });
 
