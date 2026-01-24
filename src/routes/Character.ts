@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../core/Character.js';
-import { isRole } from '../utils.js';
+import { isRole, logger } from '../utils.js';
 import { ROLES } from '../types/CharacterData.js';
+import { getCharacter } from '../api_calls/Character.js';
+import { ApiError } from '../core/Error.js';
 
 export default function CharacterRouter(char: Character) {
   const router = Router();
@@ -77,6 +79,33 @@ export default function CharacterRouter(char: Character) {
       return res
         .status(500)
         .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
+   * Resets the character state to actual. Useful for when we pause a character to do manual actions
+   */
+  router.get('/reset', async (req: Request, res: Response) => {
+    try {
+      let charData = await getCharacter(char.data.name)
+      if (charData instanceof ApiError) {
+        logger.error(
+          `Failed to get data for ${char.data.name}: [${charData.error.code}] ${charData.message}`,
+        );
+        return res.status(charData.error.code).json(charData.message)
+      }
+
+      char.data = charData
+
+      return res.status(200).json({
+        message: `Character state for ${char.data.name} reset successfully`,
+        character: char.data.name,
+      })
+
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' })
     }
   });
 
