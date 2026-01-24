@@ -1,14 +1,11 @@
 import { ApiUrl } from '../constants.js';
 import { ApiError } from '../core/Error.js';
-import { CraftResponse, JobResponse } from '../types/CharacterData.js';
 import {
   AchievementResponseSchema,
-  AchievementSchema,
   DataPageAchievementSchema,
   GetAllAchievementsAchievementsGetParams,
-  SimpleItemSchema,
 } from '../types/types.js';
-import { getRequestOptions, logger, MyHeaders } from '../utils.js';
+import { getRequestOptions } from '../utils.js';
 
 /**
  * @description returns all available achievements
@@ -59,9 +56,18 @@ export async function getAchievement(
   try {
     const response = await fetch(apiUrl, getRequestOptions);
     if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 404:
+          message = `Achievement ${code} not found.`;
+          break;
+        default:
+          message = `Unknown error from /achievements/${code}`;
+          break;
+      }
       throw new ApiError({
         code: response.status,
-        message: `Unknown error from /achievements/${code}`,
+        message: message,
       });
     }
     return await response.json();
