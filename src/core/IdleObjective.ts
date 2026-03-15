@@ -151,8 +151,6 @@ export class IdleObjective extends Objective {
    * Checks for pending items and claims any that need claiming
    */
   private async claimPendingItems(): Promise<boolean> {
-    // Check pending items
-    // Claim
     const pendingItems = await getPendingItems();
 
     if (pendingItems instanceof ApiError) {
@@ -166,10 +164,12 @@ export class IdleObjective extends Objective {
         if (claimResponse instanceof ApiError) {
           return this.character.handleErrors(claimResponse);
         } else {
-          logger.info(``)
-          return claimResponse.
+          return true;
         }
       }
+    } else {
+      logger.info(`No pending items to claim`)
+      return true;
     }
     return true;
   }

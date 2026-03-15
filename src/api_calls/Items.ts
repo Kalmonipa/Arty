@@ -1,5 +1,5 @@
 import { ApiError } from '../core/Error.js';
-import { getRequestOptions, MyHeaders, sleep } from '../utils.js';
+import { getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 import {
   CharacterSchema,
@@ -437,6 +437,17 @@ export async function actionClaimPendingItems(
     }
 
     const result: ClaimPendingItemResponseSchema = await response.json();
+
+    logger.info(`Claimed pending item ${itemId}`)
+    if (result.data.item.gold) {
+      logger.info(`Received ${result.data.item.gold} gold`)
+    }
+    if (result.data.item.items) {
+      logger.info(`Received following items:`)
+      for (let item of result.data.item.items) {
+        logger.info(`  - ${item.quantity}x ${item.code}`)
+      }
+    }
 
     await sleep(
       result.data.cooldown.remaining_seconds,
