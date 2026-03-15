@@ -3,14 +3,19 @@ import { getRequestOptions, MyHeaders, sleep } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 import {
   CharacterSchema,
-  DataPageItemSchema,
+  ClaimPendingItemDataSchema,
+  ClaimPendingItemResponseSchema,
+  DataPagePendingItemSchema,
+  DataPageSimpleItemSchema,
   DeleteItemResponseSchema,
   EquipmentResponseSchema,
   EquipSchema,
   GetAllItemsItemsGetParams,
   ItemResponseSchema,
   ItemSchema,
+  PendingItemSchema,
   SimpleItemSchema,
+  StaticDataPageItemSchema,
   UnequipSchema,
   UseItemResponseSchema,
 } from '../types/types.js';
@@ -211,7 +216,7 @@ export async function actionUse(
  */
 export async function getAllItemInformation(
   data: GetAllItemsItemsGetParams,
-): Promise<DataPageItemSchema | ApiError> {
+): Promise<StaticDataPageItemSchema | ApiError> {
   const apiUrl = new URL(`${ApiUrl}/items`);
 
   if (data?.craft_material) {
@@ -322,7 +327,7 @@ export async function actionDeleteItem(
           message = 'The character is in cooldown';
           break;
         default:
-          message = 'Unknown error from /action/equip';
+          message = `Unknown error from /my/${character.name}/action/delete`;
           break;
       }
       throw new ApiError({
@@ -339,6 +344,106 @@ export async function actionDeleteItem(
     );
 
     return result;
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+/**
+ * Gets all pending item information
+ */
+export async function getPendingItems(): Promise<DataPagePendingItemSchema | ApiError> {
+  const requestOptions = {
+    method: 'GET',
+    headers: MyHeaders,
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/pending-items`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        default:
+          message = 'Unknown error from /my/pending-items';
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: DataPagePendingItemSchema = await response.json();
+
+    return result;
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+/**
+ * Claims all pending items
+ * @param itemId: ID of the item to claim
+ * @returns
+ */
+export async function actionClaimPendingItems(
+  character: CharacterSchema,
+  itemId: string,
+): Promise<ClaimPendingItemDataSchema | ApiError> {
+  const requestOptions = {
+    method: 'POST',
+    headers: MyHeaders,
+  };
+
+  try {
+    const response = await fetch(
+      `${ApiUrl}/my/${character.name}/action/claim/${itemId}`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 404:
+          message = 'Pending item not found.';
+          break;
+        case 422:
+          message = 'Request could not be processed due to an invalid payload.';
+          break;
+        case 486:
+          message = 'An action is already in progress for this character.';
+          break;
+        case 497:
+          message = `The character's inventory is full.`;
+          break;
+        case 498:
+          message = 'Character not found';
+          break;
+        case 499:
+          message = 'The character is in cooldown';
+          break;
+        default:
+          message = `Unknown error from /my/${character.name}/action/claim/${itemId}`;
+          break;
+      }
+      throw new ApiError({
+        code: response.status,
+        message: message,
+      });
+    }
+
+    const result: ClaimPendingItemResponseSchema = await response.json();
+
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
+
+    return result.data;
   } catch (error) {
     return error as ApiError;
   }

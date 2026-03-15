@@ -1,4 +1,4 @@
-import { getAllItemInformation } from '../api_calls/Items.js';
+import { actionClaimPendingItems, getAllItemInformation, getPendingItems } from '../api_calls/Items.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
@@ -123,6 +123,10 @@ export class IdleObjective extends Objective {
         }
         break;
     }
+
+    await this.claimPendingItems();
+    if (this.checkIdleJobIsLast()) return true;
+
   }
 
   /**
@@ -141,6 +145,33 @@ export class IdleObjective extends Objective {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Checks for pending items and claims any that need claiming
+   */
+  private async claimPendingItems(): Promise<boolean> {
+    // Check pending items
+    // Claim
+    const pendingItems = await getPendingItems();
+
+    if (pendingItems instanceof ApiError) {
+      return this.character.handleErrors(pendingItems);
+    }
+
+    if (pendingItems.data.length > 0) {
+      for (let pendingItem of pendingItems.data) {
+        let claimResponse = await actionClaimPendingItems(this.character.data, pendingItem.id)
+
+        if (claimResponse instanceof ApiError) {
+          return this.character.handleErrors(claimResponse);
+        } else {
+          logger.info(``)
+          return claimResponse.
+        }
+      }
+    }
+    return true;
   }
 
   /**
