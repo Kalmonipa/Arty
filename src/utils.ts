@@ -2,7 +2,7 @@ import winston from 'winston';
 import {
   CharacterSchema,
   CraftSkill,
-  DataPageItemSchema,
+  StaticDataPageItemSchema,
   GatheringSkill,
   ItemSchema,
   ItemType,
@@ -165,7 +165,7 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-  const allWeapons: ApiError | DataPageItemSchema = await getAllItemInformation(
+  const allWeapons: ApiError | StaticDataPageItemSchema = await getAllItemInformation(
     { type: 'weapon', size: 100 },
   );
   if (allWeapons instanceof ApiError) {
@@ -251,7 +251,7 @@ export async function buildListOf(
 
   const itemMap: Record<string, ItemSchema[]> = {};
 
-  const allItems: ApiError | DataPageItemSchema = await getAllItemInformation({
+  const allItems: ApiError | StaticDataPageItemSchema = await getAllItemInformation({
     type: itemType,
     size: 100,
   });

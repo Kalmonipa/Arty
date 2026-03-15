@@ -1,7 +1,7 @@
 import { ApiError } from '../core/Error.js';
 import {
   GetAllMapsMapsGetParams,
-  DataPageMapSchema,
+  StaticDataPageMapSchema,
   MapResponseSchema,
   MapSchema,
 } from '../types/types.js';
@@ -10,7 +10,7 @@ import { ApiUrl } from '../constants.js';
 
 export async function getMaps(
   params: GetAllMapsMapsGetParams,
-): Promise<DataPageMapSchema | ApiError> {
+): Promise<StaticDataPageMapSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,

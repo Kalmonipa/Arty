@@ -1,8 +1,8 @@
 import { ApiError } from '../core/Error.js';
 import {
   CharacterSchema,
-  DataPageNPCItem,
-  DataPageNPCSchema,
+  StaticDataPageNPCItem,
+  StaticDataPageNPCSchema,
   GetAllNpcsItemsNpcsItemsGetParams,
   GetAllNpcsNpcsDetailsGetParams,
   GetNpcItemsNpcsItemsCodeGetParams,
@@ -140,7 +140,7 @@ export async function actionSellItem(
 
 export async function getAllNpcs(
   params: GetAllNpcsNpcsDetailsGetParams,
-): Promise<ApiError | DataPageNPCSchema> {
+): Promise<ApiError | StaticDataPageNPCSchema> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -171,7 +171,7 @@ export async function getAllNpcs(
       });
     }
 
-    const result: DataPageNPCSchema = await response.json();
+    const result: StaticDataPageNPCSchema = await response.json();
 
     return result;
   } catch (error) {
@@ -215,7 +215,7 @@ export async function getNpc(code: string): Promise<ApiError | NPCSchema> {
 export async function getNpcItems(
   code: string,
   params: GetNpcItemsNpcsItemsCodeGetParams,
-): Promise<ApiError | DataPageNPCItem> {
+): Promise<ApiError | StaticDataPageNPCItem> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -247,7 +247,7 @@ export async function getNpcItems(
       });
     }
 
-    const result: DataPageNPCItem = await response.json();
+    const result: StaticDataPageNPCItem = await response.json();
 
     return result;
   } catch (error) {
@@ -257,7 +257,7 @@ export async function getNpcItems(
 
 export async function getAllNpcItems(
   params: GetAllNpcsItemsNpcsItemsGetParams,
-): Promise<ApiError | DataPageNPCItem> {
+): Promise<ApiError | StaticDataPageNPCItem> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -291,7 +291,7 @@ export async function getAllNpcItems(
       });
     }
 
-    const result: DataPageNPCItem = await response.json();
+    const result: StaticDataPageNPCItem = await response.json();
 
     return result;
   } catch (error) {

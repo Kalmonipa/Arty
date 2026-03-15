@@ -129,7 +129,7 @@ describe('Character.move()', () => {
               {
                 code: 'gold',
                 operator: 'cost',
-                value: '1000',
+                value: 1000,
               },
             ],
           },
@@ -157,7 +157,7 @@ describe('Character.move()', () => {
               {
                 code: 'gold',
                 operator: 'cost',
-                value: '1000',
+                value: 1000,
               },
             ],
           },

@@ -211,7 +211,7 @@ const mockCraftableItemData: ItemSchema = {
     {
       code: 'level',
       operator: 'gt',
-      value: '9',
+      value: 9,
     },
   ],
   effects: [

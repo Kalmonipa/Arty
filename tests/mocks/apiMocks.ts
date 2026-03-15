@@ -2,9 +2,9 @@ import { jest } from '@jest/globals';
 import { ApiError } from '../../src/core/Error.js';
 import {
   CharacterSchema,
-  DataPageMapSchema,
-  DataPageMonsterSchema,
-  DataPageResourceSchema,
+  StaticDataPageMapSchema,
+  StaticDataPageMonsterSchema,
+  StaticDataPageResourceSchema,
   ItemSchema,
   SkillResponseSchema,
 } from '../../src/types/types.js';
@@ -216,7 +216,7 @@ export const mockItemData: ItemSchema = {
   effects: [],
 };
 
-export const mockResourceData: DataPageResourceSchema = {
+export const mockResourceData: StaticDataPageResourceSchema = {
   data: [
     {
       code: 'iron_ore',
@@ -238,7 +238,7 @@ export const mockResourceData: DataPageResourceSchema = {
   size: 50,
 };
 
-export const mockMapData: DataPageMapSchema = {
+export const mockMapData: StaticDataPageMapSchema = {
   data: [
     {
       map_id: 1,
@@ -258,7 +258,7 @@ export const mockMapData: DataPageMapSchema = {
   size: 50,
 };
 
-export const mockMonsterData: DataPageMonsterSchema = {
+export const mockMonsterData: StaticDataPageMonsterSchema = {
   data: [
     {
       name: 'Flying Snake',

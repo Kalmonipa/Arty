@@ -2,7 +2,7 @@ import { ApiUrl } from '../constants.js';
 import { ApiError } from '../core/Error.js';
 import {
   AchievementResponseSchema,
-  DataPageAchievementSchema,
+  StaticDataPageAchievementSchema,
   GetAllAchievementsAchievementsGetParams,
 } from '../types/types.js';
 import { getRequestOptions } from '../utils.js';
@@ -16,7 +16,7 @@ import { getRequestOptions } from '../utils.js';
  */
 export async function getAllAchievements(
   params?: GetAllAchievementsAchievementsGetParams,
-): Promise<DataPageAchievementSchema[] | ApiError> {
+): Promise<StaticDataPageAchievementSchema[] | ApiError> {
   const apiUrl = new URL(`${ApiUrl}/achievements`);
 
   if (params.type) {

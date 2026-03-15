@@ -1,7 +1,7 @@
 import { ApiError } from '../core/Error.js';
 import {
-  DataPageActiveEventSchema,
-  DataPageEventSchema,
+  StaticDataPageActiveEventSchema,
+  StaticDataPageEventSchema,
   GetAllActiveEventsEventsActiveGetParams,
   GetAllEventsEventsGetParams,
 } from '../types/types.js';
@@ -10,7 +10,7 @@ import { ApiUrl } from '../constants.js';
 
 export async function getAllEvents(
   params: GetAllEventsEventsGetParams,
-): Promise<DataPageEventSchema | ApiError> {
+): Promise<StaticDataPageEventSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
@@ -44,7 +44,7 @@ export async function getAllEvents(
 
 export async function getActiveEvents(
   params: GetAllActiveEventsEventsActiveGetParams,
-): Promise<DataPageActiveEventSchema | ApiError> {
+): Promise<StaticDataPageActiveEventSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,

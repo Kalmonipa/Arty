@@ -1,6 +1,6 @@
 import { ApiError } from '../core/Error.js';
 import {
-  DataPageMonsterSchema,
+  StaticDataPageMonsterSchema,
   GetAllMonstersMonstersGetParams,
   MonsterResponseSchema,
 } from '../types/types.js';
@@ -9,7 +9,7 @@ import { ApiUrl } from '../constants.js';
 
 export async function getAllMonsterInformation(
   data: GetAllMonstersMonstersGetParams,
-): Promise<DataPageMonsterSchema | ApiError> {
+): Promise<StaticDataPageMonsterSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,

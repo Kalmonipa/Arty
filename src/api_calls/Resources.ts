@@ -1,6 +1,6 @@
 import { ApiError } from '../core/Error.js';
 import {
-  DataPageResourceSchema,
+  StaticDataPageResourceSchema,
   GetAllResourcesResourcesGetParams,
   ResourceResponseSchema,
 } from '../types/types.js';
@@ -9,7 +9,7 @@ import { ApiUrl } from '../constants.js';
 
 export async function getAllResourceInformation(
   data: GetAllResourcesResourcesGetParams,
-): Promise<DataPageResourceSchema | ApiError> {
+): Promise<StaticDataPageResourceSchema | ApiError> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
