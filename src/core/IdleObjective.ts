@@ -41,6 +41,9 @@ export class IdleObjective extends Objective {
     await this.topUpBank();
     if (this.checkIdleJobIsLast()) return true;
 
+    await this.claimPendingItems();
+    if (this.checkIdleJobIsLast()) return true;
+
     // Weapon, gear and jewelrycrafters should do monster tasks to at least attempt to increase combat level
     // Defaults to item tasks which are simpler
     if (
@@ -123,9 +126,6 @@ export class IdleObjective extends Objective {
         }
         break;
     }
-
-    await this.claimPendingItems();
-    if (this.checkIdleJobIsLast()) return true;
 
   }
 
