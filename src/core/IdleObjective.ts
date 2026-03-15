@@ -186,12 +186,13 @@ export class IdleObjective extends Objective {
   /**
    * Ensure that we have a minimum amount of certain items in the bank
    * - 100 Health potions of varying levels
-   * - 100 Food of varying levels
+   * - 500 Food of varying levels
    * - x Task coins (maybe?)
    */
   private async topUpBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
-    const minimumInBank = 100;
+    const minimumPotionInBank = 100;
+    const minimumFoodInBank = 500;
 
     const listOfFish = [
       'cooked_gudgeon',
@@ -204,7 +205,7 @@ export class IdleObjective extends Objective {
     // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
     // and the ceiling being either the alchemists alchemy level or the highest character level
     if (this.role === 'alchemist') {
-      const minPotionsToCraft = 200;
+      const minPotionsToCraft = minimumPotionInBank * 2;
       for (const potion of this.character.utilitiesMap['restore'].reverse()) {
         if (
           potion.craft.level <=
@@ -226,9 +227,9 @@ export class IdleObjective extends Objective {
           const numInBank = await this.character.checkQuantityOfItemInBank(
             potion.code,
           );
-          if (numInBank < minimumInBank) {
+          if (numInBank < minimumPotionInBank) {
             await this.character.craftNow(
-              minimumInBank - numInBank,
+              minimumPotionInBank - numInBank,
               potion.code,
             );
           }
@@ -246,9 +247,9 @@ export class IdleObjective extends Objective {
           const numInBank = await this.character.checkQuantityOfItemInBank(
             fish.code,
           );
-          // Ensure quantity is greater than 100
-          if (numInBank < minimumInBank) {
-            await this.character.craftNow(minimumInBank - numInBank, fish.code);
+          // Ensure quantity is greater than the required amount
+          if (numInBank < minimumFoodInBank) {
+            await this.character.craftNow(minimumFoodInBank - numInBank, fish.code);
           }
         }
       }
