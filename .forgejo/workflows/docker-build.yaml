@@ -52,4 +52,5 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_tag.outputs.tag }}
       - name: Redeploy LongLegLarry
         run: |
-          docker compose --file /home/oliver/Docker/Arty/docker-compose.yml up --detach longleglarry
+          ls -ltr
+  
