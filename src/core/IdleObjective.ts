@@ -241,7 +241,10 @@ export class IdleObjective extends Objective {
       )) {
         if (
           fish.craft.level <
-          this.character.getCharacterLevel(this.character.data, 'fishing')
+          this.character.getCharacterLevel(this.character.data, 'fishing') &&
+          fish.craft.level <= this.character.highestCharLevel &&
+          // e.g. Char lvl is 29, we should cook lvl 20 fish so they can use it
+          fish.craft.level >= this.character.lowestCharLevel - 9
         ) {
           // If we can cook the fish, get the number in the bank
           const numInBank = await this.character.checkQuantityOfItemInBank(

@@ -329,12 +329,12 @@ export class GatherObjective extends Objective {
     logger.debug(`Finding best resource to gather`);
     const resource = (() => {
       for (let i = resources.data.length - 1; i >= 0; i--) {
-        const res = resources.data[i];
+        const resource = resources.data[i];
         if (
-          res.level <=
-          this.character.getCharacterLevel(this.character.data, res.skill)
+          resource.level <=
+          this.character.getCharacterLevel(this.character.data, resource.skill)
         ) {
-          return res;
+          return resource;
         }
       }
       logger.warn(

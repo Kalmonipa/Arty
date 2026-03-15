@@ -1686,6 +1686,7 @@ export class Character {
     const fish = fishResourceInfo.data[
       fishResourceInfo.data.length - 1
     ].drops.find((fishResource) => fishResource.rate === 1).code;
+
     logger.info(`Gathering ${fish} to recover health`);
 
     // We intentionally use fishing_level as the max level here to avoid cases where cooking skill might be too high for us to gather
