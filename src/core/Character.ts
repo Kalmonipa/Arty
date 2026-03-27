@@ -14,11 +14,13 @@ import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
   ActiveEventSchema,
   CharacterSchema,
+  ConditionOperator,
   CraftSkill,
   FakeCharacterSchema,
   GatheringSkill,
   ItemSchema,
   ItemSlot,
+  MapLayer,
   MapSchema,
   SimpleEffectSchema,
   SimpleItemSchema,
@@ -73,19 +75,13 @@ import { getActiveEvents } from '../api_calls/Events.js';
 import { EventObjective } from './EventObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import {
-  Overworld,
-  SandWhisperIsle,
-  SandwhisperMine,
-  Underground,
-} from '../names.js';
-import {
-  transitionFromSandwhisperMine,
   transitionToMainland,
-  transitionToOverworld,
   transitionToSandwhisperIsle,
-  transitionToSandwhisperMine,
-  transitionToUndergroundMine,
 } from './Movement.js';
+import {
+  buildTransitionPath,
+  SANDWHISPER_Y_BOUNDARY,
+} from './TransitionPathfinder.js';
 import { CharRole } from '../constants.js';
 import { getIgnoreEventList } from './CharacterConfig.js';
 
@@ -770,7 +766,7 @@ export class Character {
     }
 
     //logger.debug(`Removing ${objectiveId} from position ${ind}`);
-    const deletedObj = this.jobList.splice(ind, 1);
+    // const deletedObj = this.jobList.splice(ind, 1);
     //logger.debug(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
@@ -2066,8 +2062,8 @@ export class Character {
   }
 
   /**
-   * @description moves the character to the destination if they are not already there
-   * @todo Take in a map_id as an alternative to x,y coords
+   * @description Moves the character to the destination, automatically routing through any
+   * required transition points along the way.
    */
   async move(destination: MapSchema): Promise<boolean> {
     if (
@@ -2077,72 +2073,23 @@ export class Character {
       return true;
     }
 
-    if (this.data.y < 17 && destination.name === SandWhisperIsle) {
-      const moveResult = await transitionToSandwhisperIsle(this);
-      if (!moveResult) {
-        logger.error(`Failed to move to SandWhisper Isle transition point`);
-        return false;
-      }
-    } else if (this.data.y < 17 && destination.name === SandwhisperMine) {
-      let moveResult = await transitionToSandwhisperIsle(this);
-      if (!moveResult) {
-        logger.error(`Failed to move to SandWhisper Isle transition point`);
-        return false;
-      }
-      moveResult = await transitionToSandwhisperMine(this);
-      if (!moveResult) {
-        logger.error(`Failed to move to SandWhisper Mine transition point`);
-        return false;
-      }
-    }
+    const transitionPath = buildTransitionPath(
+      this.data.x,
+      this.data.y,
+      this.data.layer as MapLayer,
+      destination,
+      this.transitionLocations,
+    );
 
-    if (
-      this.data.y >= 17 &&
-      this.data.layer === Underground &&
-      destination.layer === Overworld
-    ) {
-      const moveResult = await transitionFromSandwhisperMine(this);
-      if (!moveResult) {
-        logger.error(
-          `Failed to move to Sandwhisper Mine -> Isle transition point`,
-        );
-        return false;
-      }
-    }
-
-    // y coord 17 and greater is all Sandwhisper Isle maps so can cheese it here a bit
-    if (
-      this.data.y >= 17 &&
-      destination.name != SandWhisperIsle &&
-      this.data.layer === Overworld
-    ) {
-      const moveResult = await transitionToMainland(this);
-      if (!moveResult) {
-        logger.error(
-          `Failed to move to Mainland transition point or use recall potion`,
-        );
-        return false;
-      }
-    }
-
-    // We're on the mainland in Overworld and would like to get to Underground Mine
-    if (destination.layer === Underground && this.data.layer === Overworld) {
-      logger.info(
-        `Moving to ${destination.map_id} requires transitioning to ${destination.layer}`,
+    if (transitionPath === null) {
+      logger.error(
+        `Failed to build transition path to ${destination.name} (${destination.x}, ${destination.y}, ${destination.layer})`,
       );
-      const moveResult = await transitionToUndergroundMine(this);
-      if (!moveResult) {
-        logger.error(`Failed to move to Underground transition point`);
-        return false;
-      }
-    } else if (
-      // We're Underground and would like to get to Overworld
-      destination.layer === Overworld &&
-      this.data.layer === Underground
-    ) {
-      const moveResult = await transitionToOverworld(this);
-      if (!moveResult) {
-        logger.error(`Failed to move to Overworld transition point`);
+      return false;
+    }
+
+    for (const transitionPoint of transitionPath) {
+      if (!(await this.performTransitionStep(transitionPoint))) {
         return false;
       }
     }
@@ -2158,15 +2105,79 @@ export class Character {
 
     if (moveResponse instanceof ApiError) {
       return this.handleErrors(moveResponse);
-    } else {
-      if (moveResponse.data.character) {
-        this.data = moveResponse.data.character;
-        return true;
-      } else {
-        logger.error('Move response missing character data');
-        return false;
+    }
+    if (moveResponse.data.character) {
+      this.data = moveResponse.data.character;
+      return true;
+    }
+    logger.error('Move response missing character data');
+    return false;
+  }
+
+  /**
+   * @description Moves to a transition point and executes the transition.
+   * Handles Sandwhisper Isle overworld↔mainland transitions via dedicated wrappers (for recall
+   * potion logic). All other transitions are handled generically, checking gold cost conditions.
+   */
+  private async performTransitionStep(transitionPoint: MapSchema): Promise<boolean> {
+    const transition = transitionPoint.interactions.transition;
+    if (!transition) {
+      logger.error(
+        `Map ${transitionPoint.map_id} at (${transitionPoint.x}, ${transitionPoint.y}) has no transition data`,
+      );
+      return false;
+    }
+
+    // Sandwhisper Isle: mainland overworld -> island overworld
+    if (
+      transitionPoint.layer === MapLayer.overworld &&
+      transitionPoint.y < SANDWHISPER_Y_BOUNDARY &&
+      transition.layer === MapLayer.overworld &&
+      transition.y >= SANDWHISPER_Y_BOUNDARY
+    ) {
+      return transitionToSandwhisperIsle(this);
+    }
+
+    // Sandwhisper Isle: island overworld -> mainland overworld
+    if (
+      transitionPoint.layer === MapLayer.overworld &&
+      transitionPoint.y >= SANDWHISPER_Y_BOUNDARY &&
+      transition.layer === MapLayer.overworld &&
+      transition.y < SANDWHISPER_Y_BOUNDARY
+    ) {
+      return transitionToMainland(this);
+    }
+
+    // Generic transition: handle any gold cost conditions
+    if (transition.conditions) {
+      for (const condition of transition.conditions) {
+        if (condition.operator === ConditionOperator.cost && condition.code === 'gold') {
+          await this.withdrawNow(condition.value, 'gold');
+        } else {
+          logger.warn(
+            `Unsupported transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)}`,
+          );
+          return false;
+        }
       }
     }
+
+    logger.info(
+      `Moving to transition point at (${transitionPoint.x}, ${transitionPoint.y}, ${transitionPoint.layer})`,
+    );
+
+    const moveResponse = await actionMove(this.data, {
+      x: transitionPoint.x,
+      y: transitionPoint.y,
+    });
+    if (moveResponse instanceof ApiError) return this.handleErrors(moveResponse);
+    if (!moveResponse.data.character) {
+      logger.error('Move response missing character data');
+      return false;
+    }
+    this.data = moveResponse.data.character;
+
+    return this.transition();
   }
 
   /**
