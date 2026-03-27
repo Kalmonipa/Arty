@@ -1,5 +1,7 @@
 import { RecallPotion } from '../names.js';
 import { logger } from '../utils.js';
+import { MapLayer } from '../types/types.js';
+import { SANDWHISPER_Y_BOUNDARY } from './TransitionPathfinder.js';
 import { Character } from './Character.js';
 
 /**
@@ -31,14 +33,19 @@ export async function transitionToSandwhisperIsle(
     await character.withdrawNow(1000, 'gold');
   }
 
-  // ToDo: Don't hardcode the transition map ID
-  if (
-    !(await character.move(
-      character.transitionLocations.find(
-        (mapSchema) => mapSchema.map_id === 1093,
-      ),
-    ))
-  ) {
+  const transitionPoint = character.transitionLocations.find(
+    (t) =>
+      t.layer === MapLayer.overworld &&
+      t.y < SANDWHISPER_Y_BOUNDARY &&
+      t.interactions.transition?.layer === MapLayer.overworld &&
+      t.interactions.transition.y >= SANDWHISPER_Y_BOUNDARY,
+  );
+  if (!transitionPoint) {
+    logger.error('Could not find mainland -> Sandwhisper Isle transition point');
+    return false;
+  }
+
+  if (!(await character.move(transitionPoint))) {
     return false;
   }
   if (!(await character.transition())) {
@@ -59,40 +66,61 @@ export async function transitionToMainland(
       `Using a Recall Potion to travel from Sandwhisper Isle to Mainland`,
     );
     await character.useItem(RecallPotion, 1);
-  } else {
-    logger.info(`No recall potion available. Transitioning via boat`);
-    // ToDo: Don't hardcode the transition map ID
-    if (
-      !(await character.move(
-        character.transitionLocations.find(
-          (mapSchema) => mapSchema.map_id === 1336,
-        ),
-      ))
-    ) {
-      return false;
-    }
-    if (!(await character.transition())) {
-      return false;
-    }
+    return true;
+  }
+
+  logger.info(`No recall potion available. Transitioning via boat`);
+  const transitionPoint = character.transitionLocations.find(
+    (t) =>
+      t.layer === MapLayer.overworld &&
+      t.y >= SANDWHISPER_Y_BOUNDARY &&
+      t.interactions.transition?.layer === MapLayer.overworld &&
+      t.interactions.transition.y < SANDWHISPER_Y_BOUNDARY,
+  );
+  if (!transitionPoint) {
+    logger.error('Could not find Sandwhisper Isle -> mainland transition point');
+    return false;
+  }
+
+  if (!(await character.move(transitionPoint))) {
+    return false;
+  }
+  if (!(await character.transition())) {
+    return false;
   }
   return true;
 }
 
 /**
- * @description Move to the Overworld -> Underground Mine transition point and transition
+ * @description Move to the Overworld -> Underground Mine transition point and transition.
+ * Picks the mainland overworld->underground transition closest to the character.
  * @param character Character object holding the needed functions
  * @returns true if successful, false if not
  */
 export async function transitionToUndergroundMine(character: Character) {
   logger.info(`Moving from Overworld -> Underground Mine`);
 
-  if (
-    !(await character.move(
-      character.transitionLocations.find(
-        (mapSchema) => mapSchema.map_id === 571,
-      ),
-    ))
-  ) {
+  const candidates = character.transitionLocations.filter(
+    (t) =>
+      t.layer === MapLayer.overworld &&
+      t.y < SANDWHISPER_Y_BOUNDARY &&
+      t.interactions.transition?.layer === MapLayer.underground,
+  );
+  const transitionPoint = candidates.reduce(
+    (best, curr) =>
+      Math.abs(curr.x - character.data.x) + Math.abs(curr.y - character.data.y) <
+      Math.abs(best.x - character.data.x) + Math.abs(best.y - character.data.y)
+        ? curr
+        : best,
+    candidates[0],
+  );
+
+  if (!transitionPoint) {
+    logger.error('Could not find Overworld -> Underground transition point');
+    return false;
+  }
+
+  if (!(await character.move(transitionPoint))) {
     return false;
   }
   if (!(await character.transition())) {
@@ -109,13 +137,18 @@ export async function transitionToUndergroundMine(character: Character) {
 export async function transitionToOverworld(character: Character) {
   logger.info(`Moving from Underground Mine -> Overworld`);
 
-  if (
-    !(await character.move(
-      character.transitionLocations.find(
-        (mapSchema) => mapSchema.map_id === 572,
-      ),
-    ))
-  ) {
+  const transitionPoint = character.transitionLocations.find(
+    (t) =>
+      t.layer === MapLayer.underground &&
+      t.interactions.transition?.layer === MapLayer.overworld &&
+      t.interactions.transition.y < SANDWHISPER_Y_BOUNDARY,
+  );
+  if (!transitionPoint) {
+    logger.error('Could not find Underground -> Overworld transition point');
+    return false;
+  }
+
+  if (!(await character.move(transitionPoint))) {
     return false;
   }
   if (!(await character.transition())) {
@@ -132,13 +165,18 @@ export async function transitionToOverworld(character: Character) {
 export async function transitionToSandwhisperMine(character: Character) {
   logger.info(`Moving from Sandwhisper Isle -> Sandwhisper Mine`);
 
-  if (
-    !(await character.move(
-      character.transitionLocations.find(
-        (mapSchema) => mapSchema.map_id === 1177,
-      ),
-    ))
-  ) {
+  const transitionPoint = character.transitionLocations.find(
+    (t) =>
+      t.layer === MapLayer.overworld &&
+      t.y >= SANDWHISPER_Y_BOUNDARY &&
+      t.interactions.transition?.layer === MapLayer.underground,
+  );
+  if (!transitionPoint) {
+    logger.error('Could not find Sandwhisper Isle -> Sandwhisper Mine transition point');
+    return false;
+  }
+
+  if (!(await character.move(transitionPoint))) {
     return false;
   }
   if (!(await character.transition())) {
@@ -154,13 +192,19 @@ export async function transitionToSandwhisperMine(character: Character) {
  */
 export async function transitionFromSandwhisperMine(character: Character) {
   logger.info(`Moving from Sandwhisper Mine -> Sandwhisper Isle`);
-  if (
-    !(await character.move(
-      character.transitionLocations.find(
-        (mapSchema) => mapSchema.map_id === 1178,
-      ),
-    ))
-  ) {
+
+  const transitionPoint = character.transitionLocations.find(
+    (t) =>
+      t.layer === MapLayer.underground &&
+      t.interactions.transition?.layer === MapLayer.overworld &&
+      t.interactions.transition.y >= SANDWHISPER_Y_BOUNDARY,
+  );
+  if (!transitionPoint) {
+    logger.error('Could not find Sandwhisper Mine -> Sandwhisper Isle transition point');
+    return false;
+  }
+
+  if (!(await character.move(transitionPoint))) {
     return false;
   }
   if (!(await character.transition())) {

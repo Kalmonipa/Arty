@@ -221,13 +221,43 @@ describe('Character.move()', () => {
       // Arrange
       mockCharacter.layer = 'underground';
       character = new Character(mockCharacter);
+      // Copy transitionLocations from beforeEach setup so buildTransitionPath has the data it needs
+      character.transitionLocations = [
+        {
+          map_id: 571,
+          name: 'Mountain',
+          skin: 'mountain_6',
+          x: -2,
+          y: 6,
+          layer: 'overworld',
+          access: { type: 'standard', conditions: [] },
+          interactions: {
+            content: null,
+            transition: { map_id: 572, x: -2, y: 6, layer: 'underground', conditions: [] },
+          },
+        },
+        {
+          map_id: 572,
+          name: 'Underground',
+          skin: 'mine_1',
+          x: -2,
+          y: 6,
+          layer: 'underground',
+          access: { type: 'standard', conditions: [] },
+          interactions: {
+            content: null,
+            transition: { map_id: 571, x: -2, y: 6, layer: 'overworld', conditions: [] },
+          },
+        },
+      ];
 
+      // Destination kept within the mainland underground region (y < 17) to match character at y=0
       const destination: MapSchema = {
         map_id: 200,
         name: 'Underground Cave',
         skin: 'cave_skin',
         x: 20,
-        y: 25,
+        y: 5,
         layer: 'underground',
         access: { type: 'standard', conditions: [] },
         interactions: {},
@@ -245,13 +275,13 @@ describe('Character.move()', () => {
           destination: destination,
           path: [
             [0, 0],
-            [10, 10],
-            [20, 25],
+            [10, 5],
+            [20, 5],
           ],
           character: {
             ...mockCharacter,
             x: 20,
-            y: 25,
+            y: 5,
             map_id: 200,
             layer: 'underground',
           },
