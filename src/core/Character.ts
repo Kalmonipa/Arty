@@ -937,17 +937,6 @@ export class Character {
     }
 
     for (const event of activeEventsResponse.data) {
-      // ToDo: Make this better
-      if (
-        this.data.name === 'LongLegLarry' &&
-        event.code !== 'cult_of_darkness'
-      ) {
-        logger.debug(
-          `${this.data.name} is only seeking cult_of_darkness events. Ignoring everything else`,
-        );
-        continue;
-      }
-
       if (
         event.code === 'bandit_camp' &&
         this.data.level < 25 &&
