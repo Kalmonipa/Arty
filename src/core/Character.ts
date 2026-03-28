@@ -766,7 +766,7 @@ export class Character {
     }
 
     //logger.debug(`Removing ${objectiveId} from position ${ind}`);
-    // const deletedObj = this.jobList.splice(ind, 1);
+    const deletedObj = this.jobList.splice(ind, 1);
     //logger.debug(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
