@@ -920,13 +920,16 @@ export class Character {
         const eventExpiration = new Date(job.activeEvent.expiration).getTime();
 
         if (Date.now() > eventExpiration) {
-          logger.info(
-            `Event ${job.objectiveId} expired at ${eventExpiration}. Moving back to map ${job.previousLocation.map_id} (x: ${job.previousLocation.x}, y: ${job.previousLocation.y})`,
-          );
-          await this.cancelJobAndChildren(job.objectiveId);
-          this.lastEventCheckTimestamp = currentTimestamp;
+          logger.info(`Event ${job.objectiveId} expired at ${eventExpiration}.`)
+          if (job.previousLocation && job.previousLocation.map_id) {
+            logger.info(
+              `Moving back to map ${job.previousLocation.map_id} (x: ${job.previousLocation.x}, y: ${job.previousLocation.y})`,
+            );
+            await this.cancelJobAndChildren(job.objectiveId);
+            this.lastEventCheckTimestamp = currentTimestamp;
 
-          await this.move(job.previousLocation);
+            await this.move(job.previousLocation);
+          }
 
           return false;
         }
