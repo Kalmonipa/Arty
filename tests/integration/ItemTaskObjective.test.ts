@@ -104,6 +104,11 @@ class SimpleMockCharacter {
     // Nothing here
   });
 
+  tradeWithTasksMaster = jest.fn(async (itemCode: string, numToGather: number): Promise<boolean> => {
+    this.removeItemFromInventory(itemCode, numToGather)
+    return true
+  })
+
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
       (item: InventorySlot) => item.code === code,

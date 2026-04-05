@@ -1700,13 +1700,13 @@ export class Character {
   }
 
 
-  async tradeWithTasksMaster(numToGather: number): Promise<boolean> {
-    logger.debug(`Handing in ${numToGather} ${this.data.task}`);
+  async tradeWithTasksMaster(itemCode: string, numToGather: number): Promise<boolean> {
+    logger.debug(`Handing in ${numToGather} ${itemCode}`);
     await this.activeJob.moveToTaskMaster('items');
 
     const taskTradeResponse: ApiError | TaskTradeResponseSchema =
       await actionTasksTrade(this.data, {
-        code: this.data.task,
+        code: itemCode,
         quantity: numToGather,
       });
     if (taskTradeResponse instanceof ApiError) {
@@ -2723,7 +2723,7 @@ export class Character {
           logger.info(`Found item task resource (${this.data.task}) in inventory. Attempting to hand it in to clear up inv space`)
           
           const numInInv = this.checkQuantityOfItemInInv(this.data.task)
-          const tradeAttempt: boolean = await this.tradeWithTasksMaster(numInInv)
+          const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, numInInv)
 
           return tradeAttempt
         }
