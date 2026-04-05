@@ -25,6 +25,7 @@ import {
   SimpleEffectSchema,
   SimpleItemSchema,
   Skill,
+  TaskTradeResponseSchema,
 } from '../types/types.js';
 import {
   AllMaps,
@@ -84,6 +85,7 @@ import {
 } from './TransitionPathfinder.js';
 import { CharRole } from '../constants.js';
 import { getIgnoreEventList } from './CharacterConfig.js';
+import { actionTasksTrade } from '../api_calls/Tasks.js';
 
 export class Character {
   data: CharacterSchema;
@@ -1697,6 +1699,30 @@ export class Character {
     return cookedItemInfo.data[cookedItemInfo.data.length - 1].code;
   }
 
+
+  async tradeWithTasksMaster(numToGather: number): Promise<boolean> {
+    logger.debug(`Handing in ${numToGather} ${this.data.task}`);
+    await this.activeJob.moveToTaskMaster('items');
+
+    const taskTradeResponse: ApiError | TaskTradeResponseSchema =
+      await actionTasksTrade(this.data, {
+        code: this.data.task,
+        quantity: numToGather,
+      });
+    if (taskTradeResponse instanceof ApiError) {
+      logger.warn(taskTradeResponse.message);
+      return this.handleErrors(taskTradeResponse);
+    } else {
+      if (taskTradeResponse.data.character) {
+        this.data = taskTradeResponse.data.character;
+      } else {
+        logger.error('Task trade response missing character data');
+        return false;
+      }
+      return true;
+    }
+  }
+
   /********
    * Inventory functions
    ********/
@@ -2692,8 +2718,16 @@ export class Character {
         return false;
       case 496: // Conditions not met
         return false;
-      case 497: {
-        // The character's inventory is full. Dump everything
+      case 497: { // The character's inventory is full. Dump everything
+        if (this.data.task && this.data.task_type === 'items') {
+          logger.info(`Found item task resource (${this.data.task}) in inventory. Attempting to hand it in to clear up inv space`)
+          
+          const numInInv = this.checkQuantityOfItemInInv(this.data.task)
+          const tradeAttempt: boolean = await this.tradeWithTasksMaster(numInInv)
+
+          return tradeAttempt
+        }
+
         const mapData = await getMapsById(this.data.map_id);
         if (mapData instanceof ApiError) {
           logger.error(`Failed to get current map data`);

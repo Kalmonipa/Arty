@@ -136,7 +136,7 @@ export class ItemTaskObjective extends Objective {
         );
 
         if (numToGather <= numGathered) {
-          if (!(await this.tradeWithTasksMaster(numToGather))) {
+          if (!(await this.character.tradeWithTasksMaster(numToGather))) {
             this.character.removeItemFromItemsToKeep(this.character.data.task);
             return false;
           }
@@ -203,26 +203,5 @@ export class ItemTaskObjective extends Objective {
     return false;
   }
 
-  private async tradeWithTasksMaster(numToGather: number): Promise<boolean> {
-    logger.debug(`Handing in ${numToGather} ${this.character.data.task}`);
-    await this.moveToTaskMaster('items');
-
-    const taskTradeResponse: ApiError | TaskTradeResponseSchema =
-      await actionTasksTrade(this.character.data, {
-        code: this.character.data.task,
-        quantity: numToGather,
-      });
-    if (taskTradeResponse instanceof ApiError) {
-      logger.warn(taskTradeResponse.message);
-      return this.character.handleErrors(taskTradeResponse);
-    } else {
-      if (taskTradeResponse.data.character) {
-        this.character.data = taskTradeResponse.data.character;
-      } else {
-        logger.error('Task trade response missing character data');
-        return false;
-      }
-      return true;
-    }
-  }
+  
 }
