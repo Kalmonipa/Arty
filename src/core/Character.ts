@@ -1452,9 +1452,7 @@ export class Character {
   ): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
 
-    for (const potion of utility.reverse()) {
-      //for (let ind = utility.length - 1; ind >= 0; ind--) {
-      //  const potion = utility[ind]
+    for (const potion of [...utility].reverse()) {
       logger.debug(`Evaluating ${potion.code}`);
       if (potion.level <= this.getCharacterLevel(this.data)) {
         let numNeeded: number;
@@ -1496,8 +1494,8 @@ export class Character {
             if (await this.craftNow(numNeeded, potion.code)) {
               return await this.equipNow(potion.code, slot, numNeeded);
             } else {
-              logger.debug(`Can't craft ${potion.name}`);
-              return false;
+              logger.debug(`Can't craft ${potion.name}. Trying next best option`);
+              continue;
             }
           } else {
             logger.debug(`Can't find any ${potion.name}`);
