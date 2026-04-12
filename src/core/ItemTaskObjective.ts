@@ -17,6 +17,7 @@ export class ItemTaskObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'ItemTask';
     this.quantity = quantity;
+    this.shouldEmitMetrics = true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

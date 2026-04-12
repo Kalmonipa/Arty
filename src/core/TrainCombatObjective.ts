@@ -18,6 +18,8 @@ export class TrainCombatObjective extends Objective {
     this.jobFlavour = 'TrainCombat';
     this.targetLevel = targetLevel;
     this.skill = 'combat';
+    this.shouldEmitMetrics = true;
+    this.metricLabel = 'combat';
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

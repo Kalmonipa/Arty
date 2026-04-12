@@ -38,6 +38,8 @@ export class CraftObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'Craft';
     this.target = target;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = target.code;
     this.checkBank = checkBank;
     this.includeInventory =
       includeInventory !== undefined ? includeInventory : true;

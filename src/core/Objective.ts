@@ -2,6 +2,7 @@ import * as crypto from 'node:crypto';
 import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
 import { logger, sleep } from '../utils.js';
+import { jobCompletionsCounter, jobDurationHistogram } from '../metrics.js';
 import { getMaps } from '../api_calls/Maps.js';
 import {
   actionAcceptNewTask,
@@ -22,6 +23,11 @@ export abstract class Objective {
   childId?: string;
   rootId: string;
   protected log: typeof logger;
+  /** Set to true in subclasses that represent meaningful work worth tracking */
+  protected shouldEmitMetrics: boolean = false;
+  /** What specifically is being done — item code, monster code, skill name, role, etc. */
+  metricLabel: string = '';
+  private startTimeMs: number = 0;
 
   constructor(
     character: Character,
@@ -144,6 +150,7 @@ export abstract class Objective {
   startJob() {
     this.log.info(`Setting status of ${this.objectiveId} to 'in_progress'`);
     this.status = 'in_progress';
+    this.startTimeMs = Date.now();
   }
 
   /**
@@ -161,6 +168,17 @@ export abstract class Objective {
         this.log.info(`Setting status of ${this.objectiveId} to 'failed'`);
         this.status = 'failed';
       }
+    }
+
+    if (this.shouldEmitMetrics) {
+      const durationSeconds = (Date.now() - this.startTimeMs) / 1000;
+      const labels = {
+        character: this.character.data.name,
+        job_type: this.jobFlavour,
+        target: this.metricLabel,
+      };
+      jobCompletionsCounter.inc({ ...labels, status: this.status });
+      jobDurationHistogram.observe(labels, durationSeconds);
     }
   }
 

@@ -15,6 +15,7 @@ export class MonsterTaskObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'MonsterTask';
     this.quantity = quantity;
+    this.shouldEmitMetrics = true;
   }
 
   // ToDo:

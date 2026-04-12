@@ -18,6 +18,7 @@ import BankRouter from './routes/Bank.js';
 import CharacterRouter from './routes/Character.js';
 import { CharacterSchema } from './types/types.js';
 import { AllCharNames, CharName } from './constants.js';
+import { register } from './metrics.js';
 
 async function main() {
   let charDetails: CharacterSchema[] = [];
@@ -48,6 +49,12 @@ async function main() {
   const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
+
+  app.get('/metrics', async (_req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  });
+
   app.use('/bank', BankRouter(char));
   app.use('/craft', CraftRouter(char));
   app.use('/equip', EquipRouter(char));

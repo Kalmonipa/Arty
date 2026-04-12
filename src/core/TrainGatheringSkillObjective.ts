@@ -24,6 +24,8 @@ export class TrainGatheringSkillObjective extends Objective {
     this.jobFlavour = 'TrainGatheringSkill';
     this.targetLevel = targetLevel;
     this.skill = skill;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = skill;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

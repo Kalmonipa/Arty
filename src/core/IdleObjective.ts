@@ -21,6 +21,8 @@ export class IdleObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'Idle';
     this.role = role;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = role;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

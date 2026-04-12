@@ -31,6 +31,8 @@ export class GatherObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'Gather';
     this.target = target;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = target.code;
     this.checkBank = checkBank;
     this.includeInventory =
       includeInventory !== undefined ? includeInventory : true;

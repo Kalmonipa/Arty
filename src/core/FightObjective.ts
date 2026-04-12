@@ -28,6 +28,8 @@ export class FightObjective extends Objective {
     this.jobFlavour = 'Fight';
     this.target = target;
     this.participants = participants;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = target.code;
     this.runFightSim = runFightSim ?? true;
   }
 

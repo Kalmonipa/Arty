@@ -33,6 +33,8 @@ export class EventObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'Event';
     this.activeEvent = activeEvent;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = activeEvent.code;
     if (previousLocation) {
       this.previousLocation = previousLocation;
     } else {

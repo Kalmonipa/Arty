@@ -33,6 +33,8 @@ export class TrainCraftingSkillObjective extends Objective {
     this.targetLevel = targetLevel;
     this.skill = skill;
     this.levelRange = levelRange ?? 4;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = skill;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
