@@ -44,21 +44,37 @@ export class IdleObjective extends Objective {
     await this.claimPendingItems();
     if (this.checkIdleJobIsLast()) return true;
 
-    // Weapon, gear and jewelrycrafters should do monster tasks to at least attempt to increase combat level
-    // Defaults to item tasks which are simpler
-    if (
-      (this.role === 'weaponcrafter' &&
-        this.character.data.level < this.character.data.weaponcrafting_level) ||
-      (this.role === 'gearcrafter' &&
-        this.character.data.level < this.character.data.gearcrafting_level) ||
-      (this.role === 'jewelrycrafter' &&
-        this.character.data.level < this.character.data.jewelrycrafting_level)
-    ) {
-      await this.doMonsterTask(5);
-      if (this.checkIdleJobIsLast()) return true;
-    } else if (this.role !== 'alchemist') {
-      await this.doItemTask(5);
-      if (this.checkIdleJobIsLast()) return true;
+    // Alchemist never does tasks — sole responsibility is crafting potions.
+    // All other roles only do tasks if the bank is low on task coins.
+    // Fisherman has an additional check: food must be sufficiently stocked first.
+    if (this.role !== 'alchemist') {
+      const taskCoinsInBank = await this.character.checkQuantityOfItemInBank('tasks_coin');
+
+      if (taskCoinsInBank < 100) {
+        let shouldDoTasks = true;
+
+        if (this.role === 'fisherman') {
+          shouldDoTasks = await this.isFishSufficientlyStocked();
+        }
+
+        if (shouldDoTasks) {
+          // Weapon, gear and jewelrycrafters do monster tasks if their crafting level
+          // exceeds their combat level, otherwise item tasks
+          if (
+            (this.role === 'weaponcrafter' &&
+              this.character.data.level < this.character.data.weaponcrafting_level) ||
+            (this.role === 'gearcrafter' &&
+              this.character.data.level < this.character.data.gearcrafting_level) ||
+            (this.role === 'jewelrycrafter' &&
+              this.character.data.level < this.character.data.jewelrycrafting_level)
+          ) {
+            await this.doMonsterTask(5);
+          } else {
+            await this.doItemTask(5);
+          }
+          if (this.checkIdleJobIsLast()) return true;
+        }
+      }
     }
 
     // Train skills depending on their role
@@ -127,6 +143,39 @@ export class IdleObjective extends Objective {
         break;
     }
 
+  }
+
+  /**
+   * @description Checks whether each applicable fish type is sufficiently stocked in the bank.
+   * Uses the same fish list and level filters as topUpBank so the definition of "applicable"
+   * is consistent. Returns true if every applicable type has >= 500 in the bank.
+   */
+  private async isFishSufficientlyStocked(): Promise<boolean> {
+    const minimumFoodInBank = 500;
+    const listOfFish = [
+      'cooked_gudgeon',
+      'cooked_shrimp',
+      'cooked_trout',
+      'cooked_bass',
+      'cooked_salmon',
+    ];
+
+    for (const fish of this.character.consumablesMap['heal'].filter(
+      (consumable) => listOfFish.includes(consumable.code),
+    )) {
+      if (
+        fish.craft.level <
+          this.character.getCharacterLevel(this.character.data, 'fishing') &&
+        fish.craft.level <= this.character.highestCharLevel &&
+        fish.craft.level >= this.character.lowestCharLevel - 9
+      ) {
+        const numInBank = await this.character.checkQuantityOfItemInBank(fish.code);
+        if (numInBank < minimumFoodInBank) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   /**
