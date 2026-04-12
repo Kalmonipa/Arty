@@ -162,9 +162,7 @@ export class IdleObjective extends Objective {
         let claimResponse = await actionClaimPendingItems(this.character.data, pendingItem.id)
 
         if (claimResponse instanceof ApiError) {
-          return this.character.handleErrors(claimResponse);
-        } else {
-          return true;
+          await this.character.handleErrors(claimResponse);
         }
       }
     } else {
