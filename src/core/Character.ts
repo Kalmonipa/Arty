@@ -95,7 +95,7 @@ export class Character {
    */
   maxJobsInQueue: number = 25;
   /**
-   * The current active job. We only ever execute this job
+   * The top-level job currently being executed from the job queue
    */
   activeJob?: Objective;
   /**
@@ -830,32 +830,6 @@ export class Character {
   }
 
   /**
-   * Sets job in the queue as active
-   */
-  async setActiveJob(index?: number): Promise<Objective> {
-    if (!index) {
-      index = 0;
-    }
-
-    if (index > this.jobList.length - 1) {
-      logger.error(
-        `No job in position ${index}. Only ${this.jobList.length} jobs in queue`,
-      );
-      return;
-    } else if (this.jobList.length > 0) {
-      logger.info(
-        `Setting ${this.jobList[index].objectiveId} as active, removing from main job queue`,
-      );
-      this.activeJob = this.jobList[index];
-      await this.removeJob(this.jobList[index].objectiveId);
-    } else {
-      this.activeJob = null;
-      logger.warn(`Not able to assign a job to active`);
-    }
-    return this.activeJob;
-  }
-
-  /**
    * Executes all jobs in the job list
    */
   async executeJobList() {
@@ -879,10 +853,12 @@ export class Character {
           continue;
         }
 
+        this.activeJob = currentJob;
         this.currentExecutingJob = currentJob;
         logger.info(`Executing job ${currentJob.objectiveId}`);
         await currentJob.execute();
         await this.removeJob(currentJob.objectiveId);
+        this.activeJob = undefined;
         this.currentExecutingJob = undefined;
       }
     }
@@ -1702,7 +1678,15 @@ export class Character {
 
   async tradeWithTasksMaster(itemCode: string, numToGather: number): Promise<boolean> {
     logger.debug(`Handing in ${numToGather} ${itemCode}`);
-    await this.activeJob.moveToTaskMaster('items');
+    const maps = await getMaps({ content_code: 'items', content_type: 'tasks_master' });
+    if (maps instanceof ApiError) {
+      return this.handleErrors(maps);
+    }
+    if (maps.data.length === 0) {
+      logger.error(`Cannot find the items tasks master`);
+      return false;
+    }
+    await this.move(this.evaluateClosestMap(maps.data));
 
     const taskTradeResponse: ApiError | TaskTradeResponseSchema =
       await actionTasksTrade(this.data, {
