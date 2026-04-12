@@ -187,6 +187,12 @@ export class Character {
   enableEvents: boolean = true;
 
   /**
+   * Raw item codes dropped by fishing resources (e.g. gudgeon, trout).
+   * Used to identify which cooking consumables are fish-based.
+   */
+  fishingDropCodes: Set<string> = new Set();
+
+  /**
    * Lowest levels in the village. Used as a guide on what level gear we need and what
    * we can recycle
    */
@@ -225,6 +231,15 @@ export class Character {
     this.consumablesMap = await buildListOf('consumable');
     this.utilitiesMap = await buildListOf('utility');
     this.weaponMap = await buildListOfWeapons();
+
+    const fishingResources = await getAllResourceInformation({ skill: 'fishing' });
+    if (!(fishingResources instanceof ApiError)) {
+      fishingResources.data.forEach((resource) =>
+        resource.drops.forEach((drop) => this.fishingDropCodes.add(drop.code)),
+      );
+    } else {
+      logger.warn('Failed to load fishing resources — fish stocking will fall back to all cooking consumables');
+    }
 
     this.allMaps = await AllMaps();
     this.transitionLocations = TransitionLocations(this.allMaps);

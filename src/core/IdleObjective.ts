@@ -152,16 +152,13 @@ export class IdleObjective extends Objective {
    */
   private async isFishSufficientlyStocked(): Promise<boolean> {
     const minimumFoodInBank = 500;
-    const listOfFish = [
-      'cooked_gudgeon',
-      'cooked_shrimp',
-      'cooked_trout',
-      'cooked_bass',
-      'cooked_salmon',
-    ];
 
     for (const fish of this.character.consumablesMap['heal'].filter(
-      (consumable) => listOfFish.includes(consumable.code),
+      (consumable) =>
+        consumable.craft?.skill === 'cooking' &&
+        consumable.craft.items.some((ingredient) =>
+          this.character.fishingDropCodes.has(ingredient.code),
+        ),
     )) {
       if (
         fish.craft.level <
@@ -241,14 +238,6 @@ export class IdleObjective extends Objective {
     const minimumPotionInBank = 100;
     const minimumFoodInBank = 500;
 
-    const listOfFish = [
-      'cooked_gudgeon',
-      'cooked_shrimp',
-      'cooked_trout',
-      'cooked_bass',
-      'cooked_salmon',
-    ];
-
     // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
     // and the ceiling being either the alchemists alchemy level or the highest character level
     if (this.role === 'alchemist') {
@@ -284,7 +273,11 @@ export class IdleObjective extends Objective {
       }
     } else if (this.role === 'fisherman') {
       for (const fish of this.character.consumablesMap['heal'].filter(
-        (consumable) => listOfFish.includes(consumable.code),
+        (consumable) =>
+          consumable.craft?.skill === 'cooking' &&
+          consumable.craft.items.some((ingredient) =>
+            this.character.fishingDropCodes.has(ingredient.code),
+          ),
       )) {
         if (
           fish.craft.level <
