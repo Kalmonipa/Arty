@@ -2702,12 +2702,14 @@ export class Character {
         return false;
       case 497: { // The character's inventory is full. Dump everything
         if (this.data.task && this.data.task_type === 'items') {
-          logger.info(`Found item task resource (${this.data.task}) in inventory. Attempting to hand it in to clear up inv space`)
-          
           const numInInv = this.checkQuantityOfItemInInv(this.data.task)
-          const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, numInInv)
+          if (numInInv > 0) {
+            logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand it in to clear up inv space`)
+          
+            const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, numInInv)
 
-          return tradeAttempt
+            return tradeAttempt
+          }
         }
 
         const mapData = await getMapsById(this.data.map_id);
