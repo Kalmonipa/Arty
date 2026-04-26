@@ -401,7 +401,7 @@ export async function actionClaimPendingItems(
 
   try {
     const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/claim/${itemId}`,
+      `${ApiUrl}/my/${character.name}/action/claim_item/${itemId}`,
       requestOptions,
     );
 
