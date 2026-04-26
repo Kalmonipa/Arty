@@ -7,7 +7,6 @@ import { getMaps } from '../api_calls/Maps.js';
 import {
   actionAcceptNewTask,
   actionCancelTask,
-  actionCompleteTask,
 } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { TaskType } from '../types/types.js';
@@ -343,37 +342,7 @@ export abstract class Objective {
         `Collected ${this.character.data.task_total} items. Handing in task`,
       );
     }
-    const maps = await getMaps({
-      content_code: taskType,
-      content_type: 'tasks_master',
-    });
-    if (maps instanceof ApiError) {
-      return this.character.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
-      this.log.error(`Cannot find the tasks master. This shouldn't happen ??`);
-      return;
-    }
-
-    const contentLocation = this.character.evaluateClosestMap(maps.data);
-
-    await this.character.move(contentLocation);
-
-    const response = await actionCompleteTask(this.character.data);
-
-    if (response instanceof ApiError) {
-      await this.character.handleErrors(response);
-      // ToDo: handle complete task errors
-    } else {
-      if (response.data.character) {
-        this.character.data = response.data.character;
-      } else {
-        this.log.error('Complete task response missing character data');
-      }
-    }
-
-    return true;
+    return this.character.completeTask(taskType);
   }
 
   /**

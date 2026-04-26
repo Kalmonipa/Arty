@@ -49,6 +49,14 @@ class SimpleMockCharacter {
     );
     return item ? item.quantity : 0;
   });
+
+  completeTask = jest.fn(async (): Promise<boolean> => {
+    this.data.task = '';
+    this.data.task_type = '';
+    this.data.task_progress = 0;
+    this.data.task_total = 0;
+    return true;
+  });
 }
 
 // Mock response data

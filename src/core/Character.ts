@@ -26,6 +26,7 @@ import {
   SimpleItemSchema,
   Skill,
   TaskTradeResponseSchema,
+  TaskType,
 } from '../types/types.js';
 import {
   AllMaps,
@@ -85,7 +86,7 @@ import {
 } from './TransitionPathfinder.js';
 import { CharRole } from '../constants.js';
 import { getIgnoreEventList } from './CharacterConfig.js';
-import { actionTasksTrade } from '../api_calls/Tasks.js';
+import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 
 export class Character {
   data: CharacterSchema;
@@ -1720,6 +1721,20 @@ export class Character {
     }
   }
 
+  async completeTask(taskType: TaskType): Promise<boolean> {
+    const maps = await getMaps({ content_code: taskType, content_type: 'tasks_master' });
+    if (maps instanceof ApiError) return this.handleErrors(maps);
+    if (maps.data.length === 0) {
+      logger.error(`Cannot find the tasks master`);
+      return false;
+    }
+    await this.move(this.evaluateClosestMap(maps.data));
+    const response = await actionCompleteTask(this.data);
+    if (response instanceof ApiError) return this.handleErrors(response);
+    if (response.data.character) this.data = response.data.character;
+    return true;
+  }
+
   /********
    * Inventory functions
    ********/
@@ -2722,8 +2737,13 @@ export class Character {
 
             const numLeftToHandIn = this.data.task_total - this.data.task_progress
 
+            if (numLeftToHandIn <= 0) {
+              logger.info(`Item task already complete (${this.data.task_progress}/${this.data.task_total}). Completing task to free inventory`)
+              return this.completeTask('items');
+            }
+
             logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${numLeftToHandIn} to clear up inv space`)
-          
+
             const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, numLeftToHandIn)
 
             return tradeAttempt
