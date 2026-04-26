@@ -2720,8 +2720,10 @@ export class Character {
           const numInInv = this.checkQuantityOfItemInInv(this.data.task)
           if (numInInv > 0) {
             logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand it in to clear up inv space`)
+
+            const numLeftToHandIn = this.data.task_total - this.data.task_progress
           
-            const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, numInInv)
+            const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, numLeftToHandIn)
 
             return tradeAttempt
           }
