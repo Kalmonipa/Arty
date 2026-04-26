@@ -789,6 +789,8 @@ export class Character {
       return false;
     }
 
+    this.jobList.splice(ind, 1)
+
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
       for (const obj of this.jobList) {
