@@ -1482,10 +1482,12 @@ export class Character {
     slot: ItemSlot,
   ): Promise<boolean> {
     const utility = this.utilitiesMap[utilityType];
+    const charLevel = this.getCharacterLevel(this.data);
+    const minPotionLevel = utilityType === 'restore' ? charLevel - 20 : 0;
 
     for (const potion of [...utility].reverse()) {
       logger.debug(`Evaluating ${potion.code}`);
-      if (potion.level <= this.getCharacterLevel(this.data)) {
+      if (potion.level <= charLevel && potion.level >= minPotionLevel) {
         let numNeeded: number;
         if (slot === 'utility1') {
           numNeeded =
