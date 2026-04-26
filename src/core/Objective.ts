@@ -152,6 +152,17 @@ export abstract class Objective {
     this.status = 'in_progress';
     this.startTimeMs = Date.now();
     if (this.shouldEmitMetrics) {
+      if (this.parentId) {
+        const parentJob = this.character.jobList.find(
+          (job) => job.objectiveId === this.parentId,
+        );
+        if (parentJob?.shouldEmitMetrics) {
+          jobActiveGauge.set(
+            { character: this.character.data.name, job_type: parentJob.jobFlavour, target: parentJob.metricLabel },
+            0,
+          );
+        }
+      }
       jobActiveGauge.set(
         { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
         1,
@@ -189,6 +200,17 @@ export abstract class Objective {
         { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
         0,
       );
+      if (this.parentId) {
+        const parentJob = this.character.jobList.find(
+          (job) => job.objectiveId === this.parentId,
+        );
+        if (parentJob?.shouldEmitMetrics) {
+          jobActiveGauge.set(
+            { character: this.character.data.name, job_type: parentJob.jobFlavour, target: parentJob.metricLabel },
+            1,
+          );
+        }
+      }
     }
   }
 
