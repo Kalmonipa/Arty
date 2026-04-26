@@ -941,8 +941,7 @@ export class Character {
     for (const event of activeEventsResponse.data) {
       if (
         event.code === 'bandit_camp' &&
-        this.data.level < 25 &&
-        this.data.level > 35
+        (this.data.level < 25 || this.data.level > 35)
       ) {
         logger.debug(
           `${this.data.name} is outside the level range (25-35) for ${event.name}`,
@@ -950,8 +949,7 @@ export class Character {
         continue;
       } else if (
         event.code === 'portal_demon' &&
-        this.data.level < 30 &&
-        this.data.level > 40
+        (this.data.level < 30 || this.data.level > 40)
       ) {
         logger.debug(
           `${this.data.name} is outside the level range (30-40) for ${event.name}`,
