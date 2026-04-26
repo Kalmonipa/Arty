@@ -90,6 +90,8 @@ export class IdleObjective extends Objective {
       case 'fisherman':
         await this.trainSkill('fishing');
         if (this.checkIdleJobIsLast()) return true;
+        await this.trainSkill();
+        if (this.checkIdleJobIsLast()) return true;
         break;
       case 'lumberjack':
         await this.trainSkill('woodcutting');
