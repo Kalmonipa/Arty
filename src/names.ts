@@ -2,6 +2,7 @@
  * @description Items
  */
 export const RecallPotion = 'recall_potion';
+export const ForestBankPotion = 'forest_bank_potion';
 
 /**
  * @description Map Areas

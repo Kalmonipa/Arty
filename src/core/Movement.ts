@@ -1,4 +1,4 @@
-import { RecallPotion } from '../names.js';
+import { ForestBankPotion, RecallPotion } from '../names.js';
 import { logger } from '../utils.js';
 import { MapLayer } from '../types/types.js';
 import { SANDWHISPER_Y_BOUNDARY } from './TransitionPathfinder.js';
@@ -13,23 +13,25 @@ export async function transitionToSandwhisperIsle(
   character: Character,
 ): Promise<boolean> {
   const recallPotsInInv = character.checkQuantityOfItemInInv(RecallPotion);
-  const recallPotsInBank =
-    await character.checkQuantityOfItemInBank(RecallPotion);
+  const forestBankPotsInInv = character.checkQuantityOfItemInInv(ForestBankPotion);
+  const potionInInv = recallPotsInInv > 0 || forestBankPotsInInv > 0;
 
-  // If no recall pots in bank withdraw 2k gold to pay for transition there and back
-  if (recallPotsInBank === 0) {
+  const recallPotsInBank = await character.checkQuantityOfItemInBank(RecallPotion);
+  const forestBankPotsInBank = await character.checkQuantityOfItemInBank(ForestBankPotion);
+  const potionInBank = recallPotsInBank > 0 || forestBankPotsInBank > 0;
+
+  if (!potionInBank && !potionInInv) {
+    // No return potion available — withdraw 2k gold to pay for transition there and back
     logger.info(`Withdrawing 2000 gold before travelling to Sandwhisper`);
     await character.withdrawNow(2000, 'gold');
-  } else if (
-    // Otherwise withdraw a recall pot and 1k gold
-    recallPotsInInv === 0 &&
-    recallPotsInBank > 0
-  ) {
-    await character.withdrawNow(1, RecallPotion);
-    character.addItemToItemsToKeep(RecallPotion);
+  } else if (!potionInInv && potionInBank) {
+    // Withdraw whichever return potion is available, plus 1k gold for the outbound trip
+    const potionToWithdraw = recallPotsInBank > 0 ? RecallPotion : ForestBankPotion;
+    await character.withdrawNow(1, potionToWithdraw);
+    character.addItemToItemsToKeep(potionToWithdraw);
     await character.withdrawNow(1000, 'gold');
-  } else if (recallPotsInInv > 0) {
-    // Otherwise we have a recall pot in inv so just withdraw 1k gold
+  } else if (potionInInv) {
+    // Already have a return potion in inventory — just withdraw 1k gold for the outbound trip
     await character.withdrawNow(1000, 'gold');
   }
 
@@ -62,14 +64,18 @@ export async function transitionToMainland(
   character: Character,
 ): Promise<boolean> {
   if (character.checkQuantityOfItemInInv(RecallPotion) > 0) {
-    logger.info(
-      `Using a Recall Potion to travel from Sandwhisper Isle to Mainland`,
-    );
+    logger.info(`Using a Recall Potion to travel from Sandwhisper Isle to Mainland`);
     await character.useItem(RecallPotion, 1);
     return true;
   }
 
-  logger.info(`No recall potion available. Transitioning via boat`);
+  if (character.checkQuantityOfItemInInv(ForestBankPotion) > 0) {
+    logger.info(`Using a Forest Bank Potion to travel from Sandwhisper Isle to Mainland`);
+    await character.useItem(ForestBankPotion, 1);
+    return true;
+  }
+
+  logger.info(`No return potion available. Transitioning via boat`);
   const transitionPoint = character.transitionLocations.find(
     (t) =>
       t.layer === MapLayer.overworld &&
