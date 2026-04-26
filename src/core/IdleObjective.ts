@@ -216,6 +216,7 @@ export class IdleObjective extends Objective {
     }
 
     for (const pendingItem of unclaimed) {
+      logger.info(`Claiming item ${pendingItem.description} from ${pendingItem.source}`)
       const claimResponse = await actionClaimPendingItems(this.character.data, pendingItem.id);
       if (claimResponse instanceof ApiError) {
         await this.character.handleErrors(claimResponse);
