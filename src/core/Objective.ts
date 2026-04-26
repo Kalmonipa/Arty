@@ -2,7 +2,7 @@ import * as crypto from 'node:crypto';
 import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
 import { logger, sleep } from '../utils.js';
-import { jobCompletionsCounter, jobDurationHistogram } from '../metrics.js';
+import { jobActiveGauge, jobCompletionsCounter, jobDurationHistogram } from '../metrics.js';
 import { getMaps } from '../api_calls/Maps.js';
 import {
   actionAcceptNewTask,
@@ -151,6 +151,12 @@ export abstract class Objective {
     this.log.info(`Setting status of ${this.objectiveId} to 'in_progress'`);
     this.status = 'in_progress';
     this.startTimeMs = Date.now();
+    if (this.shouldEmitMetrics) {
+      jobActiveGauge.set(
+        { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
+        1,
+      );
+    }
   }
 
   /**
@@ -179,6 +185,10 @@ export abstract class Objective {
       };
       jobCompletionsCounter.inc({ ...labels, status: this.status });
       jobDurationHistogram.observe(labels, durationSeconds);
+      jobActiveGauge.set(
+        { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
+        0,
+      );
     }
   }
 
