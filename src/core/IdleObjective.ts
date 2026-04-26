@@ -85,7 +85,14 @@ export class IdleObjective extends Objective {
     // There's no need for skills to get too far ahead of combat level
     switch (this.role) {
       case 'alchemist':
-        await this.trainSkill('alchemy');
+        if (
+          this.character.getCharacterLevel(this.character.data, 'alchemy') >=
+          this.character.getCharacterLevel(this.character.data) + 5
+        ) {
+          await this.fightMobWithinLevelRange();
+        } else {
+          await this.trainSkill('alchemy');
+        }
         if (this.checkIdleJobIsLast()) return true;
         break;
       case 'fisherman':
