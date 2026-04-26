@@ -989,12 +989,12 @@ export class Character {
         continue;
       }
 
-      //const ignoredEvents = await getIgnoreEventList();
+      const ignoredEvents = []
 
-      // if (ignoredEvents.includes(event.code)) {
-      //   logger.info(`Event ${event.code} is ignored via DB`);
-      //   continue;
-      // }
+      if (ignoredEvents.includes(event.code)) {
+        logger.info(`Event ${event.code} is ignored via DB`);
+        continue;
+      }
 
       await this.executeJobNow(
         new EventObjective(this, event),
