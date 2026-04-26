@@ -85,7 +85,6 @@ import {
   SANDWHISPER_Y_BOUNDARY,
 } from './TransitionPathfinder.js';
 import { CharRole } from '../constants.js';
-import { getIgnoreEventList } from './CharacterConfig.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 
 export class Character {
@@ -783,9 +782,6 @@ export class Character {
       return false;
     }
 
-    //logger.debug(`Removing ${objectiveId} from position ${ind}`);
-    const deletedObj = this.jobList.splice(ind, 1);
-    //logger.debug(`Removed ${deletedObj[0].objectiveId} from job queue`);
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
       for (const obj of this.jobList) {
@@ -1728,8 +1724,16 @@ export class Character {
       logger.error(`Cannot find the tasks master`);
       return false;
     }
-    await this.move(this.evaluateClosestMap(maps.data));
-    const response = await actionCompleteTask(this.data);
+    const tasksLocation = this.evaluateClosestMap(maps.data);
+    await this.move(tasksLocation);
+    let response = await actionCompleteTask(this.data);
+    if (response instanceof ApiError && response.error.code === 497) {
+      // Inventory full — deposit items to make space for the task reward, then retry
+      const shouldRetry = await this.handleErrors(response);
+      if (!shouldRetry) return false;
+      await this.move(tasksLocation);
+      response = await actionCompleteTask(this.data);
+    }
     if (response instanceof ApiError) return this.handleErrors(response);
     if (response.data.character) this.data = response.data.character;
     return true;
@@ -2737,16 +2741,13 @@ export class Character {
 
             const numLeftToHandIn = this.data.task_total - this.data.task_progress
 
-            if (numLeftToHandIn <= 0) {
-              logger.info(`Item task already complete (${this.data.task_progress}/${this.data.task_total}). Completing task to free inventory`)
-              return this.completeTask('items');
+            if (numLeftToHandIn > 0) {
+              logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`)
+              const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, Math.min(numLeftToHandIn, numInInv))
+              return tradeAttempt
             }
 
-            logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`)
-
-            const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, Math.min(numLeftToHandIn, numInInv))
-
-            return tradeAttempt
+            logger.info(`Item task complete (${this.data.task_progress}/${this.data.task_total}). Depositing items to make space for task reward.`)
           }
         }
 
