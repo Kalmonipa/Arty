@@ -21,6 +21,10 @@ jest.mock('../../src/api_calls/Maps.js', () => ({
   getMapsById: jest.fn(),
 }));
 
+jest.mock('../../src/api_calls/Bank.js', () => ({
+  getBankItems: jest.fn(async () => ({ data: [], total: 0, page: 1, size: 50 })),
+}));
+
 // Import the mocked functions
 import { actionMove, actionTransition } from '../../src/api_calls/Actions.js';
 
