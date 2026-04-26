@@ -11,6 +11,9 @@ import {
 // Mock the necessary modules
 jest.mock('../../src/api_calls/Items', () => ({
   actionEquipItem: jest.fn(),
+  actionUse: jest.fn(),
+  getItemInformation: jest.fn(),
+  getAllItemInformation: jest.fn(),
 }));
 
 jest.mock('../../src/core/CraftObjective', () => ({

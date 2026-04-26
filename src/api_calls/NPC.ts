@@ -8,6 +8,7 @@ import {
   GetNpcItemsNpcsItemsCodeGetParams,
   NpcMerchantTransactionResponseSchema,
   NpcMerchantTransactionSchema,
+  NPCResponseSchema,
   NPCSchema,
   SimpleItemSchema,
 } from '../types/types.js';
@@ -204,9 +205,9 @@ export async function getNpc(code: string): Promise<ApiError | NPCSchema> {
       });
     }
 
-    const result: NPCSchema = await response.json();
+    const result: NPCResponseSchema = await response.json();
 
-    return result;
+    return result.data;
   } catch (error) {
     return error as ApiError;
   }

@@ -286,10 +286,12 @@ export class TidyBankObjective extends Objective {
   }
 
   /**
-   * @description Recycle any excess gear if there are more than 5 in the bank
+   * @description Recycle any excess gear if there are more than 5 in the bank.
+   * Also recycles all of any item whose level is more than 10 below the lowest character level.
    */
   private async recycleExcessEquipment(skill: CraftSkill): Promise<boolean> {
     const maxNumberNeededInBank = 5;
+    const obsoleteThreshold = this.character.lowestCharLevel - 10;
 
     const itemListResponse = await getAllItemInformation({
       craft_skill: skill,
@@ -314,6 +316,14 @@ export class TidyBankObjective extends Objective {
 
       if (numInBank === undefined) {
         logger.info(`${gear.code} not found in bank`);
+        continue;
+      }
+
+      if (gear.level < obsoleteThreshold) {
+        logger.info(
+          `${gear.code} (level ${gear.level}) is more than 10 levels below lowest character level (${this.character.lowestCharLevel}). Recycling all ${numInBank}`,
+        );
+        await this.character.recycleItemNow(gear.code, numInBank);
         continue;
       }
 

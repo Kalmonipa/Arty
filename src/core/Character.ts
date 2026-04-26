@@ -174,6 +174,13 @@ export class Character {
   fishMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
 
   /**
+   * Last epoch time traded with Nomadic Merchant
+   * Set it to a day ago as the initial value
+   * ToDo: save this to state so that it persists
+   */
+  nomadicMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
+
+  /**
    * Save a timestamp when we check for events
    * We'd only like to check for events every 5 minutes
    * Initial value is 5 minutes ago
@@ -982,6 +989,18 @@ export class Character {
         );
         logger.debug(
           `Last trade attempt was ${this.fishMerchantTradeDate}, current is ${currentTimestamp}`,
+        );
+        continue;
+      } else if (
+        event.code === 'nomadic_merchant' &&
+        (this.role !== 'fisherman' ||
+          currentTimestamp < this.nomadicMerchantTradeDate + 86400)
+      ) {
+        logger.debug(
+          `${this.data.name} is not a fisherman (${this.role}) or has already attempted a trade with nomadic merchant within the last 24 hours`,
+        );
+        logger.debug(
+          `Last trade attempt was ${this.nomadicMerchantTradeDate}, current is ${currentTimestamp}`,
         );
         continue;
       }

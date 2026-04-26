@@ -5,11 +5,11 @@ import { getResourceInformation } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
 import {
   ActiveEventSchema,
-  DestinationSchema,
   MapSchema,
 } from '../types/types.js';
 import { actionFight, actionGather } from '../api_calls/Actions.js';
-import { getMapsById } from '../api_calls/Maps.js';
+import { getItemInformation } from '../api_calls/Items.js';
+import { getNpc } from '../api_calls/NPC.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -61,7 +61,9 @@ export class EventObjective extends Objective {
       case 'cult_of_darkness':
         return await this.fightMobs(this.activeEvent);
       case 'fish_merchant':
-        return await this.sellToFishMerchant(this.activeEvent);
+        return await this.sellToFishMerchant();
+      case 'nomadic_merchant':
+        return await this.sellToNomadicMerchant();
       default:
         logger.info(`Event ${this.activeEvent.code} not configured yet.`);
         this.character.lastEventCheckTimestamp = Math.round(Date.now() / 1000);
@@ -208,47 +210,85 @@ export class EventObjective extends Objective {
     return true;
   }
 
+  private async sellToFishMerchant(): Promise<boolean> {
+    const success = await this.sellToMerchant('fish_merchant');
+    if (success) {
+      this.character.fishMerchantTradeDate = Math.round(Date.now() / 1000);
+    }
+    return success;
+  }
+
+  private async sellToNomadicMerchant(): Promise<boolean> {
+    const success = await this.sellToMerchant('nomadic_merchant');
+    if (success) {
+      this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);
+    }
+    return success;
+  }
+
   /**
-   * @description Sell specific items to an NPC
-   * Currently only supports selling to the fish merchant
-   * @todo Withdraw as much as we can at once to reduce travel time. Currently it withdraws and sells each item individually
+   * @description Sell items to a merchant NPC.
+   * Items with both buy_price and sell_price are skipped (two-way tradeable — not worth selling).
+   * Items with only a sell_price: keep 5 if equipment type (weapon/helmet/body_armor/ring),
+   * keep all if utility or consumable, otherwise sell everything.
    */
-  private async sellToFishMerchant(event: ActiveEventSchema): Promise<boolean> {
-    const itemsToSell = [
-      'shell',
-      'golden_shrimp',
-      'holey_boot',
-      'small_pearls',
-    ];
+  private async sellToMerchant(npcCode: string): Promise<boolean> {
+    const keepEquipmentTypes = ['weapon', 'helmet', 'body_armor', 'ring'];
+    const keepAllTypes = ['utility', 'consumable'];
+    const keepQuantity = 5;
 
-    // Find any items in the bank
-    for (const item of itemsToSell) {
-      const numInBank = await this.character.checkQuantityOfItemInBank(item);
-      if (numInBank > 0) {
-        logger.info(`Attempting to sell ${numInBank} ${item} to Fish Merchant`);
+    const npcResponse = await getNpc(npcCode);
+    if (npcResponse instanceof ApiError) {
+      logger.error(`Could not fetch ${npcCode} details`);
+      return false;
+    }
 
-        let numToWithdraw = numInBank;
+    const sellableItems = (npcResponse.items ?? []).filter(
+      (npcItem) => npcItem.sell_price != null && npcItem.buy_price == null,
+    );
 
-        if (numToWithdraw > this.character.data.inventory_max_items) {
-          numToWithdraw = Math.floor(
-            this.character.data.inventory_max_items * 0.9,
-          );
-        }
+    for (const npcItem of sellableItems) {
+      const numInBank = await this.character.checkQuantityOfItemInBank(npcItem.code);
+      if (numInBank <= 0) continue;
 
-        // Withdraw
-        if (!(await this.character.withdrawNow(numToWithdraw, item))) {
-          logger.warn(`Withdraw ${numToWithdraw} ${item} failed. Moving on`);
-          continue;
-        }
-
-        // Sell items
-        await this.character.tradeWithNpcNow('sell', numToWithdraw, item);
+      const itemInfoResponse = await getItemInformation(npcItem.code);
+      if (itemInfoResponse instanceof ApiError) {
+        logger.warn(`Could not get item info for ${npcItem.code}, skipping`);
+        continue;
       }
+
+      const itemType = itemInfoResponse.type;
+
+      if (keepAllTypes.includes(itemType)) {
+        logger.debug(`Keeping all ${numInBank} ${npcItem.code} (${itemType})`);
+        continue;
+      }
+
+      const numToSell = keepEquipmentTypes.includes(itemType)
+        ? Math.max(0, numInBank - keepQuantity)
+        : numInBank;
+
+      if (numToSell <= 0) {
+        logger.info(`Keeping all ${numInBank} ${npcItem.code} (need to keep at least ${keepQuantity})`);
+        continue;
+      }
+
+      logger.info(`Attempting to sell ${numToSell} ${npcItem.code} to ${npcResponse.name}`);
+
+      let numToWithdraw = numToSell;
+      if (numToWithdraw > this.character.data.inventory_max_items) {
+        numToWithdraw = Math.floor(this.character.data.inventory_max_items * 0.9);
+      }
+
+      if (!(await this.character.withdrawNow(numToWithdraw, npcItem.code))) {
+        logger.warn(`Withdraw ${numToWithdraw} ${npcItem.code} failed. Moving on`);
+        continue;
+      }
+
+      await this.character.tradeWithNpcNow('sell', numToWithdraw, npcItem.code);
     }
 
     await this.character.depositNow(0, 'gold');
-
-    this.character.fishMerchantTradeDate = Math.round(Date.now() / 1000);
 
     return true;
   }
