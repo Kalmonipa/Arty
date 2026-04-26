@@ -2742,9 +2742,9 @@ export class Character {
               return this.completeTask('items');
             }
 
-            logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${numLeftToHandIn} to clear up inv space`)
+            logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`)
 
-            const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, numLeftToHandIn)
+            const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, Math.min(numLeftToHandIn, numInInv))
 
             return tradeAttempt
           }
