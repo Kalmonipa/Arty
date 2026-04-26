@@ -1,4 +1,5 @@
 import { actionClaimPendingItems, getAllItemInformation, getPendingItems } from '../api_calls/Items.js';
+import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
@@ -90,7 +91,7 @@ export class IdleObjective extends Objective {
       case 'fisherman':
         await this.trainSkill('fishing');
         if (this.checkIdleJobIsLast()) return true;
-        await this.trainSkill();
+        await this.fightMobWithinLevelRange();
         if (this.checkIdleJobIsLast()) return true;
         break;
       case 'lumberjack':
@@ -207,17 +208,18 @@ export class IdleObjective extends Objective {
       return this.character.handleErrors(pendingItems);
     }
 
-    if (pendingItems.data.length > 0) {
-      for (let pendingItem of pendingItems.data) {
-        let claimResponse = await actionClaimPendingItems(this.character.data, pendingItem.id)
+    const unclaimed = pendingItems.data.filter((item) => !item.claimed_at);
 
-        if (claimResponse instanceof ApiError) {
-          await this.character.handleErrors(claimResponse);
-        }
-      }
-    } else {
-      logger.info(`No pending items to claim`)
+    if (unclaimed.length === 0) {
+      logger.info(`No pending items to claim`);
       return true;
+    }
+
+    for (const pendingItem of unclaimed) {
+      const claimResponse = await actionClaimPendingItems(this.character.data, pendingItem.id);
+      if (claimResponse instanceof ApiError) {
+        await this.character.handleErrors(claimResponse);
+      }
     }
     return true;
   }
@@ -305,6 +307,37 @@ export class IdleObjective extends Objective {
     }
 
     return true;
+  }
+
+  /**
+   * Finds a normal mob within a level range below the character's combat level and fights it 10 times.
+   */
+  private async fightMobWithinLevelRange(minOffset: number = 4, maxOffset: number = 6): Promise<boolean> {
+    const charLevel = this.character.getCharacterLevel(this.character.data);
+
+    const mobs = await getAllMonsterInformation({
+      min_level: Math.max(charLevel - maxOffset, 0),
+      max_level: Math.max(charLevel - minOffset, 0),
+    });
+
+    if (mobs instanceof ApiError) {
+      return this.character.handleErrors(mobs);
+    }
+
+    const normalMobs = mobs.data.filter((mob) => mob.type === 'normal');
+
+    if (normalMobs.length === 0) {
+      logger.info(
+        `No normal mobs found ${minOffset}-${maxOffset} levels below combat level ${charLevel}. Skipping combat`,
+      );
+      return true;
+    }
+
+    // Results are sorted ascending by level — pick the highest in range
+    const mob = normalMobs[normalMobs.length - 1];
+
+    await this.character.evaluateGear('combat', mob.code);
+    return await this.character.fightNow(10, mob.code, undefined, false);
   }
 
   /**
