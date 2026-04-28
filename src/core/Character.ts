@@ -188,6 +188,12 @@ export class Character {
   lastEventCheckTimestamp: number = Math.round(Date.now() / 1000) - 300;
 
   /**
+   * Per-event exponential backoff state. Maps event code to { failCount, nextRetryAt } where
+   * nextRetryAt is a unix timestamp in seconds. Persisted in the job queue file.
+   */
+  eventBackoffs: Map<string, { failCount: number; nextRetryAt: number }> = new Map();
+
+  /**
    * Set to true for the character to check events
    * If false, character will ignore events
    */
@@ -369,6 +375,7 @@ export class Character {
         timestamp: new Date().toISOString(),
         enableEvents: this.enableEvents,
         itemsToKeep: this.itemsToKeep,
+        eventBackoffs: Object.fromEntries(this.eventBackoffs),
         jobs: this.jobList.map((job) => this.serializeJob(job)),
       };
 
@@ -397,6 +404,9 @@ export class Character {
 
       this.enableEvents = jobQueueData.enableEvents;
       this.itemsToKeep = jobQueueData.itemsToKeep;
+      if (jobQueueData.eventBackoffs) {
+        this.eventBackoffs = new Map(Object.entries(jobQueueData.eventBackoffs));
+      }
 
       // Deserialize and add jobs
       for (const jobData of jobQueueData.jobs) {
@@ -1012,6 +1022,15 @@ export class Character {
         continue;
       }
 
+      const backoff = this.eventBackoffs.get(event.code);
+      if (backoff && currentTimestamp < backoff.nextRetryAt) {
+        const remainingMinutes = Math.round((backoff.nextRetryAt - currentTimestamp) / 60);
+        logger.debug(
+          `Event ${event.code} in backoff period (attempt ${backoff.failCount}). ${remainingMinutes} minutes remaining.`,
+        );
+        continue;
+      }
+
       await this.executeJobNow(
         new EventObjective(this, event),
         true,
@@ -1022,6 +1041,24 @@ export class Character {
 
     this.lastEventCheckTimestamp = currentTimestamp;
     return true;
+  }
+
+  recordEventFailure(eventCode: string): void {
+    const current = this.eventBackoffs.get(eventCode) ?? { failCount: 0, nextRetryAt: 0 };
+    const backoffSeconds = Math.min(10 * 60 * Math.pow(2, current.failCount), 8 * 60 * 60);
+    const nextRetryAt = Math.round(Date.now() / 1000) + backoffSeconds;
+    const failCount = current.failCount + 1;
+    this.eventBackoffs.set(eventCode, { failCount, nextRetryAt });
+    logger.info(
+      `Event ${eventCode} failed (attempt ${failCount}). Backing off for ${Math.round(backoffSeconds / 60)} minutes.`,
+    );
+  }
+
+  recordEventSuccess(eventCode: string): void {
+    if (this.eventBackoffs.has(eventCode)) {
+      this.eventBackoffs.delete(eventCode);
+      logger.debug(`Event ${eventCode} succeeded. Resetting backoff.`);
+    }
   }
 
   /**

@@ -50,25 +50,34 @@ export class EventObjective extends Objective {
 
   async run() {
     // ToDo: use content.type to determine what type of event it is rather than hardcoding names
+    let result: boolean;
     switch (this.activeEvent.code) {
       case 'magic_apparition':
       case 'strange_apparition':
-        return await this.gatherResources(this.activeEvent);
+        result = await this.gatherResources(this.activeEvent);
+        break;
       case 'bandit_camp':
       case 'portal_demon':
       case 'corrupted_ogre':
       case 'corrupted_owlbear':
       case 'cult_of_darkness':
-        return await this.fightMobs(this.activeEvent);
+        result = await this.fightMobs(this.activeEvent);
+        break;
       case 'fish_merchant':
-        return await this.sellToFishMerchant();
+        result = await this.sellToFishMerchant();
+        break;
       case 'nomadic_merchant':
-        return await this.sellToNomadicMerchant();
+        result = await this.sellToNomadicMerchant();
+        break;
       default:
         logger.info(`Event ${this.activeEvent.code} not configured yet.`);
         this.character.lastEventCheckTimestamp = Math.round(Date.now() / 1000);
         return false;
     }
+    if (result) {
+      this.character.recordEventSuccess(this.activeEvent.code);
+    }
+    return result;
   }
 
   /**
@@ -197,9 +206,7 @@ export class EventObjective extends Objective {
       }
 
       if (response.data.fight.result === 'loss') {
-        logger.info(`Skipping event checks for 60 minutes`);
-        this.character.lastEventCheckTimestamp =
-          Math.round(Date.now() / 1000) + 3600;
+        this.character.recordEventFailure(event.code);
         return false;
       }
     }

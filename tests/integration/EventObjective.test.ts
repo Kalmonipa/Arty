@@ -44,6 +44,8 @@ class SimpleMockCharacter {
   withdrawNow = jest.fn(async (_qty: number, _code: string): Promise<boolean> => true);
   tradeWithNpcNow = jest.fn(async (): Promise<void> => {});
   depositNow = jest.fn(async (): Promise<void> => {});
+  recordEventSuccess = jest.fn();
+  recordEventFailure = jest.fn();
 }
 
 describe('EventObjective - sellToMerchant', () => {
@@ -267,5 +269,38 @@ describe('EventObjective - sellToMerchant', () => {
     await makeObjective('fish_merchant').run();
 
     expect(character.fishMerchantTradeDate).toBe(0);
+  });
+
+  it('calls recordEventSuccess when fish_merchant event completes successfully', async () => {
+    mockGetNpc.mockResolvedValue(makeNpcResponse([]) as any);
+
+    await makeObjective('fish_merchant').run();
+
+    expect(character.recordEventSuccess).toHaveBeenCalledWith('fish_merchant');
+    expect(character.recordEventSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls recordEventSuccess when nomadic_merchant event completes successfully', async () => {
+    mockGetNpc.mockResolvedValue(makeNpcResponse([]) as any);
+
+    await makeObjective('nomadic_merchant').run();
+
+    expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+  });
+
+  it('does not call recordEventSuccess when fish_merchant getNpc fails', async () => {
+    mockGetNpc.mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
+
+    await makeObjective('fish_merchant').run();
+
+    expect(character.recordEventSuccess).not.toHaveBeenCalled();
+  });
+
+  it('does not call recordEventFailure for merchant events (only fight losses trigger it)', async () => {
+    mockGetNpc.mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
+
+    await makeObjective('fish_merchant').run();
+
+    expect(character.recordEventFailure).not.toHaveBeenCalled();
   });
 });
