@@ -344,7 +344,6 @@ export class IdleObjective extends Objective {
     // Try mobs from highest to lowest level, skipping any that aren't accessible (e.g. event-only mobs)
     for (let i = normalMobs.length - 1; i >= 0; i--) {
       const mob = normalMobs[i];
-      await this.character.evaluateGear('combat', mob.code);
       const result = await this.character.fightNow(10, mob.code, undefined, false);
       if (result) return true;
       logger.info(`Could not fight ${mob.code}, trying next mob in range`);
