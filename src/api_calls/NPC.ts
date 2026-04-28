@@ -12,7 +12,7 @@ import {
   NPCSchema,
   SimpleItemSchema,
 } from '../types/types.js';
-import { logger, MyHeaders, sleep } from '../utils.js';
+import { MyHeaders, sleep } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 
 /**
@@ -92,9 +92,6 @@ export async function actionSellItem(
     headers: MyHeaders,
     body: JSON.stringify(items),
   };
-
-  // ToDo: remove this
-  logger.info(`Payload: ${JSON.stringify(items)}`);
 
   const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/npc/sell`);
 

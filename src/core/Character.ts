@@ -12,6 +12,7 @@ import {
 import { getMaps, getMapsById } from '../api_calls/Maps.js';
 import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
+  AccountAchievementSchema,
   ActiveEventSchema,
   CharacterSchema,
   ConditionOperator,
@@ -88,6 +89,7 @@ import {
 } from './TransitionPathfinder.js';
 import { CharRole } from '../constants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
+import { getAccountAchievements } from '../api_calls/Achievements.js';
 
 export class Character {
   data: CharacterSchema;
@@ -116,7 +118,6 @@ export class Character {
 
   /**
    * Game state that we can refer to without API calls
-   * @todo Should just make these available as a constant rather than a property of the Character
    */
   amuletMap?: Record<GearEffects, ItemSchema[]>;
   armorMap?: Record<GearEffects, ItemSchema[]>;
@@ -168,18 +169,10 @@ export class Character {
    * Role of the character. One of Alchemist, Fighter, Fisherman, Lumberjack, Miner
    */
   role: Role;
-  /**
-   * Last epoch time traded with Fish Merchant
-   * Set it to a day ago as the initial value
-   * ToDo: save this to state so that it persists
-   */
+  /** Last epoch time traded with Fish Merchant. Initial value ensures first check is eligible. */
   fishMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
 
-  /**
-   * Last epoch time traded with Nomadic Merchant
-   * Set it to a day ago as the initial value
-   * ToDo: save this to state so that it persists
-   */
+  /** Last epoch time traded with Nomadic Merchant. Initial value ensures first check is eligible. */
   nomadicMerchantTradeDate: number = Math.round(Date.now() / 1000) - 86400;
 
   /**
@@ -200,6 +193,9 @@ export class Character {
    * If false, character will ignore events
    */
   enableEvents: boolean = true;
+
+  /** Achievements completed by this character's account, loaded once at startup. */
+  completedAchievements: AccountAchievementSchema[] = [];
 
   /**
    * Raw item codes dropped by fishing resources (e.g. gudgeon, trout).
@@ -283,7 +279,29 @@ export class Character {
 
     this.role = CharRole;
 
+    await this.loadAchievements();
     await this.loadJobQueue();
+  }
+
+  private async loadAchievements(): Promise<void> {
+    this.completedAchievements = [];
+    const size = 100;
+    let page = 1;
+
+    while (true) {
+      const response = await getAccountAchievements(this.data.account, page, size);
+      if (response instanceof ApiError) {
+        logger.warn(`Failed to load achievements for ${this.data.account}. Access restrictions will apply conservatively.`);
+        return;
+      }
+      this.completedAchievements.push(...response.data);
+
+      const total = response.total ?? 0;
+      if (page * size >= total) break;
+      page++;
+    }
+
+    logger.info(`Loaded ${this.completedAchievements.length} completed achievements for ${this.data.account}`);
   }
 
   /********
@@ -377,6 +395,8 @@ export class Character {
         timestamp: new Date().toISOString(),
         enableEvents: this.enableEvents,
         itemsToKeep: this.itemsToKeep,
+        fishMerchantTradeDate: this.fishMerchantTradeDate,
+        nomadicMerchantTradeDate: this.nomadicMerchantTradeDate,
         eventBackoffs: Object.fromEntries(this.eventBackoffs),
         jobs: this.jobList.map((job) => this.serializeJob(job)),
       };
@@ -406,6 +426,12 @@ export class Character {
 
       this.enableEvents = jobQueueData.enableEvents;
       this.itemsToKeep = jobQueueData.itemsToKeep;
+      if (jobQueueData.fishMerchantTradeDate != null) {
+        this.fishMerchantTradeDate = jobQueueData.fishMerchantTradeDate;
+      }
+      if (jobQueueData.nomadicMerchantTradeDate != null) {
+        this.nomadicMerchantTradeDate = jobQueueData.nomadicMerchantTradeDate;
+      }
       if (jobQueueData.eventBackoffs) {
         this.eventBackoffs = new Map(Object.entries(jobQueueData.eventBackoffs));
       }
@@ -1260,8 +1286,7 @@ export class Character {
   /**
    * Checks if the character is in cooldown. Sleep until if finishes if yes
    * @param character
-   * @returns {boolean}
-   * @todo I don't think this needs to return anything?
+   * @returns
    */
   async cooldownStatus() {
     const targetDate = new Date(this.data.cooldown_expiration);
@@ -1340,8 +1365,7 @@ export class Character {
     }
 
     maps.forEach((map) => {
-      // ToDo: Check the achievements to see if we can access the Sandwhisper Isle bank
-      if (map.map_id === 1234) {
+      if (map.map_id === 1234 && !this.completedAchievements.some((a) => a.code === 'secure_the_island')) {
         logger.debug(`Sandwhisper Isle bank not unlocked. Skipping`);
         return;
       }

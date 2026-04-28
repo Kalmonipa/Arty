@@ -2,6 +2,7 @@ import { ApiUrl } from '../constants.js';
 import { ApiError } from '../core/Error.js';
 import {
   AchievementResponseSchema,
+  DataPageAccountAchievementSchema,
   StaticDataPageAchievementSchema,
   GetAllAchievementsAchievementsGetParams,
 } from '../types/types.js';
@@ -36,6 +37,39 @@ export async function getAllAchievements(
         code: response.status,
         message: `Unknown error from /achievements`,
       });
+    }
+    return await response.json();
+  } catch (error) {
+    return error as ApiError;
+  }
+}
+
+/**
+ * @description Returns completed achievements for an account, one page at a time
+ */
+export async function getAccountAchievements(
+  account: string,
+  page: number = 1,
+  size: number = 100,
+): Promise<DataPageAccountAchievementSchema | ApiError> {
+  const apiUrl = new URL(`${ApiUrl}/accounts/${account}/achievements`);
+  apiUrl.searchParams.set('completed', 'true');
+  apiUrl.searchParams.set('page', page.toString());
+  apiUrl.searchParams.set('size', size.toString());
+
+  try {
+    const response = await fetch(apiUrl, getRequestOptions);
+    if (!response.ok) {
+      let message: string;
+      switch (response.status) {
+        case 404:
+          message = `Account ${account} not found.`;
+          break;
+        default:
+          message = `Unknown error from /accounts/${account}/achievements`;
+          break;
+      }
+      throw new ApiError({ code: response.status, message });
     }
     return await response.json();
   } catch (error) {

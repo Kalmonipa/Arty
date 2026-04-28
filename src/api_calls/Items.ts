@@ -6,14 +6,12 @@ import {
   ClaimPendingItemDataSchema,
   ClaimPendingItemResponseSchema,
   DataPagePendingItemSchema,
-  DataPageSimpleItemSchema,
   DeleteItemResponseSchema,
   EquipmentResponseSchema,
   EquipSchema,
   GetAllItemsItemsGetParams,
   ItemResponseSchema,
   ItemSchema,
-  PendingItemSchema,
   SimpleItemSchema,
   StaticDataPageItemSchema,
   UnequipSchema,
@@ -247,7 +245,6 @@ export async function getAllItemInformation(
   try {
     const response = await fetch(apiUrl, getRequestOptions);
 
-    // ToDo: add more error handling
     if (!response.ok) {
       throw new ApiError({
         code: response.status,
@@ -271,7 +268,6 @@ export async function getItemInformation(
   try {
     const response = await fetch(`${ApiUrl}/items/${code}`, getRequestOptions);
 
-    // ToDo: add more error handling into here
     if (response.status === 404) {
       throw new ApiError({
         code: response.status,
@@ -444,7 +440,7 @@ export async function actionClaimPendingItems(
     }
     if (result.data.item.items) {
       logger.info(`Received following items:`)
-      for (let item of result.data.item.items) {
+      for (const item of result.data.item.items) {
         logger.info(`  - ${item.quantity}x ${item.code}`)
       }
     }
