@@ -1863,7 +1863,6 @@ export class Character {
    * @returns {boolean}
    *  - true means bank was visited and items deposited
    *  - false means nothing happened
-   * @todo This should move back to the original location after depositing
    */
   async evaluateDepositItemsInBank(
     exceptions?: string[],
