@@ -25,8 +25,8 @@ const makeMerchantEvent = (code: 'fish_merchant' | 'nomadic_merchant'): ActiveEv
     expiration: new Date(Date.now() + 3_600_000).toISOString(),
     created_at: new Date().toISOString(),
     duration: 60,
-    map: { map_id: 1, x: 0, y: 0, content: null, skin: '', layer: 'overworld' },
-    previous_map: { map_id: 1, x: 0, y: 0, content: null, skin: '', layer: 'overworld' },
+    map: { map_id: 1, x: 0, y: 0, skin: '', layer: 'overworld', interactions: { content: null } },
+    previous_map: { map_id: 1, x: 0, y: 0, skin: '', layer: 'overworld', interactions: {} },
   } as unknown as ActiveEventSchema);
 
 class SimpleMockCharacter {

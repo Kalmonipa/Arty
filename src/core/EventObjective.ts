@@ -5,7 +5,9 @@ import { getResourceInformation } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
 import {
   ActiveEventSchema,
+  MapContentType,
   MapSchema,
+  ResourceResponseSchema,
 } from '../types/types.js';
 import { actionFight, actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
@@ -22,6 +24,8 @@ export class EventObjective extends Objective {
    * This is used to move back to once the event expires, to resume prior activities
    */
   previousLocation: MapSchema;
+  /** Pre-fetched resource info passed in from checkForActiveEvents to avoid a duplicate API call. */
+  resourceInfo?: ResourceResponseSchema;
 
   constructor(
     character: Character,
@@ -49,31 +53,33 @@ export class EventObjective extends Objective {
   }
 
   async run() {
-    // ToDo: use content.type to determine what type of event it is rather than hardcoding names
     let result: boolean;
-    switch (this.activeEvent.code) {
-      case 'magic_apparition':
-      case 'strange_apparition':
-        result = await this.gatherResources(this.activeEvent);
-        break;
-      case 'bandit_camp':
-      case 'portal_demon':
-      case 'corrupted_ogre':
-      case 'corrupted_owlbear':
-      case 'cult_of_darkness':
-        result = await this.fightMobs(this.activeEvent);
-        break;
-      case 'fish_merchant':
-        result = await this.sellToFishMerchant();
-        break;
-      case 'nomadic_merchant':
-        result = await this.sellToNomadicMerchant();
-        break;
-      default:
-        logger.info(`Event ${this.activeEvent.code} not configured yet.`);
-        this.character.lastEventCheckTimestamp = Math.round(Date.now() / 1000);
-        return false;
+    const contentType = this.activeEvent.map.interactions?.content?.type;
+
+    if (contentType === MapContentType.resource) {
+      result = await this.gatherResources(this.activeEvent);
+    } else {
+      switch (this.activeEvent.code) {
+        case 'bandit_camp':
+        case 'portal_demon':
+        case 'corrupted_ogre':
+        case 'corrupted_owlbear':
+        case 'cult_of_darkness':
+          result = await this.fightMobs(this.activeEvent);
+          break;
+        case 'fish_merchant':
+          result = await this.sellToFishMerchant();
+          break;
+        case 'nomadic_merchant':
+          result = await this.sellToNomadicMerchant();
+          break;
+        default:
+          logger.info(`Event ${this.activeEvent.code} not configured yet.`);
+          this.character.lastEventCheckTimestamp = Math.round(Date.now() / 1000);
+          return false;
+      }
     }
+
     if (result) {
       this.character.recordEventSuccess(this.activeEvent.code);
     }
@@ -84,27 +90,29 @@ export class EventObjective extends Objective {
    * @description Function to respond to resource events
    */
   private async gatherResources(event: ActiveEventSchema): Promise<boolean> {
-    const resourceInfoResponse = await getResourceInformation(
-      event.map.interactions.content.code,
-    );
-    if (resourceInfoResponse instanceof ApiError) {
-      return this.character.handleErrors(resourceInfoResponse);
+    let resourceInfo = this.resourceInfo;
+
+    if (!resourceInfo) {
+      const response = await getResourceInformation(event.map.interactions.content.code);
+      if (response instanceof ApiError) {
+        return this.character.handleErrors(response);
+      }
+      resourceInfo = response;
     }
 
     const charSkillLevel = this.character.getCharacterLevel(
       this.character.data,
-      resourceInfoResponse.data.skill,
+      resourceInfo.data.skill,
     );
-    const requiredLevel = resourceInfoResponse.data.level;
 
-    if (charSkillLevel < requiredLevel) {
+    if (charSkillLevel < resourceInfo.data.level) {
       logger.debug(`Not high enough level for ${event.code}`);
-      return;
+      return false;
     }
 
     const expirationTime = new Date(event.expiration).getTime();
     while (Date.now() < expirationTime) {
-      await this.character.evaluateGear(resourceInfoResponse.data.skill);
+      await this.character.evaluateGear(resourceInfo.data.skill);
 
       await this.character.move(event.map);
 

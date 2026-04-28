@@ -20,8 +20,10 @@ import {
   GatheringSkill,
   ItemSchema,
   ItemSlot,
+  MapContentType,
   MapLayer,
   MapSchema,
+  ResourceResponseSchema,
   SimpleEffectSchema,
   SimpleItemSchema,
   Skill,
@@ -75,7 +77,7 @@ import { RecycleObjective } from './RecycleObjective.js';
 import { ExpandBankObjective } from './BankExpansion.js';
 import { getActiveEvents } from '../api_calls/Events.js';
 import { EventObjective } from './EventObjective.js';
-import { getAllResourceInformation } from '../api_calls/Resources.js';
+import { getAllResourceInformation, getResourceInformation } from '../api_calls/Resources.js';
 import {
   transitionToMainland,
   transitionToSandwhisperIsle,
@@ -1031,8 +1033,35 @@ export class Character {
         continue;
       }
 
+      let resourceInfo: ResourceResponseSchema | undefined;
+      if (event.map.interactions.content?.type === MapContentType.resource) {
+        const resourceInfoResponse = await getResourceInformation(
+          event.map.interactions.content.code,
+        );
+        if (resourceInfoResponse instanceof ApiError) {
+          logger.warn(`Could not fetch resource info for ${event.code}. Skipping.`);
+          continue;
+        }
+        const charSkillLevel = this.getCharacterLevel(
+          this.data,
+          resourceInfoResponse.data.skill,
+        );
+        if (charSkillLevel < resourceInfoResponse.data.level) {
+          logger.debug(
+            `${this.data.name} is not high enough ${resourceInfoResponse.data.skill} level` +
+            ` (${charSkillLevel}/${resourceInfoResponse.data.level}) for ${event.code}`,
+          );
+          continue;
+        }
+        resourceInfo = resourceInfoResponse;
+      }
+
+      const objective = new EventObjective(this, event);
+      if (resourceInfo) {
+        objective.resourceInfo = resourceInfo;
+      }
       await this.executeJobNow(
-        new EventObjective(this, event),
+        objective,
         true,
         true,
         this.currentExecutingJob.objectiveId,
