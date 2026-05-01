@@ -92,6 +92,22 @@ export function buildTransitionPath(
     return [];
   }
 
+  // If the character is already standing on a transition point whose destination makes the
+  // target reachable, use it immediately. This prevents the BFS from preferring a transition
+  // on a different map (e.g. a closer interior exit that is physically unreachable).
+  const standingOnTransition = allTransitions.find(
+    (t) => t.x === charX && t.y === charY && t.layer === charLayer,
+  );
+  if (standingOnTransition?.interactions.transition) {
+    const dest = standingOnTransition.interactions.transition;
+    if (
+      dest.map_id === target.map_id ||
+      isDirectlyReachable(dest.x, dest.y, dest.layer, target, allTransitions)
+    ) {
+      return [standingOnTransition];
+    }
+  }
+
   interface BFSNode {
     x: number;
     y: number;
