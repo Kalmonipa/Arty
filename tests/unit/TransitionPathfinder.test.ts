@@ -161,6 +161,24 @@ describe('buildTransitionPath', () => {
     });
   });
 
+  describe('interior layer — character already standing on exit transition', () => {
+    it('returns the exit at the current position even when another interior exit has a closer destination', () => {
+      //   map 40: (-3, 12) interior -> (-3, 12) overworld  [current interior exit]
+      //   map 42: ( 0, 13) interior -> ( 0, 13) overworld  [different interior, closer to bank]
+      const currentExit = makeMap(40, -3, 12, 'interior', { map_id: 41, x: -3, y: 12, layer: 'overworld' });
+      const otherExit   = makeMap(42,  0, 13, 'interior', { map_id: 43, x:  0, y: 13, layer: 'overworld' });
+      const transitions = [...standardTransitions, currentExit, otherExit];
+
+      // Bank at (7, 13) overworld — (0, 13) destination would be closer, but it is on a different
+      // interior map that the character cannot walk to.
+      const target = makeMap(99, 7, 13, 'overworld');
+      const path = buildTransitionPath(-3, 12, 'interior', target, transitions);
+
+      expect(path).toHaveLength(1);
+      expect(path[0].map_id).toBe(40);
+    });
+  });
+
   describe('error cases', () => {
     it('returns null when no transition exists for the target layer', () => {
       const target = makeMap(99, 5, 5, 'interior'); // no interior transitions defined

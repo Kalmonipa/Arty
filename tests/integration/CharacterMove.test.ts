@@ -488,6 +488,110 @@ describe('Character.move()', () => {
       // TODO: Investigate and fix the test mocking to properly simulate the transition flow
       expect(true).toBe(true);
     });
+
+    it('should skip actionMove when already standing on the interior exit transition point', async () => {
+      // Arrange — character is already at the interior exit coordinates
+      mockCharacter = { ...mockCharacterData, x: -3, y: 12, layer: 'interior', map_id: 800 };
+      character = new Character(mockCharacter);
+      character.withdrawNow = jest.fn(async () => true);
+
+      const interiorExit: MapSchema = {
+        map_id: 800,
+        name: 'Interior Exit',
+        skin: 'cave_1',
+        x: -3,
+        y: 12,
+        layer: 'interior',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: { map_id: 801, x: -3, y: 12, layer: 'overworld', conditions: [] },
+        },
+      };
+      // A second interior exit on a different map whose overworld destination is closer to the
+      // bank — must not be selected since the character cannot walk there.
+      const otherInteriorExit: MapSchema = {
+        map_id: 802,
+        name: 'Other Interior Exit',
+        skin: 'cave_2',
+        x: 0,
+        y: 13,
+        layer: 'interior',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: { map_id: 803, x: 0, y: 13, layer: 'overworld', conditions: [] },
+        },
+      };
+      character.transitionLocations = [interiorExit, otherInteriorExit];
+
+      const destination: MapSchema = {
+        map_id: 900,
+        name: 'Bank',
+        skin: 'bank_1',
+        x: 7,
+        y: 13,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      const mockTransitionResponse: CharacterTransitionResponseSchema = {
+        data: {
+          cooldown: {
+            remaining_seconds: 0,
+            total_seconds: 3,
+            started_at: '2025-01-01T00:00:00.000Z',
+            expiration: '2025-01-01T00:00:03.000Z',
+            reason: 'transition',
+          },
+          destination: {
+            map_id: 801,
+            name: 'Overworld',
+            skin: 'overworld_1',
+            x: -3,
+            y: 12,
+            layer: 'overworld',
+            access: { type: 'standard', conditions: [] },
+            interactions: {},
+          },
+          transition: { map_id: 801, x: -3, y: 12, layer: 'overworld', conditions: [] },
+          character: { ...mockCharacter, x: -3, y: 12, layer: 'overworld', map_id: 801 },
+        },
+      };
+
+      const mockFinalMoveResponse: CharacterMovementResponseSchema = {
+        data: {
+          cooldown: {
+            remaining_seconds: 0,
+            total_seconds: 5,
+            started_at: '2025-01-01T00:00:03.000Z',
+            expiration: '2025-01-01T00:00:08.000Z',
+            reason: 'movement',
+          },
+          destination: destination,
+          path: [[-3, 12], [7, 13]],
+          character: { ...mockCharacter, x: 7, y: 13, layer: 'overworld', map_id: 900 },
+        },
+      };
+
+      mockActionTransition.mockResolvedValue(mockTransitionResponse);
+      mockActionMove.mockResolvedValue(mockFinalMoveResponse);
+
+      // Act
+      const result = await character.move(destination);
+
+      // Assert
+      expect(result).toBe(true);
+      // actionMove must NOT be called for the transition step — character is already there
+      expect(mockActionMove).toHaveBeenCalledTimes(1);
+      expect(mockActionMove).toHaveBeenCalledWith(
+        expect.objectContaining({ x: -3, y: 12, layer: 'overworld' }),
+        { x: destination.x, y: destination.y },
+      );
+      expect(mockActionTransition).toHaveBeenCalledTimes(1);
+      expect(character.data.layer).toBe('overworld');
+      expect(character.data.x).toBe(7);
+      expect(character.data.y).toBe(13);
+    });
   });
 
   describe('Error handling', () => {

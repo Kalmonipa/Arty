@@ -2310,16 +2310,18 @@ export class Character {
       `Moving to transition point at (${transitionPoint.x}, ${transitionPoint.y}, ${transitionPoint.layer})`,
     );
 
-    const moveResponse = await actionMove(this.data, {
-      x: transitionPoint.x,
-      y: transitionPoint.y,
-    });
-    if (moveResponse instanceof ApiError) return this.handleErrors(moveResponse);
-    if (!moveResponse.data.character) {
-      logger.error('Move response missing character data');
-      return false;
+    if (this.data.x !== transitionPoint.x || this.data.y !== transitionPoint.y) {
+      const moveResponse = await actionMove(this.data, {
+        x: transitionPoint.x,
+        y: transitionPoint.y,
+      });
+      if (moveResponse instanceof ApiError) return this.handleErrors(moveResponse);
+      if (!moveResponse.data.character) {
+        logger.error('Move response missing character data');
+        return false;
+      }
+      this.data = moveResponse.data.character;
     }
-    this.data = moveResponse.data.character;
 
     return this.transition();
   }
