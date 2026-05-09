@@ -2845,7 +2845,9 @@ export class Character {
         return false;
       case 496: // Conditions not met
         return false;
-      case 497: { // The character's inventory is full. Dump everything
+      case 497: { // The character's inventory is full. 
+        // If the char is doing a task then we should hand in the items if they have 
+        // before emptying the remaining inventory into the bank
         if (this.data.task && this.data.task_type === 'items') {
           const numInInv = this.checkQuantityOfItemInInv(this.data.task)
           if (numInInv > 0) {
@@ -2854,8 +2856,7 @@ export class Character {
 
             if (numLeftToHandIn > 0) {
               logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`)
-              const tradeAttempt: boolean = await this.tradeWithTasksMaster(this.data.task, Math.min(numLeftToHandIn, numInInv))
-              return tradeAttempt
+              await this.tradeWithTasksMaster(this.data.task, Math.min(numLeftToHandIn, numInInv))
             }
 
             logger.info(`Item task complete (${this.data.task_progress}/${this.data.task_total}). Depositing items to make space for task reward.`)
