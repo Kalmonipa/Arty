@@ -485,6 +485,7 @@ export class Character {
       return {
         activityType: job.activityType,
         targetMob: job.targetMob,
+        targetResource: job.targetResource,
       };
     } else if (job instanceof EventObjective) {
       return {
@@ -569,6 +570,7 @@ export class Character {
             this,
             specificData.activityType as WeaponFlavours,
             specificData.targetMob as string,
+            specificData.targetResource as string,
           );
           break;
         case 'EventObjective':
