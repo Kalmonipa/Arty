@@ -354,6 +354,35 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       expect(objective.status).toBe('not_started');
     });
 
+    it('should call evaluateGear with item code as targetResource', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+
+      // Mock the API calls for gathering
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+        mockMapData,
+      );
+
+      // Act
+      await gatherObjective.run();
+
+      // Assert
+      expect(mockCharacter.evaluateGear).toHaveBeenCalledWith(
+        'mining',     // resourceDetails.subtype cast to WeaponFlavours
+        undefined,    // targetMob
+        'iron_ore',   // targetResource — the item code being gathered
+      );
+    });
+
     it('should return false if gathering item is wooden_stick', async () => {
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,

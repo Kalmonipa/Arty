@@ -151,6 +151,8 @@ export class GatherObjective extends Objective {
         if (isGatheringSkill(resourceDetails.subtype)) {
           await this.character.evaluateGear(
             resourceDetails.subtype as WeaponFlavours,
+            undefined,
+            code,
           );
         }
       }
