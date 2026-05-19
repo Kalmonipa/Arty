@@ -2151,7 +2151,7 @@ export class Character {
       // Prefer cheese or fish_soup over anything else if we have it for the achievements
       // ToDo: Only do this if we need to complete the achievement
       const achievementFoods = bankFood.find(
-        (food) => food.code === 'cheese' || food.code === 'fish_soup',
+        (food) => food.code === 'cheese' || food.code === 'fish_soup' || food.code === 'mushroom_soup' || food.code === 'apple_pie',
       );
       if (achievementFoods) {
         logger.debug(
