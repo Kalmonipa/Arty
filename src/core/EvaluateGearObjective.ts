@@ -2,7 +2,7 @@ import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
-import { ItemSchema, ItemSlot, MonsterSchema } from '../types/types.js';
+import { ItemSchema, ItemSlot, MonsterSchema, ResourceSchema } from '../types/types.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { ApiError } from './Error.js';
@@ -345,7 +345,7 @@ export class EvaluateGearObjective extends Objective {
           `Failed to fetch resource info for ${targetResource}, defaulting to wisdom artifacts`,
         );
       } else {
-        let resource: (typeof resources.data)[0] | undefined;
+        let resource: ResourceSchema | undefined;
         for (let i = resources.data.length - 1; i >= 0; i--) {
           const r = resources.data[i];
           if (r.level <= this.character.getCharacterLevel(this.character.data, r.skill)) {
@@ -374,7 +374,7 @@ export class EvaluateGearObjective extends Objective {
       }
     }
 
-    const artifactSlots: ('artifact1' | 'artifact2' | 'artifact3')[] = [
+    const artifactSlots: ItemSlot[] = [
       'artifact1',
       'artifact2',
       'artifact3',
