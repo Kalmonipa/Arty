@@ -1201,6 +1201,12 @@ export class Character {
     switch (itemSlot) {
       case 'amulet':
         return this.data.amulet_slot;
+      case 'artifact1':
+        return this.data.artifact1_slot;
+      case 'artifact2':
+        return this.data.artifact2_slot;
+      case 'artifact3':
+        return this.data.artifact3_slot;
       case 'body_armor':
         return this.data.body_armor_slot;
       case 'boots':

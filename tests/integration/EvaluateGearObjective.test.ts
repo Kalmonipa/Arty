@@ -386,6 +386,12 @@ class SimpleMockCharacter {
     switch (itemSlot) {
       case 'amulet':
         return this.data.amulet_slot;
+      case 'artifact1':
+        return this.data.artifact1_slot;
+      case 'artifact2':
+        return this.data.artifact2_slot;
+      case 'artifact3':
+        return this.data.artifact3_slot;
       case 'body_armor':
         return this.data.body_armor_slot;
       case 'boots':
@@ -452,6 +458,15 @@ class SimpleMockCharacter {
       case 'amulet':
         this.data.amulet_slot = code;
         break;
+      case 'artifact1':
+        this.data.artifact1_slot = code;
+        break;
+      case 'artifact2':
+        this.data.artifact2_slot = code;
+        break;
+      case 'artifact3':
+        this.data.artifact3_slot = code;
+        break;
     }
     return true;
   });
@@ -506,6 +521,16 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(objective.character).toBe(mockCharacter);
       expect(objective.objectiveId).toMatch(/^evaluate_combat_gear_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
+    });
+
+    it('should return artifact slot contents from getCharacterGearIn', () => {
+      mockCharacter.data.artifact1_slot = 'lucky_charm';
+      mockCharacter.data.artifact2_slot = 'golden_earring';
+      mockCharacter.data.artifact3_slot = '';
+
+      expect(mockCharacter.getCharacterGearIn('artifact1')).toBe('lucky_charm');
+      expect(mockCharacter.getCharacterGearIn('artifact2')).toBe('golden_earring');
+      expect(mockCharacter.getCharacterGearIn('artifact3')).toBe('');
     });
 
     it('should evaluate combat gear for a monster', async () => {
