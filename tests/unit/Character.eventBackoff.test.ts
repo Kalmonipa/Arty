@@ -216,4 +216,19 @@ describe('Character - event backoff', () => {
       expect(character2.eventBackoffs.get('bandit_camp').failCount).toBe(1);
     });
   });
+
+  describe('getCharacterGearIn - artifact slots', () => {
+    it('returns the correct item code for artifact1, artifact2, artifact3 slots', () => {
+      const char = new Character({
+        ...mockCharacterData,
+        artifact1_slot: 'lucky_charm',
+        artifact2_slot: 'golden_earring',
+        artifact3_slot: '',
+      });
+
+      expect(char.getCharacterGearIn('artifact1')).toBe('lucky_charm');
+      expect(char.getCharacterGearIn('artifact2')).toBe('golden_earring');
+      expect(char.getCharacterGearIn('artifact3')).toBe('');
+    });
+  });
 });
