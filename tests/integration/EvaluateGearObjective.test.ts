@@ -117,6 +117,24 @@ const createMockShield = (
   ],
 });
 
+const createMockArtifact = (
+  code: string,
+  name: string,
+  level: number,
+  effectType: GearEffects,
+): ItemSchema => ({
+  code,
+  name,
+  level,
+  type: 'artifact',
+  subtype: 'artifact',
+  description: '',
+  craft: null,
+  tradeable: true,
+  conditions: [],
+  effects: [{ code: effectType, value: 20, description: `${effectType} effect` }],
+});
+
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
@@ -333,6 +351,11 @@ class SimpleMockCharacter {
     heal: [],
     prospecting: [],
     wisdom: [],
+  };
+
+  artifactsMap: Partial<Record<GearEffects, ItemSchema[]>> = {
+    prospecting: [createMockArtifact('lucky_charm', 'Lucky Charm', 5, 'prospecting')],
+    wisdom: [createMockArtifact('wisdom_stone', 'Wisdom Stone', 5, 'wisdom')],
   };
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
