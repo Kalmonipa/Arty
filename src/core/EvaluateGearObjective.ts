@@ -4,6 +4,7 @@ import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
 import { ItemSchema, ItemSlot, MonsterSchema } from '../types/types.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
+import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { ApiError } from './Error.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
 
@@ -54,9 +55,10 @@ export class EvaluateGearObjective extends Objective {
             );
 
       // Just check the weapon if we're doing a gathering task
-      // ToDo: Find prospecting/wisdom gear for non-combat activities
       if (this.activityType !== 'combat') {
-        return await this.checkGatheringWeapon(this.activityType, charLevel);
+        await this.checkGatheringWeapon(this.activityType, charLevel);
+        await this.checkGatheringArtifacts(this.targetResource, charLevel);
+        return true;
       } else {
         return await this.evaluateCombatGear(charLevel, this.targetMob);
       }
@@ -318,6 +320,97 @@ export class EvaluateGearObjective extends Objective {
       }
     }
     return false;
+  }
+
+  /**
+   * @description Selects the best prospecting or wisdom artifacts for gathering activities.
+   * Checks drop rate of targetResource to decide between prospecting (rate > 1) or wisdom (rate === 1).
+   * Falls back to wisdom artifacts if no targetResource, on API error, or if resource not found.
+   */
+  private async checkGatheringArtifacts(
+    targetResource: string | undefined,
+    charLevel: number,
+  ): Promise<void> {
+    if (!this.character.artifactsMap) {
+      logger.warn('artifactsMap not built, skipping artifact evaluation');
+      return;
+    }
+
+    let targetEffect: 'prospecting' | 'wisdom' = 'wisdom';
+
+    if (targetResource) {
+      const resources = await getAllResourceInformation({ drop: targetResource });
+      if (resources instanceof ApiError) {
+        logger.warn(
+          `Failed to fetch resource info for ${targetResource}, defaulting to wisdom artifacts`,
+        );
+      } else {
+        let resource: (typeof resources.data)[0] | undefined;
+        for (let i = resources.data.length - 1; i >= 0; i--) {
+          const r = resources.data[i];
+          if (r.level <= this.character.getCharacterLevel(this.character.data, r.skill)) {
+            resource = r;
+            break;
+          }
+        }
+
+        if (!resource) {
+          logger.warn(
+            `No accessible resource found for ${targetResource}, defaulting to wisdom artifacts`,
+          );
+        } else {
+          const drop = resource.drops.find((d) => d.code === targetResource);
+          if (!drop) {
+            logger.warn(
+              `${targetResource} not found in resource drops, defaulting to wisdom artifacts`,
+            );
+          } else {
+            targetEffect = drop.rate > 1 ? 'prospecting' : 'wisdom';
+            logger.info(
+              `Drop rate for ${targetResource}: 1/${drop.rate} — equipping ${targetEffect} artifacts`,
+            );
+          }
+        }
+      }
+    }
+
+    const artifactSlots: ('artifact1' | 'artifact2' | 'artifact3')[] = [
+      'artifact1',
+      'artifact2',
+      'artifact3',
+    ];
+    const artifacts = this.character.artifactsMap[targetEffect] ?? [];
+
+    for (const slot of artifactSlots) {
+      let slotFilled = false;
+
+      for (let i = artifacts.length - 1; i >= 0; i--) {
+        if (artifacts[i].level > charLevel) continue;
+
+        if (this.character.getCharacterGearIn(slot) === artifacts[i].code) {
+          logger.debug(`${artifacts[i].code} already equipped in ${slot}`);
+          slotFilled = true;
+          break;
+        }
+
+        if (this.character.checkQuantityOfItemInInv(artifacts[i].code) > 0) {
+          await this.character.equipNow(artifacts[i].code, slot);
+          slotFilled = true;
+          break;
+        }
+
+        if ((await this.character.checkQuantityOfItemInBank(artifacts[i].code)) > 0) {
+          await this.character.withdrawNow(1, artifacts[i].code);
+          await this.character.equipNow(artifacts[i].code, slot);
+          slotFilled = true;
+          break;
+        }
+      }
+
+      if (!slotFilled) {
+        logger.debug(`No ${targetEffect} artifact available for ${slot}`);
+      }
+    }
   }
 
   /**

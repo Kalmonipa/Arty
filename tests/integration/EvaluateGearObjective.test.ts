@@ -16,8 +16,13 @@ jest.mock('../../src/api_calls/Monsters', () => ({
   getMonsterInformation: jest.fn(),
 }));
 
+jest.mock('../../src/api_calls/Resources', () => ({
+  getAllResourceInformation: jest.fn(),
+}));
+
 // Import the mocked functions
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
+import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
 
 // Mock monster data
 const mockMonsterData = {
@@ -527,6 +532,15 @@ describe('EvaluateGearObjective Integration Tests', () => {
     (
       getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>
     ).mockResolvedValue(mockMonsterData);
+
+    (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+      .mockResolvedValue({
+        data: [],
+        pages: 1,
+        page: 1,
+        size: 50,
+        total: 0,
+      });
   });
 
   describe('Basic functionality', () => {
@@ -1122,7 +1136,8 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      // Gathering path now always returns true (artifact check runs after weapon check)
+      expect(result).toBe(true);
     });
 
     it('should handle different gathering activity types', async () => {
@@ -1152,7 +1167,186 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
         // Reset for next iteration
         jest.clearAllMocks();
+        (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+          .mockResolvedValue({ data: [], pages: 1, page: 1, size: 50, total: 0 });
       }
+    });
+  });
+
+  describe('checkGatheringArtifacts', () => {
+    const mockProspectingResource = {
+      data: [
+        {
+          name: 'Iron Rock',
+          code: 'iron_rock',
+          skill: 'mining' as const,
+          level: 5,
+          drops: [{ code: 'iron_ore', rate: 4, min_quantity: 1, max_quantity: 1 }],
+        },
+      ],
+      pages: 1,
+      page: 1,
+      size: 50,
+      total: 1,
+    };
+
+    const mockWisdomResource = {
+      data: [
+        {
+          name: 'Ash Tree',
+          code: 'ash_tree',
+          skill: 'woodcutting' as const,
+          level: 5,
+          drops: [{ code: 'ash_wood', rate: 1, min_quantity: 1, max_quantity: 1 }],
+        },
+      ],
+      pages: 1,
+      page: 1,
+      size: 50,
+      total: 1,
+    };
+
+    it('equips prospecting artifact in artifact1 when drop rate < 100%', async () => {
+      (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+        .mockResolvedValue(mockProspectingResource);
+      mockCharacter.addItemToInventory('lucky_charm', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      expect(getAllResourceInformation).toHaveBeenCalledWith({ drop: 'iron_ore' });
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith('lucky_charm', 'artifact1');
+    });
+
+    it('equips wisdom artifact in artifact1 when drop rate is 100%', async () => {
+      (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+        .mockResolvedValue(mockWisdomResource);
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+        undefined,
+        'ash_wood',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith('wisdom_stone', 'artifact1');
+    });
+
+    it('equips wisdom artifact when no targetResource is provided', async () => {
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(mockCharacter as any, 'mining');
+      await objective.run();
+
+      expect(getAllResourceInformation).not.toHaveBeenCalled();
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith('wisdom_stone', 'artifact1');
+    });
+
+    it('falls back to wisdom artifact when resource API returns an error', async () => {
+      (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+        .mockResolvedValue(new ApiError({ code: 500, message: 'server error' }));
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith('wisdom_stone', 'artifact1');
+    });
+
+    it('falls back to wisdom artifact when targetResource is not in any resource drops', async () => {
+      (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+        .mockResolvedValue({ data: [], pages: 1, page: 1, size: 50, total: 0 });
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'unknown_item',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith('wisdom_stone', 'artifact1');
+    });
+
+    it('skips artifact slot when no artifact is available in inv or bank', async () => {
+      (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+        .mockResolvedValue(mockProspectingResource);
+      // No lucky_charm in inventory or bank
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      const artifactCalls = (mockCharacter.equipNow as jest.Mock).mock.calls.filter(
+        ([, slot]: [string, string]) =>
+          slot === 'artifact1' || slot === 'artifact2' || slot === 'artifact3',
+      );
+      expect(artifactCalls).toHaveLength(0);
+    });
+
+    it('skips slot when correct artifact is already equipped', async () => {
+      (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+        .mockResolvedValue(mockProspectingResource);
+      mockCharacter.data.artifact1_slot = 'lucky_charm';
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      const artifact1Calls = (mockCharacter.equipNow as jest.Mock).mock.calls.filter(
+        ([, slot]: [string, string]) => slot === 'artifact1',
+      );
+      expect(artifact1Calls).toHaveLength(0);
+    });
+
+    it('does not exceed character level when selecting artifact', async () => {
+      (getAllResourceInformation as jest.MockedFunction<typeof getAllResourceInformation>)
+        .mockResolvedValue(mockProspectingResource);
+
+      // Add a level-15 artifact (above char level 10) to the map — should be skipped
+      const highLevelArtifact = createMockArtifact('ancient_charm', 'Ancient Charm', 15, 'prospecting');
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('lucky_charm', 'Lucky Charm', 5, 'prospecting'),
+          highLevelArtifact,
+        ],
+        wisdom: [],
+      };
+      mockCharacter.addItemToInventory('lucky_charm', 1);
+      mockCharacter.addItemToInventory('ancient_charm', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      // Should equip lucky_charm (level 5), not ancient_charm (level 15 > char level 10)
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith('lucky_charm', 'artifact1');
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith('ancient_charm', expect.anything());
     });
   });
 });
