@@ -15,11 +15,13 @@ import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
 export class EvaluateGearObjective extends Objective {
   activityType: WeaponFlavours;
   targetMob?: string;
+  targetResource?: string;
 
   constructor(
     character: Character,
     activityType: WeaponFlavours,
     targetMob?: string,
+    targetResource?: string,
   ) {
     super(character, `evaluate_${activityType}_gear`, 'not_started');
 
@@ -27,6 +29,7 @@ export class EvaluateGearObjective extends Objective {
     this.jobFlavour = 'EvaluateGear';
     this.activityType = activityType;
     this.targetMob = targetMob;
+    this.targetResource = targetResource;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

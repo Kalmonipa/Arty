@@ -546,6 +546,17 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(objective.status).toBe('not_started');
     });
 
+    it('should store targetResource on the objective', () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+
+      expect(objective.targetResource).toBe('iron_ore');
+    });
+
     it('should return artifact slot contents from getCharacterGearIn', () => {
       mockCharacter.data.artifact1_slot = 'lucky_charm';
       mockCharacter.data.artifact2_slot = 'golden_earring';

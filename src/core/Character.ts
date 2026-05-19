@@ -2505,11 +2505,12 @@ export class Character {
     );
   }
 
-  async evaluateGear(activityType: WeaponFlavours, targetMob?: string) {
+  async evaluateGear(activityType: WeaponFlavours, targetMob?: string, targetResource?: string) {
     const evaluateGearJob = new EvaluateGearObjective(
       this,
       activityType,
       targetMob,
+      targetResource,
     );
 
     return await this.executeJobNow(
