@@ -43,6 +43,8 @@ class SimpleMockCharacter {
     return this.bankItems[code] ?? 0;
   });
 
+  checkQuantityOfItemInInv = jest.fn((_code: string): number => 0);
+
   withdrawNow = jest.fn(async (_qty: number, _code: string): Promise<boolean> => true);
   tradeWithNpcNow = jest.fn(async (): Promise<void> => {});
   depositNow = jest.fn(async (): Promise<void> => {});
@@ -433,6 +435,144 @@ describe('EventObjective - sellToMerchant', () => {
 
       expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls', size: 10000 });
       expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
+    });
+  });
+
+  describe('buyFromNomadicMerchant', () => {
+    const makeBuyableNpcResponse = (items: { code: string; buy_price: number | null }[]) => ({
+      name: 'Nomadic Merchant',
+      code: 'nomadic_merchant',
+      description: '',
+      type: 'merchant' as const,
+      items: items.map((i) => ({ ...i, sell_price: null, currency: 'gold' })),
+    });
+
+    it('buys backpack when bag_slot is empty and merchant sells a bag', async () => {
+      character.data.bag_slot = '';
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'leather_bag', buy_price: 100 }]) as any,
+      );
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('bag') as any);
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'leather_bag');
+    });
+
+    it('skips backpack purchase when bag_slot is already occupied', async () => {
+      character.data.bag_slot = 'leather_bag';
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'leather_bag', buy_price: 100 }]) as any,
+      );
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'leather_bag');
+    });
+
+    it('skips backpack purchase when merchant has no bag-type items', async () => {
+      character.data.bag_slot = '';
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'some_item', buy_price: 50 }]) as any,
+      );
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalled();
+    });
+
+    it('buys lost_world_map when not equipped, not in inventory, not in bank', async () => {
+      character.data.bag_slot = 'some_bag';
+      character.checkQuantityOfItemInInv.mockReturnValue(0);
+      character.bankItems = {};
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'lost_world_map', buy_price: 500 }]) as any,
+      );
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+    });
+
+    it('skips lost_world_map when equipped in an equipment slot', async () => {
+      character.data.bag_slot = 'some_bag';
+      character.data.artifact1_slot = 'lost_world_map';
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'lost_world_map', buy_price: 500 }]) as any,
+      );
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+    });
+
+    it('skips lost_world_map when present in inventory', async () => {
+      character.data.bag_slot = 'some_bag';
+      character.checkQuantityOfItemInInv.mockReturnValue(1);
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'lost_world_map', buy_price: 500 }]) as any,
+      );
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+    });
+
+    it('skips lost_world_map when present in bank', async () => {
+      character.data.bag_slot = 'some_bag';
+      character.checkQuantityOfItemInInv.mockReturnValue(0);
+      character.bankItems = { lost_world_map: 1 };
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'lost_world_map', buy_price: 500 }]) as any,
+      );
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+    });
+
+    it('skips lost_world_map when merchant does not have it for sale', async () => {
+      character.data.bag_slot = 'some_bag';
+      character.checkQuantityOfItemInInv.mockReturnValue(0);
+      character.bankItems = {};
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'other_item', buy_price: 50 }]) as any,
+      );
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+    });
+
+    it('continues without buying backpack when getItemInformation returns ApiError', async () => {
+      character.data.bag_slot = '';
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([{ code: 'leather_bag', buy_price: 100 }]) as any,
+      );
+      mockGetItemInformation.mockResolvedValue(new ApiError({ code: 500, message: 'error' }) as any);
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalled();
+    });
+
+    it('buys both backpack and lost_world_map when both conditions are met', async () => {
+      character.data.bag_slot = '';
+      character.checkQuantityOfItemInInv.mockReturnValue(0);
+      character.bankItems = {};
+      mockGetNpc.mockResolvedValue(
+        makeBuyableNpcResponse([
+          { code: 'leather_bag', buy_price: 100 },
+          { code: 'lost_world_map', buy_price: 500 },
+        ]) as any,
+      );
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('bag') as any);
+
+      await makeObjective('nomadic_merchant').run();
+
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'leather_bag');
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'lost_world_map');
     });
   });
 });
