@@ -13,8 +13,7 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
-import { getNpc } from '../../src/api_calls/NPC.js';
-import { getAllNpcItems } from '../../src/api_calls/NPC.js';
+import { getNpc, getAllNpcItems } from '../../src/api_calls/NPC.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 
 const mockGetNpc = getNpc as jest.MockedFunction<typeof getNpc>;
@@ -326,6 +325,7 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('fish_merchant').run();
 
+      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls' });
       expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
     });
 
@@ -430,6 +430,7 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('fish_merchant').run();
 
+      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls' });
       expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
     });
   });
