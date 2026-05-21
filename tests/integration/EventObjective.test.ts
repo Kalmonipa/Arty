@@ -6,6 +6,7 @@ import { ActiveEventSchema } from '../../src/types/types.js';
 
 jest.mock('../../src/api_calls/NPC', () => ({
   getNpc: jest.fn(),
+  getAllNpcItems: jest.fn(),
 }));
 
 jest.mock('../../src/api_calls/Items', () => ({
@@ -13,10 +14,12 @@ jest.mock('../../src/api_calls/Items', () => ({
 }));
 
 import { getNpc } from '../../src/api_calls/NPC.js';
+import { getAllNpcItems } from '../../src/api_calls/NPC.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 
 const mockGetNpc = getNpc as jest.MockedFunction<typeof getNpc>;
 const mockGetItemInformation = getItemInformation as jest.MockedFunction<typeof getItemInformation>;
+const mockGetAllNpcItems = getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>;
 
 const makeMerchantEvent = (code: 'fish_merchant' | 'nomadic_merchant'): ActiveEventSchema =>
   ({
@@ -75,6 +78,7 @@ describe('EventObjective - sellToMerchant', () => {
   beforeEach(() => {
     character = new SimpleMockCharacter();
     jest.clearAllMocks();
+    mockGetAllNpcItems.mockResolvedValue({ data: [], total: 0, page: 1, size: 50 } as any);
   });
 
   it('returns false and skips selling when getNpc fails', async () => {
@@ -302,5 +306,131 @@ describe('EventObjective - sellToMerchant', () => {
     await makeObjective('fish_merchant').run();
 
     expect(character.recordEventFailure).not.toHaveBeenCalled();
+  });
+
+  describe('currency reserve', () => {
+    const makeCurrencyUsageResponse = (items: { buy_price: number | null }[]) => ({
+      data: items.map((i) => ({ code: 'small_pearls', npc: 'fish_merchant', currency: 'gold', ...i })),
+      total: items.length,
+      page: 1,
+      size: 50,
+    });
+
+    it('sells full amount when item is not used as currency', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+      );
+      character.bankItems = { small_pearls: 20 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+      mockGetAllNpcItems.mockResolvedValue(makeCurrencyUsageResponse([]) as any);
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
+    });
+
+    it('reserves max buy_price and sells the remainder when item is used as currency', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+      );
+      character.bankItems = { small_pearls: 20 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        makeCurrencyUsageResponse([{ buy_price: 5 }]) as any,
+      );
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).toHaveBeenCalledWith(15, 'small_pearls');
+    });
+
+    it('reserves the maximum buy_price when item is currency for multiple items at different prices', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+      );
+      character.bankItems = { small_pearls: 30 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        makeCurrencyUsageResponse([{ buy_price: 5 }, { buy_price: 10 }]) as any,
+      );
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
+    });
+
+    it('skips item entirely when currency reserve consumes all bank stock', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+      );
+      character.bankItems = { small_pearls: 5 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        makeCurrencyUsageResponse([{ buy_price: 5 }]) as any,
+      );
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).not.toHaveBeenCalled();
+    });
+
+    it('skips item when currency reserve exceeds bank stock', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+      );
+      character.bankItems = { small_pearls: 3 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        makeCurrencyUsageResponse([{ buy_price: 5 }]) as any,
+      );
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).not.toHaveBeenCalled();
+    });
+
+    it('applies currency reserve before equipment keep quantity', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'some_ring', buy_price: null, sell_price: 500 }]) as any,
+      );
+      // bank: 12, currency reserve: 3, available: 9, keep 5 equipment → sell 4
+      character.bankItems = { some_ring: 12 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('ring') as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        makeCurrencyUsageResponse([{ buy_price: 3 }]) as any,
+      );
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).toHaveBeenCalledWith(4, 'some_ring');
+    });
+
+    it('sells normally when getAllNpcItems returns an ApiError', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+      );
+      character.bankItems = { small_pearls: 20 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+      mockGetAllNpcItems.mockResolvedValue(new ApiError({ code: 500, message: 'error' }) as any);
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
+    });
+
+    it('ignores currency entries with null buy_price', async () => {
+      mockGetNpc.mockResolvedValue(
+        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+      );
+      character.bankItems = { small_pearls: 20 };
+      mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        makeCurrencyUsageResponse([{ buy_price: null }]) as any,
+      );
+
+      await makeObjective('fish_merchant').run();
+
+      expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
+    });
   });
 });
