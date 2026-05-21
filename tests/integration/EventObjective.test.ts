@@ -467,6 +467,7 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'leather_bag');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
     });
 
     it('skips backpack purchase when merchant has no bag-type items', async () => {
@@ -479,6 +480,7 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalled();
+      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
     });
 
     it('buys lost_world_map when not equipped, not in inventory, not in bank', async () => {
@@ -504,11 +506,33 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
     });
+
+    it.each([
+      ['weapon_slot', 'weapon_slot'],
+      ['artifact2_slot', 'artifact2_slot'],
+      ['utility1_slot', 'utility1_slot'],
+    ] as const)(
+      'skips lost_world_map when equipped in %s',
+      async (_, slotKey) => {
+        character.data.bag_slot = 'some_bag';
+        (character.data as any)[slotKey] = 'lost_world_map';
+        mockGetNpc.mockResolvedValue(
+          makeBuyableNpcResponse([{ code: 'lost_world_map', buy_price: 500 }]) as any,
+        );
+
+        await makeObjective('nomadic_merchant').run();
+
+        expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+        expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      },
+    );
 
     it('skips lost_world_map when present in inventory', async () => {
       character.data.bag_slot = 'some_bag';
       character.checkQuantityOfItemInInv.mockReturnValue(1);
+      character.bankItems = {};
       mockGetNpc.mockResolvedValue(
         makeBuyableNpcResponse([{ code: 'lost_world_map', buy_price: 500 }]) as any,
       );
@@ -516,6 +540,7 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
     });
 
     it('skips lost_world_map when present in bank', async () => {
@@ -529,6 +554,7 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
     });
 
     it('skips lost_world_map when merchant does not have it for sale', async () => {
@@ -542,6 +568,7 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
     });
 
     it('continues without buying backpack when getItemInformation returns ApiError', async () => {
@@ -554,6 +581,7 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalled();
+      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
     });
 
     it('buys both backpack and lost_world_map when both conditions are met', async () => {
