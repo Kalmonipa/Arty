@@ -325,7 +325,7 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('fish_merchant').run();
 
-      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls' });
+      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls', size: 10000 });
       expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
     });
 
@@ -430,7 +430,7 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('fish_merchant').run();
 
-      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls' });
+      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls', size: 10000 });
       expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
     });
   });

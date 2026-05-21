@@ -280,7 +280,7 @@ export class EventObjective extends Objective {
       }
 
       let currencyReserve = 0;
-      const currencyUsageResponse = await getAllNpcItems({ currency: npcItem.code });
+      const currencyUsageResponse = await getAllNpcItems({ currency: npcItem.code, size: 10000 });
       if (currencyUsageResponse instanceof ApiError) {
         logger.warn(`Could not check currency usage for ${npcItem.code}, proceeding without reserve`);
       } else {
