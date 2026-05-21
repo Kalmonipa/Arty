@@ -11,7 +11,7 @@ import {
 } from '../types/types.js';
 import { actionFight, actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import { getNpc } from '../api_calls/NPC.js';
+import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -279,9 +279,29 @@ export class EventObjective extends Objective {
         continue;
       }
 
+      let currencyReserve = 0;
+      const currencyUsageResponse = await getAllNpcItems({ currency: npcItem.code });
+      if (currencyUsageResponse instanceof ApiError) {
+        logger.warn(`Could not check currency usage for ${npcItem.code}, proceeding without reserve`);
+      } else {
+        const prices = currencyUsageResponse.data
+          .map((item) => item.buy_price)
+          .filter((price): price is number => price != null);
+        if (prices.length > 0) {
+          currencyReserve = Math.max(...prices);
+          logger.debug(`Reserving ${currencyReserve} ${npcItem.code} for currency use`);
+        }
+      }
+
+      const numAvailableToSell = numInBank - currencyReserve;
+      if (numAvailableToSell <= 0) {
+        logger.info(`Keeping all ${numInBank} ${npcItem.code} (reserved ${currencyReserve} for currency use)`);
+        continue;
+      }
+
       const numToSell = keepEquipmentTypes.includes(itemType)
-        ? Math.max(0, numInBank - keepQuantity)
-        : numInBank;
+        ? Math.max(0, numAvailableToSell - keepQuantity)
+        : numAvailableToSell;
 
       if (numToSell <= 0) {
         logger.info(`Keeping all ${numInBank} ${npcItem.code} (need to keep at least ${keepQuantity})`);
