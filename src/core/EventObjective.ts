@@ -71,12 +71,17 @@ export class EventObjective extends Objective {
         case FishMerchant:
           result = await this.sellToFishMerchant();
           break;
+<<<<<<< HEAD
         case NomadicMerchant:
           result = await this.sellToNomadicMerchant();
           if (!result) {
             return result
           }
           result = await this.buyFromNomadicMerchant();
+=======
+        case 'nomadic_merchant':
+          result = await this.tradeWithNomadicMerchant();
+>>>>>>> 7ac3fa5 (tidy up buy from nomadic merchant)
           break;
         default:
           logger.info(`Event ${this.activeEvent.code} not configured yet.`);
@@ -238,10 +243,15 @@ export class EventObjective extends Objective {
     return success;
   }
 
+<<<<<<< HEAD
   private async sellToNomadicMerchant(): Promise<boolean> {
     const success = await this.sellToMerchant(NomadicMerchant);
+=======
+  private async tradeWithNomadicMerchant(): Promise<boolean> {
+    let success = await this.sellToMerchant('nomadic_merchant');
+    success = await this.buyFromNomadicMerchant();
+>>>>>>> 7ac3fa5 (tidy up buy from nomadic merchant)
     if (success) {
-      await this.buyFromNomadicMerchant();
       this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);
     }
     return success;
@@ -343,12 +353,14 @@ export class EventObjective extends Objective {
 =======
    * @description Buy a backpack (if bag slot is empty) and a lost_world_map
    * (if not already equipped, in inventory, or in bank) from the nomadic merchant.
+   * @todo make this more programatic. don't only buy bag and lost world map
+   *        - this should check what stuff the merchant sells and decide if it needs any of it
    */
-  private async buyFromNomadicMerchant(): Promise<void> {
+  private async buyFromNomadicMerchant(): Promise<boolean> {
     const npcResponse = await getNpc('nomadic_merchant');
     if (npcResponse instanceof ApiError) {
       logger.warn('Could not fetch nomadic_merchant details for purchase');
-      return;
+      return false;
     }
 
     const buyableItems = (npcResponse.items ?? []).filter(
@@ -386,10 +398,14 @@ export class EventObjective extends Objective {
 
       if (!isEquipped && !inInv && !inBank) {
         logger.info('Buying lost_world_map from nomadic merchant');
-        await this.character.tradeWithNpcNow('buy', 1, 'lost_world_map');
+        return await this.character.tradeWithNpcNow('buy', 1, 'lost_world_map');
       }
     }
+<<<<<<< HEAD
 >>>>>>> 22307fb (feat: buy backpack and lost_world_map from nomadic merchant)
+=======
+    return true;
+>>>>>>> 7ac3fa5 (tidy up buy from nomadic merchant)
   }
 
   /**
