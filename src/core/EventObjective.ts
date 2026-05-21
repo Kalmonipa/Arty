@@ -236,9 +236,71 @@ export class EventObjective extends Objective {
   private async sellToNomadicMerchant(): Promise<boolean> {
     const success = await this.sellToMerchant('nomadic_merchant');
     if (success) {
+      await this.buyFromNomadicMerchant();
       this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);
     }
     return success;
+  }
+
+  /**
+   * @description Buy a backpack (if bag slot is empty) and a lost_world_map
+   * (if not already equipped, in inventory, or in bank) from the nomadic merchant.
+   */
+  private async buyFromNomadicMerchant(): Promise<void> {
+    const npcResponse = await getNpc('nomadic_merchant');
+    if (npcResponse instanceof ApiError) {
+      logger.warn('Could not fetch nomadic_merchant details for purchase');
+      return;
+    }
+
+    const buyableItems = (npcResponse.items ?? []).filter(
+      (item) => item.buy_price != null,
+    );
+
+    if (!this.character.data.bag_slot) {
+      for (const item of buyableItems) {
+        const itemInfo = await getItemInformation(item.code);
+        if (itemInfo instanceof ApiError) {
+          logger.warn(`Could not get item info for ${item.code}, skipping`);
+          continue;
+        }
+        if (itemInfo.type === 'bag') {
+          logger.info(`Buying bag: ${item.code}`);
+          await this.character.tradeWithNpcNow('buy', 1, item.code);
+          break;
+        }
+      }
+    }
+
+    const mapForSale = buyableItems.find((item) => item.code === 'lost_world_map');
+    if (mapForSale) {
+      const equippedItems = [
+        this.character.data.weapon_slot,
+        this.character.data.rune_slot,
+        this.character.data.shield_slot,
+        this.character.data.helmet_slot,
+        this.character.data.body_armor_slot,
+        this.character.data.leg_armor_slot,
+        this.character.data.boots_slot,
+        this.character.data.ring1_slot,
+        this.character.data.ring2_slot,
+        this.character.data.amulet_slot,
+        this.character.data.artifact1_slot,
+        this.character.data.artifact2_slot,
+        this.character.data.artifact3_slot,
+        this.character.data.utility1_slot,
+        this.character.data.utility2_slot,
+        this.character.data.bag_slot,
+      ];
+      const isEquipped = equippedItems.includes('lost_world_map');
+      const inInv = this.character.checkQuantityOfItemInInv('lost_world_map') > 0;
+      const inBank = (await this.character.checkQuantityOfItemInBank('lost_world_map')) > 0;
+
+      if (!isEquipped && !inInv && !inBank) {
+        logger.info('Buying lost_world_map from nomadic merchant');
+        await this.character.tradeWithNpcNow('buy', 1, 'lost_world_map');
+      }
+    }
   }
 
   /**
