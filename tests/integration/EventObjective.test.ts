@@ -511,9 +511,8 @@ describe('EventObjective - sellToMerchant', () => {
     });
 
     it.each([
-      ['weapon_slot', 'weapon_slot'],
       ['artifact2_slot', 'artifact2_slot'],
-      ['utility1_slot', 'utility1_slot'],
+      ['artifact3_slot', 'artifact3_slot'],
     ] as const)(
       'skips lost_world_map when equipped in %s',
       async (_, slotKey) => {

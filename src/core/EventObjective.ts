@@ -376,25 +376,11 @@ export class EventObjective extends Objective {
 =======
     const mapForSale = buyableItems.find((item) => item.code === 'lost_world_map');
     if (mapForSale) {
-      const equippedItems = [
-        this.character.data.weapon_slot,
-        this.character.data.rune_slot,
-        this.character.data.shield_slot,
-        this.character.data.helmet_slot,
-        this.character.data.body_armor_slot,
-        this.character.data.leg_armor_slot,
-        this.character.data.boots_slot,
-        this.character.data.ring1_slot,
-        this.character.data.ring2_slot,
-        this.character.data.amulet_slot,
+      const isEquipped = [
         this.character.data.artifact1_slot,
         this.character.data.artifact2_slot,
         this.character.data.artifact3_slot,
-        this.character.data.utility1_slot,
-        this.character.data.utility2_slot,
-        this.character.data.bag_slot,
-      ];
-      const isEquipped = equippedItems.includes('lost_world_map');
+      ].includes('lost_world_map');
       const inInv = this.character.checkQuantityOfItemInInv('lost_world_map') > 0;
       const inBank = (await this.character.checkQuantityOfItemInBank('lost_world_map')) > 0;
 
