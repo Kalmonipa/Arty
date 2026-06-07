@@ -87,7 +87,7 @@ import {
   buildTransitionPath,
   SANDWHISPER_Y_BOUNDARY,
 } from './TransitionPathfinder.js';
-import { CharRole } from '../constants.js';
+import { BagSlot, CharRole, FishMerchant, NomadicMerchant, RuneSlot, ShieldSlot, WeaponSlot } from '../constants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
 
@@ -1022,7 +1022,7 @@ export class Character {
         logger.debug(`${this.data.name} is too low level for ${event.name}`);
         continue;
       } else if (
-        event.code === 'fish_merchant' &&
+        event.code === FishMerchant &&
         (this.role !== 'fisherman' ||
           currentTimestamp < this.fishMerchantTradeDate + 86400)
       ) {
@@ -1034,7 +1034,7 @@ export class Character {
         );
         continue;
       } else if (
-        event.code === 'nomadic_merchant' &&
+        event.code === NomadicMerchant &&
         (this.role !== 'fisherman' ||
           currentTimestamp < this.nomadicMerchantTradeDate + 86400)
       ) {
@@ -1169,6 +1169,39 @@ export class Character {
     }
     logger.debug(`Found ${num} ${contentCode} in inventory`);
     return num;
+  }
+
+  /**
+   * @description Returns true if the character has the item equipped, false if not
+   * Maybe I should return _where_ it is equipped?
+   */
+  hasEquipped(itemCode: string): boolean {
+    let equippedItems = new Map<string, string>();
+    equippedItems.set(WeaponSlot, this.data.weapon_slot)
+    equippedItems.set(RuneSlot, this.data.rune_slot)
+    equippedItems.set(ShieldSlot, this.data.shield_slot)
+    equippedItems.set('helmet_slot', this.data.helmet_slot)
+    equippedItems.set('body_armor_slot', this.data.body_armor_slot)
+    equippedItems.set('leg_armor_slot', this.data.leg_armor_slot)
+    equippedItems.set('boots_slot', this.data.boots_slot)
+    equippedItems.set('ring1_slot', this.data.ring1_slot)
+    equippedItems.set('ring2_slot', this.data.ring2_slot)
+    equippedItems.set('amulet_slot', this.data.amulet_slot)
+    equippedItems.set('artifact1_slot', this.data.artifact1_slot)
+    equippedItems.set('artifact2_slot', this.data.artifact2_slot)
+    equippedItems.set('artifact3_slot', this.data.artifact3_slot)
+    equippedItems.set('utility1_slot', this.data.utility1_slot)
+    equippedItems.set('utility2_slot', this.data.utility2_slot)
+    equippedItems.set(BagSlot, this.data.bag_slot)
+
+    equippedItems.forEach((value,key) => {
+      if (value === itemCode) {
+        logger.info(`${this.data.name} has ${itemCode} equipped in ${key}`)
+        return true
+      }
+    })
+    logger.info(`${this.data.name} does NOT have ${itemCode} equipped`)
+    return false
   }
 
   /**

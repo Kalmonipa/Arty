@@ -212,14 +212,14 @@ export async function getNpc(code: string): Promise<ApiError | NPCSchema> {
 
 export async function getNpcItems(
   code: string,
-  params: GetNpcItemsNpcsItemsCodeGetParams,
+  params?: GetNpcItemsNpcsItemsCodeGetParams,
 ): Promise<ApiError | StaticDataPageNPCItem> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
-  const apiUrl = new URL(`${ApiUrl}/npcs/items`);
+  const apiUrl = new URL(`${ApiUrl}/npcs/items/${code}`);
 
   if (params.page) {
     apiUrl.searchParams.set('page', params.page.toString());

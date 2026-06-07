@@ -48,6 +48,7 @@ class SimpleMockCharacter {
   depositNow = jest.fn(async (): Promise<void> => {});
   recordEventSuccess = jest.fn();
   recordEventFailure = jest.fn();
+  hasEquipped = jest.fn(async (): Promise<boolean> => true)
 }
 
 describe('EventObjective - sellToMerchant', () => {

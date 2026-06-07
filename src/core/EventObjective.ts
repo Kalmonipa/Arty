@@ -11,7 +11,8 @@ import {
 } from '../types/types.js';
 import { actionFight, actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
+import { getAllNpcItems, getNpc, getNpcItems } from '../api_calls/NPC.js';
+import { BagSlot, FishMerchant, NomadicMerchant } from '../constants.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -67,11 +68,15 @@ export class EventObjective extends Objective {
         case 'cult_of_darkness':
           result = await this.fightMobs(this.activeEvent);
           break;
-        case 'fish_merchant':
+        case FishMerchant:
           result = await this.sellToFishMerchant();
           break;
-        case 'nomadic_merchant':
+        case NomadicMerchant:
           result = await this.sellToNomadicMerchant();
+          if (!result) {
+            return result
+          }
+          result = await this.buyFromNomadicMerchant();
           break;
         default:
           logger.info(`Event ${this.activeEvent.code} not configured yet.`);
@@ -226,7 +231,7 @@ export class EventObjective extends Objective {
   }
 
   private async sellToFishMerchant(): Promise<boolean> {
-    const success = await this.sellToMerchant('fish_merchant');
+    const success = await this.sellToMerchant(FishMerchant);
     if (success) {
       this.character.fishMerchantTradeDate = Math.round(Date.now() / 1000);
     }
@@ -234,11 +239,110 @@ export class EventObjective extends Objective {
   }
 
   private async sellToNomadicMerchant(): Promise<boolean> {
-    const success = await this.sellToMerchant('nomadic_merchant');
+    const success = await this.sellToMerchant(NomadicMerchant);
     if (success) {
       this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);
     }
     return success;
+  }
+
+  /**
+   * @description Buy items from the nomadic merchant
+   * This basically just gets characters to buy the items we want via hardcoding
+   * It checks if we already have one available and exits if so
+   * If not available, check the cost of the item to see if we can afford it
+   *   and purchase if we can
+   * If we have an empty slot, equips the item 
+   * @todo Make this smarter by:
+   * - having a programmatic list of items from the nomadic merchant
+   */
+  private async buyFromNomadicMerchant(): Promise<boolean> {
+    const itemsToBuy = ['backpack', 'lost_world_map']
+
+    for (const item in itemsToBuy) {
+      const isEquipped: boolean = this.character.hasEquipped(item)
+      if (isEquipped) {
+        logger.debug(`${item} is equipped. No need to purchase`)
+        break;
+      }
+      const numInInv: number = this.character.checkQuantityOfItemInInv(item)
+      if (numInInv > 0) {
+        logger.debug(`${item} is in inventory. No need to purchase`)
+        break;
+      }
+      const numInBank: number = await this.character.checkQuantityOfItemInBank(item)
+      if (numInBank > 0) {
+        logger.debug(`${item} is in bank. No need to purchase`)
+        break;
+      }
+
+      // Item details to check if the character can actually equip it
+      const itemDetails = await getItemInformation(item)
+      if (itemDetails instanceof ApiError) {
+        logger.error(
+          `Failed to get details for item ${item}`,
+        );
+        return false;
+      }
+      if (itemDetails.conditions) {
+        const levelReq = itemDetails.conditions.find((condition) => condition.code === 'level').value
+        if (this.character.data.level < levelReq) {
+          logger.debug(`Character level (${this.character.data.level}) is too low for ${item} (${levelReq})`)
+          return false
+        }
+      }
+
+      // GetNpcItems to check the cost of it
+      // ToDo: get the info on all merchants on startup and just reference that 
+      // instead of hitting the API
+      const npcItemDetails = await getAllNpcItems({code: item, npc: NomadicMerchant})
+      if (npcItemDetails instanceof ApiError) {
+        logger.error(
+          `Failed to get NPC item details for item ${item}`,
+        );
+        return false;
+      }
+
+      // We're assuming there's only one object returned
+      const buyPrice = npcItemDetails.data[0].buy_price
+      const moneyAvailable = this.character.data.gold
+      if (moneyAvailable > buyPrice) {
+        const purchaseResult = await this.character.tradeWithNpcNow('buy', 1, item)
+        if (!purchaseResult) {
+          logger.warn(`Purchasing ${item} failed`)
+          return false
+        }
+      }
+
+      // Equip the item
+      // ToDo: associate 'bag' with 'bag_slot' somehow
+      if (item === 'backpack') {
+        logger.debug(`Bag slot is ${this.character.data.bag_slot}`)
+        if (this.character.data.bag_slot === '') {
+        await this.character.equipNow(item, 'bag')
+        } else {
+          logger.warn(`All artifact slots full. Not equipping ${item}`)
+          return false
+        }
+      } else if (item === 'lost_world_map') {
+        logger.debug(`Artifact 1 slot is ${this.character.data.artifact1_slot}`)
+        logger.debug(`Artifact 2 slot is ${this.character.data.artifact2_slot}`)
+        logger.debug(`Artifact 3 slot is ${this.character.data.artifact3_slot}`)
+
+        if (this.character.data.artifact1_slot === '') {
+          await this.character.equipNow(item, 'artifact1')
+        } else if (this.character.data.artifact2_slot === '') {
+          await this.character.equipNow(item, 'artifact2')
+        } else if (this.character.data.artifact3_slot === '') {
+          await this.character.equipNow(item, 'artifact3')
+        } else {
+          logger.warn(`All artifact slots full. Not equipping ${item}`)
+          return false
+        }
+      }
+    }
+
+    return true
   }
 
   /**
