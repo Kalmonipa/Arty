@@ -347,13 +347,16 @@ export abstract class Objective {
 
   /**
    * @description Deposits gold into the bank if they have more than the specified amount
+   * The amount that they can hold is relative to their level. The formula is 
+   * 3000 per character level. Anything over that gets deposited into the bank
    * @returns
    */
-  protected async depositGoldIntoBank(maxGoldInInv: number): Promise<boolean> {
+  protected async depositGoldIntoBank(): Promise<boolean> {
     const numGoldInInv = this.character.data.gold;
+    const maxGoldToCarry = this.character.data.level * 3000
 
-    if (numGoldInInv > maxGoldInInv) {
-      return await this.character.depositNow(numGoldInInv - 2000, 'gold');
+    if (numGoldInInv > maxGoldToCarry) {
+      return await this.character.depositNow(Math.max(numGoldInInv - maxGoldToCarry, 0), 'gold');
     }
 
     return true;
