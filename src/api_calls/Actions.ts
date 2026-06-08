@@ -56,6 +56,9 @@ export async function actionCraft(
         case 497:
           message = 'The characters inventory is full.';
           break;
+        case 598:
+          message = 'Workshop not found on this map.';
+          break;
         default:
           message = 'Unknown error from /action/crafting';
           break;
@@ -331,6 +334,12 @@ export async function actionMove(
           break;
         case 499:
           message = 'The character is in cooldown.';
+          break;
+        case 595:
+          message = 'No path available to the destination map.';
+          break;
+        case 596:
+          message = 'The map is blocked and cannot be accessed.';
           break;
         default:
           message = 'Unknown error from /action/move';

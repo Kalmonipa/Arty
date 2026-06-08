@@ -91,6 +91,13 @@ import { BagSlot, CharRole, FishMerchant, NomadicMerchant, RuneSlot, ShieldSlot,
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
 
+/**
+ * Outcome of a single transition step. `reroute` is true when the step failed because the
+ * game reported no walkable path (595), meaning move() should try a different route rather
+ * than give up.
+ */
+type TransitionStepResult = { ok: boolean; reroute?: boolean };
+
 export class Character {
   data: CharacterSchema;
 
@@ -1176,7 +1183,7 @@ export class Character {
    * Maybe I should return _where_ it is equipped?
    */
   hasEquipped(itemCode: string): boolean {
-    let equippedItems = new Map<string, string>();
+    const equippedItems = new Map<string, string>();
     equippedItems.set(WeaponSlot, this.data.weapon_slot)
     equippedItems.set(RuneSlot, this.data.rune_slot)
     equippedItems.set(ShieldSlot, this.data.shield_slot)
@@ -2310,44 +2317,82 @@ export class Character {
       return true;
     }
 
-    const transitionPath = buildTransitionPath(
-      this.data.x,
-      this.data.y,
-      this.data.layer as MapLayer,
-      destination,
-      this.transitionLocations,
-    );
+    // Transitions the game has told us are unreachable (595) on this move. We exclude them and
+    // rebuild the path so a different route can be tried, in case the computed path is wrong.
+    const excludedTransitionIds = new Set<number>();
+    const MAX_REROUTES = 3;
 
-    if (transitionPath === null) {
-      logger.error(
-        `Failed to build transition path to ${destination.name} (${destination.x}, ${destination.y}, ${destination.layer})`,
+    for (let attempt = 0; attempt <= MAX_REROUTES; attempt++) {
+      const transitionPath = buildTransitionPath(
+        this.data.x,
+        this.data.y,
+        this.data.layer as MapLayer,
+        destination,
+        this.transitionLocations,
+        excludedTransitionIds,
       );
+
+      if (transitionPath === null) {
+        logger.error(
+          `Failed to build transition path to ${destination.name} (${destination.x}, ${destination.y}, ${destination.layer})`,
+        );
+        return false;
+      }
+
+      let blockedTransitionId: number | null = null;
+      let stepFailed = false;
+      for (const transitionPoint of transitionPath) {
+        const result = await this.performTransitionStep(transitionPoint);
+        if (!result.ok) {
+          stepFailed = true;
+          if (result.reroute) blockedTransitionId = transitionPoint.map_id;
+          break;
+        }
+      }
+
+      if (stepFailed) {
+        if (blockedTransitionId === null) return false;
+        excludedTransitionIds.add(blockedTransitionId);
+        logger.warn(
+          `No path to transition ${blockedTransitionId}; rerouting to ${destination.name} (attempt ${attempt + 1}/${MAX_REROUTES})`,
+        );
+        continue;
+      }
+
+      logger.info(
+        `Moving to ${destination.name} (id: ${destination.map_id}, x: ${destination.x}, y: ${destination.y})`,
+      );
+
+      const moveResponse = await actionMove(this.data, {
+        x: destination.x,
+        y: destination.y,
+      });
+
+      if (moveResponse instanceof ApiError) {
+        // The final hop can also be blocked (595) when the last transition landed us in a region
+        // not connected to the destination. Exclude that transition and try another route.
+        if (moveResponse.error.code === 595 && transitionPath.length > 0) {
+          const lastTransitionId =
+            transitionPath[transitionPath.length - 1].map_id;
+          excludedTransitionIds.add(lastTransitionId);
+          logger.warn(
+            `No path from landing point to ${destination.name} [Code: 595]; rerouting (attempt ${attempt + 1}/${MAX_REROUTES})`,
+          );
+          continue;
+        }
+        return this.handleErrors(moveResponse);
+      }
+      if (moveResponse.data.character) {
+        this.data = moveResponse.data.character;
+        return true;
+      }
+      logger.error('Move response missing character data');
       return false;
     }
 
-    for (const transitionPoint of transitionPath) {
-      if (!(await this.performTransitionStep(transitionPoint))) {
-        return false;
-      }
-    }
-
-    logger.info(
-      `Moving to ${destination.name} (id: ${destination.map_id}, x: ${destination.x}, y: ${destination.y})`,
+    logger.error(
+      `Exhausted reroute attempts (${MAX_REROUTES}) trying to reach ${destination.name}`,
     );
-
-    const moveResponse = await actionMove(this.data, {
-      x: destination.x,
-      y: destination.y,
-    });
-
-    if (moveResponse instanceof ApiError) {
-      return this.handleErrors(moveResponse);
-    }
-    if (moveResponse.data.character) {
-      this.data = moveResponse.data.character;
-      return true;
-    }
-    logger.error('Move response missing character data');
     return false;
   }
 
@@ -2356,13 +2401,15 @@ export class Character {
    * Handles Sandwhisper Isle overworld↔mainland transitions via dedicated wrappers (for recall
    * potion logic). All other transitions are handled generically, checking gold cost conditions.
    */
-  private async performTransitionStep(transitionPoint: MapSchema): Promise<boolean> {
+  private async performTransitionStep(
+    transitionPoint: MapSchema,
+  ): Promise<TransitionStepResult> {
     const transition = transitionPoint.interactions.transition;
     if (!transition) {
       logger.error(
         `Map ${transitionPoint.map_id} at (${transitionPoint.x}, ${transitionPoint.y}) has no transition data`,
       );
-      return false;
+      return { ok: false, reroute: false };
     }
 
     // Sandwhisper Isle: mainland overworld -> island overworld
@@ -2372,7 +2419,9 @@ export class Character {
       transition.layer === MapLayer.overworld &&
       transition.y >= SANDWHISPER_Y_BOUNDARY
     ) {
-      return transitionToSandwhisperIsle(this);
+      return (await transitionToSandwhisperIsle(this))
+        ? { ok: true }
+        : { ok: false, reroute: false };
     }
 
     // Sandwhisper Isle: island overworld -> mainland overworld
@@ -2382,7 +2431,9 @@ export class Character {
       transition.layer === MapLayer.overworld &&
       transition.y < SANDWHISPER_Y_BOUNDARY
     ) {
-      return transitionToMainland(this);
+      return (await transitionToMainland(this))
+        ? { ok: true }
+        : { ok: false, reroute: false };
     }
 
     // Generic transition: handle any gold cost conditions
@@ -2394,7 +2445,7 @@ export class Character {
           logger.warn(
             `Unsupported transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)}`,
           );
-          return false;
+          return { ok: false, reroute: false };
         }
       }
     }
@@ -2408,15 +2459,28 @@ export class Character {
         x: transitionPoint.x,
         y: transitionPoint.y,
       });
-      if (moveResponse instanceof ApiError) return this.handleErrors(moveResponse);
+      if (moveResponse instanceof ApiError) {
+        // 595 = the game found no walkable path to this transition tile. Signal a reroute so
+        // move() can exclude this transition and try a different exit.
+        if (moveResponse.error.code === 595) {
+          logger.warn(
+            `No path to transition point (${transitionPoint.x}, ${transitionPoint.y}, ${transitionPoint.layer}) [Code: 595]`,
+          );
+          return { ok: false, reroute: true };
+        }
+        await this.handleErrors(moveResponse);
+        return { ok: false, reroute: false };
+      }
       if (!moveResponse.data.character) {
         logger.error('Move response missing character data');
-        return false;
+        return { ok: false, reroute: false };
       }
       this.data = moveResponse.data.character;
     }
 
-    return this.transition();
+    return (await this.transition())
+      ? { ok: true }
+      : { ok: false, reroute: false };
   }
 
   /**
@@ -2977,6 +3041,12 @@ export class Character {
         logger.warn('Sleeping for 5 minutes to avoid 5xx errors');
         await sleep(300, 'HTTP error code 5xx');
         return true;
+      case 595: // /action/move: no path available to the destination map
+      case 596: // /action/move: the map is blocked and cannot be accessed
+        // Routing is handled by move()'s reroute loop; nothing useful to do here.
+        return false;
+      case 598: // /action/crafting: workshop not found on this map
+        return false;
       default:
         return false;
     }

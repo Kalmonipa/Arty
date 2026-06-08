@@ -213,7 +213,12 @@ export class CraftObjective extends Objective {
 
           if (!(await this.checkStatus())) return false;
 
-          await this.character.move(contentLocation);
+          if (!(await this.character.move(contentLocation))) {
+            logger.error(
+              `Could not reach workshop at x: ${contentLocation.x}, y: ${contentLocation.y} to craft ${this.target.code}`,
+            );
+            return false;
+          }
 
           logger.info(
             `Crafting ${this.numItemsPerBatch} ${this.target.code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,

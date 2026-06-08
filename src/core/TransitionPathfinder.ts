@@ -87,15 +87,22 @@ export function buildTransitionPath(
   charLayer: MapLayer,
   target: MapSchema,
   allTransitions: MapSchema[],
+  excludedTransitionIds: Set<number> = new Set(),
 ): MapSchema[] | null {
   if (isDirectlyReachable(charX, charY, charLayer, target, allTransitions)) {
     return [];
   }
 
+  // Transitions the caller has marked as unusable (e.g. a route the game rejected with a
+  // "no path" 595 on a previous attempt). They are skipped so an alternative route is found.
+  const usableTransitions = allTransitions.filter(
+    (t) => !excludedTransitionIds.has(t.map_id),
+  );
+
   // If the character is already standing on a transition point whose destination makes the
   // target reachable, use it immediately. This prevents the BFS from preferring a transition
   // on a different map (e.g. a closer interior exit that is physically unreachable).
-  const standingOnTransition = allTransitions.find(
+  const standingOnTransition = usableTransitions.find(
     (t) => t.x === charX && t.y === charY && t.layer === charLayer,
   );
   if (standingOnTransition?.interactions.transition) {
@@ -129,7 +136,7 @@ export function buildTransitionPath(
 
     // Find all transition points directly walk-able from the current position, sorted by
     // how close their destination is to the final target (to prefer shorter final walks).
-    const reachableTransitions = allTransitions
+    const reachableTransitions = usableTransitions
       .filter((t) => isDirectlyReachable(x, y, layer, t, allTransitions))
       .sort(
         (a, b) =>

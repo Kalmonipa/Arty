@@ -179,6 +179,32 @@ describe('buildTransitionPath', () => {
     });
   });
 
+  describe('excluded transitions (reroute support)', () => {
+    // Mirrors the JumpyJimmy bug: char in a mine at (5,-4), two underground exits to the
+    // overworld. The exit closest to the target is physically unreachable, so once it is
+    // excluded the pathfinder must fall back to the other exit.
+    const nearExit = makeMap(80, -2, 6, 'underground', { map_id: 81, x: -2, y: 6, layer: 'overworld' });
+    const farExit = makeMap(82, 5, -3, 'underground', { map_id: 83, x: 5, y: -3, layer: 'overworld' });
+    const target = makeMap(99, 1, 5, 'overworld');
+
+    it('picks the exit closest to the target when nothing is excluded', () => {
+      const path = buildTransitionPath(5, -4, 'underground', target, [nearExit, farExit]);
+      expect(path).toHaveLength(1);
+      expect(path[0].map_id).toBe(80); // dest (-2,6) is closer to (1,5) than (5,-3)
+    });
+
+    it('skips an excluded transition and routes through the alternative', () => {
+      const path = buildTransitionPath(5, -4, 'underground', target, [nearExit, farExit], new Set([80]));
+      expect(path).toHaveLength(1);
+      expect(path[0].map_id).toBe(82);
+    });
+
+    it('returns null when the only available route is excluded', () => {
+      const path = buildTransitionPath(5, -4, 'underground', target, [nearExit], new Set([80]));
+      expect(path).toBeNull();
+    });
+  });
+
   describe('error cases', () => {
     it('returns null when no transition exists for the target layer', () => {
       const target = makeMap(99, 5, 5, 'interior'); // no interior transitions defined

@@ -80,9 +80,10 @@ class SimpleMockCharacter {
   );
 
   move = jest.fn(
-    async (destination: { x: number; y: number }): Promise<void> => {
+    async (destination: { x: number; y: number }): Promise<boolean> => {
       this.data.x = destination.x;
       this.data.y = destination.y;
+      return true;
     },
   );
 
@@ -756,6 +757,28 @@ describe('CraftObjective Integration Tests', () => {
   });
 
   describe('Error handling', () => {
+    it('does not attempt to craft when moving to the workshop fails', async () => {
+      // Arrange — ingredients present, but the workshop is unreachable (move returns false).
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
+        switch (code) {
+          case 'iron_bar':
+            return 30;
+          case 'feather':
+            return 10;
+          default:
+            return 0;
+        }
+      });
+      mockCharacter.move.mockResolvedValue(false);
+
+      // Act
+      const result = await craftObjective.run();
+
+      // Assert — must not craft at the wrong tile (which would yield a misleading 598)
+      expect(result).toBe(false);
+      expect(actionCraft).not.toHaveBeenCalled();
+    });
+
     it('should handle API errors and retry', async () => {
       // Arrange
       const apiError = new ApiError({ code: 500, message: 'Server error' });

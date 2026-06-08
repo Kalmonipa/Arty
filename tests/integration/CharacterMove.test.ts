@@ -711,6 +711,67 @@ describe('Character.move()', () => {
     });
   });
 
+  describe('Reroute on 595 (no path to transition point)', () => {
+    it('excludes the blocked transition and reaches the destination via an alternative exit', async () => {
+      // Char in a mine at (5,-4) underground. Two exits to the overworld:
+      //   nearExit (-2,6) — closest to the target, but UNREACHABLE (595)
+      //   farExit  (5,-3) — the real exit for this cavern
+      mockCharacter = { ...mockCharacterData, x: 5, y: -4, map_id: 950, layer: 'underground' };
+      character = new Character(mockCharacter);
+
+      const nearExit: MapSchema = {
+        map_id: 901, name: 'Underground', skin: 'mine_1', x: -2, y: 6, layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: { content: null, transition: { map_id: 902, x: -2, y: 6, layer: 'overworld', conditions: [] } },
+      };
+      const farExit: MapSchema = {
+        map_id: 903, name: 'Mine', skin: 'mine3_1', x: 5, y: -3, layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: { content: null, transition: { map_id: 904, x: 5, y: -3, layer: 'overworld', conditions: [] } },
+      };
+      character.transitionLocations = [nearExit, farExit];
+
+      const destination: MapSchema = {
+        map_id: 800, name: 'Forest (Forge)', skin: 'forest_forge', x: 1, y: 5, layer: 'overworld',
+        access: { type: 'standard', conditions: [] }, interactions: {},
+      };
+
+      const cd = (reason: 'movement' | 'transition') => ({
+        remaining_seconds: 0, total_seconds: 0,
+        started_at: '2025-01-01T00:00:00.000Z', expiration: '2025-01-01T00:00:00.000Z', reason,
+      });
+      const noPathError = new ApiError({ code: 595, message: 'No path available to the destination map.' });
+      const moveToFarExit: CharacterMovementResponseSchema = {
+        data: { cooldown: cd('movement'), destination: farExit, path: [[5, -4], [5, -3]],
+          character: { ...mockCharacter, x: 5, y: -3, map_id: 903, layer: 'underground' } },
+      };
+      const transitionToOverworld: CharacterTransitionResponseSchema = {
+        data: { cooldown: cd('transition'), destination: { ...farExit, map_id: 904, layer: 'overworld' },
+          transition: { map_id: 904, x: 5, y: -3, layer: 'overworld', conditions: [] },
+          character: { ...mockCharacter, x: 5, y: -3, map_id: 904, layer: 'overworld' } },
+      };
+      const finalMove: CharacterMovementResponseSchema = {
+        data: { cooldown: cd('movement'), destination, path: [[5, -3], [1, 5]],
+          character: { ...mockCharacter, x: 1, y: 5, map_id: 800, layer: 'overworld' } },
+      };
+
+      mockActionMove
+        .mockResolvedValueOnce(noPathError)      // move to nearExit (-2,6) -> 595
+        .mockResolvedValueOnce(moveToFarExit)    // move to farExit (5,-3) -> ok
+        .mockResolvedValueOnce(finalMove);       // move to destination (1,5) -> ok
+      mockActionTransition.mockResolvedValue(transitionToOverworld);
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(true);
+      expect(mockActionMove).toHaveBeenCalledTimes(3);
+      expect(mockActionTransition).toHaveBeenCalledTimes(1);
+      expect(character.data.x).toBe(1);
+      expect(character.data.y).toBe(5);
+      expect(character.data.layer).toBe('overworld');
+    });
+  });
+
   describe('Sandwhisper Isle', () => {
     it('should return true for Sandwhisper Isle destination', async () => {
       // Arrange
