@@ -241,7 +241,6 @@ export class EventObjective extends Objective {
   private async sellToNomadicMerchant(): Promise<boolean> {
     const success = await this.sellToMerchant(NomadicMerchant);
     if (success) {
-      await this.buyFromNomadicMerchant();
       this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);
     }
     return success;
@@ -260,21 +259,21 @@ export class EventObjective extends Objective {
   private async buyFromNomadicMerchant(): Promise<boolean> {
     const itemsToBuy = ['backpack', 'lost_world_map']
 
-    for (const item in itemsToBuy) {
+    for (const item of itemsToBuy) {
       const isEquipped: boolean = this.character.hasEquipped(item)
       if (isEquipped) {
         logger.debug(`${item} is equipped. No need to purchase`)
-        break;
+        continue;
       }
       const numInInv: number = this.character.checkQuantityOfItemInInv(item)
       if (numInInv > 0) {
         logger.debug(`${item} is in inventory. No need to purchase`)
-        break;
+        continue;
       }
       const numInBank: number = await this.character.checkQuantityOfItemInBank(item)
       if (numInBank > 0) {
         logger.debug(`${item} is in bank. No need to purchase`)
-        break;
+        continue;
       }
 
       // Item details to check if the character can actually equip it
@@ -283,36 +282,45 @@ export class EventObjective extends Objective {
         logger.error(
           `Failed to get details for item ${item}`,
         );
-        return false;
+        continue;
       }
       if (itemDetails.conditions) {
-        const levelReq = itemDetails.conditions.find((condition) => condition.code === 'level').value
-        if (this.character.data.level < levelReq) {
+        const levelReq = itemDetails.conditions.find((condition) => condition.code === 'level')?.value
+        if (levelReq != null && this.character.data.level < levelReq) {
           logger.debug(`Character level (${this.character.data.level}) is too low for ${item} (${levelReq})`)
-          return false
+          continue
         }
       }
 
       // GetNpcItems to check the cost of it
-      // ToDo: get the info on all merchants on startup and just reference that 
+      // ToDo: get the info on all merchants on startup and just reference that
       // instead of hitting the API
       const npcItemDetails = await getAllNpcItems({code: item, npc: NomadicMerchant})
       if (npcItemDetails instanceof ApiError) {
         logger.error(
           `Failed to get NPC item details for item ${item}`,
         );
-        return false;
+        continue;
       }
 
       // We're assuming there's only one object returned
-      const buyPrice = npcItemDetails.data[0].buy_price
+      const npcItem = npcItemDetails.data[0]
+      if (!npcItem || npcItem.buy_price == null) {
+        logger.debug(`${item} is not available to buy from the nomadic merchant`)
+        continue
+      }
+
+      const buyPrice = npcItem.buy_price
       const moneyAvailable = this.character.data.gold
-      if (moneyAvailable > buyPrice) {
-        const purchaseResult = await this.character.tradeWithNpcNow('buy', 1, item)
-        if (!purchaseResult) {
-          logger.warn(`Purchasing ${item} failed`)
-          return false
-        }
+      if (moneyAvailable < buyPrice) {
+        logger.debug(`Cannot afford ${item} (need ${buyPrice}, have ${moneyAvailable})`)
+        continue
+      }
+
+      const purchaseResult = await this.character.tradeWithNpcNow('buy', 1, item)
+      if (!purchaseResult) {
+        logger.warn(`Purchasing ${item} failed`)
+        continue
       }
 
       // Equip the item
@@ -322,8 +330,8 @@ export class EventObjective extends Objective {
         if (this.character.data.bag_slot === '') {
         await this.character.equipNow(item, 'bag')
         } else {
-          logger.warn(`All artifact slots full. Not equipping ${item}`)
-          return false
+          logger.warn(`Bag slot occupied. Not equipping ${item}`)
+          continue
         }
       } else if (item === 'lost_world_map') {
         logger.debug(`Artifact 1 slot is ${this.character.data.artifact1_slot}`)
@@ -338,7 +346,7 @@ export class EventObjective extends Objective {
           await this.character.equipNow(item, 'artifact3')
         } else {
           logger.warn(`All artifact slots full. Not equipping ${item}`)
-          return false
+          continue
         }
       }
     }
