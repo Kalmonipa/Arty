@@ -179,6 +179,9 @@ export abstract class Objective {
     } else {
       if (this.status === 'cancelled') {
         this.character.itemsToKeep = [];
+        // A cancelled job that already started still has its active gauge set to
+        // 1; clear it so the job doesn't appear to run forever on the dashboards.
+        this.clearActiveMetric();
         return;
       } else {
         this.log.info(`Setting status of ${this.objectiveId} to 'failed'`);
@@ -195,20 +198,32 @@ export abstract class Objective {
       };
       jobCompletionsCounter.inc({ ...labels, status: this.status });
       jobDurationHistogram.observe(labels, durationSeconds);
-      jobActiveGauge.set(
-        { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
-        0,
+      this.clearActiveMetric();
+    }
+  }
+
+  /**
+   * @description Marks this job as no longer active in metrics and restores the
+   * parent job's active gauge. Safe to call however the job ended (complete,
+   * failed or cancelled); no-ops when this job doesn't emit metrics.
+   */
+  private clearActiveMetric() {
+    if (!this.shouldEmitMetrics) return;
+
+    jobActiveGauge.set(
+      { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
+      0,
+    );
+
+    if (this.parentId) {
+      const parentJob = this.character.jobList.find(
+        (job) => job.objectiveId === this.parentId,
       );
-      if (this.parentId) {
-        const parentJob = this.character.jobList.find(
-          (job) => job.objectiveId === this.parentId,
+      if (parentJob?.shouldEmitMetrics) {
+        jobActiveGauge.set(
+          { character: this.character.data.name, job_type: parentJob.jobFlavour, target: parentJob.metricLabel },
+          1,
         );
-        if (parentJob?.shouldEmitMetrics) {
-          jobActiveGauge.set(
-            { character: this.character.data.name, job_type: parentJob.jobFlavour, target: parentJob.metricLabel },
-            1,
-          );
-        }
       }
     }
   }
