@@ -367,6 +367,8 @@ export class EventObjective extends Objective {
       (npcItem) => npcItem.sell_price != null && npcItem.buy_price == null,
     );
 
+    logger.debug(`Found ${sellableItems.length} sellable items that ${npcCode} will purchase`)
+
     for (const npcItem of sellableItems) {
       const numInBank = await this.character.checkQuantityOfItemInBank(npcItem.code);
       if (numInBank <= 0) continue;

@@ -70,7 +70,7 @@ export default function CharacterRouter(char: Character) {
       return res.status(200).json({
         message: `Information for ${char.data.name}`,
         character: char.data.name,
-        currentJob: char.activeJob || 'none',
+        currentJob: char.activeJob?.objectiveId || 'none',
         enableEvents: char.enableEvents,
         idle: char.isIdle,
         jobsInQueue: char.jobList.length,
