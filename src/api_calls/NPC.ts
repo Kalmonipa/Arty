@@ -81,12 +81,12 @@ export async function actionBuyItem(
  * @description sell items to an npc. Character must be at the same map as the NPC
  * @param character
  * @param items items to sell
- * @returns {NpcMerchantTransactionSchema}
+ * @returns {NpcMerchantTransactionResponseSchema}
  */
 export async function actionSellItem(
   character: CharacterSchema,
   items: SimpleItemSchema,
-): Promise<NpcMerchantTransactionSchema | ApiError> {
+): Promise<NpcMerchantTransactionResponseSchema | ApiError> {
   const requestOptions = {
     method: 'POST',
     headers: MyHeaders,
@@ -126,9 +126,12 @@ export async function actionSellItem(
       });
     }
 
-    const result: NpcMerchantTransactionSchema = await response.json();
+    const result: NpcMerchantTransactionResponseSchema = await response.json();
 
-    await sleep(result.cooldown.remaining_seconds, result.cooldown.reason);
+    await sleep(
+      result.data.cooldown.remaining_seconds,
+      result.data.cooldown.reason,
+    );
 
     return result;
   } catch (error) {

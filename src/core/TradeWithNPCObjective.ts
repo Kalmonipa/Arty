@@ -182,7 +182,7 @@ export class TradeObjective extends Objective {
     if (sellResponse instanceof ApiError) {
       return this.character.handleErrors(sellResponse);
     } else {
-      this.character.data = sellResponse.character;
+      this.character.data = sellResponse.data.character;
       return true;
     }
   }
