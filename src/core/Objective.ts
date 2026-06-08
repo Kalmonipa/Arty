@@ -367,11 +367,10 @@ export abstract class Objective {
    * @returns
    */
   protected async depositGoldIntoBank(): Promise<boolean> {
-    const numGoldInInv = this.character.data.gold;
-    const maxGoldToCarry = this.character.data.level * 3000
+    const excessGold = this.character.excessGold;
 
-    if (numGoldInInv > maxGoldToCarry) {
-      return await this.character.depositNow(Math.max(numGoldInInv - maxGoldToCarry, 0), 'gold');
+    if (excessGold > 0) {
+      return await this.character.depositNow(excessGold, 'gold');
     }
 
     return true;

@@ -57,7 +57,7 @@ import { EquipObjective } from './EquipObjective.js';
 import { UnequipObjective } from './UnequipObjective.js';
 import { WithdrawObjective } from './WithdrawObjective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
-import { getBankItems } from '../api_calls/Bank.js';
+import { actionDepositGold, getBankItems } from '../api_calls/Bank.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import {
   UtilityEffects,
@@ -1986,11 +1986,61 @@ export class Character {
         } else {
           logger.error('Deposit item response missing character data');
         }
+        // Already at the bank, so shed any gold above the carry cap before leaving
+        await this.depositExcessGold();
         await this.move(priorLocation);
       }
       return true;
     }
     return false;
+  }
+
+  /**
+   * @description The maximum gold a character will keep on hand. Anything above
+   * this gets banked. Single source of truth for the gold carry cap.
+   */
+  get goldCarryCap(): number {
+    return this.data.level * 3000;
+  }
+
+  /**
+   * @description How much gold the character is holding above the carry cap
+   * (0 if at or below the cap).
+   */
+  get excessGold(): number {
+    return Math.max(0, this.data.gold - this.goldCarryCap);
+  }
+
+  /**
+   * @description Deposits any gold held above the carry cap into the bank.
+   * Assumes the character is already at the bank — it calls the deposit action
+   * directly rather than queuing a DepositObjective, so it only makes sense to
+   * call this once already at the bank (e.g. straight after depositing items).
+   * @returns true if excess gold was deposited, false if there was nothing to deposit
+   */
+  private async depositExcessGold(): Promise<boolean> {
+    const excessGold = this.excessGold;
+
+    if (excessGold <= 0) {
+      return false;
+    }
+
+    logger.info(
+      `Depositing ${excessGold} excess gold (carry cap is ${this.goldCarryCap})`,
+    );
+    const response = await actionDepositGold(this.data, excessGold);
+
+    if (response instanceof ApiError) {
+      this.handleErrors(response);
+      return false;
+    }
+
+    if (response.data.character) {
+      this.data = response.data.character;
+    } else {
+      logger.error('Deposit gold response missing character data');
+    }
+    return true;
   }
 
   /**
