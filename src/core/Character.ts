@@ -1920,10 +1920,8 @@ export class Character {
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
     const usedInventorySpace = this.getInventoryFullness();
-    if (
-      usedInventorySpace >= this.data.inventory_max_items * 0.9 ||
-      makeSpaceForOtherItems
-    ) {
+    // getInventoryFullness() returns a percentage (0-100), so 90 here means 90% full
+    if (usedInventorySpace >= 90 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing all items`);
       logger.info(`Items to keep:`);
       // Quick hack to prevent panics. No clue why it's not

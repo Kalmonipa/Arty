@@ -174,7 +174,6 @@ export class GatherObjective extends Objective {
             quantity: quantity,
           }))
         ) {
-          attempt++;
           continue;
         } else {
           return true;
@@ -190,21 +189,18 @@ export class GatherObjective extends Objective {
             resourceDetails.code,
           ))
         ) {
-          attempt++;
           continue;
         } else {
           return true;
         }
       } else if (resourceDetails.craft && resourceDetails.code !== 'sap') {
         if (!(await this.character.craftNow(quantity, resourceDetails.code))) {
-          attempt++;
           continue;
         } else {
           return true;
         }
       } else {
         if (!(await this.gatherResource(code, quantity))) {
-          attempt++;
           continue;
         } else {
           return true;
@@ -224,14 +220,15 @@ export class GatherObjective extends Objective {
         logger.info(
           `Gathered ${this.progress}/${target.quantity} ${target.code}`,
         );
-        // Check inventory space to make sure we are less than 90% full
-        await this.character.evaluateDepositItemsInBank(exceptions, location);
 
         // Check this during gathering jobs so we don't miss out
         if (this.character.enableEvents) {
           await this.character.checkForActiveEvents();
         }
       }
+
+      // Check inventory space to make sure we are less than 90% full
+      await this.character.evaluateDepositItemsInBank(exceptions, location);
 
       const response = await actionGather(this.character.data);
 
