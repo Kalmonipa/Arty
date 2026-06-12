@@ -1,12 +1,12 @@
 import { ApiUrl } from '../constants.js';
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   AchievementResponseSchema,
   DataPageAccountAchievementSchema,
   StaticDataPageAchievementSchema,
   GetAllAchievementsAchievementsGetParams,
 } from '../types/types.js';
-import { getRequestOptions } from '../utils.js';
+import { apiRequest } from './request.js';
 
 /**
  * @description returns all available achievements
@@ -30,18 +30,10 @@ export async function getAllAchievements(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  try {
-    const response = await fetch(apiUrl, getRequestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /achievements`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<StaticDataPageAchievementSchema[]>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /achievements`,
+  });
 }
 
 /**
@@ -57,24 +49,13 @@ export async function getAccountAchievements(
   apiUrl.searchParams.set('page', page.toString());
   apiUrl.searchParams.set('size', size.toString());
 
-  try {
-    const response = await fetch(apiUrl, getRequestOptions);
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = `Account ${account} not found.`;
-          break;
-        default:
-          message = `Unknown error from /accounts/${account}/achievements`;
-          break;
-      }
-      throw new ApiError({ code: response.status, message });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<DataPageAccountAchievementSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: `Account ${account} not found.`,
+    },
+    fallbackMessage: `Unknown error from /accounts/${account}/achievements`,
+  });
 }
 
 /**
@@ -87,25 +68,11 @@ export async function getAchievement(
 ): Promise<AchievementResponseSchema | ApiError> {
   const apiUrl = new URL(`${ApiUrl}/achievements/${code}`);
 
-  try {
-    const response = await fetch(apiUrl, getRequestOptions);
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = `Achievement ${code} not found.`;
-          break;
-        default:
-          message = `Unknown error from /achievements/${code}`;
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return error;
-  }
+  return apiRequest<AchievementResponseSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: `Achievement ${code} not found.`,
+    },
+    fallbackMessage: `Unknown error from /achievements/${code}`,
+  });
 }

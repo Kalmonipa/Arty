@@ -1,6 +1,7 @@
-import { ApiError, toApiError } from '../core/Error.js';
-import { getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
+import { ApiError } from '../core/Error.js';
+import { logger } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
 import {
   CharacterSchema,
   ClaimPendingItemDataSchema,
@@ -27,62 +28,20 @@ export async function actionEquipItem(
   character: CharacterSchema,
   equipment: EquipSchema,
 ): Promise<EquipmentResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<EquipmentResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/equip`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(equipment),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/equip`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 483:
-          message =
-            'The character does not have enough HP to unequip this item.';
-          break;
-        case 484:
-          message =
-            'The character cannot equip more than 100 utilities in the same slot.';
-          break;
-        case 485:
-          message = 'This item is already equipped.';
-          break;
-        case 496:
-          message = 'Character does not meet the required condition';
-          break;
-        default:
-          message = 'Unknown error from /action/equip';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: EquipmentResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: equipment,
+    errorMessages: {
+      404: 'Item not found.',
+      478: 'Missing item or insufficient quantity.',
+      483: 'The character does not have enough HP to unequip this item.',
+      484: 'The character cannot equip more than 100 utilities in the same slot.',
+      485: 'This item is already equipped.',
+      496: 'Character does not meet the required condition',
+    },
+    fallbackMessage: 'Unknown error from /action/equip',
+  });
 }
 
 /**
@@ -94,58 +53,19 @@ export async function actionUnequipItem(
   character: CharacterSchema,
   equipment: UnequipSchema,
 ): Promise<EquipmentResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<EquipmentResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/unequip`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(equipment),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/unequip`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 483:
-          message =
-            'The character does not have enough HP to unequip this item.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 491:
-          message = 'The equipment slot is empty.';
-          break;
-        default:
-          message = 'Unknown error from /action/unequip';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: EquipmentResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: equipment,
+    errorMessages: {
+      404: 'Item not found.',
+      478: 'Missing item or insufficient quantity.',
+      483: 'The character does not have enough HP to unequip this item.',
+      486: 'An action is already in progress for this character.',
+      491: 'The equipment slot is empty.',
+    },
+    fallbackMessage: 'Unknown error from /action/unequip',
+  });
 }
 
 /**
@@ -155,56 +75,19 @@ export async function actionUse(
   character: CharacterSchema,
   data: SimpleItemSchema,
 ): Promise<UseItemResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<UseItemResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/use`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(data),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/use`,
-      requestOptions,
-    );
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        case 476:
-          message = 'This item is not a consumable.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 496:
-          message = 'The character does not meet the required condition.';
-          break;
-        default:
-          message = 'Unknown error from /action/use';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: UseItemResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: data,
+    errorMessages: {
+      404: 'Item not found.',
+      476: 'This item is not a consumable.',
+      478: 'Missing item or insufficient quantity.',
+      486: 'An action is already in progress for this character.',
+      496: 'The character does not meet the required condition.',
+    },
+    fallbackMessage: 'Unknown error from /action/use',
+  });
 }
 
 /**
@@ -242,19 +125,10 @@ export async function getAllItemInformation(
     apiUrl.searchParams.set('type', data.type);
   }
 
-  try {
-    const response = await fetch(apiUrl, getRequestOptions);
-
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /items`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<StaticDataPageItemSchema>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /items`,
+  });
 }
 
 /**
@@ -265,22 +139,14 @@ export async function getAllItemInformation(
 export async function getItemInformation(
   code: string,
 ): Promise<ItemSchema | ApiError> {
-  try {
-    const response = await fetch(`${ApiUrl}/items/${code}`, getRequestOptions);
-
-    if (response.status === 404) {
-      throw new ApiError({
-        code: response.status,
-        message: `Item not found.`,
-      });
-    }
-
-    const data: ItemResponseSchema = await response.json();
-
-    return data.data;
-  } catch (error) {
-    return toApiError(error);
-  }
+  const res = await apiRequest<ItemResponseSchema>({
+    url: `${ApiUrl}/items/${code}`,
+    errorMessages: {
+      404: 'Item not found.',
+    },
+    fallbackMessage: `Unknown error from /items/${code}`,
+  });
+  return res instanceof ApiError ? res : res.data;
 }
 
 /**
@@ -292,93 +158,31 @@ export async function actionDeleteItem(
   character: CharacterSchema,
   item: SimpleItemSchema,
 ): Promise<DeleteItemResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<DeleteItemResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/delete`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(item),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/delete`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 422:
-          message = 'Request could not be processed due to an invalid payload.';
-          break;
-        case 478:
-          message = 'Missing required item(s).';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown';
-          break;
-        default:
-          message = `Unknown error from /my/${character.name}/action/delete`;
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: DeleteItemResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: item,
+    errorMessages: {
+      422: 'Request could not be processed due to an invalid payload.',
+      478: 'Missing required item(s).',
+      486: 'An action is already in progress for this character.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown',
+    },
+    fallbackMessage: `Unknown error from /my/${character.name}/action/delete`,
+  });
 }
 
 /**
  * Gets all pending item information
  */
-export async function getPendingItems(): Promise<DataPagePendingItemSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/pending-items`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        default:
-          message = 'Unknown error from /my/pending-items';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: DataPagePendingItemSchema = await response.json();
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+export async function getPendingItems(): Promise<
+  DataPagePendingItemSchema | ApiError
+> {
+  return apiRequest<DataPagePendingItemSchema>({
+    url: `${ApiUrl}/my/pending-items`,
+    fallbackMessage: 'Unknown error from /my/pending-items',
+  });
 }
 
 /**
@@ -390,68 +194,30 @@ export async function actionClaimPendingItems(
   character: CharacterSchema,
   itemId: string,
 ): Promise<ClaimPendingItemDataSchema | ApiError> {
-  const requestOptions = {
+  const res = await apiRequest<ClaimPendingItemResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/claim_item/${itemId}`,
     method: 'POST',
-    headers: MyHeaders,
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/claim_item/${itemId}`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Pending item not found.';
-          break;
-        case 422:
-          message = 'Request could not be processed due to an invalid payload.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 497:
-          message = `The character's inventory is full.`;
-          break;
-        case 498:
-          message = 'Character not found';
-          break;
-        case 499:
-          message = 'The character is in cooldown';
-          break;
-        default:
-          message = `Unknown error from /my/${character.name}/action/claim/${itemId}`;
-          break;
+    errorMessages: {
+      404: 'Pending item not found.',
+      422: 'Request could not be processed due to an invalid payload.',
+      486: 'An action is already in progress for this character.',
+      497: `The character's inventory is full.`,
+      498: 'Character not found',
+      499: 'The character is in cooldown',
+    },
+    fallbackMessage: `Unknown error from /my/${character.name}/action/claim/${itemId}`,
+    onSuccess: (result) => {
+      logger.info(`Claimed pending item ${itemId}`);
+      if (result.data.item.gold) {
+        logger.info(`Received ${result.data.item.gold} gold`);
       }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: ClaimPendingItemResponseSchema = await response.json();
-
-    logger.info(`Claimed pending item ${itemId}`)
-    if (result.data.item.gold) {
-      logger.info(`Received ${result.data.item.gold} gold`)
-    }
-    if (result.data.item.items) {
-      logger.info(`Received following items:`)
-      for (const item of result.data.item.items) {
-        logger.info(`  - ${item.quantity}x ${item.code}`)
+      if (result.data.item.items) {
+        logger.info(`Received following items:`);
+        for (const item of result.data.item.items) {
+          logger.info(`  - ${item.quantity}x ${item.code}`);
+        }
       }
-    }
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result.data;
-  } catch (error) {
-    return toApiError(error);
-  }
+    },
+  });
+  return res instanceof ApiError ? res : res.data;
 }

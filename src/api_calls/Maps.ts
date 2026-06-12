@@ -1,21 +1,17 @@
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   GetAllMapsMapsGetParams,
   StaticDataPageMapSchema,
   MapResponseSchema,
   MapSchema,
 } from '../types/types.js';
-import { logger, MyHeaders } from '../utils.js';
+import { logger } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
 
 export async function getMaps(
   params: GetAllMapsMapsGetParams,
 ): Promise<StaticDataPageMapSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/maps`);
 
   if (params.content_code) {
@@ -40,51 +36,24 @@ export async function getMaps(
     apiUrl.searchParams.set('size', String(params.size));
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /maps`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<StaticDataPageMapSchema>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /maps`,
+  });
 }
 
 export async function getMapsById(
   mapId: number,
 ): Promise<MapResponseSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/maps/id/${mapId}`);
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        default:
-          message = 'Unknown error from /maps/id/:mapId';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<MapResponseSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: 'Item not found.',
+    },
+    fallbackMessage: 'Unknown error from /maps/id/:mapId',
+  });
 }
 
 export async function getAllMaps(

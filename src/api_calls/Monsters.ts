@@ -1,20 +1,15 @@
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   StaticDataPageMonsterSchema,
   GetAllMonstersMonstersGetParams,
   MonsterResponseSchema,
 } from '../types/types.js';
-import { MyHeaders } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
 
 export async function getAllMonsterInformation(
   data: GetAllMonstersMonstersGetParams,
 ): Promise<StaticDataPageMonsterSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/monsters`);
 
   if (data.drop) {
@@ -36,50 +31,22 @@ export async function getAllMonsterInformation(
     apiUrl.searchParams.set('name', data.name);
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /monsters: ${response}`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<StaticDataPageMonsterSchema>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /monsters`,
+  });
 }
 
 export async function getMonsterInformation(
   monsterCode: string,
 ): Promise<MonsterResponseSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/monsters/${monsterCode}`);
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Map not found';
-          break;
-        default:
-          message = `Unknown error from /monsters: ${response}`;
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<MonsterResponseSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: 'Map not found',
+    },
+    fallbackMessage: `Unknown error from /monsters`,
+  });
 }
