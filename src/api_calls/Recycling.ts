@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import { CharacterSchema, RecyclingResponseSchema } from '../types/types.js';
 import { MyHeaders, logger, sleep } from '../utils.js';
 import { ApiUrl } from '../constants.js';
@@ -64,6 +64,6 @@ export async function actionRecycle(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

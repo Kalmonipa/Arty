@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   StaticDataPageActiveEventSchema,
   StaticDataPageEventSchema,
@@ -38,7 +38,7 @@ export async function getAllEvents(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -69,6 +69,6 @@ export async function getActiveEvents(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

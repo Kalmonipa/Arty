@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   BankItemTransactionResponseSchema,
   CharacterFightResponseSchema,
@@ -78,7 +78,7 @@ export async function actionCraft(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -145,7 +145,7 @@ export async function actionDepositItems(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -219,7 +219,7 @@ export async function actionFight(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -360,7 +360,7 @@ export async function actionMove(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -409,7 +409,7 @@ export async function actionRest(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -489,7 +489,7 @@ export async function actionTransition(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -556,7 +556,7 @@ export async function actionWithdrawItem(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -605,6 +605,6 @@ export async function fightSimulator(
 
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

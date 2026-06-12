@@ -1,5 +1,5 @@
 import { ApiUrl } from '../constants.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   AchievementResponseSchema,
   DataPageAccountAchievementSchema,
@@ -40,7 +40,7 @@ export async function getAllAchievements(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -73,7 +73,7 @@ export async function getAccountAchievements(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 

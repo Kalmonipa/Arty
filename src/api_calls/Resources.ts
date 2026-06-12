@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   StaticDataPageResourceSchema,
   GetAllResourcesResourcesGetParams,
@@ -46,7 +46,7 @@ export async function getAllResourceInformation(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -79,6 +79,6 @@ export async function getResourceInformation(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

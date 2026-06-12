@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   CharacterSchema,
   StaticDataPageNPCItem,
@@ -73,7 +73,7 @@ export async function actionBuyItem(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -135,7 +135,7 @@ export async function actionSellItem(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -176,7 +176,7 @@ export async function getAllNpcs(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -209,7 +209,7 @@ export async function getNpc(code: string): Promise<ApiError | NPCSchema> {
 
     return result.data;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -252,7 +252,7 @@ export async function getNpcItems(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -296,6 +296,6 @@ export async function getAllNpcItems(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

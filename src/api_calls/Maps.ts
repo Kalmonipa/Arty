@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   GetAllMapsMapsGetParams,
   StaticDataPageMapSchema,
@@ -50,7 +50,7 @@ export async function getMaps(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -83,7 +83,7 @@ export async function getMapsById(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 

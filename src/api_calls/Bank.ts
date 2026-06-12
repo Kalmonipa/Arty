@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import { getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 import {
@@ -43,7 +43,7 @@ export async function getBankItems(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -110,7 +110,7 @@ export async function actionDepositGold(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -180,7 +180,7 @@ export async function actionWithdrawGold(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -241,7 +241,7 @@ export async function purchaseBankExpansion(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -260,6 +260,6 @@ export async function getBankDetails(): Promise<BankResponseSchema | ApiError> {
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   StaticDataPageMonsterSchema,
   GetAllMonstersMonstersGetParams,
@@ -46,7 +46,7 @@ export async function getAllMonsterInformation(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -80,6 +80,6 @@ export async function getMonsterInformation(
 
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import {
   CharacterSchema,
   RewardDataResponseSchema,
@@ -74,7 +74,7 @@ export async function actionAcceptNewTask(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -127,7 +127,7 @@ export async function actionCancelTask(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -190,7 +190,7 @@ export async function actionCompleteTask(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -254,6 +254,6 @@ export async function actionTasksTrade(
     );
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

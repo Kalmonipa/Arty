@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import { getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 import {
@@ -81,7 +81,7 @@ export async function actionEquipItem(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -144,7 +144,7 @@ export async function actionUnequipItem(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -203,7 +203,7 @@ export async function actionUse(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -253,7 +253,7 @@ export async function getAllItemInformation(
     }
     return await response.json();
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -279,7 +279,7 @@ export async function getItemInformation(
 
     return data.data;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -341,7 +341,7 @@ export async function actionDeleteItem(
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -377,7 +377,7 @@ export async function getPendingItems(): Promise<DataPagePendingItemSchema | Api
 
     return result;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -452,6 +452,6 @@ export async function actionClaimPendingItems(
 
     return result.data;
   } catch (error) {
-    return error as ApiError;
+    return toApiError(error);
   }
 }

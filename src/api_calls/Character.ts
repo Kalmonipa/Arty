@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import { CharacterSchema } from '../types/types.js';
 import { MyHeaders } from '../utils.js';
 import { ApiUrl } from '../constants.js';
@@ -42,7 +42,7 @@ export async function getCharacter(
     if (error instanceof ApiError) {
       return error;
     }
-    return error as ApiError;
+    return toApiError(error);
   }
 }
 
@@ -80,6 +80,6 @@ export async function getMyCharacters(): Promise<CharacterSchema[] | ApiError> {
     if (error instanceof ApiError) {
       return error;
     }
-    return error as ApiError;
+    return toApiError(error);
   }
 }
