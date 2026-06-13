@@ -18,7 +18,12 @@ jest.mock('../../src/api_calls/Maps.js', () => ({
   getMapsById: jest.fn(),
 }));
 jest.mock('../../src/api_calls/Bank.js', () => ({
-  getBankItems: jest.fn(async () => ({ data: [], total: 0, page: 1, size: 50 })),
+  getBankItems: jest.fn(async () => ({
+    data: [],
+    total: 0,
+    page: 1,
+    size: 50,
+  })),
 }));
 jest.mock('../../src/api_calls/Events.js', () => ({
   getActiveEvents: jest.fn(),
@@ -112,7 +117,9 @@ describe('Character - event backoff', () => {
     });
 
     it('is a no-op when there is no backoff entry', () => {
-      expect(() => character.recordEventSuccess('corrupted_ogre')).not.toThrow();
+      expect(() =>
+        character.recordEventSuccess('corrupted_ogre'),
+      ).not.toThrow();
       expect(character.eventBackoffs.has('corrupted_ogre')).toBe(false);
     });
 

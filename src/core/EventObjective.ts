@@ -74,13 +74,15 @@ export class EventObjective extends Objective {
         case NomadicMerchant:
           result = await this.sellToNomadicMerchant();
           if (!result) {
-            return result
+            return result;
           }
           result = await this.buyFromNomadicMerchant();
           break;
         default:
           logger.info(`Event ${this.activeEvent.code} not configured yet.`);
-          this.character.lastEventCheckTimestamp = Math.round(Date.now() / 1000);
+          this.character.lastEventCheckTimestamp = Math.round(
+            Date.now() / 1000,
+          );
           return false;
       }
     }
@@ -98,7 +100,9 @@ export class EventObjective extends Objective {
     let resourceInfo = this.resourceInfo;
 
     if (!resourceInfo) {
-      const response = await getResourceInformation(event.map.interactions.content.code);
+      const response = await getResourceInformation(
+        event.map.interactions.content.code,
+      );
       if (response instanceof ApiError) {
         return this.character.handleErrors(response);
       }
@@ -252,106 +256,124 @@ export class EventObjective extends Objective {
    * It checks if we already have one available and exits if so
    * If not available, check the cost of the item to see if we can afford it
    *   and purchase if we can
-   * If we have an empty slot, equips the item 
+   * If we have an empty slot, equips the item
    * @todo Make this smarter by:
    * - having a programmatic list of items from the nomadic merchant
    */
   private async buyFromNomadicMerchant(): Promise<boolean> {
-    const itemsToBuy = ['backpack', 'lost_world_map']
+    const itemsToBuy = ['backpack', 'lost_world_map'];
 
     for (const item of itemsToBuy) {
-      const isEquipped: boolean = this.character.hasEquipped(item)
+      const isEquipped: boolean = this.character.hasEquipped(item);
       if (isEquipped) {
-        logger.debug(`${item} is equipped. No need to purchase`)
+        logger.debug(`${item} is equipped. No need to purchase`);
         continue;
       }
-      const numInInv: number = this.character.checkQuantityOfItemInInv(item)
+      const numInInv: number = this.character.checkQuantityOfItemInInv(item);
       if (numInInv > 0) {
-        logger.debug(`${item} is in inventory. No need to purchase`)
+        logger.debug(`${item} is in inventory. No need to purchase`);
         continue;
       }
-      const numInBank: number = await this.character.checkQuantityOfItemInBank(item)
+      const numInBank: number =
+        await this.character.checkQuantityOfItemInBank(item);
       if (numInBank > 0) {
-        logger.debug(`${item} is in bank. No need to purchase`)
+        logger.debug(`${item} is in bank. No need to purchase`);
         continue;
       }
 
       // Item details to check if the character can actually equip it
-      const itemDetails = await getItemInformation(item)
+      const itemDetails = await getItemInformation(item);
       if (itemDetails instanceof ApiError) {
-        logger.error(
-          `Failed to get details for item ${item}`,
-        );
+        logger.error(`Failed to get details for item ${item}`);
         continue;
       }
       if (itemDetails.conditions) {
-        const levelReq = itemDetails.conditions.find((condition) => condition.code === 'level')?.value
+        const levelReq = itemDetails.conditions.find(
+          (condition) => condition.code === 'level',
+        )?.value;
         if (levelReq != null && this.character.data.level < levelReq) {
-          logger.debug(`Character level (${this.character.data.level}) is too low for ${item} (${levelReq})`)
-          continue
+          logger.debug(
+            `Character level (${this.character.data.level}) is too low for ${item} (${levelReq})`,
+          );
+          continue;
         }
       }
 
       // GetNpcItems to check the cost of it
       // ToDo: get the info on all merchants on startup and just reference that
       // instead of hitting the API
-      const npcItemDetails = await getAllNpcItems({code: item, npc: NomadicMerchant})
+      const npcItemDetails = await getAllNpcItems({
+        code: item,
+        npc: NomadicMerchant,
+      });
       if (npcItemDetails instanceof ApiError) {
-        logger.error(
-          `Failed to get NPC item details for item ${item}`,
-        );
+        logger.error(`Failed to get NPC item details for item ${item}`);
         continue;
       }
 
       // We're assuming there's only one object returned
-      const npcItem = npcItemDetails.data[0]
+      const npcItem = npcItemDetails.data[0];
       if (!npcItem || npcItem.buy_price == null) {
-        logger.debug(`${item} is not available to buy from the nomadic merchant`)
-        continue
+        logger.debug(
+          `${item} is not available to buy from the nomadic merchant`,
+        );
+        continue;
       }
 
-      const buyPrice = npcItem.buy_price
-      const moneyAvailable = this.character.data.gold
+      const buyPrice = npcItem.buy_price;
+      const moneyAvailable = this.character.data.gold;
       if (moneyAvailable < buyPrice) {
-        logger.debug(`Cannot afford ${item} (need ${buyPrice}, have ${moneyAvailable})`)
-        continue
+        logger.debug(
+          `Cannot afford ${item} (need ${buyPrice}, have ${moneyAvailable})`,
+        );
+        continue;
       }
 
-      const purchaseResult = await this.character.tradeWithNpcNow('buy', 1, item)
+      const purchaseResult = await this.character.tradeWithNpcNow(
+        'buy',
+        1,
+        item,
+      );
       if (!purchaseResult) {
-        logger.warn(`Purchasing ${item} failed`)
-        continue
+        logger.warn(`Purchasing ${item} failed`);
+        continue;
       }
 
       // Equip the item
       // ToDo: associate 'bag' with 'bag_slot' somehow
       if (item === 'backpack') {
-        logger.debug(`Bag slot is ${this.character.data.bag_slot}`)
+        logger.debug(`Bag slot is ${this.character.data.bag_slot}`);
         if (this.character.data.bag_slot === '') {
-        await this.character.equipNow(item, 'bag')
+          await this.character.equipNow(item, 'bag');
         } else {
-          logger.warn(`Bag slot occupied. Not equipping ${item}`)
-          continue
+          logger.warn(`Bag slot occupied. Not equipping ${item}`);
+          continue;
         }
       } else if (item === 'lost_world_map') {
-        logger.debug(`Artifact 1 slot is ${this.character.data.artifact1_slot}`)
-        logger.debug(`Artifact 2 slot is ${this.character.data.artifact2_slot}`)
-        logger.debug(`Artifact 3 slot is ${this.character.data.artifact3_slot}`)
+        logger.debug(
+          `Artifact 1 slot is ${this.character.data.artifact1_slot}`,
+        );
+        logger.debug(
+          `Artifact 2 slot is ${this.character.data.artifact2_slot}`,
+        );
+        logger.debug(
+          `Artifact 3 slot is ${this.character.data.artifact3_slot}`,
+        );
 
         if (this.character.data.artifact1_slot === '') {
-          await this.character.equipNow(item, 'artifact1')
+          await this.character.equipNow(item, 'artifact1');
         } else if (this.character.data.artifact2_slot === '') {
-          await this.character.equipNow(item, 'artifact2')
+          await this.character.equipNow(item, 'artifact2');
         } else if (this.character.data.artifact3_slot === '') {
-          await this.character.equipNow(item, 'artifact3')
+          await this.character.equipNow(item, 'artifact3');
         } else {
-          logger.warn(`All artifact slots full. Not equipping ${item}`)
-          continue
+          logger.warn(`All artifact slots full. Not equipping ${item}`);
+          continue;
         }
       }
     }
 
-    return true
+    return true;
   }
 
   /**
@@ -375,10 +397,14 @@ export class EventObjective extends Objective {
       (npcItem) => npcItem.sell_price != null && npcItem.buy_price == null,
     );
 
-    logger.debug(`Found ${sellableItems.length} sellable items that ${npcCode} will purchase`)
+    logger.debug(
+      `Found ${sellableItems.length} sellable items that ${npcCode} will purchase`,
+    );
 
     for (const npcItem of sellableItems) {
-      const numInBank = await this.character.checkQuantityOfItemInBank(npcItem.code);
+      const numInBank = await this.character.checkQuantityOfItemInBank(
+        npcItem.code,
+      );
       if (numInBank <= 0) continue;
 
       const itemInfoResponse = await getItemInformation(npcItem.code);
@@ -395,22 +421,31 @@ export class EventObjective extends Objective {
       }
 
       let currencyReserve = 0;
-      const currencyUsageResponse = await getAllNpcItems({ currency: npcItem.code, size: 10000 });
+      const currencyUsageResponse = await getAllNpcItems({
+        currency: npcItem.code,
+        size: 10000,
+      });
       if (currencyUsageResponse instanceof ApiError) {
-        logger.warn(`Could not check currency usage for ${npcItem.code}, proceeding without reserve`);
+        logger.warn(
+          `Could not check currency usage for ${npcItem.code}, proceeding without reserve`,
+        );
       } else {
         const prices = currencyUsageResponse.data
           .map((item) => item.buy_price)
           .filter((price): price is number => price != null);
         if (prices.length > 0) {
           currencyReserve = Math.max(...prices);
-          logger.debug(`Reserving ${currencyReserve} ${npcItem.code} for currency use`);
+          logger.debug(
+            `Reserving ${currencyReserve} ${npcItem.code} for currency use`,
+          );
         }
       }
 
       const numAvailableToSell = numInBank - currencyReserve;
       if (numAvailableToSell <= 0) {
-        logger.info(`Keeping all ${numInBank} ${npcItem.code} (reserved ${currencyReserve} for currency use)`);
+        logger.info(
+          `Keeping all ${numInBank} ${npcItem.code} (reserved ${currencyReserve} for currency use)`,
+        );
         continue;
       }
 
@@ -419,19 +454,27 @@ export class EventObjective extends Objective {
         : numAvailableToSell;
 
       if (numToSell <= 0) {
-        logger.info(`Keeping all ${numInBank} ${npcItem.code} (need to keep at least ${keepQuantity})`);
+        logger.info(
+          `Keeping all ${numInBank} ${npcItem.code} (need to keep at least ${keepQuantity})`,
+        );
         continue;
       }
 
-      logger.info(`Attempting to sell ${numToSell} ${npcItem.code} to ${npcResponse.name}`);
+      logger.info(
+        `Attempting to sell ${numToSell} ${npcItem.code} to ${npcResponse.name}`,
+      );
 
       let numToWithdraw = numToSell;
       if (numToWithdraw > this.character.data.inventory_max_items) {
-        numToWithdraw = Math.floor(this.character.data.inventory_max_items * 0.9);
+        numToWithdraw = Math.floor(
+          this.character.data.inventory_max_items * 0.9,
+        );
       }
 
       if (!(await this.character.withdrawNow(numToWithdraw, npcItem.code))) {
-        logger.warn(`Withdraw ${numToWithdraw} ${npcItem.code} failed. Moving on`);
+        logger.warn(
+          `Withdraw ${numToWithdraw} ${npcItem.code} failed. Moving on`,
+        );
         continue;
       }
 

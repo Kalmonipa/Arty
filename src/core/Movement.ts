@@ -13,11 +13,14 @@ export async function transitionToSandwhisperIsle(
   character: Character,
 ): Promise<boolean> {
   const recallPotsInInv = character.checkQuantityOfItemInInv(RecallPotion);
-  const forestBankPotsInInv = character.checkQuantityOfItemInInv(ForestBankPotion);
+  const forestBankPotsInInv =
+    character.checkQuantityOfItemInInv(ForestBankPotion);
   const potionInInv = recallPotsInInv > 0 || forestBankPotsInInv > 0;
 
-  const recallPotsInBank = await character.checkQuantityOfItemInBank(RecallPotion);
-  const forestBankPotsInBank = await character.checkQuantityOfItemInBank(ForestBankPotion);
+  const recallPotsInBank =
+    await character.checkQuantityOfItemInBank(RecallPotion);
+  const forestBankPotsInBank =
+    await character.checkQuantityOfItemInBank(ForestBankPotion);
   const potionInBank = recallPotsInBank > 0 || forestBankPotsInBank > 0;
 
   if (!potionInBank && !potionInInv) {
@@ -26,7 +29,8 @@ export async function transitionToSandwhisperIsle(
     await character.withdrawNow(2000, 'gold');
   } else if (!potionInInv && potionInBank) {
     // Withdraw whichever return potion is available, plus 1k gold for the outbound trip
-    const potionToWithdraw = recallPotsInBank > 0 ? RecallPotion : ForestBankPotion;
+    const potionToWithdraw =
+      recallPotsInBank > 0 ? RecallPotion : ForestBankPotion;
     await character.withdrawNow(1, potionToWithdraw);
     character.addItemToItemsToKeep(potionToWithdraw);
     await character.withdrawNow(1000, 'gold');
@@ -43,7 +47,9 @@ export async function transitionToSandwhisperIsle(
       t.interactions.transition.y >= SANDWHISPER_Y_BOUNDARY,
   );
   if (!transitionPoint) {
-    logger.error('Could not find mainland -> Sandwhisper Isle transition point');
+    logger.error(
+      'Could not find mainland -> Sandwhisper Isle transition point',
+    );
     return false;
   }
 
@@ -64,13 +70,17 @@ export async function transitionToMainland(
   character: Character,
 ): Promise<boolean> {
   if (character.checkQuantityOfItemInInv(RecallPotion) > 0) {
-    logger.info(`Using a Recall Potion to travel from Sandwhisper Isle to Mainland`);
+    logger.info(
+      `Using a Recall Potion to travel from Sandwhisper Isle to Mainland`,
+    );
     await character.useItem(RecallPotion, 1);
     return true;
   }
 
   if (character.checkQuantityOfItemInInv(ForestBankPotion) > 0) {
-    logger.info(`Using a Forest Bank Potion to travel from Sandwhisper Isle to Mainland`);
+    logger.info(
+      `Using a Forest Bank Potion to travel from Sandwhisper Isle to Mainland`,
+    );
     await character.useItem(ForestBankPotion, 1);
     return true;
   }
@@ -84,7 +94,9 @@ export async function transitionToMainland(
       t.interactions.transition.y < SANDWHISPER_Y_BOUNDARY,
   );
   if (!transitionPoint) {
-    logger.error('Could not find Sandwhisper Isle -> mainland transition point');
+    logger.error(
+      'Could not find Sandwhisper Isle -> mainland transition point',
+    );
     return false;
   }
 
@@ -114,7 +126,8 @@ export async function transitionToUndergroundMine(character: Character) {
   );
   const transitionPoint = candidates.reduce(
     (best, curr) =>
-      Math.abs(curr.x - character.data.x) + Math.abs(curr.y - character.data.y) <
+      Math.abs(curr.x - character.data.x) +
+        Math.abs(curr.y - character.data.y) <
       Math.abs(best.x - character.data.x) + Math.abs(best.y - character.data.y)
         ? curr
         : best,
@@ -178,7 +191,9 @@ export async function transitionToSandwhisperMine(character: Character) {
       t.interactions.transition?.layer === MapLayer.underground,
   );
   if (!transitionPoint) {
-    logger.error('Could not find Sandwhisper Isle -> Sandwhisper Mine transition point');
+    logger.error(
+      'Could not find Sandwhisper Isle -> Sandwhisper Mine transition point',
+    );
     return false;
   }
 
@@ -206,7 +221,9 @@ export async function transitionFromSandwhisperMine(character: Character) {
       t.interactions.transition.y >= SANDWHISPER_Y_BOUNDARY,
   );
   if (!transitionPoint) {
-    logger.error('Could not find Sandwhisper Mine -> Sandwhisper Isle transition point');
+    logger.error(
+      'Could not find Sandwhisper Mine -> Sandwhisper Isle transition point',
+    );
     return false;
   }
 

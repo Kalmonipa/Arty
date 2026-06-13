@@ -21,7 +21,11 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 
 import { getAllNpcItems } from '../../src/api_calls/NPC.js';
 
-const createMockArtifact = (code: string, level: number, effectType: GearEffects): ItemSchema => ({
+const createMockArtifact = (
+  code: string,
+  level: number,
+  effectType: GearEffects,
+): ItemSchema => ({
   code,
   name: code,
   level,
@@ -31,10 +35,14 @@ const createMockArtifact = (code: string, level: number, effectType: GearEffects
   craft: null,
   tradeable: true,
   conditions: [],
-  effects: [{ code: effectType, value: 20, description: `${effectType} effect` }],
+  effects: [
+    { code: effectType, value: 20, description: `${effectType} effect` },
+  ],
 });
 
-const makeNpcResult = (items: Array<{ buy_price?: number | null; currency?: string; code?: string }>) => ({
+const makeNpcResult = (
+  items: Array<{ buy_price?: number | null; currency?: string; code?: string }>,
+) => ({
   data: items.map((item, i) => ({
     code: item.code ?? 'artifact',
     npc: `npc_${i}`,
@@ -57,7 +65,9 @@ class MockCharacter {
 
   checkQuantityOfItemInInv = jest.fn((_code: string): number => 0);
 
-  checkQuantityOfItemInBank = jest.fn(async (_code: string): Promise<number> => 0);
+  checkQuantityOfItemInBank = jest.fn(
+    async (_code: string): Promise<number> => 0,
+  );
 
   executeJobNow = jest.fn(async (): Promise<boolean> => true);
 
@@ -118,8 +128,8 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
-    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async (code: string) =>
-      code === 'hp_stone' ? 1 : 0,
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'hp_stone' ? 1 : 0),
     );
 
     await (objective as any).checkAndBuyArtifacts();
@@ -131,9 +141,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      new ApiError({ code: 404, message: 'Not found' }),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
 
     await (objective as any).checkAndBuyArtifacts();
 
@@ -144,9 +154,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      makeNpcResult([]),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([]));
 
     await (objective as any).checkAndBuyArtifacts();
 
@@ -157,9 +167,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      makeNpcResult([{ buy_price: null }]),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: null }]));
 
     await (objective as any).checkAndBuyArtifacts();
 
@@ -170,14 +180,14 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      makeNpcResult([{ buy_price: 1000, currency: 'gold' }]),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 1000, currency: 'gold' }]));
     mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
       code === 'gold' ? 300 : 0,
     );
-    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async (code: string) =>
-      code === 'gold' ? 600 : 0,
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'gold' ? 600 : 0),
     );
 
     await (objective as any).checkAndBuyArtifacts();
@@ -189,9 +199,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      makeNpcResult([{ buy_price: 100, currency: 'gold' }]),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
     mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
       code === 'gold' ? 200 : 0,
     );
@@ -218,7 +228,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(
       makeNpcResult([
         { buy_price: 500, currency: 'gold' },
         { buy_price: 50, currency: 'gold' },
@@ -244,9 +256,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
         createMockArtifact('hp_stone_15', 15, 'hp'), // above char level 10
       ],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      makeNpcResult([{ buy_price: 100, currency: 'gold' }]),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
     mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
       code === 'gold' ? 500 : 0,
     );
@@ -263,9 +275,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
       wisdom: [createMockArtifact('wisdom_gem', 5, 'wisdom')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      makeNpcResult([{ buy_price: 100, currency: 'gold' }]),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
     mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
       code === 'gold' ? 500 : 0,
     );
@@ -286,9 +298,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
       wisdom: [createMockArtifact('wisdom_gem', 5, 'wisdom')],
     } as any;
-    (getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>).mockResolvedValue(
-      makeNpcResult([{ buy_price: 100, currency: 'gold' }]),
-    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
     mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
       code === 'gold' ? 500 : 0,
     );

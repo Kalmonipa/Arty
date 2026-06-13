@@ -15,6 +15,7 @@ import { Role, ROLES } from './types/CharacterData.js';
 import { getCharacter } from './api_calls/Character.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
 import { getAllMaps, getMaps } from './api_calls/Maps.js';
+import { Character } from './core/Character.js';
 
 /**
  * @description Array of all maps
@@ -165,9 +166,8 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-  const allWeapons: ApiError | StaticDataPageItemSchema = await getAllItemInformation(
-    { type: 'weapon', size: 100 },
-  );
+  const allWeapons: ApiError | StaticDataPageItemSchema =
+    await getAllItemInformation({ type: 'weapon', size: 100 });
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
@@ -251,10 +251,11 @@ export async function buildListOf(
 
   const itemMap: Record<string, ItemSchema[]> = {};
 
-  const allItems: ApiError | StaticDataPageItemSchema = await getAllItemInformation({
-    type: itemType,
-    size: 100,
-  });
+  const allItems: ApiError | StaticDataPageItemSchema =
+    await getAllItemInformation({
+      type: itemType,
+      size: 100,
+    });
   if (allItems instanceof ApiError) {
     logger.error(
       `Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`,
@@ -304,4 +305,49 @@ export async function GetCharacterData(): Promise<CharacterSchema[]> {
   }
 
   return charDetails;
+}
+
+export function getHighestCharLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.level < curr.level ? prev : curr,
+  ).level;
+}
+
+export function getLowestCharLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.level > curr.level ? prev : curr,
+  ).level;
+}
+export function getLowestAlchemyLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.alchemy_level < curr.alchemy_level ? prev : curr,
+  ).alchemy_level;
+}
+
+export function getLowestFishingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.fishing_level < curr.fishing_level ? prev : curr,
+  ).fishing_level;
+}
+export function getLowestMiningLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.mining_level < curr.mining_level ? prev : curr,
+  ).mining_level;
+}
+export function getLowestWoodcuttingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.woodcutting_level < curr.woodcutting_level ? prev : curr,
+  ).woodcutting_level;
 }

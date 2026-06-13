@@ -4,7 +4,7 @@ import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
-import { logger } from './utils.js';
+import { GetCharacterData, logger } from './utils.js';
 import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
@@ -21,20 +21,7 @@ import { AllCharNames, CharName } from './constants.js';
 import { register } from './metrics.js';
 
 async function main() {
-  let charDetails: CharacterSchema[] = [];
-
-  for (const character of AllCharNames) {
-    const charDetail = await getCharacter(character);
-    if (charDetail instanceof ApiError) {
-      logger.error(
-        `Failed to get data for ${character}: [${charDetail.error.code}] ${charDetail.message}`,
-      );
-      break;
-    }
-    logger.debug(`Gathered data for ${charDetail.name}`);
-
-    charDetails.push(charDetail);
-  }
+  let charDetails: CharacterSchema[] = await GetCharacterData();
 
   const char = new Character(
     charDetails.find((charData) => charData.name === CharName),

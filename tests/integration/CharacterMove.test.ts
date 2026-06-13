@@ -22,7 +22,12 @@ jest.mock('../../src/api_calls/Maps.js', () => ({
 }));
 
 jest.mock('../../src/api_calls/Bank.js', () => ({
-  getBankItems: jest.fn(async () => ({ data: [], total: 0, page: 1, size: 50 })),
+  getBankItems: jest.fn(async () => ({
+    data: [],
+    total: 0,
+    page: 1,
+    size: 50,
+  })),
 }));
 
 // Import the mocked functions
@@ -237,7 +242,13 @@ describe('Character.move()', () => {
           access: { type: 'standard', conditions: [] },
           interactions: {
             content: null,
-            transition: { map_id: 572, x: -2, y: 6, layer: 'underground', conditions: [] },
+            transition: {
+              map_id: 572,
+              x: -2,
+              y: 6,
+              layer: 'underground',
+              conditions: [],
+            },
           },
         },
         {
@@ -250,7 +261,13 @@ describe('Character.move()', () => {
           access: { type: 'standard', conditions: [] },
           interactions: {
             content: null,
-            transition: { map_id: 571, x: -2, y: 6, layer: 'overworld', conditions: [] },
+            transition: {
+              map_id: 571,
+              x: -2,
+              y: 6,
+              layer: 'overworld',
+              conditions: [],
+            },
           },
         },
       ];
@@ -491,7 +508,13 @@ describe('Character.move()', () => {
 
     it('should skip actionMove when already standing on the interior exit transition point', async () => {
       // Arrange — character is already at the interior exit coordinates
-      mockCharacter = { ...mockCharacterData, x: -3, y: 12, layer: 'interior', map_id: 800 };
+      mockCharacter = {
+        ...mockCharacterData,
+        x: -3,
+        y: 12,
+        layer: 'interior',
+        map_id: 800,
+      };
       character = new Character(mockCharacter);
       character.withdrawNow = jest.fn(async () => true);
 
@@ -504,7 +527,13 @@ describe('Character.move()', () => {
         layer: 'interior',
         access: { type: 'standard', conditions: [] },
         interactions: {
-          transition: { map_id: 801, x: -3, y: 12, layer: 'overworld', conditions: [] },
+          transition: {
+            map_id: 801,
+            x: -3,
+            y: 12,
+            layer: 'overworld',
+            conditions: [],
+          },
         },
       };
       // A second interior exit on a different map whose overworld destination is closer to the
@@ -518,7 +547,13 @@ describe('Character.move()', () => {
         layer: 'interior',
         access: { type: 'standard', conditions: [] },
         interactions: {
-          transition: { map_id: 803, x: 0, y: 13, layer: 'overworld', conditions: [] },
+          transition: {
+            map_id: 803,
+            x: 0,
+            y: 13,
+            layer: 'overworld',
+            conditions: [],
+          },
         },
       };
       character.transitionLocations = [interiorExit, otherInteriorExit];
@@ -553,8 +588,20 @@ describe('Character.move()', () => {
             access: { type: 'standard', conditions: [] },
             interactions: {},
           },
-          transition: { map_id: 801, x: -3, y: 12, layer: 'overworld', conditions: [] },
-          character: { ...mockCharacter, x: -3, y: 12, layer: 'overworld', map_id: 801 },
+          transition: {
+            map_id: 801,
+            x: -3,
+            y: 12,
+            layer: 'overworld',
+            conditions: [],
+          },
+          character: {
+            ...mockCharacter,
+            x: -3,
+            y: 12,
+            layer: 'overworld',
+            map_id: 801,
+          },
         },
       };
 
@@ -568,8 +615,17 @@ describe('Character.move()', () => {
             reason: 'movement',
           },
           destination: destination,
-          path: [[-3, 12], [7, 13]],
-          character: { ...mockCharacter, x: 7, y: 13, layer: 'overworld', map_id: 900 },
+          path: [
+            [-3, 12],
+            [7, 13],
+          ],
+          character: {
+            ...mockCharacter,
+            x: 7,
+            y: 13,
+            layer: 'overworld',
+            map_id: 900,
+          },
         },
       };
 
@@ -716,49 +772,136 @@ describe('Character.move()', () => {
       // Char in a mine at (5,-4) underground. Two exits to the overworld:
       //   nearExit (-2,6) — closest to the target, but UNREACHABLE (595)
       //   farExit  (5,-3) — the real exit for this cavern
-      mockCharacter = { ...mockCharacterData, x: 5, y: -4, map_id: 950, layer: 'underground' };
+      mockCharacter = {
+        ...mockCharacterData,
+        x: 5,
+        y: -4,
+        map_id: 950,
+        layer: 'underground',
+      };
       character = new Character(mockCharacter);
 
       const nearExit: MapSchema = {
-        map_id: 901, name: 'Underground', skin: 'mine_1', x: -2, y: 6, layer: 'underground',
+        map_id: 901,
+        name: 'Underground',
+        skin: 'mine_1',
+        x: -2,
+        y: 6,
+        layer: 'underground',
         access: { type: 'standard', conditions: [] },
-        interactions: { content: null, transition: { map_id: 902, x: -2, y: 6, layer: 'overworld', conditions: [] } },
+        interactions: {
+          content: null,
+          transition: {
+            map_id: 902,
+            x: -2,
+            y: 6,
+            layer: 'overworld',
+            conditions: [],
+          },
+        },
       };
       const farExit: MapSchema = {
-        map_id: 903, name: 'Mine', skin: 'mine3_1', x: 5, y: -3, layer: 'underground',
+        map_id: 903,
+        name: 'Mine',
+        skin: 'mine3_1',
+        x: 5,
+        y: -3,
+        layer: 'underground',
         access: { type: 'standard', conditions: [] },
-        interactions: { content: null, transition: { map_id: 904, x: 5, y: -3, layer: 'overworld', conditions: [] } },
+        interactions: {
+          content: null,
+          transition: {
+            map_id: 904,
+            x: 5,
+            y: -3,
+            layer: 'overworld',
+            conditions: [],
+          },
+        },
       };
       character.transitionLocations = [nearExit, farExit];
 
       const destination: MapSchema = {
-        map_id: 800, name: 'Forest (Forge)', skin: 'forest_forge', x: 1, y: 5, layer: 'overworld',
-        access: { type: 'standard', conditions: [] }, interactions: {},
+        map_id: 800,
+        name: 'Forest (Forge)',
+        skin: 'forest_forge',
+        x: 1,
+        y: 5,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
       };
 
       const cd = (reason: 'movement' | 'transition') => ({
-        remaining_seconds: 0, total_seconds: 0,
-        started_at: '2025-01-01T00:00:00.000Z', expiration: '2025-01-01T00:00:00.000Z', reason,
+        remaining_seconds: 0,
+        total_seconds: 0,
+        started_at: '2025-01-01T00:00:00.000Z',
+        expiration: '2025-01-01T00:00:00.000Z',
+        reason,
       });
-      const noPathError = new ApiError({ code: 595, message: 'No path available to the destination map.' });
+      const noPathError = new ApiError({
+        code: 595,
+        message: 'No path available to the destination map.',
+      });
       const moveToFarExit: CharacterMovementResponseSchema = {
-        data: { cooldown: cd('movement'), destination: farExit, path: [[5, -4], [5, -3]],
-          character: { ...mockCharacter, x: 5, y: -3, map_id: 903, layer: 'underground' } },
+        data: {
+          cooldown: cd('movement'),
+          destination: farExit,
+          path: [
+            [5, -4],
+            [5, -3],
+          ],
+          character: {
+            ...mockCharacter,
+            x: 5,
+            y: -3,
+            map_id: 903,
+            layer: 'underground',
+          },
+        },
       };
       const transitionToOverworld: CharacterTransitionResponseSchema = {
-        data: { cooldown: cd('transition'), destination: { ...farExit, map_id: 904, layer: 'overworld' },
-          transition: { map_id: 904, x: 5, y: -3, layer: 'overworld', conditions: [] },
-          character: { ...mockCharacter, x: 5, y: -3, map_id: 904, layer: 'overworld' } },
+        data: {
+          cooldown: cd('transition'),
+          destination: { ...farExit, map_id: 904, layer: 'overworld' },
+          transition: {
+            map_id: 904,
+            x: 5,
+            y: -3,
+            layer: 'overworld',
+            conditions: [],
+          },
+          character: {
+            ...mockCharacter,
+            x: 5,
+            y: -3,
+            map_id: 904,
+            layer: 'overworld',
+          },
+        },
       };
       const finalMove: CharacterMovementResponseSchema = {
-        data: { cooldown: cd('movement'), destination, path: [[5, -3], [1, 5]],
-          character: { ...mockCharacter, x: 1, y: 5, map_id: 800, layer: 'overworld' } },
+        data: {
+          cooldown: cd('movement'),
+          destination,
+          path: [
+            [5, -3],
+            [1, 5],
+          ],
+          character: {
+            ...mockCharacter,
+            x: 1,
+            y: 5,
+            map_id: 800,
+            layer: 'overworld',
+          },
+        },
       };
 
       mockActionMove
-        .mockResolvedValueOnce(noPathError)      // move to nearExit (-2,6) -> 595
-        .mockResolvedValueOnce(moveToFarExit)    // move to farExit (5,-3) -> ok
-        .mockResolvedValueOnce(finalMove);       // move to destination (1,5) -> ok
+        .mockResolvedValueOnce(noPathError) // move to nearExit (-2,6) -> 595
+        .mockResolvedValueOnce(moveToFarExit) // move to farExit (5,-3) -> ok
+        .mockResolvedValueOnce(finalMove); // move to destination (1,5) -> ok
       mockActionTransition.mockResolvedValue(transitionToOverworld);
 
       const result = await character.move(destination);

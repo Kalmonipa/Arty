@@ -759,16 +759,18 @@ describe('CraftObjective Integration Tests', () => {
   describe('Error handling', () => {
     it('does not attempt to craft when moving to the workshop fails', async () => {
       // Arrange — ingredients present, but the workshop is unreachable (move returns false).
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        switch (code) {
-          case 'iron_bar':
-            return 30;
-          case 'feather':
-            return 10;
-          default:
-            return 0;
-        }
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30;
+            case 'feather':
+              return 10;
+            default:
+              return 0;
+          }
+        },
+      );
       mockCharacter.move.mockResolvedValue(false);
 
       // Act

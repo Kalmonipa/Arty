@@ -377,9 +377,9 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
       // Assert
       expect(mockCharacter.evaluateGear).toHaveBeenCalledWith(
-        'mining',     // resourceDetails.subtype cast to WeaponFlavours
-        undefined,    // targetMob
-        'iron_ore',   // targetResource — the item code being gathered
+        'mining', // resourceDetails.subtype cast to WeaponFlavours
+        undefined, // targetMob
+        'iron_ore', // targetResource — the item code being gathered
       );
     });
 

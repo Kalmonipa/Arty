@@ -137,7 +137,12 @@ export class ItemTaskObjective extends Objective {
         );
 
         if (numToGather <= numGathered) {
-          if (!(await this.character.tradeWithTasksMaster(this.character.data.task, numToGather))) {
+          if (
+            !(await this.character.tradeWithTasksMaster(
+              this.character.data.task,
+              numToGather,
+            ))
+          ) {
             this.character.removeItemFromItemsToKeep(this.character.data.task);
             return false;
           }
@@ -203,6 +208,4 @@ export class ItemTaskObjective extends Objective {
     }
     return false;
   }
-
-  
 }

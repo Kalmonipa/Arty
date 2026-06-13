@@ -35,6 +35,12 @@ import {
   AllMaps,
   buildListOf,
   buildListOfWeapons,
+  getHighestCharLevel,
+  getLowestAlchemyLevel,
+  getLowestCharLevel,
+  getLowestFishingLevel,
+  getLowestMiningLevel,
+  getLowestWoodcuttingLevel,
   logger,
   sleep,
   TransitionLocations,
@@ -78,7 +84,10 @@ import { RecycleObjective } from './RecycleObjective.js';
 import { ExpandBankObjective } from './BankExpansion.js';
 import { getActiveEvents } from '../api_calls/Events.js';
 import { EventObjective } from './EventObjective.js';
-import { getAllResourceInformation, getResourceInformation } from '../api_calls/Resources.js';
+import {
+  getAllResourceInformation,
+  getResourceInformation,
+} from '../api_calls/Resources.js';
 import {
   transitionToMainland,
   transitionToSandwhisperIsle,
@@ -87,7 +96,15 @@ import {
   buildTransitionPath,
   SANDWHISPER_Y_BOUNDARY,
 } from './TransitionPathfinder.js';
-import { BagSlot, CharRole, FishMerchant, NomadicMerchant, RuneSlot, ShieldSlot, WeaponSlot } from '../constants.js';
+import {
+  BagSlot,
+  CharRole,
+  FishMerchant,
+  NomadicMerchant,
+  RuneSlot,
+  ShieldSlot,
+  WeaponSlot,
+} from '../constants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
 
@@ -194,7 +211,8 @@ export class Character {
    * Per-event exponential backoff state. Maps event code to { failCount, nextRetryAt } where
    * nextRetryAt is a unix timestamp in seconds. Persisted in the job queue file.
    */
-  eventBackoffs: Map<string, { failCount: number; nextRetryAt: number }> = new Map();
+  eventBackoffs: Map<string, { failCount: number; nextRetryAt: number }> =
+    new Map();
 
   /**
    * Set to true for the character to check events
@@ -252,13 +270,17 @@ export class Character {
     this.utilitiesMap = await buildListOf('utility');
     this.weaponMap = await buildListOfWeapons();
 
-    const fishingResources = await getAllResourceInformation({ skill: 'fishing' });
+    const fishingResources = await getAllResourceInformation({
+      skill: 'fishing',
+    });
     if (!(fishingResources instanceof ApiError)) {
       fishingResources.data.forEach((resource) =>
         resource.drops.forEach((drop) => this.fishingDropCodes.add(drop.code)),
       );
     } else {
-      logger.warn('Failed to load fishing resources — fish stocking will fall back to all cooking consumables');
+      logger.warn(
+        'Failed to load fishing resources — fish stocking will fall back to all cooking consumables',
+      );
     }
 
     this.allMaps = await AllMaps();
@@ -267,24 +289,13 @@ export class Character {
     // Pulls all characters information so we can make judgements about equipment, potions, etc
     this.allCharacterDetails = allCharacterDetails;
 
-    this.lowestCharLevel = allCharacterDetails.reduce((prev, curr) =>
-      prev.level < curr.level ? prev : curr,
-    ).level;
-    this.highestCharLevel = allCharacterDetails.reduce((prev, curr) =>
-      prev.level > curr.level ? prev : curr,
-    ).level;
-    this.lowestAlchemyLevel = allCharacterDetails.reduce((prev, curr) =>
-      prev.alchemy_level < curr.alchemy_level ? prev : curr,
-    ).alchemy_level;
-    this.lowestFishingLevel = allCharacterDetails.reduce((prev, curr) =>
-      prev.fishing_level < curr.fishing_level ? prev : curr,
-    ).fishing_level;
-    this.lowestMiningLevel = allCharacterDetails.reduce((prev, curr) =>
-      prev.mining_level < curr.mining_level ? prev : curr,
-    ).mining_level;
-    this.lowestWoodcuttingLevel = allCharacterDetails.reduce((prev, curr) =>
-      prev.woodcutting_level < curr.woodcutting_level ? prev : curr,
-    ).woodcutting_level;
+    this.lowestCharLevel = getLowestCharLevel(allCharacterDetails);
+    this.highestCharLevel = getHighestCharLevel(allCharacterDetails);
+    this.lowestAlchemyLevel = getLowestAlchemyLevel(allCharacterDetails);
+    this.lowestFishingLevel = getLowestFishingLevel(allCharacterDetails);
+    this.lowestMiningLevel = getLowestMiningLevel(allCharacterDetails);
+    this.lowestWoodcuttingLevel =
+      getLowestWoodcuttingLevel(allCharacterDetails);
 
     this.role = CharRole;
 
@@ -298,9 +309,15 @@ export class Character {
     let page = 1;
 
     while (true) {
-      const response = await getAccountAchievements(this.data.account, page, size);
+      const response = await getAccountAchievements(
+        this.data.account,
+        page,
+        size,
+      );
       if (response instanceof ApiError) {
-        logger.warn(`Failed to load achievements for ${this.data.account}. Access restrictions will apply conservatively.`);
+        logger.warn(
+          `Failed to load achievements for ${this.data.account}. Access restrictions will apply conservatively.`,
+        );
         return;
       }
       this.completedAchievements.push(...response.data);
@@ -310,7 +327,9 @@ export class Character {
       page++;
     }
 
-    logger.info(`Loaded ${this.completedAchievements.length} completed achievements for ${this.data.account}`);
+    logger.info(
+      `Loaded ${this.completedAchievements.length} completed achievements for ${this.data.account}`,
+    );
   }
 
   /********
@@ -442,7 +461,9 @@ export class Character {
         this.nomadicMerchantTradeDate = jobQueueData.nomadicMerchantTradeDate;
       }
       if (jobQueueData.eventBackoffs) {
-        this.eventBackoffs = new Map(Object.entries(jobQueueData.eventBackoffs));
+        this.eventBackoffs = new Map(
+          Object.entries(jobQueueData.eventBackoffs),
+        );
       }
 
       // Deserialize and add jobs
@@ -838,7 +859,7 @@ export class Character {
       return false;
     }
 
-    this.jobList.splice(ind, 1)
+    this.jobList.splice(ind, 1);
 
     if (this.jobList.length > 0) {
       logger.debug(`Current jobs in job queue`);
@@ -968,7 +989,9 @@ export class Character {
         const eventExpiration = new Date(job.activeEvent.expiration).getTime();
 
         if (Date.now() > eventExpiration) {
-          logger.info(`Event ${job.objectiveId} expired at ${eventExpiration}.`)
+          logger.info(
+            `Event ${job.objectiveId} expired at ${eventExpiration}.`,
+          );
           if (job.previousLocation && job.previousLocation.map_id) {
             logger.info(
               `Moving back to map ${job.previousLocation.map_id} (x: ${job.previousLocation.x}, y: ${job.previousLocation.y})`,
@@ -1054,7 +1077,7 @@ export class Character {
         continue;
       }
 
-      const ignoredEvents = []
+      const ignoredEvents = [];
 
       if (ignoredEvents.includes(event.code)) {
         logger.info(`Event ${event.code} is ignored via DB`);
@@ -1063,7 +1086,9 @@ export class Character {
 
       const backoff = this.eventBackoffs.get(event.code);
       if (backoff && currentTimestamp < backoff.nextRetryAt) {
-        const remainingMinutes = Math.round((backoff.nextRetryAt - currentTimestamp) / 60);
+        const remainingMinutes = Math.round(
+          (backoff.nextRetryAt - currentTimestamp) / 60,
+        );
         logger.debug(
           `Event ${event.code} in backoff period (attempt ${backoff.failCount}). ${remainingMinutes} minutes remaining.`,
         );
@@ -1076,7 +1101,9 @@ export class Character {
           event.map.interactions.content.code,
         );
         if (resourceInfoResponse instanceof ApiError) {
-          logger.warn(`Could not fetch resource info for ${event.code}. Skipping.`);
+          logger.warn(
+            `Could not fetch resource info for ${event.code}. Skipping.`,
+          );
           continue;
         }
         const charSkillLevel = this.getCharacterLevel(
@@ -1086,7 +1113,7 @@ export class Character {
         if (charSkillLevel < resourceInfoResponse.data.level) {
           logger.debug(
             `${this.data.name} is not high enough ${resourceInfoResponse.data.skill} level` +
-            ` (${charSkillLevel}/${resourceInfoResponse.data.level}) for ${event.code}`,
+              ` (${charSkillLevel}/${resourceInfoResponse.data.level}) for ${event.code}`,
           );
           continue;
         }
@@ -1110,8 +1137,14 @@ export class Character {
   }
 
   recordEventFailure(eventCode: string): void {
-    const current = this.eventBackoffs.get(eventCode) ?? { failCount: 0, nextRetryAt: 0 };
-    const backoffSeconds = Math.min(10 * 60 * Math.pow(2, current.failCount), 8 * 60 * 60);
+    const current = this.eventBackoffs.get(eventCode) ?? {
+      failCount: 0,
+      nextRetryAt: 0,
+    };
+    const backoffSeconds = Math.min(
+      10 * 60 * Math.pow(2, current.failCount),
+      8 * 60 * 60,
+    );
     const nextRetryAt = Math.round(Date.now() / 1000) + backoffSeconds;
     const failCount = current.failCount + 1;
     this.eventBackoffs.set(eventCode, { failCount, nextRetryAt });
@@ -1184,31 +1217,31 @@ export class Character {
    */
   hasEquipped(itemCode: string): boolean {
     const equippedItems = new Map<string, string>();
-    equippedItems.set(WeaponSlot, this.data.weapon_slot)
-    equippedItems.set(RuneSlot, this.data.rune_slot)
-    equippedItems.set(ShieldSlot, this.data.shield_slot)
-    equippedItems.set('helmet_slot', this.data.helmet_slot)
-    equippedItems.set('body_armor_slot', this.data.body_armor_slot)
-    equippedItems.set('leg_armor_slot', this.data.leg_armor_slot)
-    equippedItems.set('boots_slot', this.data.boots_slot)
-    equippedItems.set('ring1_slot', this.data.ring1_slot)
-    equippedItems.set('ring2_slot', this.data.ring2_slot)
-    equippedItems.set('amulet_slot', this.data.amulet_slot)
-    equippedItems.set('artifact1_slot', this.data.artifact1_slot)
-    equippedItems.set('artifact2_slot', this.data.artifact2_slot)
-    equippedItems.set('artifact3_slot', this.data.artifact3_slot)
-    equippedItems.set('utility1_slot', this.data.utility1_slot)
-    equippedItems.set('utility2_slot', this.data.utility2_slot)
-    equippedItems.set(BagSlot, this.data.bag_slot)
+    equippedItems.set(WeaponSlot, this.data.weapon_slot);
+    equippedItems.set(RuneSlot, this.data.rune_slot);
+    equippedItems.set(ShieldSlot, this.data.shield_slot);
+    equippedItems.set('helmet_slot', this.data.helmet_slot);
+    equippedItems.set('body_armor_slot', this.data.body_armor_slot);
+    equippedItems.set('leg_armor_slot', this.data.leg_armor_slot);
+    equippedItems.set('boots_slot', this.data.boots_slot);
+    equippedItems.set('ring1_slot', this.data.ring1_slot);
+    equippedItems.set('ring2_slot', this.data.ring2_slot);
+    equippedItems.set('amulet_slot', this.data.amulet_slot);
+    equippedItems.set('artifact1_slot', this.data.artifact1_slot);
+    equippedItems.set('artifact2_slot', this.data.artifact2_slot);
+    equippedItems.set('artifact3_slot', this.data.artifact3_slot);
+    equippedItems.set('utility1_slot', this.data.utility1_slot);
+    equippedItems.set('utility2_slot', this.data.utility2_slot);
+    equippedItems.set(BagSlot, this.data.bag_slot);
 
-    equippedItems.forEach((value,key) => {
+    equippedItems.forEach((value, key) => {
       if (value === itemCode) {
-        logger.info(`${this.data.name} has ${itemCode} equipped in ${key}`)
-        return true
+        logger.info(`${this.data.name} has ${itemCode} equipped in ${key}`);
+        return true;
       }
-    })
-    logger.info(`${this.data.name} does NOT have ${itemCode} equipped`)
-    return false
+    });
+    logger.info(`${this.data.name} does NOT have ${itemCode} equipped`);
+    return false;
   }
 
   /**
@@ -1415,7 +1448,10 @@ export class Character {
     }
 
     maps.forEach((map) => {
-      if (map.map_id === 1234 && !this.completedAchievements.some((a) => a.code === 'secure_the_island')) {
+      if (
+        map.map_id === 1234 &&
+        !this.completedAchievements.some((a) => a.code === 'secure_the_island')
+      ) {
         logger.debug(`Sandwhisper Isle bank not unlocked. Skipping`);
         return;
       }
@@ -1667,7 +1703,9 @@ export class Character {
             if (await this.craftNow(numNeeded, potion.code)) {
               return await this.equipNow(potion.code, slot, numNeeded);
             } else {
-              logger.debug(`Can't craft ${potion.name}. Trying next best option`);
+              logger.debug(
+                `Can't craft ${potion.name}. Trying next best option`,
+              );
               continue;
             }
           } else {
@@ -1846,10 +1884,15 @@ export class Character {
     return cookedItemInfo.data[cookedItemInfo.data.length - 1].code;
   }
 
-
-  async tradeWithTasksMaster(itemCode: string, numToGather: number): Promise<boolean> {
+  async tradeWithTasksMaster(
+    itemCode: string,
+    numToGather: number,
+  ): Promise<boolean> {
     logger.debug(`Handing in ${numToGather} ${itemCode}`);
-    const maps = await getMaps({ content_code: 'items', content_type: 'tasks_master' });
+    const maps = await getMaps({
+      content_code: 'items',
+      content_type: 'tasks_master',
+    });
     if (maps instanceof ApiError) {
       return this.handleErrors(maps);
     }
@@ -1879,7 +1922,10 @@ export class Character {
   }
 
   async completeTask(taskType: TaskType): Promise<boolean> {
-    const maps = await getMaps({ content_code: taskType, content_type: 'tasks_master' });
+    const maps = await getMaps({
+      content_code: taskType,
+      content_type: 'tasks_master',
+    });
     if (maps instanceof ApiError) return this.handleErrors(maps);
     if (maps.data.length === 0) {
       logger.error(`Cannot find the tasks master`);
@@ -2249,7 +2295,11 @@ export class Character {
       // Prefer cheese or fish_soup over anything else if we have it for the achievements
       // ToDo: Only do this if we need to complete the achievement
       const achievementFoods = bankFood.find(
-        (food) => food.code === 'cheese' || food.code === 'fish_soup' || food.code === 'mushroom_soup' || food.code === 'apple_pie',
+        (food) =>
+          food.code === 'cheese' ||
+          food.code === 'fish_soup' ||
+          food.code === 'mushroom_soup' ||
+          food.code === 'apple_pie',
       );
       if (achievementFoods) {
         logger.debug(
@@ -2437,7 +2487,10 @@ export class Character {
     // Generic transition: handle any gold cost conditions
     if (transition.conditions) {
       for (const condition of transition.conditions) {
-        if (condition.operator === ConditionOperator.cost && condition.code === 'gold') {
+        if (
+          condition.operator === ConditionOperator.cost &&
+          condition.code === 'gold'
+        ) {
           await this.withdrawNow(condition.value, 'gold');
         } else {
           logger.warn(
@@ -2452,7 +2505,10 @@ export class Character {
       `Moving to transition point at (${transitionPoint.x}, ${transitionPoint.y}, ${transitionPoint.layer})`,
     );
 
-    if (this.data.x !== transitionPoint.x || this.data.y !== transitionPoint.y) {
+    if (
+      this.data.x !== transitionPoint.x ||
+      this.data.y !== transitionPoint.y
+    ) {
       const moveResponse = await actionMove(this.data, {
         x: transitionPoint.x,
         y: transitionPoint.y,
@@ -2652,7 +2708,11 @@ export class Character {
     );
   }
 
-  async evaluateGear(activityType: WeaponFlavours, targetMob?: string, targetResource?: string) {
+  async evaluateGear(
+    activityType: WeaponFlavours,
+    targetMob?: string,
+    targetResource?: string,
+  ) {
     const evaluateGearJob = new EvaluateGearObjective(
       this,
       activityType,
@@ -3001,21 +3061,29 @@ export class Character {
         return false;
       case 496: // Conditions not met
         return false;
-      case 497: { // The character's inventory is full. 
-        // If the char is doing a task then we should hand in the items if they have 
+      case 497: {
+        // The character's inventory is full.
+        // If the char is doing a task then we should hand in the items if they have
         // before emptying the remaining inventory into the bank
         if (this.data.task && this.data.task_type === 'items') {
-          const numInInv = this.checkQuantityOfItemInInv(this.data.task)
+          const numInInv = this.checkQuantityOfItemInInv(this.data.task);
           if (numInInv > 0) {
-
-            const numLeftToHandIn = this.data.task_total - this.data.task_progress
+            const numLeftToHandIn =
+              this.data.task_total - this.data.task_progress;
 
             if (numLeftToHandIn > 0) {
-              logger.info(`Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`)
-              await this.tradeWithTasksMaster(this.data.task, Math.min(numLeftToHandIn, numInInv))
+              logger.info(
+                `Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`,
+              );
+              await this.tradeWithTasksMaster(
+                this.data.task,
+                Math.min(numLeftToHandIn, numInInv),
+              );
             }
 
-            logger.info(`Item task complete (${this.data.task_progress}/${this.data.task_total}). Depositing items to make space for task reward.`)
+            logger.info(
+              `Item task complete (${this.data.task_progress}/${this.data.task_total}). Depositing items to make space for task reward.`,
+            );
           }
         }
 

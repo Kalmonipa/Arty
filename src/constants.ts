@@ -26,11 +26,11 @@ export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // 
 export const ApiToken = getEnv('API_TOKEN');
 
 // ToDo: do the remaining merchants
-export const NomadicMerchant = 'nomadic_merchant'
-export const FishMerchant = 'fish_merchant'
+export const NomadicMerchant = 'nomadic_merchant';
+export const FishMerchant = 'fish_merchant';
 
 // ToDo: do the remaining slots
-export const WeaponSlot = 'weapon_slot'
-export const RuneSlot = 'rune_slot'
-export const ShieldSlot = 'shield_slot'
-export const BagSlot = 'bag_slot'
+export const WeaponSlot = 'weapon_slot';
+export const RuneSlot = 'rune_slot';
+export const ShieldSlot = 'shield_slot';
+export const BagSlot = 'bag_slot';

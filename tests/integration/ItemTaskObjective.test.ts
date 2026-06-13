@@ -108,11 +108,13 @@ class SimpleMockCharacter {
     // Nothing here
   });
 
-  tradeWithTasksMaster = jest.fn(async (itemCode: string, numToGather: number): Promise<boolean> => {
-    this.removeItemFromInventory(itemCode, numToGather)
-    this.data.task_progress += numToGather
-    return true
-  })
+  tradeWithTasksMaster = jest.fn(
+    async (itemCode: string, numToGather: number): Promise<boolean> => {
+      this.removeItemFromInventory(itemCode, numToGather);
+      this.data.task_progress += numToGather;
+      return true;
+    },
+  );
 
   completeTask = jest.fn(async (): Promise<boolean> => {
     this.data.task = '';
@@ -120,7 +122,7 @@ class SimpleMockCharacter {
     this.data.task_progress = 0;
     this.data.task_total = 0;
     return true;
-  })
+  });
 
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(

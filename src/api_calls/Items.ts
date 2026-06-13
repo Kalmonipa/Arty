@@ -348,17 +348,16 @@ export async function actionDeleteItem(
 /**
  * Gets all pending item information
  */
-export async function getPendingItems(): Promise<DataPagePendingItemSchema | ApiError> {
+export async function getPendingItems(): Promise<
+  DataPagePendingItemSchema | ApiError
+> {
   const requestOptions = {
     method: 'GET',
     headers: MyHeaders,
   };
 
   try {
-    const response = await fetch(
-      `${ApiUrl}/my/pending-items`,
-      requestOptions,
-    );
+    const response = await fetch(`${ApiUrl}/my/pending-items`, requestOptions);
 
     if (!response.ok) {
       let message: string;
@@ -434,14 +433,14 @@ export async function actionClaimPendingItems(
 
     const result: ClaimPendingItemResponseSchema = await response.json();
 
-    logger.info(`Claimed pending item ${itemId}`)
+    logger.info(`Claimed pending item ${itemId}`);
     if (result.data.item.gold) {
-      logger.info(`Received ${result.data.item.gold} gold`)
+      logger.info(`Received ${result.data.item.gold} gold`);
     }
     if (result.data.item.items) {
-      logger.info(`Received following items:`)
+      logger.info(`Received following items:`);
       for (const item of result.data.item.items) {
-        logger.info(`  - ${item.quantity}x ${item.code}`)
+        logger.info(`  - ${item.quantity}x ${item.code}`);
       }
     }
 
