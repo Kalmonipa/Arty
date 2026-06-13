@@ -5,7 +5,7 @@ The cap rules for limited-purchase items. One row per category. Consulted by the
 
 ## Purpose
 
-Keeps the *policy* (how many of each item the team may own) out of code and in data,
+Keeps the _policy_ (how many of each item the team may own) out of code and in data,
 so a new capped category is added with a single `INSERT` rather than a code change.
 
 Two cap dimensions are supported:
@@ -35,10 +35,10 @@ INSERT INTO acquisition_limits (category, max_per_item, max_per_character_per_it
 
 ## Columns
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `category` | `TEXT` | Primary key. Matches `acquisitions.category`. |
-| `max_per_item` | `INT` | Team-wide cap per `item_code`. |
+| Column                       | Type             | Notes                                                                |
+| ---------------------------- | ---------------- | -------------------------------------------------------------------- |
+| `category`                   | `TEXT`           | Primary key. Matches `acquisitions.category`.                        |
+| `max_per_item`               | `INT`            | Team-wide cap per `item_code`.                                       |
 | `max_per_character_per_item` | `INT` (nullable) | Per-character cap per `item_code`; `NULL` = unlimited per character. |
 
 ## How the caps combine

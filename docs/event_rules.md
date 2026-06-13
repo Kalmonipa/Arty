@@ -15,7 +15,7 @@ change or redeploy.
 ## Default behaviour
 
 **Participate by default.** An event with no matching row is attempted by everyone
-(subject to the in-code merchant rules below). Rows only *add restrictions*, so you
+(subject to the in-code merchant rules below). Rows only _add restrictions_, so you
 only write rows for events you want to gate or ignore.
 
 ## Schema
@@ -35,15 +35,15 @@ CREATE TABLE event_rules (
 
 ## Columns
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | `SERIAL` | Primary key. |
-| `event_code` | `TEXT` | The event, e.g. `bandit_camp`. |
-| `character` | `TEXT` (nullable) | `NULL` = team-wide rule; a name = rule for that character only. |
-| `skill` | `TEXT` (nullable) | `NULL` = window compares against combat level; otherwise the named skill's level (`mining`, `woodcutting`, …). |
-| `min_level` | `INT` (nullable) | Lower bound, inclusive. `NULL` = no lower bound. |
-| `max_level` | `INT` (nullable) | Upper bound, inclusive. `NULL` = no upper bound. |
-| `ignore` | `BOOLEAN` | `true` = skip entirely, ignoring the level window. |
+| Column       | Type              | Notes                                                                                                          |
+| ------------ | ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `id`         | `SERIAL`          | Primary key.                                                                                                   |
+| `event_code` | `TEXT`            | The event, e.g. `bandit_camp`.                                                                                 |
+| `character`  | `TEXT` (nullable) | `NULL` = team-wide rule; a name = rule for that character only.                                                |
+| `skill`      | `TEXT` (nullable) | `NULL` = window compares against combat level; otherwise the named skill's level (`mining`, `woodcutting`, …). |
+| `min_level`  | `INT` (nullable)  | Lower bound, inclusive. `NULL` = no lower bound.                                                               |
+| `max_level`  | `INT` (nullable)  | Upper bound, inclusive. `NULL` = no upper bound.                                                               |
+| `ignore`     | `BOOLEAN`         | `true` = skip entirely, ignoring the level window.                                                             |
 
 The `UNIQUE (event_code, character)` constraint means each character has at most one
 row per event (and the team-wide rule is the single `character IS NULL` row). It also
@@ -112,11 +112,11 @@ SELECT character FROM event_rules WHERE event_code = $code AND ignore = true;
 
 ## API endpoints (Arty app)
 
-| Endpoint | Action |
-| --- | --- |
-| `POST /events/:code/ignore` `{character}` | Upsert `(code, character, ignore=true)` — adds the character to the ignore list. |
-| `DELETE /events/:code/ignore` `{character}` | Delete that row — removes the character from the ignore list. |
-| `GET /events/:code` | Return the team-wide rule plus the list of ignoring characters. |
+| Endpoint                                    | Action                                                                           |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| `POST /events/:code/ignore` `{character}`   | Upsert `(code, character, ignore=true)` — adds the character to the ignore list. |
+| `DELETE /events/:code/ignore` `{character}` | Delete that row — removes the character from the ignore list.                    |
+| `GET /events/:code`                         | Return the team-wide rule plus the list of ignoring characters.                  |
 
 Upserts use `ON CONFLICT (event_code, character)` so repeated calls are idempotent:
 

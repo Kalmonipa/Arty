@@ -47,21 +47,21 @@ CREATE UNIQUE INDEX acquisitions_artifact_uniq
 
 ## Columns
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | `SERIAL` | Primary key. |
-| `category` | `TEXT` | Must match a `category` in `acquisition_limits`. |
-| `item_code` | `TEXT` | The specific item, e.g. `voidstone_pickaxe`, not the category. |
-| `character` | `TEXT` | The character that bought/owns this unit. |
-| `acquired_at` | `TIMESTAMPTZ` | When it was recorded. Defaults to now. |
+| Column        | Type          | Notes                                                          |
+| ------------- | ------------- | -------------------------------------------------------------- |
+| `id`          | `SERIAL`      | Primary key.                                                   |
+| `category`    | `TEXT`        | Must match a `category` in `acquisition_limits`.               |
+| `item_code`   | `TEXT`        | The specific item, e.g. `voidstone_pickaxe`, not the category. |
+| `character`   | `TEXT`        | The character that bought/owns this unit.                      |
+| `acquired_at` | `TIMESTAMPTZ` | When it was recorded. Defaults to now.                         |
 
 ## Categories and caps
 
-| Category | Items | Cap |
-| --- | --- | --- |
-| `voidstone_tool` | gloves, axe, pickaxe, fishing rod | 1 of each, total |
-| `artifact` | (various) | 5 of each total; 1 per character |
-| `rune` | (various) | 3 of each, total |
+| Category         | Items                             | Cap                              |
+| ---------------- | --------------------------------- | -------------------------------- |
+| `voidstone_tool` | gloves, axe, pickaxe, fishing rod | 1 of each, total                 |
+| `artifact`       | (various)                         | 5 of each total; 1 per character |
+| `rune`           | (various)                         | 3 of each, total                 |
 
 ## "Can I buy this?" check
 

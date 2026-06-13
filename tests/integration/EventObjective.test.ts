@@ -17,19 +17,39 @@ import { getNpc, getAllNpcItems } from '../../src/api_calls/NPC.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 
 const mockGetNpc = getNpc as jest.MockedFunction<typeof getNpc>;
-const mockGetItemInformation = getItemInformation as jest.MockedFunction<typeof getItemInformation>;
-const mockGetAllNpcItems = getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>;
+const mockGetItemInformation = getItemInformation as jest.MockedFunction<
+  typeof getItemInformation
+>;
+const mockGetAllNpcItems = getAllNpcItems as jest.MockedFunction<
+  typeof getAllNpcItems
+>;
 
-const makeMerchantEvent = (code: 'fish_merchant' | 'nomadic_merchant'): ActiveEventSchema =>
+const makeMerchantEvent = (
+  code: 'fish_merchant' | 'nomadic_merchant',
+): ActiveEventSchema =>
   ({
     code,
     name: code,
     expiration: new Date(Date.now() + 3_600_000).toISOString(),
     created_at: new Date().toISOString(),
     duration: 60,
-    map: { map_id: 1, x: 0, y: 0, skin: '', layer: 'overworld', interactions: { content: null } },
-    previous_map: { map_id: 1, x: 0, y: 0, skin: '', layer: 'overworld', interactions: {} },
-  } as unknown as ActiveEventSchema);
+    map: {
+      map_id: 1,
+      x: 0,
+      y: 0,
+      skin: '',
+      layer: 'overworld',
+      interactions: { content: null },
+    },
+    previous_map: {
+      map_id: 1,
+      x: 0,
+      y: 0,
+      skin: '',
+      layer: 'overworld',
+      interactions: {},
+    },
+  }) as unknown as ActiveEventSchema;
 
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
@@ -45,13 +65,15 @@ class SimpleMockCharacter {
 
   checkQuantityOfItemInInv = jest.fn((_code: string): number => 0);
 
-  withdrawNow = jest.fn(async (_qty: number, _code: string): Promise<boolean> => true);
+  withdrawNow = jest.fn(
+    async (_qty: number, _code: string): Promise<boolean> => true,
+  );
   tradeWithNpcNow = jest.fn(async (): Promise<boolean> => true);
   depositNow = jest.fn(async (): Promise<void> => {});
   equipNow = jest.fn(async (): Promise<boolean> => true);
   recordEventSuccess = jest.fn();
   recordEventFailure = jest.fn();
-  hasEquipped = jest.fn((_code: string): boolean => false)
+  hasEquipped = jest.fn((_code: string): boolean => false);
 }
 
 describe('EventObjective - sellToMerchant', () => {
@@ -60,7 +82,13 @@ describe('EventObjective - sellToMerchant', () => {
   const makeObjective = (code: 'fish_merchant' | 'nomadic_merchant') =>
     new EventObjective(character as any, makeMerchantEvent(code));
 
-  const makeNpcResponse = (items: { code: string; buy_price: number | null; sell_price: number | null }[]) => ({
+  const makeNpcResponse = (
+    items: {
+      code: string;
+      buy_price: number | null;
+      sell_price: number | null;
+    }[],
+  ) => ({
     name: 'Test Merchant',
     code: 'test_merchant',
     description: '',
@@ -81,11 +109,18 @@ describe('EventObjective - sellToMerchant', () => {
   beforeEach(() => {
     character = new SimpleMockCharacter();
     jest.clearAllMocks();
-    mockGetAllNpcItems.mockResolvedValue({ data: [], total: 0, page: 1, size: 50 } as any);
+    mockGetAllNpcItems.mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 1,
+      size: 50,
+    } as any);
   });
 
   it('returns false and skips selling when getNpc fails', async () => {
-    mockGetNpc.mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
+    mockGetNpc.mockResolvedValue(
+      new ApiError({ code: 404, message: 'Not found' }),
+    );
 
     const result = await makeObjective('fish_merchant').run();
 
@@ -95,7 +130,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('skips items that have both buy_price and sell_price', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'minor_health_potion', buy_price: 600, sell_price: 20 }]) as any,
+      makeNpcResponse([
+        { code: 'minor_health_potion', buy_price: 600, sell_price: 20 },
+      ]) as any,
     );
     character.bankItems = { minor_health_potion: 50 };
 
@@ -107,7 +144,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('skips items with no stock in bank', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'shell', buy_price: null, sell_price: 120 }]) as any,
+      makeNpcResponse([
+        { code: 'shell', buy_price: null, sell_price: 120 },
+      ]) as any,
     );
     character.bankItems = {};
 
@@ -126,7 +165,9 @@ describe('EventObjective - sellToMerchant', () => {
     character.bankItems = { shell: 10, golden_shrimp: 5 };
 
     mockGetItemInformation
-      .mockResolvedValueOnce(new ApiError({ code: 500, message: 'error' }) as any)
+      .mockResolvedValueOnce(
+        new ApiError({ code: 500, message: 'error' }) as any,
+      )
       .mockResolvedValueOnce(makeItemInfo('resource') as any);
 
     await makeObjective('fish_merchant').run();
@@ -137,7 +178,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('keeps all items of type utility', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'some_potion', buy_price: null, sell_price: 50 }]) as any,
+      makeNpcResponse([
+        { code: 'some_potion', buy_price: null, sell_price: 50 },
+      ]) as any,
     );
     character.bankItems = { some_potion: 20 };
     mockGetItemInformation.mockResolvedValue(makeItemInfo('utility') as any);
@@ -149,7 +192,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('keeps all items of type consumable', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'food_item', buy_price: null, sell_price: 30 }]) as any,
+      makeNpcResponse([
+        { code: 'food_item', buy_price: null, sell_price: 30 },
+      ]) as any,
     );
     character.bankItems = { food_item: 15 };
     mockGetItemInformation.mockResolvedValue(makeItemInfo('consumable') as any);
@@ -161,7 +206,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('sells all items of non-equipment, non-utility type (e.g. resource)', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'shell', buy_price: null, sell_price: 120 }]) as any,
+      makeNpcResponse([
+        { code: 'shell', buy_price: null, sell_price: 120 },
+      ]) as any,
     );
     character.bankItems = { shell: 30 };
     mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
@@ -174,7 +221,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('keeps 5 and sells the rest for equipment types', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'forest_ring', buy_price: null, sell_price: 150 }]) as any,
+      makeNpcResponse([
+        { code: 'forest_ring', buy_price: null, sell_price: 150 },
+      ]) as any,
     );
     character.bankItems = { forest_ring: 8 };
     mockGetItemInformation.mockResolvedValue(makeItemInfo('ring') as any);
@@ -182,14 +231,20 @@ describe('EventObjective - sellToMerchant', () => {
     await makeObjective('fish_merchant').run();
 
     expect(character.withdrawNow).toHaveBeenCalledWith(3, 'forest_ring');
-    expect(character.tradeWithNpcNow).toHaveBeenCalledWith('sell', 3, 'forest_ring');
+    expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+      'sell',
+      3,
+      'forest_ring',
+    );
   });
 
   it.each(['weapon', 'helmet', 'body_armor', 'ring'] as const)(
     'keeps 5 for equipment type: %s',
     async (equipType) => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'some_gear', buy_price: null, sell_price: 500 }]) as any,
+        makeNpcResponse([
+          { code: 'some_gear', buy_price: null, sell_price: 500 },
+        ]) as any,
       );
       character.bankItems = { some_gear: 7 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo(equipType) as any);
@@ -202,7 +257,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('skips equipment item when bank quantity is already at or below 5', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'forest_ring', buy_price: null, sell_price: 150 }]) as any,
+      makeNpcResponse([
+        { code: 'forest_ring', buy_price: null, sell_price: 150 },
+      ]) as any,
     );
     character.bankItems = { forest_ring: 4 };
     mockGetItemInformation.mockResolvedValue(makeItemInfo('ring') as any);
@@ -214,7 +271,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('caps withdrawal at 90% of inventory_max_items when sell quantity exceeds it', async () => {
     mockGetNpc.mockResolvedValue(
-      makeNpcResponse([{ code: 'shell', buy_price: null, sell_price: 120 }]) as any,
+      makeNpcResponse([
+        { code: 'shell', buy_price: null, sell_price: 120 },
+      ]) as any,
     );
     character.bankItems = { shell: 200 };
     character.data.inventory_max_items = 100;
@@ -235,12 +294,18 @@ describe('EventObjective - sellToMerchant', () => {
     );
     character.bankItems = { shell: 10, golden_shrimp: 5 };
     mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
-    character.withdrawNow.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    character.withdrawNow
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
 
     await makeObjective('fish_merchant').run();
 
     expect(character.tradeWithNpcNow).toHaveBeenCalledTimes(1);
-    expect(character.tradeWithNpcNow).toHaveBeenCalledWith('sell', 5, 'golden_shrimp');
+    expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+      'sell',
+      5,
+      'golden_shrimp',
+    );
   });
 
   it('deposits gold after selling', async () => {
@@ -271,7 +336,9 @@ describe('EventObjective - sellToMerchant', () => {
 
   it('does not set fishMerchantTradeDate when getNpc fails', async () => {
     character.fishMerchantTradeDate = 0;
-    mockGetNpc.mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
+    mockGetNpc.mockResolvedValue(
+      new ApiError({ code: 404, message: 'Not found' }),
+    );
 
     await makeObjective('fish_merchant').run();
 
@@ -292,11 +359,15 @@ describe('EventObjective - sellToMerchant', () => {
 
     await makeObjective('nomadic_merchant').run();
 
-    expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+    expect(character.recordEventSuccess).toHaveBeenCalledWith(
+      'nomadic_merchant',
+    );
   });
 
   it('does not call recordEventSuccess when fish_merchant getNpc fails', async () => {
-    mockGetNpc.mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
+    mockGetNpc.mockResolvedValue(
+      new ApiError({ code: 404, message: 'Not found' }),
+    );
 
     await makeObjective('fish_merchant').run();
 
@@ -304,7 +375,9 @@ describe('EventObjective - sellToMerchant', () => {
   });
 
   it('does not call recordEventFailure for merchant events (only fight losses trigger it)', async () => {
-    mockGetNpc.mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
+    mockGetNpc.mockResolvedValue(
+      new ApiError({ code: 404, message: 'Not found' }),
+    );
 
     await makeObjective('fish_merchant').run();
 
@@ -312,8 +385,15 @@ describe('EventObjective - sellToMerchant', () => {
   });
 
   describe('currency reserve', () => {
-    const makeCurrencyUsageResponse = (items: { buy_price: number | null }[]) => ({
-      data: items.map((i) => ({ code: 'small_pearls', npc: 'fish_merchant', currency: 'gold', ...i })),
+    const makeCurrencyUsageResponse = (
+      items: { buy_price: number | null }[],
+    ) => ({
+      data: items.map((i) => ({
+        code: 'small_pearls',
+        npc: 'fish_merchant',
+        currency: 'gold',
+        ...i,
+      })),
       total: items.length,
       page: 1,
       size: 50,
@@ -321,21 +401,30 @@ describe('EventObjective - sellToMerchant', () => {
 
     it('sells full amount when item is not used as currency', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+        makeNpcResponse([
+          { code: 'small_pearls', buy_price: null, sell_price: 120 },
+        ]) as any,
       );
       character.bankItems = { small_pearls: 20 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
-      mockGetAllNpcItems.mockResolvedValue(makeCurrencyUsageResponse([]) as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        makeCurrencyUsageResponse([]) as any,
+      );
 
       await makeObjective('fish_merchant').run();
 
-      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls', size: 10000 });
+      expect(mockGetAllNpcItems).toHaveBeenCalledWith({
+        currency: 'small_pearls',
+        size: 10000,
+      });
       expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
     });
 
     it('reserves max buy_price and sells the remainder when item is used as currency', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+        makeNpcResponse([
+          { code: 'small_pearls', buy_price: null, sell_price: 120 },
+        ]) as any,
       );
       character.bankItems = { small_pearls: 20 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
@@ -350,7 +439,9 @@ describe('EventObjective - sellToMerchant', () => {
 
     it('reserves the maximum buy_price when item is currency for multiple items at different prices', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+        makeNpcResponse([
+          { code: 'small_pearls', buy_price: null, sell_price: 120 },
+        ]) as any,
       );
       character.bankItems = { small_pearls: 30 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
@@ -365,7 +456,9 @@ describe('EventObjective - sellToMerchant', () => {
 
     it('skips item entirely when currency reserve consumes all bank stock', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+        makeNpcResponse([
+          { code: 'small_pearls', buy_price: null, sell_price: 120 },
+        ]) as any,
       );
       character.bankItems = { small_pearls: 5 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
@@ -380,7 +473,9 @@ describe('EventObjective - sellToMerchant', () => {
 
     it('skips item when currency reserve exceeds bank stock', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+        makeNpcResponse([
+          { code: 'small_pearls', buy_price: null, sell_price: 120 },
+        ]) as any,
       );
       character.bankItems = { small_pearls: 3 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
@@ -395,7 +490,9 @@ describe('EventObjective - sellToMerchant', () => {
 
     it('applies currency reserve before equipment keep quantity', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'some_ring', buy_price: null, sell_price: 500 }]) as any,
+        makeNpcResponse([
+          { code: 'some_ring', buy_price: null, sell_price: 500 },
+        ]) as any,
       );
       // bank: 12, currency reserve: 3, available: 9, keep 5 equipment → sell 4
       character.bankItems = { some_ring: 12 };
@@ -411,11 +508,15 @@ describe('EventObjective - sellToMerchant', () => {
 
     it('sells normally when getAllNpcItems returns an ApiError', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+        makeNpcResponse([
+          { code: 'small_pearls', buy_price: null, sell_price: 120 },
+        ]) as any,
       );
       character.bankItems = { small_pearls: 20 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
-      mockGetAllNpcItems.mockResolvedValue(new ApiError({ code: 500, message: 'error' }) as any);
+      mockGetAllNpcItems.mockResolvedValue(
+        new ApiError({ code: 500, message: 'error' }) as any,
+      );
 
       await makeObjective('fish_merchant').run();
 
@@ -424,7 +525,9 @@ describe('EventObjective - sellToMerchant', () => {
 
     it('ignores currency entries with null buy_price', async () => {
       mockGetNpc.mockResolvedValue(
-        makeNpcResponse([{ code: 'small_pearls', buy_price: null, sell_price: 120 }]) as any,
+        makeNpcResponse([
+          { code: 'small_pearls', buy_price: null, sell_price: 120 },
+        ]) as any,
       );
       character.bankItems = { small_pearls: 20 };
       mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
@@ -434,7 +537,10 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('fish_merchant').run();
 
-      expect(mockGetAllNpcItems).toHaveBeenCalledWith({ currency: 'small_pearls', size: 10000 });
+      expect(mockGetAllNpcItems).toHaveBeenCalledWith({
+        currency: 'small_pearls',
+        size: 10000,
+      });
       expect(character.withdrawNow).toHaveBeenCalledWith(20, 'small_pearls');
     });
   });
@@ -459,7 +565,14 @@ describe('EventObjective - sellToMerchant', () => {
       data:
         buyPrice == null
           ? []
-          : [{ code: 'test', npc: 'nomadic_merchant', currency: 'gold', buy_price: buyPrice }],
+          : [
+              {
+                code: 'test',
+                npc: 'nomadic_merchant',
+                currency: 'gold',
+                buy_price: buyPrice,
+              },
+            ],
       total: 1,
       page: 1,
       size: 50,
@@ -492,7 +605,11 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'backpack');
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
       expect(character.equipNow).toHaveBeenCalledWith('backpack', 'bag');
     });
 
@@ -502,29 +619,51 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'backpack');
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
       expect(character.equipNow).not.toHaveBeenCalledWith('backpack', 'bag');
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('skips backpack when already equipped', async () => {
-      character.hasEquipped.mockImplementation((code: string) => code === 'backpack');
+      character.hasEquipped.mockImplementation(
+        (code: string) => code === 'backpack',
+      );
       mockBuyPrices({ backpack: 100 });
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'backpack');
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('skips backpack when present in inventory', async () => {
-      character.checkQuantityOfItemInInv.mockImplementation((code: string) => (code === 'backpack' ? 1 : 0));
+      character.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+        code === 'backpack' ? 1 : 0,
+      );
       mockBuyPrices({ backpack: 100 });
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'backpack');
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('skips backpack when present in bank', async () => {
@@ -533,8 +672,14 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'backpack');
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('skips an item the merchant does not sell', async () => {
@@ -545,7 +690,9 @@ describe('EventObjective - sellToMerchant', () => {
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalled();
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('skips an item the character cannot afford', async () => {
@@ -555,31 +702,49 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'backpack');
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('skips an item whose level requirement is above the character level', async () => {
       character.data.level = 10;
       character.data.bag_slot = '';
-      mockGetItemInformation.mockResolvedValue(makeItemInfoWithLevel(20) as any);
+      mockGetItemInformation.mockResolvedValue(
+        makeItemInfoWithLevel(20) as any,
+      );
       mockBuyPrices({ backpack: 100 });
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'backpack');
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('continues to the next item (and succeeds) when getItemInformation returns an ApiError', async () => {
       character.data.bag_slot = '';
-      mockGetItemInformation.mockResolvedValue(new ApiError({ code: 500, message: 'error' }) as any);
+      mockGetItemInformation.mockResolvedValue(
+        new ApiError({ code: 500, message: 'error' }) as any,
+      );
       mockBuyPrices({ backpack: 100, lost_world_map: 500 });
 
       await makeObjective('nomadic_merchant').run();
 
       expect(character.tradeWithNpcNow).not.toHaveBeenCalled();
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('buys lost_world_map when not owned and equips it to the first free artifact slot', async () => {
@@ -588,8 +753,15 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'lost_world_map');
-      expect(character.equipNow).toHaveBeenCalledWith('lost_world_map', 'artifact1');
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+        'buy',
+        1,
+        'lost_world_map',
+      );
+      expect(character.equipNow).toHaveBeenCalledWith(
+        'lost_world_map',
+        'artifact1',
+      );
     });
 
     it('equips lost_world_map to the next free artifact slot when earlier slots are full', async () => {
@@ -599,17 +771,28 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.equipNow).toHaveBeenCalledWith('lost_world_map', 'artifact2');
+      expect(character.equipNow).toHaveBeenCalledWith(
+        'lost_world_map',
+        'artifact2',
+      );
     });
 
     it('skips lost_world_map when already equipped', async () => {
-      character.hasEquipped.mockImplementation((code: string) => code === 'lost_world_map');
+      character.hasEquipped.mockImplementation(
+        (code: string) => code === 'lost_world_map',
+      );
       mockBuyPrices({ lost_world_map: 500 });
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith('buy', 1, 'lost_world_map');
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.tradeWithNpcNow).not.toHaveBeenCalledWith(
+        'buy',
+        1,
+        'lost_world_map',
+      );
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('buys lost_world_map but does not equip when all artifact slots are full', async () => {
@@ -620,9 +803,15 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+        'buy',
+        1,
+        'lost_world_map',
+      );
       expect(character.equipNow).not.toHaveBeenCalled();
-      expect(character.recordEventSuccess).toHaveBeenCalledWith('nomadic_merchant');
+      expect(character.recordEventSuccess).toHaveBeenCalledWith(
+        'nomadic_merchant',
+      );
     });
 
     it('buys both backpack and lost_world_map when both are available and affordable', async () => {
@@ -632,8 +821,16 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('nomadic_merchant').run();
 
-      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'backpack');
-      expect(character.tradeWithNpcNow).toHaveBeenCalledWith('buy', 1, 'lost_world_map');
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+        'buy',
+        1,
+        'backpack',
+      );
+      expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
+        'buy',
+        1,
+        'lost_world_map',
+      );
     });
   });
 });

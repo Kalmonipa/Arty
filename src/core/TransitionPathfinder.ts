@@ -4,7 +4,10 @@ import { logger } from '../utils.js';
 export const SANDWHISPER_Y_BOUNDARY = 17;
 const MAX_PATH_DEPTH = 10;
 
-function manhattan(a: { x: number; y: number }, b: { x: number; y: number }): number {
+function manhattan(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): number {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
@@ -43,7 +46,10 @@ function isDirectlyReachable(
   // For overworld and underground, Sandwhisper Isle (y >= boundary) and the mainland (y < boundary)
   // are separate navigable regions — the same y-coordinate boundary applies to both layers.
   if (charLayer === MapLayer.overworld || charLayer === MapLayer.underground) {
-    if ((charY >= SANDWHISPER_Y_BOUNDARY) !== (target.y >= SANDWHISPER_Y_BOUNDARY)) {
+    if (
+      charY >= SANDWHISPER_Y_BOUNDARY !==
+      target.y >= SANDWHISPER_Y_BOUNDARY
+    ) {
       return false;
     }
   }
@@ -53,7 +59,8 @@ function isDirectlyReachable(
   if (charLayer !== MapLayer.overworld) {
     const targetIsSubArea = allTransitions.some(
       (t) =>
-        t.interactions.transition?.map_id === target.map_id && t.layer === target.layer,
+        t.interactions.transition?.map_id === target.map_id &&
+        t.layer === target.layer,
     );
     if (targetIsSubArea) return false;
   }

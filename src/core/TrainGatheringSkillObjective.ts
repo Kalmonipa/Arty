@@ -1,6 +1,9 @@
 import { getAllItemInformation } from '../api_calls/Items.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { StaticDataPageResourceSchema, GatheringSkill } from '../types/types.js';
+import {
+  StaticDataPageResourceSchema,
+  GatheringSkill,
+} from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';

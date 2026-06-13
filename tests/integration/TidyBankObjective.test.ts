@@ -44,10 +44,15 @@ class SimpleMockCharacter {
   bankItems: Record<string, number> = {};
 
   getAllBankItems = jest.fn(async () =>
-    Object.entries(this.bankItems).map(([code, quantity]) => ({ code, quantity })),
+    Object.entries(this.bankItems).map(([code, quantity]) => ({
+      code,
+      quantity,
+    })),
   );
 
-  recycleItemNow = jest.fn(async (_code: string, _qty: number): Promise<boolean> => true);
+  recycleItemNow = jest.fn(
+    async (_code: string, _qty: number): Promise<boolean> => true,
+  );
 
   getCharacterLevel = jest.fn((_data: unknown, _skill?: string): number => 10);
 
@@ -57,8 +62,9 @@ class SimpleMockCharacter {
 describe('TidyBankObjective - recycleExcessEquipment', () => {
   let character: SimpleMockCharacter;
 
-  const makeObjective = (role: 'gearcrafter' | 'jewelrycrafter' | 'weaponcrafter') =>
-    new TidyBankObjective(character as any, role);
+  const makeObjective = (
+    role: 'gearcrafter' | 'jewelrycrafter' | 'weaponcrafter',
+  ) => new TidyBankObjective(character as any, role);
 
   beforeEach(() => {
     character = new SimpleMockCharacter();
@@ -144,9 +150,9 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
       character.lowestCharLevel = 19;
       mockGetAllItemInformation.mockResolvedValue(
         makeItemListResponse([
-          makeGear('copper_dagger', 5),  // obsolete (5 <= 9)
-          makeGear('iron_sword', 15),    // not obsolete (15 > 9), quantity <= 5 → skip
-          makeGear('steel_armor', 17),   // not obsolete (17 > 9), quantity > 5 → trim
+          makeGear('copper_dagger', 5), // obsolete (5 <= 9)
+          makeGear('iron_sword', 15), // not obsolete (15 > 9), quantity <= 5 → skip
+          makeGear('steel_armor', 17), // not obsolete (17 > 9), quantity > 5 → trim
         ]) as any,
       );
       character.bankItems = {

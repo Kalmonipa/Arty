@@ -1,10 +1,19 @@
-import { actionClaimPendingItems, getAllItemInformation, getPendingItems } from '../api_calls/Items.js';
+import {
+  actionClaimPendingItems,
+  getAllItemInformation,
+  getPendingItems,
+} from '../api_calls/Items.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
-import { isGatheringSkill, logger } from '../utils.js';
+import {
+  GetCharacterData,
+  getHighestCharLevel,
+  isGatheringSkill,
+  logger,
+} from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
@@ -52,11 +61,15 @@ export class IdleObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
+    await this.checkWithinLevelRange();
+    if (this.checkIdleJobIsLast()) return true;
+
     // Alchemist never does tasks — sole responsibility is crafting potions.
     // All other roles only do tasks if the bank is low on task coins.
     // Fisherman has an additional check: food must be sufficiently stocked first.
     if (this.role !== 'alchemist') {
-      const taskCoinsInBank = await this.character.checkQuantityOfItemInBank('tasks_coin');
+      const taskCoinsInBank =
+        await this.character.checkQuantityOfItemInBank('tasks_coin');
 
       if (taskCoinsInBank < 100) {
         let shouldDoTasks = true;
@@ -70,11 +83,14 @@ export class IdleObjective extends Objective {
           // exceeds their combat level, otherwise item tasks
           if (
             (this.role === 'weaponcrafter' &&
-              this.character.data.level < this.character.data.weaponcrafting_level) ||
+              this.character.data.level <
+                this.character.data.weaponcrafting_level) ||
             (this.role === 'gearcrafter' &&
-              this.character.data.level < this.character.data.gearcrafting_level) ||
+              this.character.data.level <
+                this.character.data.gearcrafting_level) ||
             (this.role === 'jewelrycrafter' &&
-              this.character.data.level < this.character.data.jewelrycrafting_level)
+              this.character.data.level <
+                this.character.data.jewelrycrafting_level)
           ) {
             await this.doMonsterTask(5);
           } else {
@@ -159,7 +175,6 @@ export class IdleObjective extends Objective {
         }
         break;
     }
-
   }
 
   /**
@@ -183,7 +198,9 @@ export class IdleObjective extends Objective {
         fish.craft.level <= this.character.highestCharLevel &&
         fish.craft.level >= this.character.lowestCharLevel - 9
       ) {
-        const numInBank = await this.character.checkQuantityOfItemInBank(fish.code);
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          fish.code,
+        );
         if (numInBank < minimumFoodInBank) {
           return false;
         }
@@ -228,8 +245,13 @@ export class IdleObjective extends Objective {
     }
 
     for (const pendingItem of unclaimed) {
-      logger.info(`Claiming item ${pendingItem.description} from ${pendingItem.source}`)
-      const claimResponse = await actionClaimPendingItems(this.character.data, pendingItem.id);
+      logger.info(
+        `Claiming item ${pendingItem.description} from ${pendingItem.source}`,
+      );
+      const claimResponse = await actionClaimPendingItems(
+        this.character.data,
+        pendingItem.id,
+      );
       if (claimResponse instanceof ApiError) {
         await this.character.handleErrors(claimResponse);
       }
@@ -246,37 +268,52 @@ export class IdleObjective extends Objective {
     const charLevel = this.character.getCharacterLevel(this.character.data);
 
     for (const [, artifacts] of Object.entries(this.character.artifactsMap)) {
-      const eligible = (artifacts as ItemSchema[]).filter((a) => a.level <= charLevel);
+      const eligible = (artifacts as ItemSchema[]).filter(
+        (a) => a.level <= charLevel,
+      );
       if (eligible.length === 0) continue;
 
-      const artifact = eligible.reduce((best, a) => (a.level > best.level ? a : best));
+      const artifact = eligible.reduce((best, a) =>
+        a.level > best.level ? a : best,
+      );
 
       const equipped =
         this.character.getCharacterGearIn('artifact1') === artifact.code ||
         this.character.getCharacterGearIn('artifact2') === artifact.code ||
         this.character.getCharacterGearIn('artifact3') === artifact.code;
       const inInv = this.character.checkQuantityOfItemInInv(artifact.code);
-      const inBank = await this.character.checkQuantityOfItemInBank(artifact.code);
+      const inBank = await this.character.checkQuantityOfItemInBank(
+        artifact.code,
+      );
 
       if (equipped || inInv + inBank >= 1) continue;
 
       const npcResult = await getAllNpcItems({ code: artifact.code });
       if (npcResult instanceof ApiError || npcResult.data.length === 0) {
-        logger.debug(`checkAndBuyArtifacts: no NPC sells ${artifact.code}, skipping`);
+        logger.debug(
+          `checkAndBuyArtifacts: no NPC sells ${artifact.code}, skipping`,
+        );
         continue;
       }
 
-      const validItems = npcResult.data.filter((item) => item.buy_price != null);
+      const validItems = npcResult.data.filter(
+        (item) => item.buy_price != null,
+      );
       if (validItems.length === 0) {
-        logger.debug(`checkAndBuyArtifacts: no valid buy_price for ${artifact.code}, skipping`);
+        logger.debug(
+          `checkAndBuyArtifacts: no valid buy_price for ${artifact.code}, skipping`,
+        );
         continue;
       }
 
-      const cheapest = validItems.reduce((a, b) => (a.buy_price! < b.buy_price! ? a : b));
+      const cheapest = validItems.reduce((a, b) =>
+        a.buy_price! < b.buy_price! ? a : b,
+      );
       const { buy_price, currency } = cheapest;
 
       const currencyInInv = this.character.checkQuantityOfItemInInv(currency);
-      const currencyInBank = await this.character.checkQuantityOfItemInBank(currency);
+      const currencyInBank =
+        await this.character.checkQuantityOfItemInBank(currency);
 
       if (currencyInInv + currencyInBank < buy_price!) {
         logger.debug(
@@ -289,13 +326,17 @@ export class IdleObjective extends Objective {
         new TradeObjective(this.character, 'buy', 1, artifact.code),
       );
       if (!bought) {
-        logger.warn(`checkAndBuyArtifacts: failed to buy ${artifact.code}, continuing`);
+        logger.warn(
+          `checkAndBuyArtifacts: failed to buy ${artifact.code}, continuing`,
+        );
         continue;
       }
 
       const deposited = await this.character.depositNow(1, artifact.code);
       if (!deposited) {
-        logger.warn(`checkAndBuyArtifacts: failed to deposit ${artifact.code}, continuing`);
+        logger.warn(
+          `checkAndBuyArtifacts: failed to deposit ${artifact.code}, continuing`,
+        );
       }
     }
   }
@@ -363,7 +404,7 @@ export class IdleObjective extends Objective {
       )) {
         if (
           fish.craft.level <
-          this.character.getCharacterLevel(this.character.data, 'fishing') &&
+            this.character.getCharacterLevel(this.character.data, 'fishing') &&
           fish.craft.level <= this.character.highestCharLevel &&
           // e.g. Char lvl is 29, we should cook lvl 20 fish so they can use it
           fish.craft.level >= this.character.lowestCharLevel - 9
@@ -374,7 +415,10 @@ export class IdleObjective extends Objective {
           );
           // Ensure quantity is greater than the required amount
           if (numInBank < minimumFoodInBank) {
-            await this.character.craftNow(minimumFoodInBank - numInBank, fish.code);
+            await this.character.craftNow(
+              minimumFoodInBank - numInBank,
+              fish.code,
+            );
           }
         }
       }
@@ -388,7 +432,10 @@ export class IdleObjective extends Objective {
   /**
    * Finds a normal mob within a level range below the character's combat level and fights it 10 times.
    */
-  private async fightMobWithinLevelRange(minOffset: number = 4, maxOffset: number = 6): Promise<boolean> {
+  private async fightMobWithinLevelRange(
+    minOffset: number = 4,
+    maxOffset: number = 6,
+  ): Promise<boolean> {
     const charLevel = this.character.getCharacterLevel(this.character.data);
 
     const mobs = await getAllMonsterInformation({
@@ -412,7 +459,12 @@ export class IdleObjective extends Objective {
     // Try mobs from highest to lowest level, skipping any that aren't accessible (e.g. event-only mobs)
     for (let i = normalMobs.length - 1; i >= 0; i--) {
       const mob = normalMobs[i];
-      const result = await this.character.fightNow(10, mob.code, undefined, false);
+      const result = await this.character.fightNow(
+        10,
+        mob.code,
+        undefined,
+        false,
+      );
       if (result) return true;
       logger.info(`Could not fight ${mob.code}, trying next mob in range`);
     }
@@ -567,6 +619,26 @@ export class IdleObjective extends Objective {
     }
 
     logger.info(`Already have the minimum amount of each bar`);
+    return true;
+  }
+
+  /**
+   * The aim of this function is to keep all characters within 10 level of the highest level char
+   * This lets us recycle older gear so that it doesn't clog up the bank
+   */
+  private async checkWithinLevelRange(): Promise<boolean> {
+    const allCharacterDetails = await GetCharacterData();
+    this.character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
+
+    if (this.character.data.level < this.character.highestCharLevel - 10) {
+      logger.info(
+        `Character level (${this.character.data.level}) is more than 10 levels behind the leader (${this.character.highestCharLevel}). Training ${this.character.highestCharLevel - this.character.data.level} levels`,
+      );
+      return await this.character.trainCombatLevelNow(
+        this.character.highestCharLevel - 10,
+      );
+    }
+
     return true;
   }
 }

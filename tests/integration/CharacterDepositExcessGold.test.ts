@@ -14,16 +14,25 @@ jest.mock('../../src/api_calls/Maps.js', () => ({
 
 jest.mock('../../src/api_calls/Bank.js', () => ({
   actionDepositGold: jest.fn(),
-  getBankItems: jest.fn(async () => ({ data: [], total: 0, page: 1, size: 50 })),
+  getBankItems: jest.fn(async () => ({
+    data: [],
+    total: 0,
+    page: 1,
+    size: 50,
+  })),
 }));
 
 import { actionDepositItems } from '../../src/api_calls/Actions.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
 import { actionDepositGold } from '../../src/api_calls/Bank.js';
 
-const mockActionDepositItems = actionDepositItems as jest.MockedFunction<typeof actionDepositItems>;
+const mockActionDepositItems = actionDepositItems as jest.MockedFunction<
+  typeof actionDepositItems
+>;
 const mockGetMaps = getMaps as jest.MockedFunction<typeof getMaps>;
-const mockActionDepositGold = actionDepositGold as jest.MockedFunction<typeof actionDepositGold>;
+const mockActionDepositGold = actionDepositGold as jest.MockedFunction<
+  typeof actionDepositGold
+>;
 
 describe('Character.evaluateDepositItemsInBank - excess gold', () => {
   let character: Character;
@@ -41,25 +50,43 @@ describe('Character.evaluateDepositItemsInBank - excess gold', () => {
     jest.clearAllMocks();
 
     mockGetMaps.mockResolvedValue({
-      data: [{ x: 0, y: 0, map_id: 1, skin: '', layer: 'overworld', interactions: { content: null } }],
+      data: [
+        {
+          x: 0,
+          y: 0,
+          map_id: 1,
+          skin: '',
+          layer: 'overworld',
+          interactions: { content: null },
+        },
+      ],
       total: 1,
       page: 1,
       size: 50,
     } as any);
 
     // Item deposit succeeds and returns the character with gold untouched.
-    mockActionDepositItems.mockImplementation(async (data: any) => ({
-      data: { character: { ...data }, cooldown: { remaining_seconds: 0, reason: 'deposit' } },
-    }) as any);
+    mockActionDepositItems.mockImplementation(
+      async (data: any) =>
+        ({
+          data: {
+            character: { ...data },
+            cooldown: { remaining_seconds: 0, reason: 'deposit' },
+          },
+        }) as any,
+    );
 
     // Gold deposit succeeds and returns the character with gold reduced.
-    mockActionDepositGold.mockImplementation(async (data: any, quantity: number) => ({
-      data: {
-        character: { ...data, gold: data.gold - quantity },
-        bank: { quantity: quantity },
-        cooldown: { remaining_seconds: 0, reason: 'deposit_gold' },
-      },
-    }) as any);
+    mockActionDepositGold.mockImplementation(
+      async (data: any, quantity: number) =>
+        ({
+          data: {
+            character: { ...data, gold: data.gold - quantity },
+            bank: { quantity: quantity },
+            cooldown: { remaining_seconds: 0, reason: 'deposit_gold' },
+          },
+        }) as any,
+    );
   });
 
   it('deposits gold above the carry cap after depositing items', async () => {
@@ -68,7 +95,10 @@ describe('Character.evaluateDepositItemsInBank - excess gold', () => {
     await character.evaluateDepositItemsInBank([], undefined, true);
 
     expect(mockActionDepositItems).toHaveBeenCalled();
-    expect(mockActionDepositGold).toHaveBeenCalledWith(expect.anything(), 59000);
+    expect(mockActionDepositGold).toHaveBeenCalledWith(
+      expect.anything(),
+      59000,
+    );
   });
 
   it('does not deposit gold when holding at or below the carry cap', async () => {

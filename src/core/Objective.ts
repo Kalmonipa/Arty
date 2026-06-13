@@ -2,12 +2,13 @@ import * as crypto from 'node:crypto';
 import { ObjectiveStatus } from '../types/ObjectiveData.js';
 import { Character } from './Character.js';
 import { logger, sleep } from '../utils.js';
-import { jobActiveGauge, jobCompletionsCounter, jobDurationHistogram } from '../metrics.js';
-import { getMaps } from '../api_calls/Maps.js';
 import {
-  actionAcceptNewTask,
-  actionCancelTask,
-} from '../api_calls/Tasks.js';
+  jobActiveGauge,
+  jobCompletionsCounter,
+  jobDurationHistogram,
+} from '../metrics.js';
+import { getMaps } from '../api_calls/Maps.js';
+import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { TaskType } from '../types/types.js';
 
@@ -157,13 +158,21 @@ export abstract class Objective {
         );
         if (parentJob?.shouldEmitMetrics) {
           jobActiveGauge.set(
-            { character: this.character.data.name, job_type: parentJob.jobFlavour, target: parentJob.metricLabel },
+            {
+              character: this.character.data.name,
+              job_type: parentJob.jobFlavour,
+              target: parentJob.metricLabel,
+            },
             0,
           );
         }
       }
       jobActiveGauge.set(
-        { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
+        {
+          character: this.character.data.name,
+          job_type: this.jobFlavour,
+          target: this.metricLabel,
+        },
         1,
       );
     }
@@ -211,7 +220,11 @@ export abstract class Objective {
     if (!this.shouldEmitMetrics) return;
 
     jobActiveGauge.set(
-      { character: this.character.data.name, job_type: this.jobFlavour, target: this.metricLabel },
+      {
+        character: this.character.data.name,
+        job_type: this.jobFlavour,
+        target: this.metricLabel,
+      },
       0,
     );
 
@@ -221,7 +234,11 @@ export abstract class Objective {
       );
       if (parentJob?.shouldEmitMetrics) {
         jobActiveGauge.set(
-          { character: this.character.data.name, job_type: parentJob.jobFlavour, target: parentJob.metricLabel },
+          {
+            character: this.character.data.name,
+            job_type: parentJob.jobFlavour,
+            target: parentJob.metricLabel,
+          },
           1,
         );
       }
@@ -362,7 +379,7 @@ export abstract class Objective {
 
   /**
    * @description Deposits gold into the bank if they have more than the specified amount
-   * The amount that they can hold is relative to their level. The formula is 
+   * The amount that they can hold is relative to their level. The formula is
    * 3000 per character level. Anything over that gets deposited into the bank
    * @returns
    */
