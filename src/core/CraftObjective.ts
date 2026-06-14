@@ -172,9 +172,19 @@ export class CraftObjective extends Objective {
 
           if (!(await this.checkStatus())) return false;
 
+          // Clamp the final batch to what's still outstanding. numItemsPerBatch
+          // is derived from inventory size, so when target.quantity isn't an
+          // exact multiple of it the last batch would otherwise over-craft and
+          // over-gather ingredients past the target.
+          const thisBatch = CraftObjective.batchQuantity(
+            this.numItemsPerBatch,
+            this.target.quantity,
+            this.progress,
+          );
+
           const gathered = await this.gatherIngredients(
             targetItem.craft.items,
-            batchInfo.numPerBatch,
+            thisBatch,
           );
           if (!gathered) {
             logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
@@ -187,19 +197,16 @@ export class CraftObjective extends Objective {
             const numInInvAfterGathering =
               this.character.checkQuantityOfItemInInv(craftItem.code);
             logger.debug(
-              `Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}`,
+              `Carrying ${numInInvAfterGathering}/${craftItem.quantity * thisBatch} ${craftItem.code}`,
             );
-            if (
-              numInInvAfterGathering <
-              craftItem.quantity * this.numItemsPerBatch
-            ) {
+            if (numInInvAfterGathering < craftItem.quantity * thisBatch) {
               logger.warn(
-                `Carrying ${numInInvAfterGathering}/${craftItem.quantity * this.numItemsPerBatch} ${craftItem.code}. Regathering`,
+                `Carrying ${numInInvAfterGathering}/${craftItem.quantity * thisBatch} ${craftItem.code}. Regathering`,
               );
 
               const gathered = await this.gatherIngredients(
                 targetItem.craft.items,
-                batchInfo.numPerBatch,
+                thisBatch,
               );
               if (!gathered) {
                 logger.warn(
@@ -221,12 +228,12 @@ export class CraftObjective extends Objective {
           }
 
           logger.info(
-            `Crafting ${this.numItemsPerBatch} ${this.target.code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,
+            `Crafting ${thisBatch} ${this.target.code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,
           );
 
           const response = await actionCraft(this.character.data, {
             code: this.target.code,
-            quantity: this.numItemsPerBatch,
+            quantity: thisBatch,
           });
 
           if (response instanceof ApiError) {
@@ -238,7 +245,7 @@ export class CraftObjective extends Objective {
             }
             break;
           } else {
-            this.progress += this.numItemsPerBatch;
+            this.progress += thisBatch;
 
             if (response.data.character) {
               this.character.data = response.data.character;
@@ -252,14 +259,11 @@ export class CraftObjective extends Objective {
 
             if (this.numBatches > 1) {
               logger.debug(`Depositing items from batch ${batch}`);
-              await this.character.depositNow(
-                this.numItemsPerBatch,
-                this.target.code,
-              );
+              await this.character.depositNow(thisBatch, this.target.code);
             }
 
             logger.info(
-              `Successfully crafted ${this.numItemsPerBatch} ${this.target.code}`,
+              `Successfully crafted ${thisBatch} ${this.target.code}`,
             );
           }
         }
@@ -429,6 +433,20 @@ export class CraftObjective extends Objective {
    * - numBatches - The amount of batches to craft
    * - numPerBatch - The amount of items to craft per batch
    */
+  /**
+   * @description How many items to craft in the current batch: the
+   * inventory-derived batch size, clamped to what's still outstanding so the
+   * final batch never over-crafts (and over-gathers ingredients) past the
+   * target when target.quantity isn't an exact multiple of the batch size.
+   */
+  static batchQuantity(
+    numItemsPerBatch: number,
+    targetQuantity: number,
+    progress: number,
+  ): number {
+    return Math.min(numItemsPerBatch, targetQuantity - progress);
+  }
+
   private calculateNumBatches(craftList: SimpleItemSchema[]): {
     numBatches: number;
     numPerBatch: number;
