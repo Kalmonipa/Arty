@@ -26,11 +26,11 @@ CREATE TABLE global_config (
 
 ## Columns
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `key` | `TEXT` | Primary key, e.g. `ignore_event_list`. |
-| `value` | `JSONB` | Arbitrary JSON payload for the setting. |
-| `updated_at` | `TIMESTAMPTZ` | Last write time. |
+| Column       | Type          | Notes                                   |
+| ------------ | ------------- | --------------------------------------- |
+| `key`        | `TEXT`        | Primary key, e.g. `ignore_event_list`.  |
+| `value`      | `JSONB`       | Arbitrary JSON payload for the setting. |
+| `updated_at` | `TIMESTAMPTZ` | Last write time.                        |
 
 ## Reading a value
 

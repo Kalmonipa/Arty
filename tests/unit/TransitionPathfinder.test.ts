@@ -1,4 +1,7 @@
-import { buildTransitionPath, SANDWHISPER_Y_BOUNDARY } from '../../src/core/TransitionPathfinder.js';
+import {
+  buildTransitionPath,
+  SANDWHISPER_Y_BOUNDARY,
+} from '../../src/core/TransitionPathfinder.js';
 import { MapSchema } from '../../src/types/types.js';
 
 // Helper to build minimal MapSchema objects for tests
@@ -7,7 +10,12 @@ function makeMap(
   x: number,
   y: number,
   layer: 'overworld' | 'underground' | 'interior',
-  transitionDest?: { map_id: number; x: number; y: number; layer: 'overworld' | 'underground' | 'interior' },
+  transitionDest?: {
+    map_id: number;
+    x: number;
+    y: number;
+    layer: 'overworld' | 'underground' | 'interior';
+  },
 ): MapSchema {
   return {
     map_id,
@@ -39,32 +47,80 @@ function makeMap(
 //   map 30: (3, 20) overworld  -> (1, 20) underground  [island mine entrance]
 //   map 31: (1, 20) underground-> (3, 20) overworld    [island mine exit]
 const standardTransitions: MapSchema[] = [
-  makeMap(10, -2, 6, 'overworld', { map_id: 11, x: -2, y: 6, layer: 'underground' }),
-  makeMap(11, -2, 6, 'underground', { map_id: 10, x: -2, y: 6, layer: 'overworld' }),
-  makeMap(20, 2, 16, 'overworld', { map_id: 21, x: -2, y: 21, layer: 'overworld' }),
-  makeMap(21, -2, 21, 'overworld', { map_id: 20, x: 2, y: 16, layer: 'overworld' }),
-  makeMap(30, 3, 20, 'overworld', { map_id: 31, x: 1, y: 20, layer: 'underground' }),
-  makeMap(31, 1, 20, 'underground', { map_id: 30, x: 3, y: 20, layer: 'overworld' }),
+  makeMap(10, -2, 6, 'overworld', {
+    map_id: 11,
+    x: -2,
+    y: 6,
+    layer: 'underground',
+  }),
+  makeMap(11, -2, 6, 'underground', {
+    map_id: 10,
+    x: -2,
+    y: 6,
+    layer: 'overworld',
+  }),
+  makeMap(20, 2, 16, 'overworld', {
+    map_id: 21,
+    x: -2,
+    y: 21,
+    layer: 'overworld',
+  }),
+  makeMap(21, -2, 21, 'overworld', {
+    map_id: 20,
+    x: 2,
+    y: 16,
+    layer: 'overworld',
+  }),
+  makeMap(30, 3, 20, 'overworld', {
+    map_id: 31,
+    x: 1,
+    y: 20,
+    layer: 'underground',
+  }),
+  makeMap(31, 1, 20, 'underground', {
+    map_id: 30,
+    x: 3,
+    y: 20,
+    layer: 'overworld',
+  }),
 ];
 
 describe('buildTransitionPath', () => {
   describe('same region — no transitions needed', () => {
     it('returns empty array when character and target are both on mainland overworld', () => {
       const target = makeMap(99, 5, 5, 'overworld');
-      const path = buildTransitionPath(0, 0, 'overworld', target, standardTransitions);
+      const path = buildTransitionPath(
+        0,
+        0,
+        'overworld',
+        target,
+        standardTransitions,
+      );
       expect(path).toEqual([]);
     });
 
     it('returns empty array when character and target are both on Sandwhisper Isle overworld', () => {
       const target = makeMap(99, -5, 22, 'overworld');
-      const path = buildTransitionPath(0, SANDWHISPER_Y_BOUNDARY, 'overworld', target, standardTransitions);
+      const path = buildTransitionPath(
+        0,
+        SANDWHISPER_Y_BOUNDARY,
+        'overworld',
+        target,
+        standardTransitions,
+      );
       expect(path).toEqual([]);
     });
 
     it('returns empty array when character and target are both underground (regular mine tile)', () => {
       // Regular underground tile — not the destination of any transition
       const target = makeMap(99, 0, 0, 'underground');
-      const path = buildTransitionPath(-2, 6, 'underground', target, standardTransitions);
+      const path = buildTransitionPath(
+        -2,
+        6,
+        'underground',
+        target,
+        standardTransitions,
+      );
       expect(path).toEqual([]);
     });
   });
@@ -72,7 +128,13 @@ describe('buildTransitionPath', () => {
   describe('single transition required', () => {
     it('mainland overworld -> underground: inserts mine entrance transition point', () => {
       const target = makeMap(99, 0, 0, 'underground');
-      const path = buildTransitionPath(0, 0, 'overworld', target, standardTransitions);
+      const path = buildTransitionPath(
+        0,
+        0,
+        'overworld',
+        target,
+        standardTransitions,
+      );
 
       expect(path).toHaveLength(1);
       // The transition point must be the mainland mine entrance (map 10)
@@ -81,8 +143,18 @@ describe('buildTransitionPath', () => {
 
     it('picks the mine entrance closest to the target when multiple exist', () => {
       // Two mainland mine entrances: one close to target, one far away
-      const closeEntrance = makeMap(50, 3, -3, 'overworld', { map_id: 51, x: 3, y: -3, layer: 'underground' });
-      const farEntrance   = makeMap(52, 20, 20, 'overworld', { map_id: 53, x: 20, y: 20, layer: 'underground' });
+      const closeEntrance = makeMap(50, 3, -3, 'overworld', {
+        map_id: 51,
+        x: 3,
+        y: -3,
+        layer: 'underground',
+      });
+      const farEntrance = makeMap(52, 20, 20, 'overworld', {
+        map_id: 53,
+        x: 20,
+        y: 20,
+        layer: 'underground',
+      });
       const transitions = [...standardTransitions, closeEntrance, farEntrance];
 
       const target = makeMap(99, 4, -4, 'underground');
@@ -94,7 +166,13 @@ describe('buildTransitionPath', () => {
 
     it('underground -> mainland overworld: inserts mine exit transition point', () => {
       const target = makeMap(99, 5, 5, 'overworld');
-      const path = buildTransitionPath(-2, 6, 'underground', target, standardTransitions);
+      const path = buildTransitionPath(
+        -2,
+        6,
+        'underground',
+        target,
+        standardTransitions,
+      );
 
       expect(path).toHaveLength(1);
       expect(path[0].map_id).toBe(11); // underground -> overworld exit
@@ -102,7 +180,13 @@ describe('buildTransitionPath', () => {
 
     it('mainland overworld -> Sandwhisper Isle overworld: inserts boat transition point', () => {
       const target = makeMap(99, -3, 22, 'overworld');
-      const path = buildTransitionPath(0, 0, 'overworld', target, standardTransitions);
+      const path = buildTransitionPath(
+        0,
+        0,
+        'overworld',
+        target,
+        standardTransitions,
+      );
 
       expect(path).toHaveLength(1);
       expect(path[0].map_id).toBe(20); // mainland boat
@@ -110,7 +194,13 @@ describe('buildTransitionPath', () => {
 
     it('Sandwhisper Isle overworld -> mainland overworld: inserts island boat transition point', () => {
       const target = makeMap(99, 5, 5, 'overworld');
-      const path = buildTransitionPath(0, SANDWHISPER_Y_BOUNDARY, 'overworld', target, standardTransitions);
+      const path = buildTransitionPath(
+        0,
+        SANDWHISPER_Y_BOUNDARY,
+        'overworld',
+        target,
+        standardTransitions,
+      );
 
       expect(path).toHaveLength(1);
       expect(path[0].map_id).toBe(21); // island boat
@@ -118,10 +208,24 @@ describe('buildTransitionPath', () => {
 
     it('targets a map that is the direct destination of a transition (exact match)', () => {
       // Map 77 is a dungeon entrance in the underground, reachable via transition from map 10
-      const dungeonEntrance = makeMap(77, 3, -4, 'underground', { map_id: 71, x: 1, y: -4, layer: 'underground' });
+      const dungeonEntrance = makeMap(77, 3, -4, 'underground', {
+        map_id: 71,
+        x: 1,
+        y: -4,
+        layer: 'underground',
+      });
       // Add a transition that leads directly to map 77 from the overworld
-      const overworldEntry = makeMap(60, 5, -3, 'overworld', { map_id: 77, x: 3, y: -4, layer: 'underground' });
-      const transitions = [...standardTransitions, dungeonEntrance, overworldEntry];
+      const overworldEntry = makeMap(60, 5, -3, 'overworld', {
+        map_id: 77,
+        x: 3,
+        y: -4,
+        layer: 'underground',
+      });
+      const transitions = [
+        ...standardTransitions,
+        dungeonEntrance,
+        overworldEntry,
+      ];
 
       const target = makeMap(77, 3, -4, 'underground');
       const path = buildTransitionPath(0, 0, 'overworld', target, transitions);
@@ -136,7 +240,12 @@ describe('buildTransitionPath', () => {
     it('mainland overworld -> underground dungeon (requires overworld->underground then underground->dungeon)', () => {
       // Dungeon at (1,-4) underground, accessible only from (3,-4) underground
       const dungeon = makeMap(71, 1, -4, 'underground');
-      const dungeonEntrance = makeMap(77, 3, -4, 'underground', { map_id: 71, x: 1, y: -4, layer: 'underground' });
+      const dungeonEntrance = makeMap(77, 3, -4, 'underground', {
+        map_id: 71,
+        x: 1,
+        y: -4,
+        layer: 'underground',
+      });
       const transitions = [...standardTransitions, dungeonEntrance];
 
       const path = buildTransitionPath(0, 0, 'overworld', dungeon, transitions);
@@ -151,7 +260,13 @@ describe('buildTransitionPath', () => {
 
     it('mainland overworld -> Sandwhisper Mine (two overworld->overworld then overworld->underground)', () => {
       const target = makeMap(99, 2, 22, 'underground');
-      const path = buildTransitionPath(0, 0, 'overworld', target, standardTransitions);
+      const path = buildTransitionPath(
+        0,
+        0,
+        'overworld',
+        target,
+        standardTransitions,
+      );
 
       expect(path).toHaveLength(2);
       // First hop: mainland boat to island (overworld -> overworld)
@@ -165,8 +280,18 @@ describe('buildTransitionPath', () => {
     it('returns the exit at the current position even when another interior exit has a closer destination', () => {
       //   map 40: (-3, 12) interior -> (-3, 12) overworld  [current interior exit]
       //   map 42: ( 0, 13) interior -> ( 0, 13) overworld  [different interior, closer to bank]
-      const currentExit = makeMap(40, -3, 12, 'interior', { map_id: 41, x: -3, y: 12, layer: 'overworld' });
-      const otherExit   = makeMap(42,  0, 13, 'interior', { map_id: 43, x:  0, y: 13, layer: 'overworld' });
+      const currentExit = makeMap(40, -3, 12, 'interior', {
+        map_id: 41,
+        x: -3,
+        y: 12,
+        layer: 'overworld',
+      });
+      const otherExit = makeMap(42, 0, 13, 'interior', {
+        map_id: 43,
+        x: 0,
+        y: 13,
+        layer: 'overworld',
+      });
       const transitions = [...standardTransitions, currentExit, otherExit];
 
       // Bank at (7, 13) overworld — (0, 13) destination would be closer, but it is on a different
@@ -183,24 +308,51 @@ describe('buildTransitionPath', () => {
     // Mirrors the JumpyJimmy bug: char in a mine at (5,-4), two underground exits to the
     // overworld. The exit closest to the target is physically unreachable, so once it is
     // excluded the pathfinder must fall back to the other exit.
-    const nearExit = makeMap(80, -2, 6, 'underground', { map_id: 81, x: -2, y: 6, layer: 'overworld' });
-    const farExit = makeMap(82, 5, -3, 'underground', { map_id: 83, x: 5, y: -3, layer: 'overworld' });
+    const nearExit = makeMap(80, -2, 6, 'underground', {
+      map_id: 81,
+      x: -2,
+      y: 6,
+      layer: 'overworld',
+    });
+    const farExit = makeMap(82, 5, -3, 'underground', {
+      map_id: 83,
+      x: 5,
+      y: -3,
+      layer: 'overworld',
+    });
     const target = makeMap(99, 1, 5, 'overworld');
 
     it('picks the exit closest to the target when nothing is excluded', () => {
-      const path = buildTransitionPath(5, -4, 'underground', target, [nearExit, farExit]);
+      const path = buildTransitionPath(5, -4, 'underground', target, [
+        nearExit,
+        farExit,
+      ]);
       expect(path).toHaveLength(1);
       expect(path[0].map_id).toBe(80); // dest (-2,6) is closer to (1,5) than (5,-3)
     });
 
     it('skips an excluded transition and routes through the alternative', () => {
-      const path = buildTransitionPath(5, -4, 'underground', target, [nearExit, farExit], new Set([80]));
+      const path = buildTransitionPath(
+        5,
+        -4,
+        'underground',
+        target,
+        [nearExit, farExit],
+        new Set([80]),
+      );
       expect(path).toHaveLength(1);
       expect(path[0].map_id).toBe(82);
     });
 
     it('returns null when the only available route is excluded', () => {
-      const path = buildTransitionPath(5, -4, 'underground', target, [nearExit], new Set([80]));
+      const path = buildTransitionPath(
+        5,
+        -4,
+        'underground',
+        target,
+        [nearExit],
+        new Set([80]),
+      );
       expect(path).toBeNull();
     });
   });
@@ -208,7 +360,13 @@ describe('buildTransitionPath', () => {
   describe('error cases', () => {
     it('returns null when no transition exists for the target layer', () => {
       const target = makeMap(99, 5, 5, 'interior'); // no interior transitions defined
-      const path = buildTransitionPath(0, 0, 'overworld', target, standardTransitions);
+      const path = buildTransitionPath(
+        0,
+        0,
+        'overworld',
+        target,
+        standardTransitions,
+      );
       expect(path).toBeNull();
     });
 

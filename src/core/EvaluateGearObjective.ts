@@ -2,7 +2,12 @@ import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
-import { ItemSchema, ItemSlot, MonsterSchema, ResourceSchema } from '../types/types.js';
+import {
+  ItemSchema,
+  ItemSlot,
+  MonsterSchema,
+  ResourceSchema,
+} from '../types/types.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { ApiError } from './Error.js';
@@ -339,7 +344,9 @@ export class EvaluateGearObjective extends Objective {
     let targetEffect: 'prospecting' | 'wisdom' = 'wisdom';
 
     if (targetResource) {
-      const resources = await getAllResourceInformation({ drop: targetResource });
+      const resources = await getAllResourceInformation({
+        drop: targetResource,
+      });
       if (resources instanceof ApiError) {
         logger.warn(
           `Failed to fetch resource info for ${targetResource}, defaulting to wisdom artifacts`,
@@ -348,7 +355,10 @@ export class EvaluateGearObjective extends Objective {
         let resource: ResourceSchema | undefined;
         for (let i = resources.data.length - 1; i >= 0; i--) {
           const r = resources.data[i];
-          if (r.level <= this.character.getCharacterLevel(this.character.data, r.skill)) {
+          if (
+            r.level <=
+            this.character.getCharacterLevel(this.character.data, r.skill)
+          ) {
             resource = r;
             break;
           }
@@ -374,11 +384,7 @@ export class EvaluateGearObjective extends Objective {
       }
     }
 
-    const artifactSlots: ItemSlot[] = [
-      'artifact1',
-      'artifact2',
-      'artifact3',
-    ];
+    const artifactSlots: ItemSlot[] = ['artifact1', 'artifact2', 'artifact3'];
     const artifacts = this.character.artifactsMap[targetEffect] ?? [];
 
     for (const slot of artifactSlots) {
@@ -399,7 +405,10 @@ export class EvaluateGearObjective extends Objective {
           break;
         }
 
-        if ((await this.character.checkQuantityOfItemInBank(artifacts[i].code)) > 0) {
+        if (
+          (await this.character.checkQuantityOfItemInBank(artifacts[i].code)) >
+          0
+        ) {
           await this.character.withdrawNow(1, artifacts[i].code);
           await this.character.equipNow(artifacts[i].code, slot);
           slotFilled = true;
