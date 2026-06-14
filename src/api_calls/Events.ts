@@ -1,21 +1,16 @@
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   StaticDataPageActiveEventSchema,
   StaticDataPageEventSchema,
   GetAllActiveEventsEventsActiveGetParams,
   GetAllEventsEventsGetParams,
 } from '../types/types.js';
-import { MyHeaders } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
 
 export async function getAllEvents(
   params: GetAllEventsEventsGetParams,
 ): Promise<StaticDataPageEventSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/events`);
 
   if (params.type) {
@@ -28,28 +23,15 @@ export async function getAllEvents(
     apiUrl.searchParams.set('size', String(params.size));
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /events`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<StaticDataPageEventSchema>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /events`,
+  });
 }
 
 export async function getActiveEvents(
   params: GetAllActiveEventsEventsActiveGetParams,
 ): Promise<StaticDataPageActiveEventSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/events/active`);
 
   if (params.page) {
@@ -59,16 +41,8 @@ export async function getActiveEvents(
     apiUrl.searchParams.set('size', String(params.size));
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /events/active`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<StaticDataPageActiveEventSchema>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /events/active`,
+  });
 }

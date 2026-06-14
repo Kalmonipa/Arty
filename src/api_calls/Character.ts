@@ -1,7 +1,7 @@
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError } from '../core/Error.js';
 import { CharacterSchema } from '../types/types.js';
-import { MyHeaders } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
 
 /**
  * @description returns the character information
@@ -11,39 +11,23 @@ import { ApiUrl } from '../constants.js';
 export async function getCharacter(
   characterName: string,
 ): Promise<CharacterSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
+  const res = await apiRequest<{ data: CharacterSchema }>({
+    url: `${ApiUrl}/characters/${characterName}`,
+    fallbackMessage: 'Failed to get character data',
+  });
 
-  try {
-    const response = await fetch(
-      `${ApiUrl}/characters/${characterName}`,
-      requestOptions,
-    );
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Failed to get character data: ${response.statusText}`,
-      });
-    }
-
-    if (!data.data) {
-      throw new ApiError({
-        code: 500,
-        message: 'Character API response missing data field',
-      });
-    }
-
-    return data.data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return error;
-    }
-    return toApiError(error);
+  if (res instanceof ApiError) {
+    return res;
   }
+
+  if (!res.data) {
+    return new ApiError({
+      code: 500,
+      message: 'Character API response missing data field',
+    });
+  }
+
+  return res.data;
 }
 
 /**
@@ -52,34 +36,21 @@ export async function getCharacter(
  * @returns {CharacterSchema[]}
  */
 export async function getMyCharacters(): Promise<CharacterSchema[] | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
+  const res = await apiRequest<{ data: CharacterSchema[] }>({
+    url: `${ApiUrl}/my/characters`,
+    fallbackMessage: 'Failed to get character data',
+  });
 
-  try {
-    const response = await fetch(`${ApiUrl}/my/characters`, requestOptions);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Failed to get character data: ${response.statusText}`,
-      });
-    }
-
-    if (!data.data) {
-      throw new ApiError({
-        code: 500,
-        message: 'Character API response missing data field',
-      });
-    }
-
-    return data.data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return error;
-    }
-    return toApiError(error);
+  if (res instanceof ApiError) {
+    return res;
   }
+
+  if (!res.data) {
+    return new ApiError({
+      code: 500,
+      message: 'Character API response missing data field',
+    });
+  }
+
+  return res.data;
 }

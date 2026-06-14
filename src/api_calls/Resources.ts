@@ -1,20 +1,15 @@
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   StaticDataPageResourceSchema,
   GetAllResourcesResourcesGetParams,
   ResourceResponseSchema,
 } from '../types/types.js';
-import { MyHeaders } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
 
 export async function getAllResourceInformation(
   data: GetAllResourcesResourcesGetParams,
 ): Promise<StaticDataPageResourceSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/resources`);
 
   if (data.drop) {
@@ -36,49 +31,22 @@ export async function getAllResourceInformation(
     apiUrl.searchParams.set('skill', data.skill);
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /resources: ${response}`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<StaticDataPageResourceSchema>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /resources`,
+  });
 }
 
 export async function getResourceInformation(
   itemCode: string,
 ): Promise<ResourceResponseSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/resources/${itemCode}`);
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        default:
-          message = 'Unknown error from /action/bank/deposit/item';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<ResourceResponseSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: 'Item not found.',
+    },
+    fallbackMessage: 'Unknown error from /action/bank/deposit/item',
+  });
 }

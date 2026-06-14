@@ -1,5 +1,5 @@
-import { ApiError, toApiError } from '../core/Error.js';
-import { getRequestOptions, logger, MyHeaders, sleep } from '../utils.js';
+import { ApiError } from '../core/Error.js';
+import { logger } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 import {
   BankExtensionTransactionResponseSchema,
@@ -8,6 +8,7 @@ import {
   CharacterSchema,
   DataPageSimpleItemSchema,
 } from '../types/types.js';
+import { apiRequest } from './request.js';
 
 /**
  * @description Fetch all items in your bank.
@@ -33,18 +34,10 @@ export async function getBankItems(
     apiUrl.searchParams.set('size', size.toString());
   }
 
-  try {
-    const response = await fetch(apiUrl, getRequestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /my/bank/items`,
-      });
-    }
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<DataPageSimpleItemSchema>({
+    url: apiUrl,
+    fallbackMessage: 'Unknown error from /my/bank/items',
+  });
 }
 
 /**
@@ -57,61 +50,24 @@ export async function actionDepositGold(
   character: CharacterSchema,
   quantity: number,
 ): Promise<BankGoldTransactionResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<BankGoldTransactionResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/bank/deposit/gold`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify({ quantity: quantity }),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/bank/deposit/gold`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 461:
-          message =
-            'Some of your items or your gold in the bank are already part of an ongoing transaction.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 492:
-          message = 'The character does not have enough gold.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        default:
-          message = 'Unknown error from /action/bank/deposit/gold';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: BankGoldTransactionResponseSchema = await response.json();
-    logger.info(
-      `Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
-    );
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: { quantity: quantity },
+    errorMessages: {
+      461: 'Some of your items or your gold in the bank are already part of an ongoing transaction.',
+      486: 'An action is already in progress for this character.',
+      492: 'The character does not have enough gold.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+    },
+    fallbackMessage: 'Unknown error from /action/bank/deposit/gold',
+    onSuccess: (result) => {
+      logger.info(
+        `Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
+      );
+    },
+  });
 }
 
 /**
@@ -124,142 +80,53 @@ export async function actionWithdrawGold(
   character: CharacterSchema,
   quantity: number,
 ): Promise<BankGoldTransactionResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<BankGoldTransactionResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/bank/withdraw/gold`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify({ quantity: quantity }),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/bank/withdraw/gold`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 422:
-          message = 'Request could not be processed due to an invalid payload.';
-          break;
-        case 460:
-          message = 'nsufficient gold in your bank.';
-          break;
-        case 461:
-          message =
-            'Some of your items or your gold in the bank are already part of an ongoing transaction.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        default:
-          message = 'Unknown error from /action/bank/withdraw/gold';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: BankGoldTransactionResponseSchema = await response.json();
-    logger.info(
-      `Withdrew ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
-    );
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: { quantity: quantity },
+    errorMessages: {
+      422: 'Request could not be processed due to an invalid payload.',
+      460: 'nsufficient gold in your bank.',
+      461: 'Some of your items or your gold in the bank are already part of an ongoing transaction.',
+      486: 'An action is already in progress for this character.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+    },
+    fallbackMessage: 'Unknown error from /action/bank/withdraw/gold',
+    onSuccess: (result) => {
+      logger.info(
+        `Withdrew ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
+      );
+    },
+  });
 }
 
 export async function purchaseBankExpansion(
   character: CharacterSchema,
 ): Promise<BankExtensionTransactionResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<BankExtensionTransactionResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/bank/buy_expansion`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify({ name: character.name }),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/bank/buy_expansion`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 492:
-          message = 'The character does not have enough gold.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        case 598:
-          message = 'Bank not found on this map.';
-          break;
-        default:
-          message = 'Unknown error from /action/bank/buy_expansion';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: BankExtensionTransactionResponseSchema =
-      await response.json();
-
-    logger.info(
-      `Bank expansion purchased for ${result.data.transaction.price} gold.`,
-    );
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: { name: character.name },
+    errorMessages: {
+      486: 'An action is already in progress for this character.',
+      492: 'The character does not have enough gold.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+      598: 'Bank not found on this map.',
+    },
+    fallbackMessage: 'Unknown error from /action/bank/buy_expansion',
+    onSuccess: (result) => {
+      logger.info(
+        `Bank expansion purchased for ${result.data.transaction.price} gold.`,
+      );
+    },
+  });
 }
 
 export async function getBankDetails(): Promise<BankResponseSchema | ApiError> {
-  try {
-    const response = await fetch(`${ApiUrl}/my/bank`, getRequestOptions);
-
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: 'Unknown error from /my/bank',
-      });
-    }
-
-    const result: BankResponseSchema = await response.json();
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+  return apiRequest<BankResponseSchema>({
+    url: `${ApiUrl}/my/bank`,
+    fallbackMessage: 'Unknown error from /my/bank',
+  });
 }

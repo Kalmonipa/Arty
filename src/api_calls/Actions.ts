@@ -1,4 +1,4 @@
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   BankItemTransactionResponseSchema,
   CharacterFightResponseSchema,
@@ -13,8 +13,9 @@ import {
   SimpleItemSchema,
   SkillResponseSchema,
 } from '../types/types.js';
-import { MyHeaders, logger, sleep } from '../utils.js';
+import { logger } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
 
 /**
  * @description craft the specified item
@@ -26,60 +27,20 @@ export async function actionCraft(
   character: CharacterSchema,
   craftData: CraftingSchema,
 ): Promise<SkillResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<SkillResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/crafting`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(craftData),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/crafting`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Craft not found.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 493:
-          message = 'The characters skill level is too low.';
-          break;
-        case 497:
-          message = 'The characters inventory is full.';
-          break;
-        case 598:
-          message = 'Workshop not found on this map.';
-          break;
-        default:
-          message = 'Unknown error from /action/crafting';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: SkillResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: craftData,
+    errorMessages: {
+      404: 'Craft not found.',
+      478: 'Missing item or insufficient quantity.',
+      486: 'An action is already in progress for this character.',
+      493: 'The characters skill level is too low.',
+      497: 'The characters inventory is full.',
+      598: 'Workshop not found on this map.',
+    },
+    fallbackMessage: 'Unknown error from /action/crafting',
+  });
 }
 
 /**
@@ -92,66 +53,25 @@ export async function actionDepositItems(
   character: CharacterSchema,
   items: SimpleItemSchema[],
 ): Promise<BankItemTransactionResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<BankItemTransactionResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/bank/deposit/item`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(items),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/bank/deposit/item`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        case 461:
-          message =
-            'Some of your items or your gold in the bank are already part of an ongoing transaction.';
-          break;
-        case 462:
-          message = 'Your bank is full.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        default:
-          message = 'Unknown error from /action/bank/deposit/item';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
+    body: items,
+    errorMessages: {
+      404: 'Item not found.',
+      461: 'Some of your items or your gold in the bank are already part of an ongoing transaction.',
+      462: 'Your bank is full.',
+      478: 'Missing item or insufficient quantity.',
+      486: 'An action is already in progress for this character.',
+    },
+    fallbackMessage: 'Unknown error from /action/bank/deposit/item',
+    onSuccess: () => {
+      items.forEach((item) => {
+        logger.info(`Deposited ${item.quantity} ${item.code} into the bank`);
       });
-    }
-
-    const result: BankItemTransactionResponseSchema = await response.json();
-    items.forEach(function (item) {
-      logger.info(`Deposited ${item.quantity} ${item.code} into the bank`);
-    });
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    },
+  });
 }
-
-/**
- * @description
- */
 
 /**
  * @description
@@ -163,133 +83,50 @@ export async function actionFight(
   character: CharacterSchema,
   participants?: string[],
 ): Promise<CharacterFightResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<CharacterFightResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/fight`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(participants),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/fight`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 422:
-          message = 'Request could not be processed due to an invalid payload.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 497:
-          message = 'The characters inventory is full.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        case 598:
-          message = 'Monster not found on this map.';
-          break;
-        default:
-          message = 'Unknown error from /action/fight';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: CharacterFightResponseSchema = await response.json();
-
-    logger.info(
-      `Fight against ${result.data.fight.opponent} was a ${result.data.fight.result} after ${result.data.fight.turns} turns.`,
-    );
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: participants,
+    errorMessages: {
+      422: 'Request could not be processed due to an invalid payload.',
+      486: 'An action is already in progress for this character.',
+      497: 'The characters inventory is full.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+      598: 'Monster not found on this map.',
+    },
+    fallbackMessage: 'Unknown error from /action/fight',
+    onSuccess: (result) => {
+      logger.info(
+        `Fight against ${result.data.fight.opponent} was a ${result.data.fight.result} after ${result.data.fight.turns} turns.`,
+      );
+    },
+  });
 }
 
 export async function actionGather(
   character: CharacterSchema,
 ): Promise<SkillResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<SkillResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/gathering`,
     method: 'POST',
-    headers: MyHeaders,
-  };
-
-  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/gathering`);
-
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 493:
-          message = 'The characters skill level is too low.';
-          break;
-        case 497:
-          message = 'The characters inventory is full.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        case 598:
-          message = 'Resource not found on this map.';
-          break;
-        default:
-          message = 'Unknown error from /action/gathering';
-          break;
+    errorMessages: {
+      486: 'An action is already in progress for this character.',
+      493: 'The characters skill level is too low.',
+      497: 'The characters inventory is full.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+      598: 'Resource not found on this map.',
+    },
+    fallbackMessage: 'Unknown error from /action/gathering',
+    onSuccess: (result) => {
+      for (const item of result.data.details.items) {
+        logger.info(
+          `Gathered ${item.quantity} ${item.code} at x: ${character.x}, y: ${character.y}`,
+        );
       }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: SkillResponseSchema = await response.json();
-
-    for (const item of result.data.details.items) {
-      logger.info(
-        `Gathered ${item.quantity} ${item.code} at x: ${character.x}, y: ${character.y}`,
-      );
-    }
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return error;
-    }
-    return new ApiError({
-      code: 500,
-      message: `Unexpected error in actionGather: ${error instanceof Error ? error.message : String(error)}`,
-    });
-  }
+    },
+  });
 }
 
 /**
@@ -302,115 +139,37 @@ export async function actionMove(
   character: CharacterSchema,
   destination: DestinationSchema,
 ): Promise<CharacterMovementResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<CharacterMovementResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/move`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(destination),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/move`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Map not found';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 490:
-          message = 'The character is already at the destination.';
-          break;
-        case 496:
-          message = 'Conditions not met.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        case 595:
-          message = 'No path available to the destination map.';
-          break;
-        case 596:
-          message = 'The map is blocked and cannot be accessed.';
-          break;
-        default:
-          message = 'Unknown error from /action/move';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: CharacterMovementResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    body: destination,
+    errorMessages: {
+      404: 'Map not found',
+      486: 'An action is already in progress for this character.',
+      490: 'The character is already at the destination.',
+      496: 'Conditions not met.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+      595: 'No path available to the destination map.',
+      596: 'The map is blocked and cannot be accessed.',
+    },
+    fallbackMessage: 'Unknown error from /action/move',
+  });
 }
 
 export async function actionRest(
   character: CharacterSchema,
 ): Promise<CharacterRestResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<CharacterRestResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/rest`,
     method: 'POST',
-    headers: MyHeaders,
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/rest`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        default:
-          message = 'Unknown error from /action/rest';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: CharacterRestResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    errorMessages: {
+      486: 'An action is already in progress for this character.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+    },
+    fallbackMessage: 'Unknown error from /action/rest',
+  });
 }
 
 /**
@@ -419,78 +178,41 @@ export async function actionRest(
 export async function actionTransition(
   character: CharacterSchema,
 ): Promise<CharacterTransitionResponseSchema | ApiError> {
-  const requestOptions = {
+  const result = await apiRequest<CharacterTransitionResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/transition`,
     method: 'POST',
-    headers: MyHeaders,
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/transition`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Map not found.';
-          break;
-        case 422:
-          message = 'Request could not be processed due to an invalid payload.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 492:
-          message = 'Insufficient gold for this transition.';
-          break;
-        case 496:
-          message = 'Conditions not met.';
-          break;
-        case 498:
-          message = 'Character not found.';
-          break;
-        case 499:
-          message = 'The character is in cooldown.';
-          break;
-        default:
-          message = 'Unknown error from /action/transition';
-          break;
+    errorMessages: {
+      404: 'Map not found.',
+      422: 'Request could not be processed due to an invalid payload.',
+      478: 'Missing item or insufficient quantity.',
+      486: 'An action is already in progress for this character.',
+      492: 'Insufficient gold for this transition.',
+      496: 'Conditions not met.',
+      498: 'Character not found.',
+      499: 'The character is in cooldown.',
+    },
+    fallbackMessage: 'Unknown error from /action/transition',
+    // Validate the response structure before the cooldown sleep, matching the
+    // pre-wrapper behaviour of logging the destination on success.
+    onSuccess: (res) => {
+      if (!res || !res.data) {
+        logger.error('Invalid transition response structure:', res);
+        return;
       }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
+      logger.info(
+        `Successfully transitioned to ${res.data.destination.name} (id: ${res.data.destination.map_id}, x: ${res.data.destination.x}, y: ${res.data.destination.y})`,
+      );
+    },
+  });
 
-    const result: CharacterTransitionResponseSchema = await response.json();
-
-    // Validate the response structure
-    if (!result || !result.data) {
-      logger.error('Invalid transition response structure:', result);
-      throw new ApiError({
-        code: 500,
-        message: 'Invalid transition response from server',
-      });
-    }
-
-    logger.info(
-      `Successfully transitioned to ${result.data.destination.name} (id: ${result.data.destination.map_id}, x: ${result.data.destination.x}, y: ${result.data.destination.y})`,
-    );
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
+  if (!(result instanceof ApiError) && (!result || !result.data)) {
+    return new ApiError({
+      code: 500,
+      message: 'Invalid transition response from server',
+    });
   }
+
+  return result;
 }
 
 /**
@@ -503,61 +225,24 @@ export async function actionWithdrawItem(
   character: CharacterSchema,
   items: SimpleItemSchema[],
 ): Promise<BankItemTransactionResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<BankItemTransactionResponseSchema>({
+    url: `${ApiUrl}/my/${character.name}/action/bank/withdraw/item`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(items),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/my/${character.name}/action/bank/withdraw/item`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        case 461:
-          message =
-            'Some of your items or your gold in the bank are already part of an ongoing transaction.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 497:
-          message = "The character's inventory is full.";
-          break;
-        default:
-          message = 'Unknown error from /action/withdraw/item';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
+    body: items,
+    errorMessages: {
+      404: 'Item not found.',
+      461: 'Some of your items or your gold in the bank are already part of an ongoing transaction.',
+      478: 'Missing item or insufficient quantity.',
+      486: 'An action is already in progress for this character.',
+      497: "The character's inventory is full.",
+    },
+    fallbackMessage: 'Unknown error from /action/withdraw/item',
+    onSuccess: () => {
+      items.forEach((item) => {
+        logger.info(`Withdrew ${item.quantity} ${item.code} from the bank`);
       });
-    }
-
-    const result: BankItemTransactionResponseSchema = await response.json();
-    items.forEach(function (item) {
-      logger.info(`Withdrew ${item.quantity} ${item.code} from the bank`);
-    });
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return toApiError(error);
-  }
+    },
+  });
 }
 
 export async function fightSimulator(
@@ -565,46 +250,19 @@ export async function fightSimulator(
   monsterCode: string,
   iterations: number,
 ): Promise<CombatSimulationResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<CombatSimulationResponseSchema>({
+    url: `${ApiUrl}/simulation/fight_simulation`,
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify({
+    body: {
       characters: characters,
       monster: monsterCode,
       iterations: iterations,
-    }),
-  };
-
-  try {
-    const response = await fetch(
-      `${ApiUrl}/simulation/fight_simulation`,
-      requestOptions,
-    );
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Monster not found.';
-          break;
-        case 422:
-          message = 'Request could not be processed due to an invalid payload.';
-          break;
-        case 451:
-          message = 'Access denied, you must be a member to do that.';
-          break;
-        default:
-          message = 'Unknown error from /simulation/fight_simulation';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    return await response.json();
-  } catch (error) {
-    return toApiError(error);
-  }
+    },
+    errorMessages: {
+      404: 'Monster not found.',
+      422: 'Request could not be processed due to an invalid payload.',
+      451: 'Access denied, you must be a member to do that.',
+    },
+    fallbackMessage: 'Unknown error from /simulation/fight_simulation',
+  });
 }
