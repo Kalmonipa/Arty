@@ -107,7 +107,7 @@ import {
 } from '../constants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
-import { shouldCharacterDoEvent } from '../events/functions.js';
+import { shouldDoEvent } from '../events/functions.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -1012,7 +1012,7 @@ export class Character {
     }
 
     for (const event of activeEventsResponse.data) {
-      if ((await shouldCharacterDoEvent(this, event.code)) === false) {
+      if ((await shouldDoEvent(this, event.code)) === false) {
         continue;
       } else if (
         event.code === FishMerchant &&

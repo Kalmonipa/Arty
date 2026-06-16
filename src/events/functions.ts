@@ -27,7 +27,7 @@ export async function checkEventRules(
   return result.rows;
 }
 
-export async function shouldCharacterDoEvent(
+export async function shouldDoEvent(
   character: Character,
   eventCode: string,
 ): Promise<boolean> {
@@ -47,39 +47,39 @@ export async function shouldCharacterDoEvent(
     if (rule.skill === null || rule.skill === 'combat') {
       if (rule.min_level !== null && charCombatLevel < rule.min_level) {
         logger.debug(
-          `${this.data.name} skill level (${charCombatLevel}) too low for ${eventCode} (${rule.min_level})`,
+          `${charName} skill level (${charCombatLevel}) too low for ${eventCode} (${rule.min_level})`,
         );
         return false;
       }
       if (rule.max_level !== null && charCombatLevel > rule.max_level) {
         logger.debug(
-          `${this.data.name} skill level (${charCombatLevel}) too high for ${eventCode} (${rule.max_level})`,
+          `${charName} skill level (${charCombatLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
         return false;
       }
     } else if (rule.skill === 'mining') {
       if (rule.min_level !== null && charMiningLevel < rule.min_level) {
         logger.debug(
-          `${this.data.name} skill level (${charMiningLevel}) too low for ${eventCode} (${rule.min_level})`,
+          `${charName} skill level (${charMiningLevel}) too low for ${eventCode} (${rule.min_level})`,
         );
         return false;
       }
       if (rule.min_level !== null && charMiningLevel > rule.max_level) {
         logger.debug(
-          `${this.data.name} skill level (${charMiningLevel}) too high for ${eventCode} (${rule.max_level})`,
+          `${charName} skill level (${charMiningLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
         return false;
       }
     } else if (rule.skill === 'woodcutting') {
       if (rule.min_level !== null && charWoodcuttingLevel < rule.min_level) {
         logger.debug(
-          `${this.data.name} skill level (${charWoodcuttingLevel}) too low for ${eventCode} (${rule.min_level})`,
+          `${charName} skill level (${charWoodcuttingLevel}) too low for ${eventCode} (${rule.min_level})`,
         );
         return false;
       }
       if (rule.min_level !== null && charWoodcuttingLevel > rule.max_level) {
         logger.debug(
-          `${this.data.name} skill level (${charWoodcuttingLevel}) too high for ${eventCode} (${rule.max_level})`,
+          `${charName} skill level (${charWoodcuttingLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
         return false;
       }

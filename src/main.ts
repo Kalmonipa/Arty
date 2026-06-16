@@ -34,13 +34,11 @@ async function main() {
   const isDbConnected = await db.testConnection();
   
   if (!isDbConnected) {
-    logger.error('🛑 Critical failure: Could not connect to the local database. Exiting.');
+    logger.error('Critical failure: Could not connect to the local database. Exiting.');
     process.exit(1); 
   } else {
-    logger.info('✅ Database connection successful!');
+    logger.info('Database connection successful!');
   }
-
-  
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {
     logger.info(`-- Using Test server --`);
