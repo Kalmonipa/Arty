@@ -61,25 +61,27 @@ export default function EventRouter(char: Character) {
   router.post('/all/:eventCode', async (req: Request, res: Response) => {
     const { eventCode } = req.params; // Grabs from the URL
 
-    AllCharNames.forEach(async (character) => {
-      try {
+    try {
+      let message = `Successfully restricted ${eventCode} for `;
+
+      AllCharNames.forEach(async (character) => {
         const query = `
-        INSERT INTO event_rules (event_code, character, ignore)
-        VALUES ($1, $2, true)
-        ON CONFLICT (event_code, character) 
-        DO UPDATE SET ignore = true;
-        `;
+            INSERT INTO event_rules (event_code, character, ignore)
+            VALUES ($1, $2, true)
+            ON CONFLICT (event_code, character) 
+            DO UPDATE SET ignore = true;
+            `;
         await db.query(query, [eventCode, character]);
 
-        const message = `Successfully restricted ${eventCode} for ${character}`;
+        message = message + `${character}, `;
+      });
 
-        logger.info(message);
+      logger.info(message);
 
-        return res.json({ message: message });
-      } catch (err) {
-        return res.status(500).json({ error: 'Failed to save rule' });
-      }
-    });
+      return res.json({ message: message });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to save rule' });
+    }
   });
 
   /**
@@ -88,23 +90,25 @@ export default function EventRouter(char: Character) {
   router.delete('/all/:eventCode', async (req, res) => {
     const { eventCode } = req.params;
 
-    AllCharNames.forEach(async (character) => {
-      try {
+    try {
+      let message = `Successfully enabled ${eventCode} for `;
+
+      AllCharNames.forEach(async (character) => {
         const query = `
       DELETE FROM event_rules 
       WHERE event_code = $1 AND (character = $2 OR (character IS NULL AND $2 IS NULL));
     `;
-        await db.query(query, [eventCode, character || null]);
+        await db.query(query, [eventCode, character]);
 
-        const message = `Successfully enabled ${eventCode} for ${character}`;
+        message = message + `${character}, `;
+      });
+      
+      logger.info(message);
 
-        logger.info(message);
-
-        return res.json({ message: message });
-      } catch (err) {
-        return res.status(500).json({ error: 'Failed to remove restriction' });
-      }
-    });
+      return res.json({ message: message });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to remove restriction' });
+    }
   });
 
   return router;
