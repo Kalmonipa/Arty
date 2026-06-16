@@ -1,7 +1,7 @@
 import { Character } from '../core/Character.js';
 import { db } from '../db.js';
 import { EventRule } from '../types/Database.js';
-import { logger } from '../utils.js';
+import { isValidLevelLimit, logger } from '../utils.js';
 
 /**
  * Gets the event rules relating to either the specific character or team wide rules
@@ -45,41 +45,41 @@ export async function shouldDoEvent(
     }
 
     if (rule.skill === null || rule.skill === 'combat') {
-      if (rule.min_level !== null && charCombatLevel < rule.min_level) {
+      if (isValidLevelLimit(rule.min_level) && charCombatLevel < rule.min_level) {
         logger.debug(
-          `${charName} skill level (${charCombatLevel}) too low for ${eventCode} (${rule.min_level})`,
+          `${charName} combat level (${charCombatLevel}) too low for ${eventCode} (${rule.min_level})`,
         );
         return false;
       }
-      if (rule.max_level !== null && charCombatLevel > rule.max_level) {
+      if (isValidLevelLimit(rule.max_level) && charCombatLevel > rule.max_level) {
         logger.debug(
-          `${charName} skill level (${charCombatLevel}) too high for ${eventCode} (${rule.max_level})`,
+          `${charName} combat level (${charCombatLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
         return false;
       }
     } else if (rule.skill === 'mining') {
-      if (rule.min_level !== null && charMiningLevel < rule.min_level) {
+      if (isValidLevelLimit(rule.min_level) && charMiningLevel < rule.min_level) {
         logger.debug(
-          `${charName} skill level (${charMiningLevel}) too low for ${eventCode} (${rule.min_level})`,
+          `${charName} mining skill level (${charMiningLevel}) too low for ${eventCode} (${rule.min_level})`,
         );
         return false;
       }
-      if (rule.max_level !== null && charMiningLevel > rule.max_level) {
+      if (isValidLevelLimit(rule.max_level) && charMiningLevel > rule.max_level) {
         logger.debug(
-          `${charName} skill level (${charMiningLevel}) too high for ${eventCode} (${rule.max_level})`,
+          `${charName} mining skill level (${charMiningLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
         return false;
       }
     } else if (rule.skill === 'woodcutting') {
-      if (rule.min_level !== null && charWoodcuttingLevel < rule.min_level) {
+      if (isValidLevelLimit(rule.min_level) && charWoodcuttingLevel < rule.min_level) {
         logger.debug(
-          `${charName} skill level (${charWoodcuttingLevel}) too low for ${eventCode} (${rule.min_level})`,
+          `${charName} woodcutting skill level (${charWoodcuttingLevel}) too low for ${eventCode} (${rule.min_level})`,
         );
         return false;
       }
-      if (rule.max_level !== null && charWoodcuttingLevel > rule.max_level) {
+      if (isValidLevelLimit(rule.max_level) && charWoodcuttingLevel > rule.max_level) {
         logger.debug(
-          `${charName} skill level (${charWoodcuttingLevel}) too high for ${eventCode} (${rule.max_level})`,
+          `${charName} woodcutting skill level (${charWoodcuttingLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
         return false;
       }

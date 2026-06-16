@@ -35,7 +35,7 @@ export const db = {
       await pool.query('SELECT 1');
       return true;
     } catch (err) {
-      console.error('❌ Database connection failed:', err);
+      console.error('Database connection failed:', err);
       return false;
     }
   },
