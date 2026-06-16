@@ -18,6 +18,24 @@ change or redeploy.
 (subject to the in-code merchant rules below). Rows only _add restrictions_, so you
 only write rows for events you want to gate or ignore.
 
+## API endpoints
+
+### POST /:eventCode
+
+This will disable the event for the character belonging to the instance
+
+### DELETE /:eventCode
+
+This will remove any rules for the character belonging to the instance
+
+### POST /all/:eventCode
+
+This will disable the event for ALL characters
+
+### DELETE /all/:eventCode
+
+This will remove any rules for the event for ALL characters
+
 ## Schema
 
 ```sql
