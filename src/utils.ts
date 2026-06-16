@@ -308,7 +308,12 @@ export async function GetCharacterData(): Promise<CharacterSchema[]> {
 }
 
 export function isValidLevelLimit(level: any): level is number {
-  return level !== null && level !== undefined && level !== '' && String(level) !== 'null';
+  return (
+    level !== null &&
+    level !== undefined &&
+    level !== '' &&
+    String(level) !== 'null'
+  );
 }
 
 export function getHighestCharLevel(

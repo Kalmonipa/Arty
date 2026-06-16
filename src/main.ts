@@ -30,13 +30,14 @@ async function main() {
   );
   await char.init(charDetails);
 
-
   /** Test the DB connection */
   const isDbConnected = await db.testConnection();
-  
+
   if (!isDbConnected) {
-    logger.error('Critical failure: Could not connect to the local database. Exiting.');
-    process.exit(1); 
+    logger.error(
+      'Critical failure: Could not connect to the local database. Exiting.',
+    );
+    process.exit(1);
   } else {
     logger.info('Database connection successful!');
   }
