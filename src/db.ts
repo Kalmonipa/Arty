@@ -29,5 +29,16 @@ export const db = {
   ): Promise<QueryResult<T>> => {
     return pool.query<T>(text, params);
   },
+
+  testConnection: async (): Promise<boolean> => {
+    try {
+      await pool.query('SELECT 1');
+      return true;
+    } catch (err) {
+      console.error('❌ Database connection failed:', err);
+      return false;
+    }
+  },
+
   pool,
 };

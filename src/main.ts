@@ -19,6 +19,7 @@ import CharacterRouter from './routes/Character.js';
 import { CharacterSchema } from './types/types.js';
 import { AllCharNames, CharName } from './constants.js';
 import { register } from './metrics.js';
+import { db } from './db.js';
 
 async function main() {
   let charDetails: CharacterSchema[] = await GetCharacterData();
@@ -27,6 +28,19 @@ async function main() {
     charDetails.find((charData) => charData.name === CharName),
   );
   await char.init(charDetails);
+
+
+  /** Test the DB connection */
+  const isDbConnected = await db.testConnection();
+  
+  if (!isDbConnected) {
+    logger.error('🛑 Critical failure: Could not connect to the local database. Exiting.');
+    process.exit(1); 
+  } else {
+    logger.info('✅ Database connection successful!');
+  }
+
+  
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {
     logger.info(`-- Using Test server --`);
