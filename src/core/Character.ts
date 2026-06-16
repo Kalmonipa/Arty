@@ -82,8 +82,8 @@ import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainCombatObjective } from './TrainCombatObjective.js';
 import { RecycleObjective } from './RecycleObjective.js';
 import { ExpandBankObjective } from './BankExpansion.js';
-import { getActiveEvents } from '../api_calls/Events.js';
-import { EventObjective } from './EventObjective.js';
+import { getActiveEvents } from '../events/apiCalls.js';
+import { EventObjective } from '../events/eventObjective.js';
 import {
   getAllResourceInformation,
   getResourceInformation,
@@ -107,6 +107,7 @@ import {
 } from '../constants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
+import { shouldCharacterDoEvent } from '../events/functions.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -978,7 +979,7 @@ export class Character {
       return false;
     }
 
-    // Avoids creating an infinite loop
+    // This for loop avoids creating an infinite loop
     for (const job of this.jobList) {
       logger.debug(`Checking Job ${job.objectiveId}`);
       if (job instanceof EventObjective) {
@@ -1011,45 +1012,7 @@ export class Character {
     }
 
     for (const event of activeEventsResponse.data) {
-      if (
-        event.code === 'bandit_camp' &&
-        (this.data.level < 25 || this.data.level > 35)
-      ) {
-        logger.debug(
-          `${this.data.name} is outside the level range (25-35) for ${event.name}`,
-        );
-        continue;
-      } else if (
-        event.code === 'portal_demon' &&
-        (this.data.level < 30 || this.data.level > 40)
-      ) {
-        logger.debug(
-          `${this.data.name} is outside the level range (30-40) for ${event.name}`,
-        );
-        continue;
-      } else if (event.code === 'corrupted_ogre' && this.data.level < 30) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
-        continue;
-      } else if (event.code === 'corrupted_owlbear' && this.data.level < 30) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
-        continue;
-      } else if (event.code === 'cult_of_darkness' && this.data.level < 40) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
-        continue;
-      } else if (
-        event.code === 'portal_efreet_sultan' &&
-        this.data.level < 42
-      ) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
-        continue;
-      } else if (event.code === 'corrupted_portal' && this.data.level < 45) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
-        continue;
-      } else if (
-        event.code === 'attacking_the_island' &&
-        this.data.level < 45
-      ) {
-        logger.debug(`${this.data.name} is too low level for ${event.name}`);
+      if ((await shouldCharacterDoEvent(this, event.code)) === false) {
         continue;
       } else if (
         event.code === FishMerchant &&
@@ -1074,13 +1037,6 @@ export class Character {
         logger.debug(
           `Last trade attempt was ${this.nomadicMerchantTradeDate}, current is ${currentTimestamp}`,
         );
-        continue;
-      }
-
-      const ignoredEvents = [];
-
-      if (ignoredEvents.includes(event.code)) {
-        logger.info(`Event ${event.code} is ignored via DB`);
         continue;
       }
 

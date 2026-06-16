@@ -12,7 +12,7 @@ const pool = new Pool({
   port: parseInt(process.env.DB_PORT || '5432'),
   user: process.env.DB_USER || 'oliver',
   password: getEnv('DB_PASSWORD'),
-  database: process.env.DB_NAME || 'oliver',
+  database: process.env.DB_NAME || 'Arty',
   max: 10,
 });
 
@@ -22,7 +22,8 @@ pool.on('error', (err: Error) => {
 });
 
 export const db = {
-  query: <T extends any>(
+  // Defaulting T to Record<string, any> gives better fallbacks
+  query: <T extends Record<string, any> = Record<string, any>>(
     text: string,
     params?: any[],
   ): Promise<QueryResult<T>> => {

@@ -1,6 +1,6 @@
-import { Character } from './Character.js';
-import { Objective } from './Objective.js';
-import { ApiError } from './Error.js';
+import { Character } from '../core/Character.js';
+import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/Error.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
 import {

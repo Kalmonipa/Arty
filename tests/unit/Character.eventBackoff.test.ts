@@ -25,7 +25,7 @@ jest.mock('../../src/api_calls/Bank.js', () => ({
     size: 50,
   })),
 }));
-jest.mock('../../src/api_calls/Events.js', () => ({
+jest.mock('../../src/events/apiCalls.js', () => ({
   getActiveEvents: jest.fn(),
 }));
 jest.mock('../../src/api_calls/Resources.js', () => ({

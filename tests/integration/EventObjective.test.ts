@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { EventObjective } from '../../src/core/EventObjective.js';
+import { EventObjective } from '../../src/events/eventObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ApiError } from '../../src/core/Error.js';
 import { ActiveEventSchema } from '../../src/types/types.js';

@@ -6,7 +6,7 @@ import {
   GetAllEventsEventsGetParams,
 } from '../types/types.js';
 import { ApiUrl } from '../constants.js';
-import { apiRequest } from './request.js';
+import { apiRequest } from '../api_calls/request.js';
 
 export async function getAllEvents(
   params: GetAllEventsEventsGetParams,

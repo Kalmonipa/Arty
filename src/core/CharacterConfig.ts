@@ -1,4 +1,5 @@
 import { db, GlobalConfig } from '../db.js';
+import { EventRule } from '../types/Database.js';
 
 /**
  * Fetches the list of event codes to ignore.

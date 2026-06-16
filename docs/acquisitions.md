@@ -6,15 +6,14 @@ artifacts and runes. One row = one owned unit.
 ## Purpose
 
 Some items should only ever be bought a limited number of times across the whole
-team (e.g. only one voidstone pickaxe in total). Before buying, a character checks
-this ledger to see whether a "slot" is still available; after buying, it records the
-purchase here so the other characters can see it.
+team (e.g. only one of each voidstone tool in total). Before buying, a character checks
+this ledger to see whether they should purchase the tool available; after buying, it records the
+purchase here so the other characters can see it and make their decision on whether to buy or not.
 
 This table is a **cache/ledger, not the source of truth** — the game holds the real
 inventory/bank/equipment. For these big, permanent items that don't get casually
 destroyed the ledger stays accurate, and it's far cheaper than rescanning every
-character's inventory, the bank and equipment on each purchase decision. A
-reconcile-against-game step can be added later if drift ever becomes a problem.
+character's inventory, the bank and equipment on each purchase decision.
 
 The cap rules themselves live in [`acquisition_limits`](./acquisition_limits.md).
 
