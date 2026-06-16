@@ -39,25 +39,6 @@ export default function CharacterRouter(char: Character) {
     }
   });
 
-  router.post('/change-event-status', async (req: Request, res: Response) => {
-    try {
-      const eventStatus: boolean = req.body.eventStatus;
-
-      const oldStatus = char.enableEvents;
-
-      char.enableEvents = eventStatus;
-
-      return res.status(201).json({
-        message: `${char.data.name} enable events status is ${eventStatus} (previously ${oldStatus})`,
-        character: char.data.name,
-      });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: error.message || 'Internal server error.' });
-    }
-  });
-
   /**
    * Returns some information on the character
    * Idle status

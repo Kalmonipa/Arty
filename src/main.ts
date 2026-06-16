@@ -20,6 +20,7 @@ import { CharacterSchema } from './types/types.js';
 import { AllCharNames, CharName } from './constants.js';
 import { register } from './metrics.js';
 import { db } from './db.js';
+import EventRouter from './events/routes.js';
 
 async function main() {
   let charDetails: CharacterSchema[] = await GetCharacterData();
@@ -57,6 +58,7 @@ async function main() {
   app.use('/bank', BankRouter(char));
   app.use('/craft', CraftRouter(char));
   app.use('/equip', EquipRouter(char));
+  app.use('/events', EventRouter(char));
   app.use('/fight', FightRouter(char));
   app.use('/gather', GatherRouter(char));
   app.use('/items', ItemsRouter(char));
