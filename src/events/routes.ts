@@ -15,8 +15,8 @@ export default function EventRouter(char: Character) {
 
     try {
       const query = `
-      INSERT INTO event_rules (event_code, character, min_level, max_level, ignore)
-      VALUES ($1, $2, $3, $4, true)
+      INSERT INTO event_rules (event_code, character, ignore)
+      VALUES ($1, $2, true)
       ON CONFLICT (event_code, character) 
       DO UPDATE SET ignore = true;
     `;
@@ -43,7 +43,7 @@ export default function EventRouter(char: Character) {
       DELETE FROM event_rules 
       WHERE event_code = $1 AND (character = $2 OR (character IS NULL AND $2 IS NULL));
     `;
-      await db.query(query, [eventCode, char.data.name || null]);
+      await db.query(query, [eventCode, char.data.name]);
 
       const message = `Successfully enabled ${eventCode} for ${char.data.name}`;
 
@@ -64,8 +64,8 @@ export default function EventRouter(char: Character) {
     AllCharNames.forEach(async (character) => {
       try {
         const query = `
-        INSERT INTO event_rules (event_code, character, min_level, max_level, ignore)
-        VALUES ($1, $2, $3, $4, true)
+        INSERT INTO event_rules (event_code, character, ignore)
+        VALUES ($1, $2, true)
         ON CONFLICT (event_code, character) 
         DO UPDATE SET ignore = true;
         `;
