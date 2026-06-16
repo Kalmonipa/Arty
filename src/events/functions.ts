@@ -64,7 +64,7 @@ export async function shouldDoEvent(
         );
         return false;
       }
-      if (rule.min_level !== null && charMiningLevel > rule.max_level) {
+      if (rule.max_level !== null && charMiningLevel > rule.max_level) {
         logger.debug(
           `${charName} skill level (${charMiningLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
@@ -77,7 +77,7 @@ export async function shouldDoEvent(
         );
         return false;
       }
-      if (rule.min_level !== null && charWoodcuttingLevel > rule.max_level) {
+      if (rule.max_level !== null && charWoodcuttingLevel > rule.max_level) {
         logger.debug(
           `${charName} skill level (${charWoodcuttingLevel}) too high for ${eventCode} (${rule.max_level})`,
         );
