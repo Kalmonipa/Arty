@@ -3060,12 +3060,9 @@ export class Character {
         return true;
       case 500: // Bad gateway from server
       case 502: // Bad gateway from server
+      case TRANSPORT_ERROR_CODE: // 599 Transport-level failure (network blip, dropped connection, bad body)
         logger.warn('Sleeping for 5 minutes to avoid 5xx errors');
         await sleep(300, 'HTTP error code 5xx');
-        return true;
-      case TRANSPORT_ERROR_CODE: // Transport-level failure (network blip, dropped connection, bad body)
-        logger.warn('Transport error talking to the API; retrying in 10s');
-        await sleep(10, 'transport error');
         return true;
       case 595: // /action/move: no path available to the destination map
       case 596: // /action/move: the map is blocked and cannot be accessed
