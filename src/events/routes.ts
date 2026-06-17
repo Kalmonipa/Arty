@@ -61,9 +61,9 @@ export default function EventRouter(char: Character) {
   router.post('/all/:eventCode', async (req: Request, res: Response) => {
     const { eventCode } = req.params; // Grabs from the URL
 
-    try {
-      let message = `Successfully restricted ${eventCode} for `;
+    let message = `Successfully restricted ${eventCode} for all characters`;
 
+    try {
       AllCharNames.forEach(async (character) => {
         const query = `
             INSERT INTO event_rules (event_code, character, ignore)
@@ -72,8 +72,6 @@ export default function EventRouter(char: Character) {
             DO UPDATE SET ignore = true;
             `;
         await db.query(query, [eventCode, character]);
-
-        message = message + `${character}, `;
       });
 
       logger.info(message);
@@ -90,19 +88,17 @@ export default function EventRouter(char: Character) {
   router.delete('/all/:eventCode', async (req, res) => {
     const { eventCode } = req.params;
 
-    try {
-      let message = `Successfully enabled ${eventCode} for `;
+    const message = `Successfully enabled ${eventCode} for all characters`
 
+    try {
       AllCharNames.forEach(async (character) => {
         const query = `
       DELETE FROM event_rules 
       WHERE event_code = $1 AND (character = $2 OR (character IS NULL AND $2 IS NULL));
     `;
         await db.query(query, [eventCode, character]);
-
-        message = message + `${character}, `;
       });
-      
+
       logger.info(message);
 
       return res.json({ message: message });
