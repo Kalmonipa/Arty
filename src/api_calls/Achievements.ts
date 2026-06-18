@@ -5,6 +5,7 @@ import {
   DataPageAccountAchievementSchema,
   StaticDataPageAchievementSchema,
   GetAllAchievementsAchievementsGetParams,
+  GetAccountAchievementsAccountsAccountAchievementsGetParams,
 } from '../types/types.js';
 import { apiRequest } from './request.js';
 
@@ -41,13 +42,21 @@ export async function getAllAchievements(
  */
 export async function getAccountAchievements(
   account: string,
-  page: number = 1,
-  size: number = 100,
+  params?: GetAccountAchievementsAccountsAccountAchievementsGetParams,
 ): Promise<DataPageAccountAchievementSchema | ApiError> {
   const apiUrl = new URL(`${ApiUrl}/accounts/${account}/achievements`);
-  apiUrl.searchParams.set('completed', 'true');
-  apiUrl.searchParams.set('page', page.toString());
-  apiUrl.searchParams.set('size', size.toString());
+  if (params.completed) {
+    apiUrl.searchParams.set('completed', String(params.completed));
+  }
+  if (params.page) {
+  apiUrl.searchParams.set('page', params.page.toString());
+  }
+  if (params.size) {
+    apiUrl.searchParams.set('size', params.size.toString());
+  }
+  if (params.type) {
+    apiUrl.searchParams.set('type', params.type)
+  }
 
   return apiRequest<DataPageAccountAchievementSchema>({
     url: apiUrl,

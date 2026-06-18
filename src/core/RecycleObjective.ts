@@ -41,8 +41,9 @@ export class RecycleObjective extends Objective {
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 
     if (
+      // Withdraw the smaller of the amount needed or 10 so that we know we have enough inventory space
       !(await this.character.withdrawNow(
-        this.target.quantity - numInInv,
+        Math.min(this.target.quantity - numInInv, 10),
         this.target.code,
       ))
     ) {
