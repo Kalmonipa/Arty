@@ -105,6 +105,7 @@ export class CraftObjective extends Objective {
             targetItem.craft.skill,
           );
 
+          // ToDo: Add the item to a wishlist instead of requesting it directly
           if (charSkillLevel < targetItem.craft.level) {
             logger.warn(
               `Character ${this.character.data.name} has ${targetItem.craft.skill} level ${charSkillLevel} but needs level ${targetItem.craft.level} to craft ${targetItem.code}`,
@@ -123,16 +124,16 @@ export class CraftObjective extends Objective {
             logger.info(
               `Requesting ${this.target.quantity} ${targetItem.code} from ${crafter.name} and continuing`,
             );
-            let response = await requestCraftItem(crafter.name, {
-              code: this.target.code,
-              quantity: this.target.quantity,
-            });
-            if (response instanceof ApiError) {
-              logger.error(
-                `${response.error} | Code: [${response.error.code}]`,
-              );
-              return false;
-            }
+            // let response = await requestCraftItem(crafter.name, {
+            //   code: this.target.code,
+            //   quantity: this.target.quantity,
+            // });
+            // if (response instanceof ApiError) {
+            //   logger.error(
+            //     `${response.error} | Code: [${response.error.code}]`,
+            //   );
+            //   return false;
+            // }
 
             return true;
           }

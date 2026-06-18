@@ -57,23 +57,29 @@ export class EventObjective extends Objective {
     let result: boolean;
     const contentType = this.activeEvent.map.interactions?.content?.type;
 
+    // Gather resource
     if (contentType === MapContentType.resource) {
       result = await this.gatherResources(this.activeEvent);
+    // Fight mob
+    } else if (contentType === MapContentType.monster) {
+      result = await this.fightMobs(this.activeEvent);
+    // Trade with NPC
     } else {
+      logger.debug(`Active event is ${this.activeEvent.code}`)
       switch (this.activeEvent.code) {
-        case 'bandit_camp':
-        case 'portal_demon':
-        case 'corrupted_ogre':
-        case 'corrupted_owlbear':
-        case 'cult_of_darkness':
-          result = await this.fightMobs(this.activeEvent);
-          break;
         case FishMerchant:
           result = await this.sellToFishMerchant();
+          if (!result) {
+            this.character.recordEventFailure(this.activeEvent.code)
+            return result;
+          }
+          // ToDo: pull wishlist items from DB and buy if necessary
+          //result = await this.buyFromMerchant('mining')
           break;
         case NomadicMerchant:
           result = await this.sellToNomadicMerchant();
           if (!result) {
+            this.character.recordEventFailure(this.activeEvent.code)
             return result;
           }
           result = await this.buyFromNomadicMerchant();
@@ -91,6 +97,15 @@ export class EventObjective extends Objective {
       this.character.recordEventSuccess(this.activeEvent.code);
     }
     return result;
+  }
+
+  /**
+   * @description Gets all the wishlist items from the DB for this character and 
+   * checks to see if we can buy them
+   * @param ar
+   */
+  buyFromMerchant(arg0: string): boolean | PromiseLike<boolean> {
+    throw new Error('Method not implemented.');
   }
 
   /**

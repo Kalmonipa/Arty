@@ -381,7 +381,7 @@ describe('EventObjective - sellToMerchant', () => {
 
     await makeObjective('fish_merchant').run();
 
-    expect(character.recordEventFailure).not.toHaveBeenCalled();
+    expect(character.recordEventFailure).toHaveBeenCalled();
   });
 
   describe('currency reserve', () => {

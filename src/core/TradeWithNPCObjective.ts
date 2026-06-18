@@ -14,7 +14,8 @@ import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { Objective } from './Objective.js';
 
 /**
- * @description Objective to buy or sell goods from/to a trader
+ * @description Objective to buy or sell goods from/to a trader. Automatically finds
+ * the NPC to trade with
  * @param tradeType buy or sell
  * @param itemCode code to buy or sell
  * @param quantity amount to buy or sell

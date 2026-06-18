@@ -241,6 +241,8 @@ export class Character {
   lowestMiningLevel: number;
   lowestWoodcuttingLevel: number;
 
+  hasVoidStonePickaxe: boolean = false
+
   /**
    * Events that we would like to ignore
    */
@@ -312,8 +314,10 @@ export class Character {
     while (true) {
       const response = await getAccountAchievements(
         this.data.account,
-        page,
-        size,
+        {
+          page: page,
+          size: size,
+        }
       );
       if (response instanceof ApiError) {
         logger.warn(
