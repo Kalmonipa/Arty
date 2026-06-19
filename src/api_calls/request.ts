@@ -116,7 +116,7 @@ export async function apiRequest<T>(
 
       if (response.status === RATE_LIMITED) {
         if (attempt >= retry.maxRetries) {
-          logger.warn(
+          logger.error(
             `Rate limited (429) and out of retries for ${url.toString()}`,
           );
           return new ApiError({
@@ -125,7 +125,7 @@ export async function apiRequest<T>(
           });
         }
         const delay = backoffSeconds(attempt, retry);
-        logger.warn(
+        logger.error(
           `Rate limited (429); backing off ${delay}s (retry ${attempt + 1}/${retry.maxRetries})`,
         );
         await sleep(delay, 'rate limit', false);
