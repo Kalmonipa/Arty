@@ -85,6 +85,7 @@ export class EventObjective extends Objective {
           result = await this.buyWishlistItemsFromMerchant('mining');
           break;
         case NomadicMerchant:
+          logger.debug(`Nomadic Merchant is here`)
           result = await this.sellToNomadicMerchant();
           if (!result) {
             this.character.recordEventFailure(this.activeEvent.code);
@@ -377,6 +378,7 @@ export class EventObjective extends Objective {
   }
 
   private async sellToNomadicMerchant(): Promise<boolean> {
+    logger.debug(`Selling to Nomadic Merchant`)
     const success = await this.sellToMerchant(NomadicMerchant);
     if (success) {
       this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);
@@ -393,6 +395,7 @@ export class EventObjective extends Objective {
    * If we have an empty slot, equips the item
    * @todo Make this smarter by:
    * - having a programmatic list of items from the nomadic merchant
+   * - putting these items in the wishlist at the start of the season
    */
   private async buyFromNomadicMerchant(): Promise<boolean> {
     const itemsToBuy = ['backpack', 'lost_world_map'];

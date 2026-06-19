@@ -36,3 +36,5 @@ export const WeaponSlot = 'weapon_slot';
 export const RuneSlot = 'rune_slot';
 export const ShieldSlot = 'shield_slot';
 export const BagSlot = 'bag_slot';
+export const HelmetSlot = 'helmet_slot';
+export const BodyArmorSlot = 'body_armor_slot';

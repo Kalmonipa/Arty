@@ -98,8 +98,10 @@ import {
 } from './TransitionPathfinder.js';
 import {
   BagSlot,
+  BodyArmorSlot,
   CharRole,
   FishMerchant,
+  HelmetSlot,
   NomadicMerchant,
   RuneSlot,
   ShieldSlot,
@@ -1179,8 +1181,8 @@ export class Character {
     equippedItems.set(WeaponSlot, this.data.weapon_slot);
     equippedItems.set(RuneSlot, this.data.rune_slot);
     equippedItems.set(ShieldSlot, this.data.shield_slot);
-    equippedItems.set('helmet_slot', this.data.helmet_slot);
-    equippedItems.set('body_armor_slot', this.data.body_armor_slot);
+    equippedItems.set(HelmetSlot, this.data.helmet_slot);
+    equippedItems.set(BodyArmorSlot, this.data.body_armor_slot);
     equippedItems.set('leg_armor_slot', this.data.leg_armor_slot);
     equippedItems.set('boots_slot', this.data.boots_slot);
     equippedItems.set('ring1_slot', this.data.ring1_slot);
