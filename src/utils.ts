@@ -320,7 +320,7 @@ export function getHighestCharLevel(
   allCharacterDetails: CharacterSchema[],
 ): number {
   return allCharacterDetails.reduce((prev, curr) =>
-    prev.level < curr.level ? prev : curr,
+    prev.level > curr.level ? prev : curr,
   ).level;
 }
 
@@ -328,7 +328,7 @@ export function getLowestCharLevel(
   allCharacterDetails: CharacterSchema[],
 ): number {
   return allCharacterDetails.reduce((prev, curr) =>
-    prev.level > curr.level ? prev : curr,
+    prev.level < curr.level ? prev : curr,
   ).level;
 }
 export function getLowestAlchemyLevel(
