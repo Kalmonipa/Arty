@@ -5,6 +5,7 @@ import { getResourceInformation } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
 import {
   ActiveEventSchema,
+  GatheringSkill,
   MapContentType,
   MapSchema,
   ResourceResponseSchema,
@@ -12,7 +13,7 @@ import {
 import { actionFight, actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
-import { FishMerchant, NomadicMerchant } from '../constants.js';
+import { FishMerchant, GemstoneMerchant, NomadicMerchant } from '../constants.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -74,7 +75,10 @@ export class EventObjective extends Objective {
             return result;
           }
           // ToDo: pull wishlist items from DB and buy if necessary
-          //result = await this.buyFromMerchant('mining')
+          //result = await this.buyFromMerchant('fishing')
+          break;
+        case GemstoneMerchant:
+          result = await this.buyWishlistItemsFromMerchant('mining')
           break;
         case NomadicMerchant:
           result = await this.sellToNomadicMerchant();
@@ -102,11 +106,123 @@ export class EventObjective extends Objective {
   /**
    * @description Gets all the wishlist items from the DB for this character and 
    * checks to see if we can buy them
-   * @param ar
+   * @param 
    */
-  buyFromMerchant(arg0: string): boolean | PromiseLike<boolean> {
-    throw new Error('Method not implemented.');
-  }
+  async buyWishlistItemsFromMerchant(skill: GatheringSkill): Promise<boolean> {
+
+    return true;
+    // const itemsToBuy = []
+
+    // for (const item of itemsToBuy) {
+    //   const isEquipped: boolean = this.character.hasEquipped(item);
+    //   if (isEquipped) {
+    //     logger.debug(`${item} is equipped. No need to purchase`);
+    //     continue;
+    //   }
+    //   const numInInv: number = this.character.checkQuantityOfItemInInv(item);
+    //   if (numInInv > 0) {
+    //     logger.debug(`${item} is in inventory. No need to purchase`);
+    //     continue;
+    //   }
+    //   const numInBank: number =
+    //     await this.character.checkQuantityOfItemInBank(item);
+    //   if (numInBank > 0) {
+    //     logger.debug(`${item} is in bank. No need to purchase`);
+    //     continue;
+    //   }
+
+    //   // Item details to check if the character can actually equip it
+    //   const itemDetails = await getItemInformation(item);
+    //   if (itemDetails instanceof ApiError) {
+    //     logger.error(`Failed to get details for item ${item}`);
+    //     continue;
+    //   }
+    //   if (itemDetails.conditions) {
+    //     const levelReq = itemDetails.conditions.find(
+    //       (condition) => condition.code === 'level',
+    //     )?.value;
+    //     if (levelReq != null && this.character.data.level < levelReq) {
+    //       logger.debug(
+    //         `Character level (${this.character.data.level}) is too low for ${item} (${levelReq})`,
+    //       );
+    //       continue;
+    //     }
+    //   }
+
+    //   // GetNpcItems to check the cost of it
+    //   // ToDo: get the info on all merchants on startup and just reference that
+    //   // instead of hitting the API
+    //   const npcItemDetails = await getAllNpcItems({
+    //     code: item,
+    //     npc: NomadicMerchant,
+    //   });
+    //   if (npcItemDetails instanceof ApiError) {
+    //     logger.error(`Failed to get NPC item details for item ${item}`);
+    //     continue;
+    //   }
+
+    //   // We're assuming there's only one object returned
+    //   const npcItem = npcItemDetails.data[0];
+    //   if (!npcItem || npcItem.buy_price == null) {
+    //     logger.debug(
+    //       `${item} is not available to buy from the nomadic merchant`,
+    //     );
+    //     continue;
+    //   }
+
+    //   const buyPrice = npcItem.buy_price;
+    //   const moneyAvailable = this.character.data.gold;
+    //   if (moneyAvailable < buyPrice) {
+    //     logger.debug(
+    //       `Cannot afford ${item} (need ${buyPrice}, have ${moneyAvailable})`,
+    //     );
+    //     continue;
+    //   }
+
+    //   const purchaseResult = await this.character.tradeWithNpcNow(
+    //     'buy',
+    //     1,
+    //     item,
+    //   );
+    //   if (!purchaseResult) {
+    //     logger.warn(`Purchasing ${item} failed`);
+    //     continue;
+    //   }
+
+    //   // Equip the item
+    //   // ToDo: associate 'bag' with 'bag_slot' somehow
+    //   if (item === 'backpack') {
+    //     logger.debug(`Bag slot is ${this.character.data.bag_slot}`);
+    //     if (this.character.data.bag_slot === '') {
+    //       await this.character.equipNow(item, 'bag');
+    //     } else {
+    //       logger.warn(`Bag slot occupied. Not equipping ${item}`);
+    //       continue;
+    //     }
+    //   } else if (item === 'lost_world_map') {
+    //     logger.debug(
+    //       `Artifact 1 slot is ${this.character.data.artifact1_slot}`,
+    //     );
+    //     logger.debug(
+    //       `Artifact 2 slot is ${this.character.data.artifact2_slot}`,
+    //     );
+    //     logger.debug(
+    //       `Artifact 3 slot is ${this.character.data.artifact3_slot}`,
+    //     );
+
+    //     if (this.character.data.artifact1_slot === '') {
+    //       await this.character.equipNow(item, 'artifact1');
+    //     } else if (this.character.data.artifact2_slot === '') {
+    //       await this.character.equipNow(item, 'artifact2');
+    //     } else if (this.character.data.artifact3_slot === '') {
+    //       await this.character.equipNow(item, 'artifact3');
+    //     } else {
+    //       logger.warn(`All artifact slots full. Not equipping ${item}`);
+    //       continue;
+    //     }
+    //   }
+    // }
+    }
 
   /**
    * @description Function to respond to resource events

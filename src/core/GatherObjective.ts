@@ -152,6 +152,7 @@ export class GatherObjective extends Objective {
       } else {
         if (isGatheringSkill(resourceDetails.subtype)) {
 
+          // If we reach level 50 in a gathering skill, we should buy a voidstone tool if we haven't already
           if (resourceDetails.subtype === 'mining' && this.character.data.mining_level === 50) {
             let isAcquired: boolean = this.character.hasVoidStonePickaxe
             // if (!this.character.hasVoidStonePickaxe) {
@@ -161,6 +162,8 @@ export class GatherObjective extends Objective {
             if (!(this.character.hasVoidStonePickaxe)) {
               logger.info(`Adding 1 voidstone pickaxe to the wishlist`)
               // ToDo: Put 'voidstone_pickaxe' into the wishlist
+            } else {
+              logger.debug(`Already have 1 voidstone pickaxe. Not purchasing another`)
             }
           } else if (resourceDetails.subtype === 'woodcutting' && this.character.data.woodcutting_level === 50) {
             logger.info(`Buying 1 voidstone axe and updating acquisitions DB`)

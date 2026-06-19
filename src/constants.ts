@@ -25,9 +25,11 @@ export const CRITICAL_MODIFIER = 0.5;
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 export const ApiToken = getEnv('API_TOKEN');
 
-// ToDo: do the remaining merchants
-export const NomadicMerchant = 'nomadic_merchant';
 export const FishMerchant = 'fish_merchant';
+export const GemstoneMerchant = 'gemstone_merchant';
+export const HerbalMerchant = 'herbal_merchant';
+export const NomadicMerchant = 'nomadic_merchant';
+export const TimberMerchant = 'timber_merchant';
 
 // ToDo: do the remaining slots
 export const WeaponSlot = 'weapon_slot';
