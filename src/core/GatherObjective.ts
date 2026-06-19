@@ -107,18 +107,18 @@ export class GatherObjective extends Objective {
     const currentTotal = this.character.checkQuantityOfItemInInv(
       this.target.code,
     );
-    const stillNeeded = this.target.quantity - currentTotal;
+    const amountStillNeeded = this.target.quantity - currentTotal;
 
-    if (stillNeeded <= 0) {
+    if (amountStillNeeded <= 0) {
       logger.info(
         `Already have enough ${this.target.code} after bank withdrawal`,
       );
       return true;
     }
 
-    logger.info(`Need to gather ${stillNeeded} more ${this.target.code}`);
+    logger.info(`Need to gather ${amountStillNeeded} more ${this.target.code}`);
 
-    return await this.gather(stillNeeded, this.target.code);
+    return await this.gather(amountStillNeeded, this.target.code);
   }
 
   /**
@@ -150,9 +150,9 @@ export class GatherObjective extends Objective {
         }
         continue;
       } else {
-        if (isGatheringSkill(resourceDetails.subtype)) {
           // If we reach level 50 in a gathering skill, we should buy a voidstone tool if we haven't already
           // ToDo: Finish this wishlist stuff
+        if (isGatheringSkill(resourceDetails.subtype)) {
           if (
             resourceDetails.subtype === 'mining' &&
             this.character.data.mining_level === 50
@@ -427,55 +427,6 @@ export class GatherObjective extends Objective {
         `Only gathered ${this.progress}/${quantity} ${code}. We should gather more`,
       );
       return success; // Return the result from gatherItemLoop
-    }
-  }
-
-  /**
-   * @description Update the acquisitions table with purchase details
-   */
-  async updateAcquisitionsTable(category: string, itemCode: string) {
-    // We use placeholders ($1, $2, $3) to keep the query secure.
-    // 'acquired_at' will default to NOW() automatically based on your schema.
-    const dbQuery = `
-      INSERT INTO acquisitions (category, item_code, character)
-      VALUES ($1, $2, $3);
-    `;
-
-    try {
-      const characterName = this.character.data.name;
-
-      // Pass the variables safely in the parameters array
-      await db.query(dbQuery, [category, itemCode, characterName]);
-
-      console.log(`Successfully recorded ${itemCode} for ${characterName}`);
-    } catch (error) {
-      console.error(`Failed to record acquisition for ${itemCode}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * @description Check the acquisitions table to see if any character has already bought this tool
-   */
-  async checkAcquisitionsTable(itemCode: string): Promise<boolean> {
-    const dbQuery = `
-      SELECT EXISTS (
-        SELECT 1 
-        FROM acquisitions 
-        WHERE item_code = $1
-      ) AS "hasBeenBought";
-    `;
-
-    try {
-      const result = await db.query(dbQuery, [itemCode]);
-
-      return result.rows[0].hasBeenBought;
-    } catch (error) {
-      console.error(
-        `Failed to check acquisitions for item ${itemCode}:`,
-        error,
-      );
-      throw error;
     }
   }
 }

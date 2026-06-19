@@ -140,8 +140,6 @@ export class EvaluateGearObjective extends Objective {
       },
     ].sort((a, b) => a.value - b.value);
 
-    //await this.topUpHealthPots();
-
     // This would take in the effects property to see what the best potion to equip
     // await this.topUpSecondaryPots(mobInfo.data);
 
@@ -194,6 +192,8 @@ export class EvaluateGearObjective extends Objective {
 
     // Check boots
     await this.checkGearOfType('boots', 'hp', charLevel);
+
+    await this.checkRuneSlot();
 
     // // Check health potions in utility slot 1
     // if (
@@ -584,5 +584,32 @@ export class EvaluateGearObjective extends Objective {
     }
 
     return bestGear;
+  }
+
+  /**
+   * @description Checks the current rune equipped. Equips one if nothing currently equipped
+   * Currently it just equips the healing rune
+   * @todo Make it compare all runes. 
+   */
+  private async checkRuneSlot(): Promise<boolean> {
+
+    const runeName = 'healing_rune'
+
+    const currentEquipped = this.character.data.rune_slot
+
+    logger.debug(`${this.character.data.name} currently has ${this.character.data.rune_slot} equipped in rune_slot`)
+
+    // If character doesn't have a rune equipped and is level 20 or greater, buy and equip a healing rune
+    if (currentEquipped === '' && this.character.data.level >= 20) {
+      if (await this.character.tradeWithNpcNow('buy', 1, runeName)) {
+        const equipResponse = await this.character.equipNow(runeName, 'rune', 1)
+        if (equipResponse) {
+          await this.character.updateAcquisitionsTable('rune', runeName)
+          this.character.hasRune = true
+        }
+      }
+    }
+
+    return true
   }
 }

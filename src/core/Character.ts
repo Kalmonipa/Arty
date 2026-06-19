@@ -108,6 +108,7 @@ import {
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
 import { shouldDoEvent } from '../events/functions.js';
+import { db } from '../db.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -242,6 +243,7 @@ export class Character {
   lowestWoodcuttingLevel: number;
 
   hasVoidStonePickaxe: boolean = false;
+  hasRune: boolean = false;
 
   /**
    * Events that we would like to ignore
@@ -2988,6 +2990,59 @@ export class Character {
       true,
       this.currentExecutingJob?.objectiveId,
     );
+  }
+
+  /********
+   * Database interactions
+   */
+
+  /**
+   * @description Update the acquisitions table with purchase details
+   */
+  async updateAcquisitionsTable(category: string, itemCode: string) {
+    // We use placeholders ($1, $2, $3) to keep the query secure.
+    // 'acquired_at' will default to NOW() automatically based on your schema.
+    const dbQuery = `
+      INSERT INTO acquisitions (category, item_code, character)
+      VALUES ($1, $2, $3);
+    `;
+
+    try {
+      const characterName = this.data.name;
+
+      // Pass the variables safely in the parameters array
+      await db.query(dbQuery, [category, itemCode, characterName]);
+
+      console.log(`Successfully recorded ${itemCode} for ${characterName}`);
+    } catch (error) {
+      console.error(`Failed to record acquisition for ${itemCode}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * @description Check the acquisitions table to see if any character has already bought this tool
+   */
+  async checkAcquisitionsTable(itemCode: string): Promise<boolean> {
+    const dbQuery = `
+      SELECT EXISTS (
+        SELECT 1 
+        FROM acquisitions 
+        WHERE item_code = $1
+      ) AS "hasBeenBought";
+    `;
+
+    try {
+      const result = await db.query(dbQuery, [itemCode]);
+
+      return result.rows[0].hasBeenBought;
+    } catch (error) {
+      console.error(
+        `Failed to check acquisitions for item ${itemCode}:`,
+        error,
+      );
+      throw error;
+    }
   }
 
   /**

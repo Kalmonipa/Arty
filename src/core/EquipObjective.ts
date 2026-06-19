@@ -5,6 +5,9 @@ import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
+/**
+ * Equips the specified item into the specified slot
+ */
 export class EquipObjective extends Objective {
   itemCode: string;
   itemSlot: ItemSlot;
