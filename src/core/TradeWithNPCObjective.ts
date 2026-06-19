@@ -97,6 +97,8 @@ export class TradeObjective extends Objective {
         `Only holding ${numInInv} ${this.currency}. Need ${currencyNeeded} more`,
       );
 
+      // ToDo: If the currency is gold checkQuantityOfItemInBank() doesn't work
+      // Need to make a checkQuantityOfGoldInBank() function
       const numInBank = await this.character.checkQuantityOfItemInBank(
         this.currency,
       );
