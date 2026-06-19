@@ -241,7 +241,7 @@ export class Character {
   lowestMiningLevel: number;
   lowestWoodcuttingLevel: number;
 
-  hasVoidStonePickaxe: boolean = false
+  hasVoidStonePickaxe: boolean = false;
 
   /**
    * Events that we would like to ignore
@@ -312,13 +312,10 @@ export class Character {
     let page = 1;
 
     while (true) {
-      const response = await getAccountAchievements(
-        this.data.account,
-        {
-          page: page,
-          size: size,
-        }
-      );
+      const response = await getAccountAchievements(this.data.account, {
+        page: page,
+        size: size,
+      });
       if (response instanceof ApiError) {
         logger.warn(
           `Failed to load achievements for ${this.data.account}. Access restrictions will apply conservatively.`,

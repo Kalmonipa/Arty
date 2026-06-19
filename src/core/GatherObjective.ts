@@ -151,34 +151,51 @@ export class GatherObjective extends Objective {
         continue;
       } else {
         if (isGatheringSkill(resourceDetails.subtype)) {
-
           // If we reach level 50 in a gathering skill, we should buy a voidstone tool if we haven't already
-          if (resourceDetails.subtype === 'mining' && this.character.data.mining_level === 50) {
-            let isAcquired: boolean = this.character.hasVoidStonePickaxe
+          // ToDo: Finish this wishlist stuff
+          if (
+            resourceDetails.subtype === 'mining' &&
+            this.character.data.mining_level === 50
+          ) {
+            let isAcquired: boolean = this.character.hasVoidStonePickaxe;
             // if (!this.character.hasVoidStonePickaxe) {
             //   isAcquired = await this.checkAcquisitionsTable('voidstone_pickaxe')
             // }
 
-            if (!(this.character.hasVoidStonePickaxe)) {
-              logger.info(`Adding 1 voidstone pickaxe to the wishlist`)
+            if (!this.character.hasVoidStonePickaxe) {
+              logger.info(`Adding 1 voidstone pickaxe to the wishlist`);
               // ToDo: Put 'voidstone_pickaxe' into the wishlist
             } else {
-              logger.debug(`Already have 1 voidstone pickaxe. Not purchasing another`)
+              logger.debug(
+                `Already have 1 voidstone pickaxe. Not purchasing another`,
+              );
             }
-          } else if (resourceDetails.subtype === 'woodcutting' && this.character.data.woodcutting_level === 50) {
-            logger.info(`Buying 1 voidstone axe and updating acquisitions DB`)
+          } else if (
+            resourceDetails.subtype === 'woodcutting' &&
+            this.character.data.woodcutting_level === 50
+          ) {
+            logger.info(`Buying 1 voidstone axe and updating acquisitions DB`);
             // Update DB with purchase
             // Store variable in memory so we don't have to do DB queries all the time
-          } else if (resourceDetails.subtype === 'alchemy' && this.character.data.alchemy_level === 50) {
-            logger.info(`Buying 1 voidstone glove and updating acquisitions DB`)
+          } else if (
+            resourceDetails.subtype === 'alchemy' &&
+            this.character.data.alchemy_level === 50
+          ) {
+            logger.info(
+              `Buying 1 voidstone glove and updating acquisitions DB`,
+            );
             // Store variable in memory so we don't have to do DB queries all the time
             // Update DB with purchase
-          } else if (resourceDetails.subtype === 'fishing' && this.character.data.fishing_level === 50) {
-            logger.info(`Buying 1 voidstone fishing rod and updating acquisitions DB`)
+          } else if (
+            resourceDetails.subtype === 'fishing' &&
+            this.character.data.fishing_level === 50
+          ) {
+            logger.info(
+              `Buying 1 voidstone fishing rod and updating acquisitions DB`,
+            );
             // Store variable in memory so we don't have to do DB queries all the time
             // Update DB with purchase
           }
-
 
           await this.character.evaluateGear(
             resourceDetails.subtype as WeaponFlavours,
@@ -426,10 +443,10 @@ export class GatherObjective extends Objective {
 
     try {
       const characterName = this.character.data.name;
-      
+
       // Pass the variables safely in the parameters array
       await db.query(dbQuery, [category, itemCode, characterName]);
-      
+
       console.log(`Successfully recorded ${itemCode} for ${characterName}`);
     } catch (error) {
       console.error(`Failed to record acquisition for ${itemCode}:`, error);
@@ -451,11 +468,14 @@ export class GatherObjective extends Objective {
 
     try {
       const result = await db.query(dbQuery, [itemCode]);
-      
+
       return result.rows[0].hasBeenBought;
     } catch (error) {
-      console.error(`Failed to check acquisitions for item ${itemCode}:`, error);
-      throw error; 
+      console.error(
+        `Failed to check acquisitions for item ${itemCode}:`,
+        error,
+      );
+      throw error;
     }
   }
 }

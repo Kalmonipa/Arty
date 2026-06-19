@@ -13,7 +13,11 @@ import {
 import { actionFight, actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
-import { FishMerchant, GemstoneMerchant, NomadicMerchant } from '../constants.js';
+import {
+  FishMerchant,
+  GemstoneMerchant,
+  NomadicMerchant,
+} from '../constants.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -61,29 +65,29 @@ export class EventObjective extends Objective {
     // Gather resource
     if (contentType === MapContentType.resource) {
       result = await this.gatherResources(this.activeEvent);
-    // Fight mob
+      // Fight mob
     } else if (contentType === MapContentType.monster) {
       result = await this.fightMobs(this.activeEvent);
-    // Trade with NPC
+      // Trade with NPC
     } else {
-      logger.debug(`Active event is ${this.activeEvent.code}`)
+      logger.debug(`Active event is ${this.activeEvent.code}`);
       switch (this.activeEvent.code) {
         case FishMerchant:
           result = await this.sellToFishMerchant();
           if (!result) {
-            this.character.recordEventFailure(this.activeEvent.code)
+            this.character.recordEventFailure(this.activeEvent.code);
             return result;
           }
           // ToDo: pull wishlist items from DB and buy if necessary
           //result = await this.buyFromMerchant('fishing')
           break;
         case GemstoneMerchant:
-          result = await this.buyWishlistItemsFromMerchant('mining')
+          result = await this.buyWishlistItemsFromMerchant('mining');
           break;
         case NomadicMerchant:
           result = await this.sellToNomadicMerchant();
           if (!result) {
-            this.character.recordEventFailure(this.activeEvent.code)
+            this.character.recordEventFailure(this.activeEvent.code);
             return result;
           }
           result = await this.buyFromNomadicMerchant();
@@ -104,12 +108,11 @@ export class EventObjective extends Objective {
   }
 
   /**
-   * @description Gets all the wishlist items from the DB for this character and 
+   * @description Gets all the wishlist items from the DB for this character and
    * checks to see if we can buy them
-   * @param 
+   * @param
    */
   async buyWishlistItemsFromMerchant(skill: GatheringSkill): Promise<boolean> {
-
     return true;
     // const itemsToBuy = []
 
@@ -222,7 +225,7 @@ export class EventObjective extends Objective {
     //     }
     //   }
     // }
-    }
+  }
 
   /**
    * @description Function to respond to resource events

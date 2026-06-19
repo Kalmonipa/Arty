@@ -88,7 +88,7 @@ export default function EventRouter(char: Character) {
   router.delete('/all/:eventCode', async (req, res) => {
     const { eventCode } = req.params;
 
-    const message = `Successfully enabled ${eventCode} for all characters`
+    const message = `Successfully enabled ${eventCode} for all characters`;
 
     try {
       AllCharNames.forEach(async (character) => {

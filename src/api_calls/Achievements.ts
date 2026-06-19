@@ -49,13 +49,13 @@ export async function getAccountAchievements(
     apiUrl.searchParams.set('completed', String(params.completed));
   }
   if (params.page) {
-  apiUrl.searchParams.set('page', params.page.toString());
+    apiUrl.searchParams.set('page', params.page.toString());
   }
   if (params.size) {
     apiUrl.searchParams.set('size', params.size.toString());
   }
   if (params.type) {
-    apiUrl.searchParams.set('type', params.type)
+    apiUrl.searchParams.set('type', params.type);
   }
 
   return apiRequest<DataPageAccountAchievementSchema>({

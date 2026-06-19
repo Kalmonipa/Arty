@@ -3,7 +3,7 @@
 ## Purpose
 
 This table is where characters can put up items that they need, and check what other characters need.
-If able to fulfil the request they will. For example a character needs a voidstone pickaxe so puts it up in the wishlist. When 
+If able to fulfil the request they will. For example a character needs a voidstone pickaxe so puts it up in the wishlist. When
 the gemstone_merchant event starts, that character will see their need for a voidstone pickaxe and attempt to buy one, provided
 there is enough gold.
 They'll also check what other characters want. For example, the weaponcrafter may check if any characters need a weapon, and craft
@@ -22,7 +22,7 @@ CREATE TABLE wishlist (
     cost INT,
     acquisition_method TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Safety check: Ensure min_level is never greater than max_level
     CONSTRAINT chk_level_range CHECK (min_level <= max_level)
 );

@@ -99,45 +99,45 @@ export class CraftObjective extends Objective {
         }
 
         // Check if the character has the skill level required to craft
-        if (targetItem.craft && targetItem.craft.skill) {
-          let charSkillLevel: number = this.character.getCharacterLevel(
-            this.character.data,
-            targetItem.craft.skill,
-          );
+        // if (targetItem.craft && targetItem.craft.skill) {
+        //   let charSkillLevel: number = this.character.getCharacterLevel(
+        //     this.character.data,
+        //     targetItem.craft.skill,
+        //   );
 
-          // ToDo: Add the item to a wishlist instead of requesting it directly
-          if (charSkillLevel < targetItem.craft.level) {
-            logger.warn(
-              `Character ${this.character.data.name} has ${targetItem.craft.skill} level ${charSkillLevel} but needs level ${targetItem.craft.level} to craft ${targetItem.code}`,
-            );
-            let crafter = this.character.allCharacterDetails.find(
-              (char) =>
-                this.character.getCharacterLevel(char, targetItem.craft.skill) >
-                targetItem.craft.level,
-            );
-            if (!crafter) {
-              logger.warn(
-                `Found no character capable of crafting ${targetItem.code}`,
-              );
-              return false;
-            }
-            logger.info(
-              `Requesting ${this.target.quantity} ${targetItem.code} from ${crafter.name} and continuing`,
-            );
-            // let response = await requestCraftItem(crafter.name, {
-            //   code: this.target.code,
-            //   quantity: this.target.quantity,
-            // });
-            // if (response instanceof ApiError) {
-            //   logger.error(
-            //     `${response.error} | Code: [${response.error.code}]`,
-            //   );
-            //   return false;
-            // }
+        // // ToDo: Add the item to a wishlist instead of requesting it directly
+        // if (charSkillLevel < targetItem.craft.level) {
+        //   logger.warn(
+        //     `Character ${this.character.data.name} has ${targetItem.craft.skill} level ${charSkillLevel} but needs level ${targetItem.craft.level} to craft ${targetItem.code}`,
+        //   );
+        //   let crafter = this.character.allCharacterDetails.find(
+        //     (char) =>
+        //       this.character.getCharacterLevel(char, targetItem.craft.skill) >
+        //       targetItem.craft.level,
+        //   );
+        //   if (!crafter) {
+        //     logger.warn(
+        //       `Found no character capable of crafting ${targetItem.code}`,
+        //     );
+        //     return false;
+        //   }
+        //   logger.info(
+        //     `Requesting ${this.target.quantity} ${targetItem.code} from ${crafter.name} and continuing`,
+        //   );
+        //   // let response = await requestCraftItem(crafter.name, {
+        //   //   code: this.target.code,
+        //   //   quantity: this.target.quantity,
+        //   // });
+        //   // if (response instanceof ApiError) {
+        //   //   logger.error(
+        //   //     `${response.error} | Code: [${response.error.code}]`,
+        //   //   );
+        //   //   return false;
+        //   // }
 
-            return true;
-          }
-        }
+        //   return true;
+        // }
+        // }
 
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
         // If not enough inv space, split it into 2 jobs, craft half as much at once
