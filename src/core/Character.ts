@@ -3050,6 +3050,8 @@ export class Character {
       return [];
     }
 
+    logger.debug(`Current completed achievements: ${JSON.stringify(this.completedAchievements)}`);
+
     // Filter maps dynamically based on access conditions
     const availableMaps = maps.data.filter((map) => {
       // If the map is standard access type, it is freely accessible
