@@ -1933,6 +1933,9 @@ export class Character {
       }
       const maps = await this.getAvailableBanks();
 
+      logger.debug(`Banks available:`)
+      maps.forEach(map => logger.debug(`  - ${map.name} (ID: ${map.map_id})`))
+
       const contentLocation = this.evaluateClosestMap(maps);
 
       await this.move(contentLocation);
@@ -3063,8 +3066,10 @@ export class Character {
 
           if (!isCompleted) {
             logger.debug(
-              `Skipping ${map.name} bank: Requirement '${condition.code}' not met.`,
+              `Skipping ${map.name} (ID: ${map.map_id}) bank: Requirement '${condition.code}' not met.`,
             );
+          } else {
+            logger.debug(`${map.name} (ID: ${map.map_id}) is available`)
           }
           return isCompleted;
         }
