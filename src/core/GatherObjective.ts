@@ -150,8 +150,8 @@ export class GatherObjective extends Objective {
         }
         continue;
       } else {
-          // If we reach level 50 in a gathering skill, we should buy a voidstone tool if we haven't already
-          // ToDo: Finish this wishlist stuff
+        // If we reach level 50 in a gathering skill, we should buy a voidstone tool if we haven't already
+        // ToDo: Finish this wishlist stuff
         if (isGatheringSkill(resourceDetails.subtype)) {
           if (
             resourceDetails.subtype === 'mining' &&

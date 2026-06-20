@@ -25,6 +25,7 @@ jest.mock('../../src/api_calls/Bank.js', () => ({
 import { actionDepositItems } from '../../src/api_calls/Actions.js';
 import { getMaps } from '../../src/api_calls/Maps.js';
 import { actionDepositGold } from '../../src/api_calls/Bank.js';
+import { MapSchema } from '../../src/types/types.js';
 
 const mockActionDepositItems = actionDepositItems as jest.MockedFunction<
   typeof actionDepositItems
@@ -43,6 +44,48 @@ describe('Character.evaluateDepositItemsInBank - excess gold', () => {
     // Keep the test focused on the deposit logic, not pathfinding.
     char.move = jest.fn(async (): Promise<boolean> => true) as any;
     char.evaluateClosestMap = jest.fn(() => ({ x: 0, y: 0 })) as any;
+    char.getAvailableBanks = jest.fn(
+      async (): Promise<MapSchema[]> => [
+        {
+          map_id: 334,
+          name: 'City',
+          skin: 'forest_bank1',
+          x: 4,
+          y: 1,
+          layer: 'overworld',
+          access: {
+            type: 'standard',
+            conditions: [],
+          },
+          interactions: {
+            content: {
+              type: 'bank',
+              code: 'bank',
+            },
+            transition: null,
+          },
+        },
+        {
+          map_id: 955,
+          name: 'Forest',
+          skin: 'forest_bank2',
+          x: 7,
+          y: 13,
+          layer: 'overworld',
+          access: {
+            type: 'standard',
+            conditions: [],
+          },
+          interactions: {
+            content: {
+              type: 'bank',
+              code: 'bank',
+            },
+            transition: null,
+          },
+        },
+      ],
+    );
     return char;
   };
 

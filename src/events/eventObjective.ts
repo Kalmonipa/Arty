@@ -85,7 +85,7 @@ export class EventObjective extends Objective {
           result = await this.buyWishlistItemsFromMerchant('mining');
           break;
         case NomadicMerchant:
-          logger.debug(`Nomadic Merchant is here`)
+          logger.debug(`Nomadic Merchant is here`);
           result = await this.sellToNomadicMerchant();
           if (!result) {
             this.character.recordEventFailure(this.activeEvent.code);
@@ -378,7 +378,7 @@ export class EventObjective extends Objective {
   }
 
   private async sellToNomadicMerchant(): Promise<boolean> {
-    logger.debug(`Selling to Nomadic Merchant`)
+    logger.debug(`Selling to Nomadic Merchant`);
     const success = await this.sellToMerchant(NomadicMerchant);
     if (success) {
       this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);

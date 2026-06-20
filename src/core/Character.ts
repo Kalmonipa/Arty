@@ -1938,19 +1938,9 @@ export class Character {
       for (const item of this.itemsToKeep) {
         logger.info(`  - ${item}`);
       }
-      const maps = await getMaps({ content_type: 'bank' });
-      if (maps instanceof ApiError) {
-        logger.warn(`Failed to get bank map`);
-        return this.handleErrors(maps);
-      }
+      const maps = await this.getAvailableBanks();
 
-      // Only include Sandwhisper bank if we've completed the secure_the_island achievement
-      if (!this.completedAchievements.some((achievement) => achievement.code === 'secure_the_island')) {
-        logger.debug(`secure_the_island achievement not complete. Skipping Sandwhisper Isle bank`)
-        maps.data.filter((map) => map.map_id !== 1234)
-      }
-
-      const contentLocation = this.evaluateClosestMap(maps.data);
+      const contentLocation = this.evaluateClosestMap(maps);
 
       await this.move(contentLocation);
 
@@ -3051,6 +3041,47 @@ export class Character {
       );
       throw error;
     }
+  }
+
+  /**
+   * @description Gets the available banks. Filters out banks that are locked by achievements
+   */
+  async getAvailableBanks(): Promise<MapSchema[]> {
+    const maps = await getMaps({ content_type: 'bank' });
+    if (maps instanceof ApiError) {
+      logger.warn(`Failed to get bank map`);
+      this.handleErrors(maps);
+      return [];
+    }
+
+    // Filter maps dynamically based on access conditions
+    const availableMaps = maps.data.filter((map) => {
+      // If the map is standard access type, it is freely accessible
+      if (map.access.type === 'standard') {
+        return true;
+      }
+
+      // Check every condition for this map
+      return map.access.conditions.every((condition) => {
+        if (condition.operator === 'achievement_unlocked') {
+          const isCompleted = this.completedAchievements.some(
+            (achievement) => achievement.code === condition.code,
+          );
+
+          if (!isCompleted) {
+            logger.debug(
+              `Skipping ${map.name} bank: Requirement '${condition.code}' not met.`,
+            );
+          }
+          return isCompleted;
+        }
+
+        // Default true for unknown operator types so you don't accidentally brick your pathfinding
+        return true;
+      });
+    });
+
+    return availableMaps;
   }
 
   /**

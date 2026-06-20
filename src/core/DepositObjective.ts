@@ -58,17 +58,14 @@ export class DepositObjective extends Objective {
 
       logger.debug(`Finding location of the bank`);
 
-      const maps = await getMaps({ content_type: 'bank' });
-      if (maps instanceof ApiError) {
-        return this.character.handleErrors(maps);
-      }
+      const maps = await this.character.getAvailableBanks();
 
-      if (maps.data.length === 0) {
+      if (maps.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
         return false;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps.data);
+      const contentLocation = this.character.evaluateClosestMap(maps);
 
       await this.character.move(contentLocation);
 
