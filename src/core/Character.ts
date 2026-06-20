@@ -306,17 +306,18 @@ export class Character {
 
     this.role = CharRole;
 
-    await this.loadAchievements();
+    await this.loadCompletedAchievements();
     await this.loadJobQueue();
   }
 
-  private async loadAchievements(): Promise<void> {
+  private async loadCompletedAchievements(): Promise<void> {
     this.completedAchievements = [];
     const size = 100;
     let page = 1;
 
     while (true) {
       const response = await getAccountAchievements(this.data.account, {
+        completed: true,
         page: page,
         size: size,
       });
