@@ -3051,8 +3051,6 @@ export class Character {
       return [];
     }
 
-    logger.debug(`Current completed achievements: ${JSON.stringify(this.completedAchievements)}`);
-
     // Filter maps dynamically based on access conditions
     const availableMaps = maps.data.filter((map) => {
       // If the map is standard access type, it is freely accessible
@@ -3066,14 +3064,13 @@ export class Character {
           const isCompleted = this.completedAchievements.some(
             (achievement) => achievement.code === condition.code,
           );
-
-          if (!isCompleted) {
-            logger.debug(
-              `Skipping ${map.name} (ID: ${map.map_id}) bank: Requirement '${condition.code}' not met.`,
-            );
-          } else {
-            logger.debug(`${map.name} (ID: ${map.map_id}) is available`)
-          }
+          // if (!isCompleted) {
+          //   logger.debug(
+          //     `Skipping ${map.name} (ID: ${map.map_id}) bank: Requirement '${condition.code}' not met.`,
+          //   );
+          // } else {
+          //   logger.debug(`${map.name} (ID: ${map.map_id}) is available`)
+          // }
           return isCompleted;
         }
 
