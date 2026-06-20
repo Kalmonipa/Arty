@@ -86,11 +86,19 @@ export class EventObjective extends Objective {
           break;
         case NomadicMerchant:
           logger.debug(`Nomadic Merchant is here`);
-          result = await this.sellToNomadicMerchant();
-          if (!result) {
-            this.character.recordEventFailure(this.activeEvent.code);
-            return result;
+
+          // We only want character to try to sell stuff to the nomadic merchant
+          // so limiting it to the fisherman. Everyone will check to see if they
+          // can buy stuff
+          if (this.character.role === 'fisherman') {
+            result = await this.sellToNomadicMerchant();
+          
+            if (!result) {
+              this.character.recordEventFailure(this.activeEvent.code);
+              return result;
+            }
           }
+
           result = await this.buyFromNomadicMerchant();
           break;
         default:

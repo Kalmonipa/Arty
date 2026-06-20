@@ -1033,12 +1033,10 @@ export class Character {
         );
         continue;
       } else if (
-        event.code === NomadicMerchant &&
-        (this.role !== 'fisherman' ||
-          currentTimestamp < this.nomadicMerchantTradeDate + 86400)
+        event.code === NomadicMerchant && currentTimestamp < this.nomadicMerchantTradeDate + 86400
       ) {
         logger.debug(
-          `${this.data.name} is not a fisherman (${this.role}) or has already attempted a trade with nomadic merchant within the last 24 hours`,
+          `${this.data.name} has already attempted a trade with nomadic merchant within the last 24 hours`,
         );
         logger.debug(
           `Last trade attempt was ${this.nomadicMerchantTradeDate}, current is ${currentTimestamp}`,

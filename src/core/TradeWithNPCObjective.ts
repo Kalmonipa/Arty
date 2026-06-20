@@ -85,82 +85,89 @@ export class TradeObjective extends Objective {
     // Calculate crystals needed
     let currencyNeeded = this.quantity * buyPrice;
 
-    const numInInv = this.character.checkQuantityOfItemInInv(this.currency);
+    let numInInv: number
+    if (this.currency === 'gold') {
+      numInInv = this.character.data.gold
+    } else {
 
-    if (numInInv >= currencyNeeded) {
-      logger.info(
-        `${numInInv} ${this.currency} in inv. Purchasing ${this.quantity} ${this.itemCode}`,
-      );
-    } else if (numInInv < currencyNeeded) {
-      currencyNeeded = currencyNeeded - numInInv;
-      logger.info(
-        `Only holding ${numInInv} ${this.currency}. Need ${currencyNeeded} more`,
-      );
+      numInInv = this.character.checkQuantityOfItemInInv(this.currency);
 
-      // ToDo: If the currency is gold checkQuantityOfItemInBank() doesn't work
-      // Need to make a checkQuantityOfGoldInBank() function
-      const numInBank = await this.character.checkQuantityOfItemInBank(
-        this.currency,
-      );
-      logger.info(
-        `Found ${numInBank}/${currencyNeeded} ${this.currency} in the bank to trade with`,
-      );
-      if (numInBank >= currencyNeeded) {
-        await this.character.withdrawNow(currencyNeeded, this.currency);
-      } else if (this.currency === 'tasks_coin') {
-        let taskAttempts = 0;
-        const maxTaskAttempts = 20;
+      if (numInInv >= currencyNeeded) {
+        logger.info(
+          `${numInInv} ${this.currency} in inv. Purchasing ${this.quantity} ${this.itemCode}`,
+        );
+      } else if (numInInv < currencyNeeded) {
+        currencyNeeded = currencyNeeded - numInInv;
+        logger.info(
+          `Only holding ${numInInv} ${this.currency}. Need ${currencyNeeded} more`,
+        );
 
-        while (
-          (await this.character.checkQuantityOfItemInBank(this.currency)) <
-            currencyNeeded &&
-          taskAttempts < maxTaskAttempts
-        ) {
-          if (!(await this.checkStatus())) return false;
-          taskAttempts++;
+        // ToDo: If the currency is gold checkQuantityOfItemInBank() doesn't work
+        // Need to make a checkQuantityOfGoldInBank() function
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          this.currency,
+        );
+        logger.info(
+          `Found ${numInBank}/${currencyNeeded} ${this.currency} in the bank to trade with`,
+        );
+
+        if (numInBank >= currencyNeeded) {
+          await this.character.withdrawNow(currencyNeeded, this.currency);
+        } else if (this.currency === 'tasks_coin') {
+          let taskAttempts = 0;
+          const maxTaskAttempts = 20;
+
+          while (
+            (await this.character.checkQuantityOfItemInBank(this.currency)) <
+              currencyNeeded &&
+            taskAttempts < maxTaskAttempts
+          ) {
+            if (!(await this.checkStatus())) return false;
+            taskAttempts++;
+            await this.character.executeJobNow(
+              new ItemTaskObjective(this.character, 1),
+              true,
+              true,
+              this.objectiveId,
+            );
+          }
+
+          if (taskAttempts >= maxTaskAttempts) {
+            logger.warn(
+              `Reached maximum task attempts (${maxTaskAttempts}) for ${this.currency}`,
+            );
+            return false;
+          }
+        } else {
+          logger.info(`Attempting to gather ${this.currency}`);
           await this.character.executeJobNow(
-            new ItemTaskObjective(this.character, 1),
-            true,
-            true,
-            this.objectiveId,
+            new GatherObjective(this.character, {
+              code: this.currency,
+              quantity: currencyNeeded,
+            }),
           );
         }
-
-        if (taskAttempts >= maxTaskAttempts) {
+      }
+    
+      const numCurrInInv = this.character.checkQuantityOfItemInInv(this.currency);
+      if (numCurrInInv < currencyNeeded) {
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          this.currency,
+        );
+        if (numInBank < currencyNeeded - numCurrInInv) {
           logger.warn(
-            `Reached maximum task attempts (${maxTaskAttempts}) for ${this.currency}`,
+            `Our collected ${this.currency} have gone missing. Only ${numInBank} in the bank`,
           );
           return false;
         }
-      } else {
-        logger.info(`Attempting to gather ${this.currency}`);
-        await this.character.executeJobNow(
-          new GatherObjective(this.character, {
-            code: this.currency,
-            quantity: currencyNeeded,
-          }),
+        logger.info(
+          `Only ${numCurrInInv} in inventory. Withdrawing ${currencyNeeded - numCurrInInv} ${this.currency} from bank`,
+        );
+        await this.character.withdrawNow(
+          currencyNeeded - numCurrInInv,
+          this.currency,
         );
       }
-    }
-
-    const numCurrInInv = this.character.checkQuantityOfItemInInv(this.currency);
-    if (numCurrInInv < currencyNeeded) {
-      const numInBank = await this.character.checkQuantityOfItemInBank(
-        this.currency,
-      );
-      if (numInBank < currencyNeeded - numCurrInInv) {
-        logger.warn(
-          `Our collected ${this.currency} have gone missing. Only ${numInBank} in the bank`,
-        );
-        return false;
-      }
-      logger.info(
-        `Only ${numCurrInInv} in inventory. Withdrawing ${currencyNeeded - numCurrInInv} ${this.currency} from bank`,
-      );
-      await this.character.withdrawNow(
-        currencyNeeded - numCurrInInv,
-        this.currency,
-      );
     }
 
     await this.findNpc(targetNpc);
@@ -214,4 +221,10 @@ export class TradeObjective extends Objective {
 
     await this.character.move(traderLocation);
   }
+
+  /**
+   * @description Finds the correct amount of the currency needed
+   * Gold will get the characters gold
+   * Items will get the number of items in their inventory and bank
+   */
 }
