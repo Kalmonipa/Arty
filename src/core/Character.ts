@@ -1944,6 +1944,12 @@ export class Character {
         return this.handleErrors(maps);
       }
 
+      // Only include Sandwhisper bank if we've completed the secure_the_island achievement
+      if (!this.completedAchievements.some((achievement) => achievement.code === 'secure_the_island')) {
+        logger.debug(`secure_the_island achievement not complete. Skipping Sandwhisper Isle bank`)
+        maps.data.filter((map) => map.map_id !== 1234)
+      }
+
       const contentLocation = this.evaluateClosestMap(maps.data);
 
       await this.move(contentLocation);
