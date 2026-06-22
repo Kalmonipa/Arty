@@ -14,7 +14,7 @@ const characters = [
   },
   {
     name: 'JumpyJimmy',
-    skin: 'men3',
+    skin: 'goblin',
   },
   {
     name: 'ZippyZoe',
@@ -22,7 +22,7 @@ const characters = [
   },
   {
     name: 'TimidTom',
-    skin: 'men2',
+    skin: 'marauder',
   },
   {
     name: 'BouncyBella',
@@ -31,7 +31,7 @@ const characters = [
 ];
 
 // Set the API_URL if you want to use another endpoint (i.e. the test server)
-const API_BASE_URL = 'https://api.artifactsmmo.com';
+const API_BASE_URL = 'https://api.beta.artifactsmmo.com/';
 
 interface CreateCharacterRequest {
   name: string;

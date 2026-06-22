@@ -89,5 +89,39 @@ export default function CharacterRouter(char: Character) {
     }
   });
 
+  /**
+   * @description Moves the character to the specified map ID or x,y coords
+   */
+  router.post('/move', async (req: Request, res: Response) => {
+    try {
+      const mapId = req.body.mapId;
+
+      if (!mapId) {
+        return res.status(422).json({
+          error: `Provide a valid map ID`,
+        });
+      }
+
+      const destinationMap = char.allMaps.find((map) => map.map_id === mapId)
+
+      if (!destinationMap) {
+        return res.status(404).json({
+          error: `Map with ID ${mapId} not found`
+        })
+      }
+
+      let move = await char.move(destinationMap)
+
+      return res.status(200).json({
+        message: `Character moved to ${mapId} successfully`,
+        character: char.data.name,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
   return router;
 }
