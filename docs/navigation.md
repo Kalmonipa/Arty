@@ -71,6 +71,24 @@ Zones will be surrounded by one of more of the following:
 
 - no map at all.
 
+## Identifying the mainland zone
+
+The "mainland" is the main overworld landmass — the large zone every character spawns into. Some
+behaviours need to single it out. For example, the recall-potion shortcut teleports the character to
+the mainland (using a `recall_potion` or `forest_bank_potion` instead of taking the boat), so it is
+only worth doing when the route is heading there.
+
+Rather than hard-coding map IDs or a coordinate boundary (the old `SANDWHISPER_Y_BOUNDARY` approach),
+the mainland is identified **structurally: it is the overworld zone that contains the spawn tile at
+`(x: 0, y: 0)`.** Find the `overworld` map at those coordinates, look up which zone it belongs to, and
+that zone is the mainland. Every other overworld zone — Sandwhisper Isle, the restricted Enchanted
+Forest cluster, and so on — is therefore "not the mainland". The lookup is resolved once and cached,
+since the zone map doesn't change at runtime.
+
+So the recall shortcut fires when an `overworld → overworld` transition's destination zone is the
+mainland zone and the character is holding a teleport potion; otherwise navigation falls back to the
+normal transition route.
+
 ## Transition Conditions
 
 > **TODO (deferred):** Transition conditions are explicitly OUT OF SCOPE for the first pathfinding pass.
