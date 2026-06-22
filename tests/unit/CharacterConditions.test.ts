@@ -210,3 +210,80 @@ describe('Character.computeUnsatisfiableTransitions', () => {
     expect(result.size).toBe(0);
   });
 });
+
+describe('Character.computeUnacquirableTransitions', () => {
+  let character: Character;
+
+  function tp(mapId: number, conditions: ConditionSchema[] = []): MapSchema {
+    return {
+      map_id: mapId,
+      name: `Map_${mapId}`,
+      skin: 's',
+      x: 0,
+      y: 0,
+      layer: 'overworld',
+      access: { type: 'standard', conditions: [] },
+      interactions: {
+        transition: {
+          map_id: 999,
+          x: 0,
+          y: 0,
+          layer: 'underground',
+          conditions,
+        },
+      },
+    };
+  }
+
+  function graphWithEdges(points: MapSchema[]): NavigationGraph {
+    const edges = new Map<number, TransitionEdge[]>();
+    edges.set(
+      0,
+      points.map((p) => ({ fromZone: 0, toZone: 1, transitionPoint: p })),
+    );
+    return { zoneOfMapId: new Map(), zones: new Map(), edges };
+  }
+
+  beforeEach(() => {
+    character = new Character({ ...mockCharacterData });
+    character.completedAchievements = [];
+    character.data.gold = 0;
+    character.hasEquipped = jest.fn(() => false);
+    character.checkQuantityOfItemInInv = jest.fn(() => 0);
+    character.checkQuantityOfItemInBank = jest.fn(async () => 0);
+    (
+      character as unknown as { getBankGold: () => Promise<number> }
+    ).getBankGold = jest.fn(async () => 0);
+  });
+
+  it('marks unmet gold-cost and achievement gates unacquirable, but not item gates', async () => {
+    const goldGate = tp(10, [{ code: 'gold', operator: 'cost', value: 1000 }]);
+    const itemCostGate = tp(11, [
+      { code: 'lich_tomb_key', operator: 'cost', value: 1 },
+    ]);
+    const hasItemGate = tp(12, [
+      { code: 'guild_pass', operator: 'has_item', value: 1 },
+    ]);
+    const achievementGate = tp(13, [
+      { code: 'champion', operator: 'achievement_unlocked', value: 1 },
+    ]);
+    character.navigationGraph = graphWithEdges([
+      goldGate,
+      itemCostGate,
+      hasItemGate,
+      achievementGate,
+    ]);
+
+    const result = await character.computeUnacquirableTransitions();
+    // Item gates (11, 12) are acquirable; gold (10) and achievement (13) are not.
+    expect([...result].sort((a, b) => a - b)).toEqual([10, 13]);
+  });
+
+  it('does not mark a gate whose conditions are already satisfiable', async () => {
+    character.data.gold = 5000;
+    const affordable = tp(10, [{ code: 'gold', operator: 'cost', value: 1000 }]);
+    character.navigationGraph = graphWithEdges([affordable]);
+
+    expect((await character.computeUnacquirableTransitions()).size).toBe(0);
+  });
+});
