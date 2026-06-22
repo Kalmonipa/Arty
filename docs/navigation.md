@@ -91,13 +91,6 @@ normal transition route.
 
 ## Transition Conditions
 
-> **TODO (deferred):** Transition conditions are explicitly OUT OF SCOPE for the first pathfinding pass.
-> For v1 the pathfinder will treat any transition that has `conditions` as unavailable (it will not route
-> through it), so we get a solid, correct zone-graph pathfinding strategy in place first. Once that is
-> proven, come back and add condition-aware planning: satisfiable-pruning (achievement unlocked, item
-> already held, affordable gold/item cost) and, later, acquiring requirements (withdraw gold, obtain keys).
-> The existing bespoke Sandwhisper gold/potion acquisition logic in `Movement.ts` is part of this deferred work.
-
 Some transition points require a gold cost or the character must have an item to access them. These conditions can be found in the
 [docs here](https://docs.beta.artifactsmmo.com/concepts/maps_and_movement/#maps-condition-operators).
 
