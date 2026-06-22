@@ -3,7 +3,11 @@ import {
   getNavigationGraph,
   resetNavigationGraphCache,
 } from '../../../src/core/navigation/graph.js';
-import { MapSchema, MapLayer, MapAccessType } from '../../../src/types/types.js';
+import {
+  MapSchema,
+  MapLayer,
+  MapAccessType,
+} from '../../../src/types/types.js';
 
 function makeMap(
   map_id: number,

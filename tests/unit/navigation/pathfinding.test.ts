@@ -1,6 +1,10 @@
 import { buildTransitionPath } from '../../../src/core/navigation/pathfinding.js';
 import { buildNavigationGraph } from '../../../src/core/navigation/graph.js';
-import { MapSchema, MapLayer, MapAccessType } from '../../../src/types/types.js';
+import {
+  MapSchema,
+  MapLayer,
+  MapAccessType,
+} from '../../../src/types/types.js';
 
 function makeMap(
   map_id: number,
@@ -28,8 +32,18 @@ function makeMap(
 //   map 1 (0,0) -> map 3 (0,0) underground   [landing far from target (1,5)]
 //   map 2 (1,0) -> map 4 (1,0) underground   [landing near target (1,5)]
 const maps = [
-  makeMap(1, 0, 0, 'overworld', { map_id: 3, x: 0, y: 0, layer: 'underground' }),
-  makeMap(2, 1, 0, 'overworld', { map_id: 4, x: 1, y: 0, layer: 'underground' }),
+  makeMap(1, 0, 0, 'overworld', {
+    map_id: 3,
+    x: 0,
+    y: 0,
+    layer: 'underground',
+  }),
+  makeMap(2, 1, 0, 'overworld', {
+    map_id: 4,
+    x: 1,
+    y: 0,
+    layer: 'underground',
+  }),
   makeMap(3, 0, 0, 'underground'),
   makeMap(4, 1, 0, 'underground'),
 ];

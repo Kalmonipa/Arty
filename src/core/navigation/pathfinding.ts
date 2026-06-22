@@ -27,7 +27,9 @@ export function buildTransitionPath(
   const targetZone = graph.zoneOfMapId.get(target.map_id);
 
   if (startZone === undefined) {
-    logger.error(`buildTransitionPath: no zone for current map ${currentMapId}`);
+    logger.error(
+      `buildTransitionPath: no zone for current map ${currentMapId}`,
+    );
     return null;
   }
   if (targetZone === undefined) {

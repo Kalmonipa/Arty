@@ -21,7 +21,7 @@ to reach many maps you must walk to a transition point, call `/action/transition
 Routing from the mainland Forest (map 274, overworld) to the Lava Underground (map 497, underground)
 fails. Three compounding causes:
 
-1. **Region model too coarse (root cause).** The Lava Underground is a *physically disconnected*
+1. **Region model too coarse (root cause).** The Lava Underground is a _physically disconnected_
    underground area, but `getRegionKey` treats all `underground, y < 17` tiles as one region, so the
    pathfinder believes (7,4) underground is a normal walk from the standard mine. It is not.
 2. **Distance heuristic picks a poisoned exit.** BFS sorts candidate transitions by Manhattan
@@ -52,7 +52,7 @@ fails. Three compounding causes:
 
 ## Approach
 
-**Grid flood-fill zones.** Treat each layer as a 2D grid keyed by `(x, y)`. A tile is *walkable* if a
+**Grid flood-fill zones.** Treat each layer as a 2D grid keyed by `(x, y)`. A tile is _walkable_ if a
 map exists there with `access.type ∈ { standard, conditional }`. Flood-fill 4-connected walkable tiles
 into connected components; each component is a zone. This mirrors exactly what the game's `move()` can
 reach (it pathfinds server-side and returns 595 when no walkable path exists), so a zone is precisely
@@ -60,6 +60,7 @@ reach (it pathfinds server-side and returns 595 when no walkable path exists), s
 own zones automatically, with no magic constants.
 
 **Access-type treatment (decided):**
+
 - `standard`, `conditional` → walkable (part of a zone). Conditions are ignored for v1.
 - `blocked`, `teleportation` → boundaries; never walkable, never part of a zone. (`teleportation` is
   treated conservatively as a boundary for now; revisit if it turns out to gate legitimate routes.)
@@ -70,7 +71,7 @@ own zones automatically, with no magic constants.
   depending on the enum member. It is implemented now so it works when the type lands on production.
 - Missing coordinates (no map) are boundaries.
 
-Alternatives rejected: a smarter transition-only graph (deciding mutual walkability *is* the
+Alternatives rejected: a smarter transition-only graph (deciding mutual walkability _is_ the
 connected-components problem — back to heuristics); lazy/reactive discovery via `move()` 595s (too
 many wasted API calls, non-deterministic).
 
@@ -89,24 +90,24 @@ the six bespoke helpers go with them.
 ### Data model
 
 ```ts
-type ZoneId = number;                       // connected-component index
+type ZoneId = number; // connected-component index
 
 interface Zone {
   id: ZoneId;
   layer: MapLayer;
-  mapIds: Set<number>;                      // maps in this connected component
+  mapIds: Set<number>; // maps in this connected component
 }
 
 interface TransitionEdge {
   fromZone: ZoneId;
   toZone: ZoneId;
-  transitionPoint: MapSchema;               // the source map you stand on + call /transition
+  transitionPoint: MapSchema; // the source map you stand on + call /transition
 }
 
 interface NavigationGraph {
   zoneOfMapId: Map<number, ZoneId>;
   zones: Map<ZoneId, Zone>;
-  edges: Map<ZoneId, TransitionEdge[]>;     // outgoing edges per zone
+  edges: Map<ZoneId, TransitionEdge[]>; // outgoing edges per zone
 }
 ```
 
@@ -182,7 +183,7 @@ is in the character's zone.
 - Excluded transitions exhaust all routes → `null` after reroute attempts.
 - **Destination only reachable via a conditional transition.** Because conditions are deferred, if the
   only edge into the target's zone is gated (e.g. a `lich_tomb_key` cost), v1 cannot complete the
-  route. This is expected and acceptable: it must fail *cleanly* (`null` path → `move()` returns false
+  route. This is expected and acceptable: it must fail _cleanly_ (`null` path → `move()` returns false
   → caller handles it), not crash or loop. The lava-underground fix assumes that zone has at least one
   non-conditional entrance; the regression test uses fixtures with such an entrance. Reaching
   conditional-only destinations is part of the deferred conditions work.

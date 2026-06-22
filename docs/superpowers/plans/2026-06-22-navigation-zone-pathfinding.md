@@ -27,17 +27,19 @@
 - Modify `src/core/Character.ts` — import + field + init wiring + `move()` call + `performTransitionStep` cleanup/reroute fix.
 - Rewrite `tests/integration/CharacterMove.test.ts` — set `navigationGraph` directly via a `makeGraph` helper.
 - Delete `src/core/TransitionPathfinder.ts`, `src/core/Movement.ts`, `tests/unit/TransitionPathfinder.test.ts`.
-- Modify `src/utils.ts` — remove now-unused `TransitionLocations`.
+- (During execution: `TransitionLocations` in `src/utils.ts` was KEPT — it is a generic helper still exercised by `tests/integration/Utils.test.ts`, so removing it would only delete working, tested code. `move()` no longer calls it.)
 
 ---
 
 ## Task 1: Zone flood-fill (`zones.ts`)
 
 **Files:**
+
 - Create: `src/core/navigation/zones.ts`
 - Test: `tests/unit/navigation/zones.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MapSchema`, `MapLayer` from `src/types/types.ts`.
 - Produces:
   - `type ZoneId = number`
@@ -51,7 +53,11 @@ Create `tests/unit/navigation/zones.test.ts`:
 
 ```ts
 import { buildZones } from '../../../src/core/navigation/zones.js';
-import { MapSchema, MapLayer, MapAccessType } from '../../../src/types/types.js';
+import {
+  MapSchema,
+  MapLayer,
+  MapAccessType,
+} from '../../../src/types/types.js';
 
 function makeMap(
   map_id: number,
@@ -74,18 +80,12 @@ function makeMap(
 
 describe('buildZones', () => {
   it('groups two adjacent walkable tiles into one zone', () => {
-    const { zoneOfMapId } = buildZones([
-      makeMap(1, 0, 0),
-      makeMap(2, 1, 0),
-    ]);
+    const { zoneOfMapId } = buildZones([makeMap(1, 0, 0), makeMap(2, 1, 0)]);
     expect(zoneOfMapId.get(1)).toBe(zoneOfMapId.get(2));
   });
 
   it('splits non-adjacent walkable tiles into separate zones', () => {
-    const { zoneOfMapId } = buildZones([
-      makeMap(1, 0, 0),
-      makeMap(2, 5, 0),
-    ]);
+    const { zoneOfMapId } = buildZones([makeMap(1, 0, 0), makeMap(2, 5, 0)]);
     expect(zoneOfMapId.get(1)).not.toBe(zoneOfMapId.get(2));
   });
 
@@ -100,7 +100,9 @@ describe('buildZones', () => {
   });
 
   it('excludes teleportation tiles from all zones', () => {
-    const { zoneOfMapId } = buildZones([makeMap(1, 0, 0, 'overworld', 'teleportation')]);
+    const { zoneOfMapId } = buildZones([
+      makeMap(1, 0, 0, 'overworld', 'teleportation'),
+    ]);
     expect(zoneOfMapId.has(1)).toBe(false);
   });
 
@@ -242,10 +244,12 @@ git commit -m "feat: flood-fill maps into navigation zones"
 ## Task 2: Navigation graph (`graph.ts`)
 
 **Files:**
+
 - Create: `src/core/navigation/graph.ts`
 - Test: `tests/unit/navigation/graph.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MapSchema`; `Zone`, `ZoneId`, `ZoneIndex`, `buildZones` from `./zones.js`.
 - Produces:
   - `interface TransitionEdge { fromZone: ZoneId; toZone: ZoneId; transitionPoint: MapSchema }`
@@ -264,7 +268,11 @@ import {
   getNavigationGraph,
   resetNavigationGraphCache,
 } from '../../../src/core/navigation/graph.js';
-import { MapSchema, MapLayer, MapAccessType } from '../../../src/types/types.js';
+import {
+  MapSchema,
+  MapLayer,
+  MapAccessType,
+} from '../../../src/types/types.js';
 
 function makeMap(
   map_id: number,
@@ -422,10 +430,12 @@ git commit -m "feat: build zone transition graph with memoization"
 ## Task 3: BFS pathfinding (`pathfinding.ts`)
 
 **Files:**
+
 - Create: `src/core/navigation/pathfinding.ts`
 - Test: `tests/unit/navigation/pathfinding.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MapSchema`; `NavigationGraph`, `buildNavigationGraph` from `./graph.js`; `logger` from `src/utils.ts`.
 - Produces: `function buildTransitionPath(currentMapId: number, target: MapSchema, graph: NavigationGraph, excludedTransitionIds?: Set<number>): MapSchema[] | null`
 
@@ -436,7 +446,11 @@ Create `tests/unit/navigation/pathfinding.test.ts`:
 ```ts
 import { buildTransitionPath } from '../../../src/core/navigation/pathfinding.js';
 import { buildNavigationGraph } from '../../../src/core/navigation/graph.js';
-import { MapSchema, MapLayer, MapAccessType } from '../../../src/types/types.js';
+import {
+  MapSchema,
+  MapLayer,
+  MapAccessType,
+} from '../../../src/types/types.js';
 
 function makeMap(
   map_id: number,
@@ -464,8 +478,18 @@ function makeMap(
 //   map 1 (0,0) -> map 3 (0,0) underground   [landing far from target (1,5)]
 //   map 2 (1,0) -> map 4 (1,0) underground   [landing near target (1,5)]
 const maps = [
-  makeMap(1, 0, 0, 'overworld', { map_id: 3, x: 0, y: 0, layer: 'underground' }),
-  makeMap(2, 1, 0, 'overworld', { map_id: 4, x: 1, y: 0, layer: 'underground' }),
+  makeMap(1, 0, 0, 'overworld', {
+    map_id: 3,
+    x: 0,
+    y: 0,
+    layer: 'underground',
+  }),
+  makeMap(2, 1, 0, 'overworld', {
+    map_id: 4,
+    x: 1,
+    y: 0,
+    layer: 'underground',
+  }),
   makeMap(3, 0, 0, 'underground'),
   makeMap(4, 1, 0, 'underground'),
 ];
@@ -555,7 +579,9 @@ export function buildTransitionPath(
   const targetZone = graph.zoneOfMapId.get(target.map_id);
 
   if (startZone === undefined) {
-    logger.error(`buildTransitionPath: no zone for current map ${currentMapId}`);
+    logger.error(
+      `buildTransitionPath: no zone for current map ${currentMapId}`,
+    );
     return null;
   }
   if (targetZone === undefined) {
@@ -617,10 +643,12 @@ git commit -m "feat: BFS pathfinding over the zone graph"
 ## Task 4: Wire the graph into `Character` and rewrite the move integration test
 
 **Files:**
+
 - Modify: `src/core/Character.ts` (imports ~91-98, field ~163-164, init ~289-290, `move()` 2326-2333, `performTransitionStep` 2399-2454)
 - Rewrite: `tests/integration/CharacterMove.test.ts`
 
 **Interfaces:**
+
 - Consumes: `buildTransitionPath` from `./navigation/pathfinding.js`; `getNavigationGraph`, `NavigationGraph` from `./navigation/graph.js`.
 - Produces: `Character.navigationGraph: NavigationGraph` (public field, settable by tests).
 
@@ -643,10 +671,7 @@ with:
 
 ```ts
 import { buildTransitionPath } from './navigation/pathfinding.js';
-import {
-  getNavigationGraph,
-  NavigationGraph,
-} from './navigation/graph.js';
+import { getNavigationGraph, NavigationGraph } from './navigation/graph.js';
 ```
 
 - [ ] **Step 2: Add the field and remove the unused `transitionLocations` field**
@@ -670,15 +695,15 @@ with:
 In `src/core/Character.ts`, replace (currently ~lines 289-290):
 
 ```ts
-    this.allMaps = await AllMaps();
-    this.transitionLocations = TransitionLocations(this.allMaps);
+this.allMaps = await AllMaps();
+this.transitionLocations = TransitionLocations(this.allMaps);
 ```
 
 with:
 
 ```ts
-    this.allMaps = await AllMaps();
-    this.navigationGraph = getNavigationGraph(this.allMaps);
+this.allMaps = await AllMaps();
+this.navigationGraph = getNavigationGraph(this.allMaps);
 ```
 
 Then remove the now-unused `TransitionLocations` import from the top of `src/core/Character.ts` (the line `  TransitionLocations,` inside the `from '../utils.js'` import group near line 46).
@@ -688,25 +713,25 @@ Then remove the now-unused `TransitionLocations` import from the top of `src/cor
 In `src/core/Character.ts` `move()`, replace (currently ~lines 2326-2333):
 
 ```ts
-      const transitionPath = buildTransitionPath(
-        this.data.x,
-        this.data.y,
-        this.data.layer as MapLayer,
-        destination,
-        this.transitionLocations,
-        excludedTransitionIds,
-      );
+const transitionPath = buildTransitionPath(
+  this.data.x,
+  this.data.y,
+  this.data.layer as MapLayer,
+  destination,
+  this.transitionLocations,
+  excludedTransitionIds,
+);
 ```
 
 with:
 
 ```ts
-      const transitionPath = buildTransitionPath(
-        this.data.map_id,
-        destination,
-        this.navigationGraph,
-        excludedTransitionIds,
-      );
+const transitionPath = buildTransitionPath(
+  this.data.map_id,
+  destination,
+  this.navigationGraph,
+  excludedTransitionIds,
+);
 ```
 
 - [ ] **Step 5: Simplify `performTransitionStep` (remove Sandwhisper branches, fix reroute)**
@@ -821,7 +846,10 @@ Expected: No errors. (If `MapLayer` is now unused in `Character.ts`, remove it f
 In `tests/integration/CharacterMove.test.ts`, add imports after the existing type import block:
 
 ```ts
-import { NavigationGraph, TransitionEdge } from '../../src/core/navigation/graph.js';
+import {
+  NavigationGraph,
+  TransitionEdge,
+} from '../../src/core/navigation/graph.js';
 import { Zone, ZoneId } from '../../src/core/navigation/zones.js';
 
 // Builds a NavigationGraph from explicit zone assignments and edges, so the
@@ -835,15 +863,22 @@ function makeGraph(
   for (const [mapIdStr, zoneId] of Object.entries(zoneAssignments)) {
     const mapId = Number(mapIdStr);
     zoneOfMapId.set(mapId, zoneId);
-    const zone =
-      zones.get(zoneId) ?? { id: zoneId, layer: 'overworld', mapIds: new Set<number>() };
+    const zone = zones.get(zoneId) ?? {
+      id: zoneId,
+      layer: 'overworld',
+      mapIds: new Set<number>(),
+    };
     zone.mapIds.add(mapId);
     zones.set(zoneId, zone);
   }
   const edgeMap = new Map<ZoneId, TransitionEdge[]>();
   for (const e of edges) {
     const list = edgeMap.get(e.from) ?? [];
-    list.push({ fromZone: e.from, toZone: e.to, transitionPoint: e.transitionPoint });
+    list.push({
+      fromZone: e.from,
+      toZone: e.to,
+      transitionPoint: e.transitionPoint,
+    });
     edgeMap.set(e.from, list);
   }
   return { zoneOfMapId, zones, edges: edgeMap };
@@ -869,14 +904,26 @@ Keep all `beforeEach` mock wiring (`jest.clearAllMocks`, `withdrawNow` mock) but
 - **"should transition from overworld to underground"** — add:
   ```ts
   const mountain: MapSchema = {
-    map_id: 571, name: 'Mountain', skin: 'mountain_6', x: -2, y: 6, layer: 'overworld',
+    map_id: 571,
+    name: 'Mountain',
+    skin: 'mountain_6',
+    x: -2,
+    y: 6,
+    layer: 'overworld',
     access: { type: 'standard', conditions: [] },
-    interactions: { transition: { map_id: 572, x: -2, y: 6, layer: 'underground', conditions: [] } },
+    interactions: {
+      transition: {
+        map_id: 572,
+        x: -2,
+        y: 6,
+        layer: 'underground',
+        conditions: [],
+      },
+    },
   };
-  character.navigationGraph = makeGraph(
-    { 91: 0, 571: 0, 572: 1, 521: 1 },
-    [{ from: 0, to: 1, transitionPoint: mountain }],
-  );
+  character.navigationGraph = makeGraph({ 91: 0, 571: 0, 572: 1, 521: 1 }, [
+    { from: 0, to: 1, transitionPoint: mountain },
+  ]);
   const transitionLocation = mountain; // used later in the assertions
   ```
   (Delete the existing `const transitionLocation = character.transitionLocations[0];` line.)
@@ -898,14 +945,26 @@ Keep all `beforeEach` mock wiring (`jest.clearAllMocks`, `withdrawNow` mock) but
 - **"should handle transition API error"** — add:
   ```ts
   const mountain: MapSchema = {
-    map_id: 571, name: 'Mountain', skin: 'mountain_6', x: -2, y: 6, layer: 'overworld',
+    map_id: 571,
+    name: 'Mountain',
+    skin: 'mountain_6',
+    x: -2,
+    y: 6,
+    layer: 'overworld',
     access: { type: 'standard', conditions: [] },
-    interactions: { transition: { map_id: 572, x: -2, y: 6, layer: 'underground', conditions: [] } },
+    interactions: {
+      transition: {
+        map_id: 572,
+        x: -2,
+        y: 6,
+        layer: 'underground',
+        conditions: [],
+      },
+    },
   };
-  character.navigationGraph = makeGraph(
-    { 91: 0, 571: 0, 572: 1, 700: 1 },
-    [{ from: 0, to: 1, transitionPoint: mountain }],
-  );
+  character.navigationGraph = makeGraph({ 91: 0, 571: 0, 572: 1, 700: 1 }, [
+    { from: 0, to: 1, transitionPoint: mountain },
+  ]);
   ```
   (Replace `destination: character.transitionLocations[0],` in the mock with `destination: mountain,`.)
 - **"should handle missing character data in move response"** — add:
@@ -923,17 +982,31 @@ Keep all `beforeEach` mock wiring (`jest.clearAllMocks`, `withdrawNow` mock) but
   );
   ```
 - **"should return true for Sandwhisper Isle destination"** — add:
+
   ```ts
   const forestBoat: MapSchema = {
-    map_id: 1093, name: 'Forest', skin: 'forest_coastline1', x: 2, y: 16, layer: 'overworld',
+    map_id: 1093,
+    name: 'Forest',
+    skin: 'forest_coastline1',
+    x: 2,
+    y: 16,
+    layer: 'overworld',
     access: { type: 'standard', conditions: [] },
-    interactions: { transition: { map_id: 1336, x: -2, y: 21, layer: 'overworld', conditions: [{ code: 'gold', operator: 'cost', value: 1000 }] } },
+    interactions: {
+      transition: {
+        map_id: 1336,
+        x: -2,
+        y: 21,
+        layer: 'overworld',
+        conditions: [{ code: 'gold', operator: 'cost', value: 1000 }],
+      },
+    },
   };
-  character.navigationGraph = makeGraph(
-    { 91: 0, 1093: 0, 1336: 1, 1285: 1 },
-    [{ from: 0, to: 1, transitionPoint: forestBoat }],
-  );
+  character.navigationGraph = makeGraph({ 91: 0, 1093: 0, 1336: 1, 1285: 1 }, [
+    { from: 0, to: 1, transitionPoint: forestBoat },
+  ]);
   ```
+
   (Replace `destination: character.transitionLocations[0],` in the mock with `destination: forestBoat,`.)
 
 - [ ] **Step 9: Run the move integration test**
@@ -953,6 +1026,7 @@ git commit -m "feat: route Character.move through the zone navigation graph"
 ## Task 5: Delete the old pathfinder, movement helpers, and dead util
 
 **Files:**
+
 - Delete: `src/core/TransitionPathfinder.ts`, `src/core/Movement.ts`, `tests/unit/TransitionPathfinder.test.ts`
 - Modify: `src/utils.ts` (remove `TransitionLocations`)
 
@@ -961,9 +1035,11 @@ git commit -m "feat: route Character.move through the zone navigation graph"
 - [ ] **Step 1: Confirm nothing still imports the old modules**
 
 Run:
+
 ```bash
 grep -rn "TransitionPathfinder\|from './Movement\|from '../core/Movement\|SANDWHISPER_Y_BOUNDARY\|transitionToSandwhisperIsle\|transitionToMainland\|transitionToUndergroundMine\|transitionToOverworld\|transitionToSandwhisperMine\|transitionFromSandwhisperMine\|TransitionLocations\|\.transitionLocations" src/ tests/
 ```
+
 Expected: No matches (Task 4 removed the last references). If any appear, fix them before deleting.
 
 - [ ] **Step 2: Delete the dead files**

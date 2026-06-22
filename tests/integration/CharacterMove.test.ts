@@ -294,10 +294,9 @@ describe('Character.move()', () => {
           },
         },
       };
-      character.navigationGraph = makeGraph(
-        { 91: 0, 571: 0, 572: 1, 521: 1 },
-        [{ from: 0, to: 1, transitionPoint: transitionLocation }],
-      );
+      character.navigationGraph = makeGraph({ 91: 0, 571: 0, 572: 1, 521: 1 }, [
+        { from: 0, to: 1, transitionPoint: transitionLocation },
+      ]);
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {
           cooldown: {
@@ -634,10 +633,9 @@ describe('Character.move()', () => {
           },
         },
       };
-      character.navigationGraph = makeGraph(
-        { 91: 0, 571: 0, 572: 1, 700: 1 },
-        [{ from: 0, to: 1, transitionPoint: mountain }],
-      );
+      character.navigationGraph = makeGraph({ 91: 0, 571: 0, 572: 1, 700: 1 }, [
+        { from: 0, to: 1, transitionPoint: mountain },
+      ]);
 
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {

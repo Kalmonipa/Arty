@@ -1,5 +1,9 @@
 import { buildZones } from '../../../src/core/navigation/zones.js';
-import { MapSchema, MapLayer, MapAccessType } from '../../../src/types/types.js';
+import {
+  MapSchema,
+  MapLayer,
+  MapAccessType,
+} from '../../../src/types/types.js';
 
 function makeMap(
   map_id: number,

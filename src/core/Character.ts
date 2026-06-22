@@ -238,7 +238,7 @@ export class Character {
    * Toggle that decides if the character should do idle jobs
    * Toggling off is mostly only useful for testing
    */
-  shouldDoIdleJobs: boolean = true
+  shouldDoIdleJobs: boolean = true;
 
   constructor(data: CharacterSchema) {
     this.data = data;
@@ -1025,7 +1025,8 @@ export class Character {
         );
         continue;
       } else if (
-        event.code === NomadicMerchant && currentTimestamp < this.nomadicMerchantTradeDate + 86400
+        event.code === NomadicMerchant &&
+        currentTimestamp < this.nomadicMerchantTradeDate + 86400
       ) {
         logger.debug(
           `${this.data.name} has already attempted a trade with nomadic merchant within the last 24 hours`,
@@ -1924,8 +1925,10 @@ export class Character {
       }
       const maps = await this.getAvailableBanks();
 
-      logger.debug(`Banks available:`)
-      maps.forEach(map => logger.debug(`  - ${map.name} (ID: ${map.map_id})`))
+      logger.debug(`Banks available:`);
+      maps.forEach((map) =>
+        logger.debug(`  - ${map.name} (ID: ${map.map_id})`),
+      );
 
       const contentLocation = this.evaluateClosestMap(maps);
 
