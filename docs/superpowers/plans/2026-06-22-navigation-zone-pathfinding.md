@@ -181,7 +181,10 @@ export function buildZones(allMaps: MapSchema[]): ZoneIndex {
     for (const map of maps) coordToMap.set(coordKey(map.x, map.y), map);
 
     const isWalkable = (m: MapSchema) => WALKABLE_TYPES.has(m.access.type);
-    const isRestricted = (m: MapSchema) => m.access.type === 'restricted';
+    // Cast to string: 'restricted' is beta-only and absent from the MapAccessType
+    // enum, so a direct === comparison would not type-check.
+    const isRestricted = (m: MapSchema) =>
+      (m.access.type as string) === 'restricted';
 
     // Two independent flood-fill passes: normal walkable tiles first, then
     // restricted tiles (which connect only to each other).
