@@ -1527,4 +1527,254 @@ describe('Character.move()', () => {
       expect(mockActionTransition).not.toHaveBeenCalled();
     });
   });
+
+  describe('Recall-potion shortcut', () => {
+    const cd = (reason: 'movement' | 'transition') => ({
+      remaining_seconds: 0,
+      total_seconds: 0,
+      started_at: '2025-01-01T00:00:00.000Z',
+      expiration: '2025-01-01T00:00:00.000Z',
+      reason,
+    });
+
+    // Spawn tile (0,0) overworld identifies the mainland zone (zone 0 here).
+    const spawnMap: MapSchema = {
+      map_id: 91,
+      name: 'Spawn',
+      skin: 's',
+      x: 0,
+      y: 0,
+      layer: 'overworld',
+      access: { type: 'standard', conditions: [] },
+      interactions: {},
+    };
+    // Island dock (zone 1) whose boat lands on the mainland (map 1093, zone 0).
+    const islandDock: MapSchema = {
+      map_id: 1336,
+      name: 'Island Dock',
+      skin: 's',
+      x: -2,
+      y: 21,
+      layer: 'overworld',
+      access: { type: 'standard', conditions: [] },
+      interactions: {
+        transition: {
+          map_id: 1093,
+          x: 2,
+          y: 16,
+          layer: 'overworld',
+          conditions: [],
+        },
+      },
+    };
+
+    it('uses a recall potion to reach the mainland instead of the boat', async () => {
+      mockCharacter = {
+        ...mockCharacterData,
+        map_id: 1336,
+        x: -2,
+        y: 21,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.allMaps = [spawnMap];
+      character.checkQuantityOfItemInInv = jest.fn((c) =>
+        c === 'recall_potion' ? 1 : 0,
+      );
+      const useItemSpy = jest.fn(async () => {
+        // Teleports to a mainland overworld tile (same zone the boat lands in).
+        character.data = {
+          ...character.data,
+          map_id: 1093,
+          x: 2,
+          y: 16,
+          layer: 'overworld',
+        };
+        return true;
+      });
+      character.useItem = useItemSpy as typeof character.useItem;
+
+      character.navigationGraph = makeGraph(
+        { 91: 0, 1093: 0, 700: 0, 1336: 1 },
+        [{ from: 1, to: 0, transitionPoint: islandDock }],
+      );
+
+      const destination: MapSchema = {
+        map_id: 700,
+        name: 'Mainland Town',
+        skin: 's',
+        x: 5,
+        y: 5,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      mockActionMove.mockResolvedValue({
+        data: {
+          cooldown: cd('movement'),
+          destination,
+          path: [
+            [2, 16],
+            [5, 5],
+          ],
+          character: { ...mockCharacter, x: 5, y: 5, map_id: 700 },
+        },
+      });
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(true);
+      expect(useItemSpy).toHaveBeenCalledWith('recall_potion', 1);
+      expect(mockActionTransition).not.toHaveBeenCalled();
+    });
+
+    it('takes the boat when no recall potion is held', async () => {
+      mockCharacter = {
+        ...mockCharacterData,
+        map_id: 1336,
+        x: -2,
+        y: 21,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.allMaps = [spawnMap];
+      character.checkQuantityOfItemInInv = jest.fn(() => 0);
+      const useItemSpy = jest.fn(async () => true);
+      character.useItem = useItemSpy as typeof character.useItem;
+
+      character.navigationGraph = makeGraph(
+        { 91: 0, 1093: 0, 700: 0, 1336: 1 },
+        [{ from: 1, to: 0, transitionPoint: islandDock }],
+      );
+
+      const destination: MapSchema = {
+        map_id: 700,
+        name: 'Mainland Town',
+        skin: 's',
+        x: 5,
+        y: 5,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      // Character is already on the dock (1336), so it transitions, then moves on.
+      mockActionTransition.mockResolvedValue({
+        data: {
+          cooldown: cd('transition'),
+          destination: { ...islandDock, map_id: 1093 },
+          transition: {
+            map_id: 1093,
+            x: 2,
+            y: 16,
+            layer: 'overworld',
+            conditions: [],
+          },
+          character: { ...mockCharacter, x: 2, y: 16, map_id: 1093 },
+        },
+      });
+      mockActionMove.mockResolvedValue({
+        data: {
+          cooldown: cd('movement'),
+          destination,
+          path: [
+            [2, 16],
+            [5, 5],
+          ],
+          character: { ...mockCharacter, x: 5, y: 5, map_id: 700 },
+        },
+      });
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(true);
+      expect(useItemSpy).not.toHaveBeenCalled();
+      expect(mockActionTransition).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not recall when the transition does not lead to the mainland', async () => {
+      // Mainland (zone 0) -> island (zone 1): potion held but must not be used.
+      mockCharacter = {
+        ...mockCharacterData,
+        map_id: 91,
+        x: 0,
+        y: 0,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.allMaps = [spawnMap];
+      character.checkQuantityOfItemInInv = jest.fn((c) =>
+        c === 'recall_potion' ? 1 : 0,
+      );
+      const useItemSpy = jest.fn(async () => true);
+      character.useItem = useItemSpy as typeof character.useItem;
+
+      const mainlandDock: MapSchema = {
+        map_id: 1093,
+        name: 'Mainland Dock',
+        skin: 's',
+        x: 2,
+        y: 16,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 1336,
+            x: -2,
+            y: 21,
+            layer: 'overworld',
+            conditions: [],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph(
+        { 91: 0, 1093: 0, 1336: 1, 1500: 1 },
+        [{ from: 0, to: 1, transitionPoint: mainlandDock }],
+      );
+
+      const destination: MapSchema = {
+        map_id: 1500,
+        name: 'Island Cove',
+        skin: 's',
+        x: -5,
+        y: 25,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      mockActionTransition.mockResolvedValue({
+        data: {
+          cooldown: cd('transition'),
+          destination: { ...mainlandDock, map_id: 1336, x: -2, y: 21 },
+          transition: {
+            map_id: 1336,
+            x: -2,
+            y: 21,
+            layer: 'overworld',
+            conditions: [],
+          },
+          character: { ...mockCharacter, x: -2, y: 21, map_id: 1336 },
+        },
+      });
+      mockActionMove.mockResolvedValue({
+        data: {
+          cooldown: cd('movement'),
+          destination,
+          path: [
+            [-2, 21],
+            [-5, 25],
+          ],
+          character: { ...mockCharacter, x: -5, y: 25, map_id: 1500 },
+        },
+      });
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(true);
+      expect(useItemSpy).not.toHaveBeenCalled();
+      expect(mockActionTransition).toHaveBeenCalledTimes(1);
+    });
+  });
 });
