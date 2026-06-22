@@ -109,7 +109,9 @@ export default function CharacterRouter(char: Character) {
         })
       }
 
-      let move = await char.move(destinationMap)
+      char.move(destinationMap)
+
+      logger.info(`Move to ${destinationMap.map_id} (x: ${destinationMap.x}, y: ${destinationMap.y})`)
 
       return res.status(200).json({
         message: `Character moved to ${mapId} successfully`,
