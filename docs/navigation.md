@@ -121,3 +121,45 @@ execute that pathway. If not, check the transition points of zone 2, and check i
 my destination.
 If any zone does not any further transition points and does not contain my destination then we can disregard that zone as a 
 candidate in the pathway, and backtrack until we find an unexplored transition point.
+
+## Examples
+
+Here are some logs that provide a failing example of my current transitions. This is going from the mainland to the Lava Underground
+```
+[21-06-26 19:35:59] [LongLegLarry] INFO: Simulating fight against baby_red_dragon with no utilities
+[21-06-26 19:35:59] [LongLegLarry] DEBUG: Set parentId fight_5_baby_red_dragon_6f2f for job fight_sim_baby_red_dragon_e12d
+[21-06-26 19:35:59] [LongLegLarry] DEBUG: Added job fight_sim_baby_red_dragon_e12d to position 0, parent: fight_5_baby_red_dragon_6f2f
+[21-06-26 19:35:59] [LongLegLarry] INFO: Setting status of fight_sim_baby_red_dragon_e12d to 'in_progress'
+[21-06-26 19:35:59] [LongLegLarry] DEBUG: Last event check (1782070482) was within the last 300 seconds (1782070560). Not checking again
+[21-06-26 19:35:59] [LongLegLarry] DEBUG: Saved 2 jobs to /app/data/job_queue_LongLegLarry.json
+[21-06-26 19:36:00] [LongLegLarry] WARN: Monster not found. [Code: 404]
+[21-06-26 19:36:00] [LongLegLarry] INFO: Setting status of fight_sim_baby_red_dragon_e12d to 'failed'
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Current jobs in job queue
+[21-06-26 19:36:00] [LongLegLarry] DEBUG:    - fight_5_baby_red_dragon_6f2f - in_progress
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Saved 1 jobs to /app/data/job_queue_LongLegLarry.json
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: enhanced_health_potion is too high level or cannot be crafted
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: greater_health_potion is too high level or cannot be crafted
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: health_potion is too high level or cannot be crafted
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: minor_health_potion is too high level or cannot be crafted
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: small_health_potion is too high level or cannot be crafted
+[21-06-26 19:36:00] [LongLegLarry] INFO: Simulating fight against baby_red_dragon with small_health_potion
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Set parentId fight_5_baby_red_dragon_6f2f for job fight_sim_baby_red_dragon_efcf
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Added job fight_sim_baby_red_dragon_efcf to position 0, parent: fight_5_baby_red_dragon_6f2f
+[21-06-26 19:36:00] [LongLegLarry] INFO: Setting status of fight_sim_baby_red_dragon_efcf to 'in_progress'
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Last event check (1782070482) was within the last 300 seconds (1782070560). Not checking again
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Saved 2 jobs to /app/data/job_queue_LongLegLarry.json
+[21-06-26 19:36:00] [LongLegLarry] WARN: Monster not found. [Code: 404]
+[21-06-26 19:36:00] [LongLegLarry] INFO: Setting status of fight_sim_baby_red_dragon_efcf to 'failed'
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Current jobs in job queue
+[21-06-26 19:36:00] [LongLegLarry] DEBUG:    - fight_5_baby_red_dragon_6f2f - in_progress
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Saved 1 jobs to /app/data/job_queue_LongLegLarry.json
+[21-06-26 19:36:00] [LongLegLarry] DEBUG: Fight attempt 1/3
+[21-06-26 19:36:00] [LongLegLarry] INFO: Finding location of baby_red_dragon
+[21-06-26 19:36:00] [LongLegLarry] INFO: Closest lavaunderground_25 is at x: 6, y: 4
+[21-06-26 19:36:00] [LongLegLarry] WARN: Unsupported transition condition at (9, 7): {"code":"lich_tomb_key","operator":"cost","value":1}
+[21-06-26 19:36:00] [LongLegLarry] INFO: Fought 0/5 baby_red_dragons
+[21-06-26 19:36:00] [LongLegLarry] WARN: Unsupported transition condition at (9, 7): {"code":"lich_tomb_key","operator":"cost","value":1}
+[21-06-26 19:36:01] [LongLegLarry] WARN: Monster not found on this map. [Code: 598]
+[21-06-26 19:36:01] [LongLegLarry] ERROR: Fight failed after 1 attempts
+[21-06-26 19:36:01] [LongLegLarry] INFO: Setting status of fight_5_baby_red_dragon_6f2f to 'failed'
+```
