@@ -459,15 +459,15 @@ function makeMap(
   };
 }
 
-// Overworld zone {1,2} and underground zone {3,4}. Two overworld->underground
-// transitions reach the underground zone:
-//   map 1 (0,0) -> map 3 (0,0) underground   [landing far from target]
-//   map 2 (1,0) -> map 4 (5,0) underground   [landing near target (5,1)]
+// Overworld zone {1,2} (adjacent) and one underground zone {3,4} (adjacent).
+// Two overworld->underground transitions both reach the underground zone:
+//   map 1 (0,0) -> map 3 (0,0) underground   [landing far from target (1,5)]
+//   map 2 (1,0) -> map 4 (1,0) underground   [landing near target (1,5)]
 const maps = [
   makeMap(1, 0, 0, 'overworld', { map_id: 3, x: 0, y: 0, layer: 'underground' }),
-  makeMap(2, 1, 0, 'overworld', { map_id: 4, x: 5, y: 0, layer: 'underground' }),
+  makeMap(2, 1, 0, 'overworld', { map_id: 4, x: 1, y: 0, layer: 'underground' }),
   makeMap(3, 0, 0, 'underground'),
-  makeMap(4, 5, 0, 'underground'),
+  makeMap(4, 1, 0, 'underground'),
 ];
 
 describe('buildTransitionPath', () => {
@@ -487,15 +487,15 @@ describe('buildTransitionPath', () => {
 
   it('tie-breaks toward the transition whose landing is closest to the target', () => {
     const graph = buildNavigationGraph(maps);
-    // Target (5,1) underground is closest to map 2's landing (5,0).
-    const target = makeMap(4, 5, 1, 'underground');
+    // Target (1,5) underground is closest to map 2's landing (1,0).
+    const target = makeMap(4, 1, 5, 'underground');
     const path = buildTransitionPath(1, target, graph);
     expect(path!.map((m) => m.map_id)).toEqual([2]);
   });
 
   it('skips an excluded transition and routes through the alternative', () => {
     const graph = buildNavigationGraph(maps);
-    const target = makeMap(4, 5, 1, 'underground');
+    const target = makeMap(4, 1, 5, 'underground');
     const path = buildTransitionPath(1, target, graph, new Set([2]));
     expect(path!.map((m) => m.map_id)).toEqual([1]);
   });
