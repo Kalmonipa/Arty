@@ -3110,6 +3110,37 @@ export class Character {
   }
 
   /**
+   * @description Returns the set of transition-point map_ids that the character can
+   * neither satisfy now nor acquire its way through. A condition is acquirable when it
+   * is an item (has_item or a non-gold cost) — those can be gathered/crafted/bought. An
+   * unmet gold cost (no way to earn gold) or an unmet achievement makes the transition
+   * unacquirable. move()'s last-resort acquisition excludes these.
+   */
+  async computeUnacquirableTransitions(): Promise<Set<number>> {
+    const unacquirable = new Set<number>();
+    for (const edges of this.navigationGraph.edges.values()) {
+      for (const edge of edges) {
+        const conditions =
+          edge.transitionPoint.interactions.transition?.conditions;
+        if (!conditions || conditions.length === 0) continue;
+        for (const condition of conditions) {
+          const isAcquirableItem =
+            condition.operator === ConditionOperator.has_item ||
+            (condition.operator === ConditionOperator.cost &&
+              condition.code !== 'gold');
+          if (isAcquirableItem) continue;
+          // Gold cost / achievement / anything else: only OK if already satisfiable.
+          if (!(await this.canSatisfyCondition(condition))) {
+            unacquirable.add(edge.transitionPoint.map_id);
+            break;
+          }
+        }
+      }
+    }
+    return unacquirable;
+  }
+
+  /**
    * @description Makes sure a single transition condition is met before transitioning,
    * withdrawing the shortfall of a gold/item cost or a required has_item from the bank.
    * The /transition call itself consumes any `cost`. Returns false when the condition
