@@ -2319,7 +2319,9 @@ export class Character {
 
     // Transitions the game has told us are unreachable (595) on this move. We exclude them and
     // rebuild the path so a different route can be tried, in case the computed path is wrong.
-    const excludedTransitionIds = new Set<number>();
+    // Seed with transitions whose conditions the character cannot currently satisfy, so the
+    // pathfinder never routes through a gate it can't pass (e.g. a key it doesn't hold).
+    const excludedTransitionIds = await this.computeUnsatisfiableTransitions();
     const MAX_REROUTES = 3;
 
     for (let attempt = 0; attempt <= MAX_REROUTES; attempt++) {
@@ -2396,8 +2398,9 @@ export class Character {
 
   /**
    * @description Moves to a transition point and executes the transition.
-   * Conditions are handled generically: a plain gold cost is auto-paid; any other
-   * condition we cannot yet satisfy triggers a reroute so move() tries another exit.
+   * Ensures every transition condition is met first (withdrawing the shortfall of
+   * a gold/item cost or required item from the bank). If a condition can't be met,
+   * reroutes so move() tries another exit.
    */
   private async performTransitionStep(
     transitionPoint: MapSchema,
@@ -2410,17 +2413,11 @@ export class Character {
       return { ok: false, reroute: false };
     }
 
-    // Generic transition: auto-pay a gold cost; reroute around anything else.
     if (transition.conditions) {
       for (const condition of transition.conditions) {
-        if (
-          condition.operator === ConditionOperator.cost &&
-          condition.code === 'gold'
-        ) {
-          await this.withdrawNow(condition.value, 'gold');
-        } else {
+        if (!(await this.ensureTransitionCondition(condition))) {
           logger.warn(
-            `Unsupported transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)} — rerouting`,
+            `Could not satisfy transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)} — rerouting`,
           );
           return { ok: false, reroute: true };
         }
@@ -3081,6 +3078,66 @@ export class Character {
       default:
         // eq/ne/gt/lt and anything we don't model: stay permissive so we don't
         // wrongly prune a route. The API + reroute loop catch real failures.
+        return true;
+    }
+  }
+
+  /**
+   * @description Returns the set of transition-point map_ids whose conditions the
+   * character cannot currently satisfy. move() seeds its excluded-transition set
+   * with this so the pathfinder never routes through a gate it can't pass.
+   * Transitions without conditions are skipped (the common case).
+   */
+  async computeUnsatisfiableTransitions(): Promise<Set<number>> {
+    const unsatisfiable = new Set<number>();
+    for (const edges of this.navigationGraph.edges.values()) {
+      for (const edge of edges) {
+        const conditions =
+          edge.transitionPoint.interactions.transition?.conditions;
+        if (!conditions || conditions.length === 0) continue;
+        if (!(await this.canSatisfyConditions(conditions))) {
+          unsatisfiable.add(edge.transitionPoint.map_id);
+        }
+      }
+    }
+    return unsatisfiable;
+  }
+
+  /**
+   * @description Makes sure a single transition condition is met before transitioning,
+   * withdrawing the shortfall of a gold/item cost or a required has_item from the bank.
+   * The /transition call itself consumes any `cost`. Returns false when the condition
+   * cannot be met so the caller can reroute.
+   */
+  private async ensureTransitionCondition(
+    condition: ConditionSchema,
+  ): Promise<boolean> {
+    switch (condition.operator) {
+      case ConditionOperator.achievement_unlocked:
+        return this.completedAchievements.some(
+          (achievement) => achievement.code === condition.code,
+        );
+
+      case ConditionOperator.has_item: {
+        const required = condition.value || 1;
+        if (this.hasEquipped(condition.code)) return true;
+        const onHand = this.checkQuantityOfItemInInv(condition.code);
+        if (onHand >= required) return true;
+        return await this.withdrawNow(required - onHand, condition.code);
+      }
+
+      case ConditionOperator.cost: {
+        const onHand =
+          condition.code === 'gold'
+            ? this.data.gold
+            : this.checkQuantityOfItemInInv(condition.code);
+        if (onHand >= condition.value) return true;
+        return await this.withdrawNow(condition.value - onHand, condition.code);
+      }
+
+      default:
+        // Unmodelled operator (eq/ne/gt/lt): nothing to withdraw; let the
+        // /transition API enforce it.
         return true;
     }
   }

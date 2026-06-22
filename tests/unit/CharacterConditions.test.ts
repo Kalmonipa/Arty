@@ -4,7 +4,12 @@ import { mockCharacterData } from '../mocks/apiMocks.js';
 import {
   AccountAchievementSchema,
   ConditionSchema,
+  MapSchema,
 } from '../../src/types/types.js';
+import {
+  NavigationGraph,
+  TransitionEdge,
+} from '../../src/core/navigation/graph.js';
 
 // canSatisfyConditions only reaches the bank via getBankGold /
 // checkQuantityOfItemInBank, which we stub on the instance — so the real Bank
@@ -25,8 +30,9 @@ describe('Character.canSatisfyConditions', () => {
     character.hasEquipped = jest.fn(() => false);
     character.checkQuantityOfItemInInv = jest.fn(() => 0);
     character.checkQuantityOfItemInBank = jest.fn(async () => 0);
-    (character as unknown as { getBankGold: () => Promise<number> }).getBankGold =
-      jest.fn(async () => 0);
+    (
+      character as unknown as { getBankGold: () => Promise<number> }
+    ).getBankGold = jest.fn(async () => 0);
   });
 
   it('returns true for empty, null, or undefined conditions', async () => {
@@ -127,5 +133,80 @@ describe('Character.canSatisfyConditions', () => {
 
     character.data.gold = 100;
     expect(await character.canSatisfyConditions(cond)).toBe(true);
+  });
+});
+
+describe('Character.computeUnsatisfiableTransitions', () => {
+  let character: Character;
+
+  // Builds a transition-point map with optional conditions on its transition.
+  function transitionPoint(
+    mapId: number,
+    conditions: ConditionSchema[] = [],
+  ): MapSchema {
+    return {
+      map_id: mapId,
+      name: `Map_${mapId}`,
+      skin: 's',
+      x: 0,
+      y: 0,
+      layer: 'overworld',
+      access: { type: 'standard', conditions: [] },
+      interactions: {
+        transition: {
+          map_id: 999,
+          x: 0,
+          y: 0,
+          layer: 'underground',
+          conditions,
+        },
+      },
+    };
+  }
+
+  function graphWithEdges(points: MapSchema[]): NavigationGraph {
+    const edges = new Map<number, TransitionEdge[]>();
+    edges.set(
+      0,
+      points.map((p) => ({ fromZone: 0, toZone: 1, transitionPoint: p })),
+    );
+    return { zoneOfMapId: new Map(), zones: new Map(), edges };
+  }
+
+  beforeEach(() => {
+    character = new Character({ ...mockCharacterData });
+  });
+
+  it('returns only the conditioned transitions the character cannot satisfy', async () => {
+    const free = transitionPoint(10); // no conditions
+    const gated = transitionPoint(11, [
+      { code: 'lich_tomb_key', operator: 'cost', value: 1 },
+    ]);
+    const ok = transitionPoint(12, [
+      { code: 'achv', operator: 'achievement_unlocked', value: 1 },
+    ]);
+    character.navigationGraph = graphWithEdges([free, gated, ok]);
+
+    // Cannot satisfy the lich_tomb_key cost, can satisfy everything else.
+    character.canSatisfyConditions = jest.fn(
+      async (conditions: ConditionSchema[] | null | undefined) => {
+        if (!conditions || conditions.length === 0) return true;
+        return conditions[0].code !== 'lich_tomb_key';
+      },
+    );
+
+    const result = await character.computeUnsatisfiableTransitions();
+    expect([...result]).toEqual([11]);
+  });
+
+  it('returns an empty set when there are no conditioned transitions', async () => {
+    character.navigationGraph = graphWithEdges([
+      transitionPoint(10),
+      transitionPoint(11),
+    ]);
+    character.canSatisfyConditions = jest.fn(async () => true);
+
+    const result = await character.computeUnsatisfiableTransitions();
+    expect(result.size).toBe(0);
   });
 });

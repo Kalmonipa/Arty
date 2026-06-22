@@ -1090,4 +1090,252 @@ describe('Character.move()', () => {
     //   });
     // });
   });
+
+  describe('Conditioned transitions', () => {
+    const cd = (reason: 'movement' | 'transition') => ({
+      remaining_seconds: 0,
+      total_seconds: 0,
+      started_at: '2025-01-01T00:00:00.000Z',
+      expiration: '2025-01-01T00:00:00.000Z',
+      reason,
+    });
+
+    it('takes a gated transition it can satisfy and pays the cost', async () => {
+      mockCharacter = {
+        ...mockCharacterData,
+        x: 0,
+        y: 0,
+        map_id: 91,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.data.gold = 0;
+      const withdrawSpy = jest.fn(async () => true);
+      character.withdrawNow = withdrawSpy;
+
+      const gated: MapSchema = {
+        map_id: 600,
+        name: 'Toll Gate',
+        skin: 's',
+        x: 5,
+        y: 5,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 601,
+            x: 5,
+            y: 5,
+            layer: 'underground',
+            conditions: [{ code: 'gold', operator: 'cost', value: 1000 }],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph({ 91: 0, 600: 0, 601: 1, 700: 1 }, [
+        { from: 0, to: 1, transitionPoint: gated },
+      ]);
+      // The character can satisfy the toll (gold available from the bank).
+      character.computeUnsatisfiableTransitions = jest.fn(
+        async () => new Set<number>(),
+      );
+
+      const destination: MapSchema = {
+        map_id: 700,
+        name: 'Dungeon',
+        skin: 's',
+        x: 9,
+        y: 9,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      mockActionMove
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination: gated,
+            path: [
+              [0, 0],
+              [5, 5],
+            ],
+            character: { ...mockCharacter, x: 5, y: 5, map_id: 600 },
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination,
+            path: [
+              [5, 5],
+              [9, 9],
+            ],
+            character: {
+              ...mockCharacter,
+              x: 9,
+              y: 9,
+              map_id: 700,
+              layer: 'underground',
+            },
+          },
+        });
+      mockActionTransition.mockResolvedValue({
+        data: {
+          cooldown: cd('transition'),
+          destination: { ...gated, map_id: 601, layer: 'underground' },
+          transition: {
+            map_id: 601,
+            x: 5,
+            y: 5,
+            layer: 'underground',
+            conditions: [],
+          },
+          character: {
+            ...mockCharacter,
+            x: 5,
+            y: 5,
+            map_id: 601,
+            layer: 'underground',
+          },
+        },
+      });
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(true);
+      // Only the 1000-gold shortfall is withdrawn before transitioning.
+      expect(withdrawSpy).toHaveBeenCalledWith(1000, 'gold');
+      expect(mockActionTransition).toHaveBeenCalledTimes(1);
+    });
+
+    it('prunes a gated transition it cannot satisfy and routes via an alternative', async () => {
+      mockCharacter = {
+        ...mockCharacterData,
+        x: 0,
+        y: 0,
+        map_id: 91,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.withdrawNow = jest.fn(async () => true);
+
+      const gated: MapSchema = {
+        map_id: 600,
+        name: 'Locked Gate',
+        skin: 's',
+        x: 5,
+        y: 5,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 601,
+            x: 5,
+            y: 5,
+            layer: 'underground',
+            conditions: [{ code: 'lich_tomb_key', operator: 'cost', value: 1 }],
+          },
+        },
+      };
+      const free: MapSchema = {
+        map_id: 602,
+        name: 'Open Stairs',
+        skin: 's',
+        x: 7,
+        y: 7,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 603,
+            x: 7,
+            y: 7,
+            layer: 'underground',
+            conditions: [],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph(
+        { 91: 0, 600: 0, 602: 0, 601: 1, 603: 1, 700: 1 },
+        [
+          { from: 0, to: 1, transitionPoint: gated },
+          { from: 0, to: 1, transitionPoint: free },
+        ],
+      );
+      // The gated transition (600) is unsatisfiable; the free one (602) is fine.
+      character.computeUnsatisfiableTransitions = jest.fn(
+        async () => new Set<number>([600]),
+      );
+
+      const destination: MapSchema = {
+        map_id: 700,
+        name: 'Dungeon',
+        skin: 's',
+        x: 9,
+        y: 9,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      mockActionMove
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination: free,
+            path: [
+              [0, 0],
+              [7, 7],
+            ],
+            character: { ...mockCharacter, x: 7, y: 7, map_id: 602 },
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination,
+            path: [
+              [7, 7],
+              [9, 9],
+            ],
+            character: {
+              ...mockCharacter,
+              x: 9,
+              y: 9,
+              map_id: 700,
+              layer: 'underground',
+            },
+          },
+        });
+      mockActionTransition.mockResolvedValue({
+        data: {
+          cooldown: cd('transition'),
+          destination: { ...free, map_id: 603, layer: 'underground' },
+          transition: {
+            map_id: 603,
+            x: 7,
+            y: 7,
+            layer: 'underground',
+            conditions: [],
+          },
+          character: {
+            ...mockCharacter,
+            x: 7,
+            y: 7,
+            map_id: 603,
+            layer: 'underground',
+          },
+        },
+      });
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(true);
+      // First move must target the FREE transition point (7,7), not the gated (5,5).
+      expect(mockActionMove).toHaveBeenNthCalledWith(1, expect.anything(), {
+        x: 7,
+        y: 7,
+      });
+    });
+  });
 });
