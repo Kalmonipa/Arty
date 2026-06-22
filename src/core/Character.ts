@@ -425,6 +425,7 @@ export class Character {
         characterName: this.data.name,
         timestamp: new Date().toISOString(),
         enableEvents: this.enableEvents,
+        enableIdleJobs: this.shouldDoIdleJobs,
         itemsToKeep: this.itemsToKeep,
         fishMerchantTradeDate: this.fishMerchantTradeDate,
         nomadicMerchantTradeDate: this.nomadicMerchantTradeDate,
@@ -456,6 +457,7 @@ export class Character {
       this.jobList = [];
 
       this.enableEvents = jobQueueData.enableEvents;
+      this.shouldDoIdleJobs = jobQueueData.enableIdleJobs;
       this.itemsToKeep = jobQueueData.itemsToKeep;
       if (jobQueueData.fishMerchantTradeDate != null) {
         this.fishMerchantTradeDate = jobQueueData.fishMerchantTradeDate;
