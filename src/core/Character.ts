@@ -16,6 +16,7 @@ import {
   ActiveEventSchema,
   CharacterSchema,
   ConditionOperator,
+  ConditionSchema,
   CraftSkill,
   FakeCharacterSchema,
   GatheringSkill,
@@ -61,7 +62,11 @@ import { EquipObjective } from './EquipObjective.js';
 import { UnequipObjective } from './UnequipObjective.js';
 import { WithdrawObjective } from './WithdrawObjective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
-import { actionDepositGold, getBankItems } from '../api_calls/Bank.js';
+import {
+  actionDepositGold,
+  getBankDetails,
+  getBankItems,
+} from '../api_calls/Bank.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import {
   UtilityEffects,
@@ -2314,7 +2319,15 @@ export class Character {
 
     // Transitions the game has told us are unreachable (595) on this move. We exclude them and
     // rebuild the path so a different route can be tried, in case the computed path is wrong.
-    const excludedTransitionIds = new Set<number>();
+    // Seed with transitions whose conditions the character cannot currently satisfy, so the
+    // pathfinder never routes through a gate it can't pass (e.g. a key it doesn't hold).
+    // Same-zone moves need no transitions, so skip the (bank-touching) satisfiability scan.
+    const startZone = this.navigationGraph.zoneOfMapId.get(this.data.map_id);
+    const targetZone = this.navigationGraph.zoneOfMapId.get(destination.map_id);
+    const excludedTransitionIds =
+      startZone !== undefined && startZone === targetZone
+        ? new Set<number>()
+        : await this.computeUnsatisfiableTransitions();
     const MAX_REROUTES = 3;
 
     for (let attempt = 0; attempt <= MAX_REROUTES; attempt++) {
@@ -2391,8 +2404,9 @@ export class Character {
 
   /**
    * @description Moves to a transition point and executes the transition.
-   * Conditions are handled generically: a plain gold cost is auto-paid; any other
-   * condition we cannot yet satisfy triggers a reroute so move() tries another exit.
+   * Ensures every transition condition is met first (withdrawing the shortfall of
+   * a gold/item cost or required item from the bank). If a condition can't be met,
+   * reroutes so move() tries another exit.
    */
   private async performTransitionStep(
     transitionPoint: MapSchema,
@@ -2405,17 +2419,11 @@ export class Character {
       return { ok: false, reroute: false };
     }
 
-    // Generic transition: auto-pay a gold cost; reroute around anything else.
     if (transition.conditions) {
       for (const condition of transition.conditions) {
-        if (
-          condition.operator === ConditionOperator.cost &&
-          condition.code === 'gold'
-        ) {
-          await this.withdrawNow(condition.value, 'gold');
-        } else {
+        if (!(await this.ensureTransitionCondition(condition))) {
           logger.warn(
-            `Unsupported transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)} — rerouting`,
+            `Could not satisfy transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)} — rerouting`,
           );
           return { ok: false, reroute: true };
         }
@@ -3008,6 +3016,139 @@ export class Character {
   }
 
   /**
+   * @description Total gold the character can draw on right now: gold on the
+   * character plus gold in the bank. Bank read failures count as 0.
+   */
+  private async getBankGold(): Promise<number> {
+    const details = await getBankDetails();
+    if (details instanceof ApiError) {
+      logger.warn('Failed to read bank gold; treating bank gold as 0');
+      return 0;
+    }
+    return details.data.gold;
+  }
+
+  /**
+   * @description Returns true if the character can currently satisfy every access
+   * or transition condition. "Currently" includes resources in the bank (which can
+   * be withdrawn), not resources it would have to go and acquire/craft.
+   *
+   * - achievement_unlocked: the achievement is completed
+   * - has_item: the item is equipped, or held in inventory + bank (>= value, default 1)
+   * - cost (gold): on-hand gold + bank gold >= value
+   * - cost (item): inventory + bank >= value
+   * - any other operator (eq/ne/gt/lt/unknown): treated as satisfiable; the
+   *   transition/move API remains the source of truth and move()'s reroute loop
+   *   recovers if it turns out to be unusable.
+   */
+  async canSatisfyConditions(
+    conditions: ConditionSchema[] | null | undefined,
+  ): Promise<boolean> {
+    if (!conditions || conditions.length === 0) return true;
+    for (const condition of conditions) {
+      if (!(await this.canSatisfyCondition(condition))) return false;
+    }
+    return true;
+  }
+
+  private async canSatisfyCondition(
+    condition: ConditionSchema,
+  ): Promise<boolean> {
+    switch (condition.operator) {
+      case ConditionOperator.achievement_unlocked:
+        return this.completedAchievements.some(
+          (achievement) => achievement.code === condition.code,
+        );
+
+      case ConditionOperator.has_item: {
+        const required = condition.value || 1;
+        if (this.hasEquipped(condition.code)) return true;
+        const onHand = this.checkQuantityOfItemInInv(condition.code);
+        if (onHand >= required) return true;
+        const inBank = await this.checkQuantityOfItemInBank(condition.code);
+        return onHand + inBank >= required;
+      }
+
+      case ConditionOperator.cost: {
+        if (condition.code === 'gold') {
+          if (this.data.gold >= condition.value) return true;
+          const bankGold = await this.getBankGold();
+          return this.data.gold + bankGold >= condition.value;
+        }
+        const onHand = this.checkQuantityOfItemInInv(condition.code);
+        if (onHand >= condition.value) return true;
+        const inBank = await this.checkQuantityOfItemInBank(condition.code);
+        return onHand + inBank >= condition.value;
+      }
+
+      default:
+        // eq/ne/gt/lt and anything we don't model: stay permissive so we don't
+        // wrongly prune a route. The API + reroute loop catch real failures.
+        return true;
+    }
+  }
+
+  /**
+   * @description Returns the set of transition-point map_ids whose conditions the
+   * character cannot currently satisfy. move() seeds its excluded-transition set
+   * with this so the pathfinder never routes through a gate it can't pass.
+   * Transitions without conditions are skipped (the common case).
+   */
+  async computeUnsatisfiableTransitions(): Promise<Set<number>> {
+    const unsatisfiable = new Set<number>();
+    for (const edges of this.navigationGraph.edges.values()) {
+      for (const edge of edges) {
+        const conditions =
+          edge.transitionPoint.interactions.transition?.conditions;
+        if (!conditions || conditions.length === 0) continue;
+        if (!(await this.canSatisfyConditions(conditions))) {
+          unsatisfiable.add(edge.transitionPoint.map_id);
+        }
+      }
+    }
+    return unsatisfiable;
+  }
+
+  /**
+   * @description Makes sure a single transition condition is met before transitioning,
+   * withdrawing the shortfall of a gold/item cost or a required has_item from the bank.
+   * The /transition call itself consumes any `cost`. Returns false when the condition
+   * cannot be met so the caller can reroute.
+   */
+  private async ensureTransitionCondition(
+    condition: ConditionSchema,
+  ): Promise<boolean> {
+    switch (condition.operator) {
+      case ConditionOperator.achievement_unlocked:
+        return this.completedAchievements.some(
+          (achievement) => achievement.code === condition.code,
+        );
+
+      case ConditionOperator.has_item: {
+        const required = condition.value || 1;
+        if (this.hasEquipped(condition.code)) return true;
+        const onHand = this.checkQuantityOfItemInInv(condition.code);
+        if (onHand >= required) return true;
+        return await this.withdrawNow(required - onHand, condition.code);
+      }
+
+      case ConditionOperator.cost: {
+        const onHand =
+          condition.code === 'gold'
+            ? this.data.gold
+            : this.checkQuantityOfItemInInv(condition.code);
+        if (onHand >= condition.value) return true;
+        return await this.withdrawNow(condition.value - onHand, condition.code);
+      }
+
+      default:
+        // Unmodelled operator (eq/ne/gt/lt): nothing to withdraw; let the
+        // /transition API enforce it.
+        return true;
+    }
+  }
+
+  /**
    * @description Gets the available banks. Filters out banks that are locked by achievements
    */
   async getAvailableBanks(): Promise<MapSchema[]> {
@@ -3018,33 +3159,17 @@ export class Character {
       return [];
     }
 
-    // Filter maps dynamically based on access conditions
-    const availableMaps = maps.data.filter((map) => {
-      // If the map is standard access type, it is freely accessible
-      if (map.access.type === 'standard') {
-        return true;
+    // Filter maps dynamically based on whether the character can satisfy their
+    // access conditions (achievements, held items, affordable gold/item costs).
+    const availableMaps: MapSchema[] = [];
+    for (const map of maps.data) {
+      if (
+        map.access.type === 'standard' ||
+        (await this.canSatisfyConditions(map.access.conditions))
+      ) {
+        availableMaps.push(map);
       }
-
-      // Check every condition for this map
-      return map.access.conditions.every((condition) => {
-        if (condition.operator === 'achievement_unlocked') {
-          const isCompleted = this.completedAchievements.some(
-            (achievement) => achievement.code === condition.code,
-          );
-          // if (!isCompleted) {
-          //   logger.debug(
-          //     `Skipping ${map.name} (ID: ${map.map_id}) bank: Requirement '${condition.code}' not met.`,
-          //   );
-          // } else {
-          //   logger.debug(`${map.name} (ID: ${map.map_id}) is available`)
-          // }
-          return isCompleted;
-        }
-
-        // Default true for unknown operator types so you don't accidentally brick your pathfinding
-        return true;
-      });
-    });
+    }
 
     return availableMaps;
   }
