@@ -59,10 +59,16 @@ reach (it pathfinds server-side and returns 595 when no walkable path exists), s
 "everywhere reachable without a transition." Disconnected areas like the Lava Underground become their
 own zones automatically, with no magic constants.
 
-`restricted` tiles flood-fill among *themselves* into their own zones (they connect to each other but
-not to normal tiles), reachable only via transition edges — matching "restricted maps cannot
-communicate with normal maps." `blocked` tiles and missing coordinates are boundaries and are never
-crossed.
+**Access-type treatment (decided):**
+- `standard`, `conditional` → walkable (part of a zone). Conditions are ignored for v1.
+- `blocked`, `teleportation` → boundaries; never walkable, never part of a zone. (`teleportation` is
+  treated conservatively as a boundary for now; revisit if it turns out to gate legitimate routes.)
+- `restricted` → its own isolated zones. It connects only to other `restricted` tiles (a separate
+  flood-fill pass), reachable from normal zones only via transition edges — matching "restricted maps
+  cannot communicate with normal maps." **`restricted` is beta-only today and absent from the
+  checked-in `MapAccessType` enum**, so the code compares `access.type` as a string literal rather than
+  depending on the enum member. It is implemented now so it works when the type lands on production.
+- Missing coordinates (no map) are boundaries.
 
 Alternatives rejected: a smarter transition-only graph (deciding mutual walkability *is* the
 connected-components problem — back to heuristics); lazy/reactive discovery via `move()` 595s (too
@@ -153,8 +159,21 @@ transition point in your zone is genuinely walkable to).
 ## v1 assumptions (also tracked as TODOs)
 
 - `conditional` tiles are treated as walkable (condition ignored).
+- `teleportation` tiles are treated as boundaries (not walkable).
+- `restricted` is handled defensively via string comparison (the enum lacks it today).
 - Transition edges are added regardless of their conditions (planning ignores conditions).
 - These are revisited in the deferred conditions work.
+
+## Notes for the integration test
+
+`Character.move()` now consumes a `NavigationGraph` (built from `allMaps`) instead of the flat
+`transitionLocations` array. Because flood-fill needs contiguous coordinates, the existing
+`CharacterMove` integration tests — which use sparse, non-adjacent map fixtures — set
+`character.navigationGraph` directly through a small `makeGraph` helper that assigns map_ids to zones
+explicitly. This keeps the integration tests focused on the move/transition API-call sequence and
+leaves flood-fill correctness to the `zones` unit tests. The "standing on the interior exit" case
+resolves naturally: disconnected interior maps become distinct zones, so only the correct exit's edge
+is in the character's zone.
 
 ## Edge cases
 
