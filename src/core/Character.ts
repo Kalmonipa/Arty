@@ -2321,7 +2321,13 @@ export class Character {
     // rebuild the path so a different route can be tried, in case the computed path is wrong.
     // Seed with transitions whose conditions the character cannot currently satisfy, so the
     // pathfinder never routes through a gate it can't pass (e.g. a key it doesn't hold).
-    const excludedTransitionIds = await this.computeUnsatisfiableTransitions();
+    // Same-zone moves need no transitions, so skip the (bank-touching) satisfiability scan.
+    const startZone = this.navigationGraph.zoneOfMapId.get(this.data.map_id);
+    const targetZone = this.navigationGraph.zoneOfMapId.get(destination.map_id);
+    const excludedTransitionIds =
+      startZone !== undefined && startZone === targetZone
+        ? new Set<number>()
+        : await this.computeUnsatisfiableTransitions();
     const MAX_REROUTES = 3;
 
     for (let attempt = 0; attempt <= MAX_REROUTES; attempt++) {
