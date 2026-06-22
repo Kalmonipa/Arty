@@ -1338,4 +1338,193 @@ describe('Character.move()', () => {
       });
     });
   });
+
+  describe('Last-resort item acquisition', () => {
+    const cd = (reason: 'movement' | 'transition') => ({
+      remaining_seconds: 0,
+      total_seconds: 0,
+      started_at: '2025-01-01T00:00:00.000Z',
+      expiration: '2025-01-01T00:00:00.000Z',
+      reason,
+    });
+
+    it('acquires a missing key and reaches a destination only gated by it', async () => {
+      mockCharacter = {
+        ...mockCharacterData,
+        x: 0,
+        y: 0,
+        map_id: 91,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.data.gold = 0;
+      character.withdrawNow = jest.fn(async () => true);
+
+      // The character has no key anywhere until it acquires one.
+      let keyAcquired = false;
+      character.hasEquipped = jest.fn(() => false);
+      character.checkQuantityOfItemInInv = jest.fn((c) =>
+        keyAcquired && c === 'lich_tomb_key' ? 1 : 0,
+      );
+      character.checkQuantityOfItemInBank = jest.fn(async () => 0);
+      (
+        character as unknown as { getBankGold: () => Promise<number> }
+      ).getBankGold = jest.fn(async () => 0);
+      const gatherSpy = jest.fn(async (_qty: number, code: string) => {
+        if (code === 'lich_tomb_key') keyAcquired = true;
+        return true;
+      });
+      character.gatherNow = gatherSpy as typeof character.gatherNow;
+
+      const gated: MapSchema = {
+        map_id: 600,
+        name: 'Crypt Door',
+        skin: 's',
+        x: 5,
+        y: 5,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 601,
+            x: 5,
+            y: 5,
+            layer: 'underground',
+            conditions: [
+              { code: 'lich_tomb_key', operator: 'has_item', value: 1 },
+            ],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph({ 91: 0, 600: 0, 601: 1, 700: 1 }, [
+        { from: 0, to: 1, transitionPoint: gated },
+      ]);
+
+      const destination: MapSchema = {
+        map_id: 700,
+        name: 'Crypt',
+        skin: 's',
+        x: 9,
+        y: 9,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      mockActionMove
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination: gated,
+            path: [
+              [0, 0],
+              [5, 5],
+            ],
+            character: { ...mockCharacter, x: 5, y: 5, map_id: 600 },
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination,
+            path: [
+              [5, 5],
+              [9, 9],
+            ],
+            character: {
+              ...mockCharacter,
+              x: 9,
+              y: 9,
+              map_id: 700,
+              layer: 'underground',
+            },
+          },
+        });
+      mockActionTransition.mockResolvedValue({
+        data: {
+          cooldown: cd('transition'),
+          destination: { ...gated, map_id: 601, layer: 'underground' },
+          transition: {
+            map_id: 601,
+            x: 5,
+            y: 5,
+            layer: 'underground',
+            conditions: [],
+          },
+          character: {
+            ...mockCharacter,
+            x: 5,
+            y: 5,
+            map_id: 601,
+            layer: 'underground',
+          },
+        },
+      });
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(true);
+      expect(gatherSpy).toHaveBeenCalledWith(1, 'lich_tomb_key', true, true);
+      expect(mockActionTransition).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not acquire for a gold-only gate and fails cleanly', async () => {
+      mockCharacter = {
+        ...mockCharacterData,
+        x: 0,
+        y: 0,
+        map_id: 91,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.data.gold = 0;
+      character.hasEquipped = jest.fn(() => false);
+      character.checkQuantityOfItemInInv = jest.fn(() => 0);
+      character.checkQuantityOfItemInBank = jest.fn(async () => 0);
+      (
+        character as unknown as { getBankGold: () => Promise<number> }
+      ).getBankGold = jest.fn(async () => 0);
+      const gatherSpy = jest.fn(async () => true);
+      character.gatherNow = gatherSpy as typeof character.gatherNow;
+
+      const tollGate: MapSchema = {
+        map_id: 600,
+        name: 'Toll',
+        skin: 's',
+        x: 5,
+        y: 5,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 601,
+            x: 5,
+            y: 5,
+            layer: 'underground',
+            conditions: [{ code: 'gold', operator: 'cost', value: 999999 }],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph({ 91: 0, 600: 0, 601: 1, 700: 1 }, [
+        { from: 0, to: 1, transitionPoint: tollGate },
+      ]);
+
+      const destination: MapSchema = {
+        map_id: 700,
+        name: 'Vault',
+        skin: 's',
+        x: 9,
+        y: 9,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      const result = await character.move(destination);
+
+      expect(result).toBe(false);
+      expect(gatherSpy).not.toHaveBeenCalled();
+      expect(mockActionTransition).not.toHaveBeenCalled();
+    });
+  });
 });

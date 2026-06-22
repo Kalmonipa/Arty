@@ -160,6 +160,10 @@ export class Character {
   allMaps: MapSchema[];
   navigationGraph: NavigationGraph;
 
+  // True while move() is acquiring items to pass a gated transition. Nested move()
+  // calls (from gather/craft/buy sub-jobs) check this so acquisition can't recurse.
+  private acquiringForTransition = false;
+
   allCharacterDetails?: CharacterSchema[];
 
   /**
@@ -2317,20 +2321,27 @@ export class Character {
       return true;
     }
 
-    // Transitions the game has told us are unreachable (595) on this move. We exclude them and
-    // rebuild the path so a different route can be tried, in case the computed path is wrong.
-    // Seed with transitions whose conditions the character cannot currently satisfy, so the
-    // pathfinder never routes through a gate it can't pass (e.g. a key it doesn't hold).
     // Same-zone moves need no transitions, so skip the (bank-touching) satisfiability scan.
     const startZone = this.navigationGraph.zoneOfMapId.get(this.data.map_id);
     const targetZone = this.navigationGraph.zoneOfMapId.get(destination.map_id);
-    const excludedTransitionIds =
-      startZone !== undefined && startZone === targetZone
-        ? new Set<number>()
-        : await this.computeUnsatisfiableTransitions();
+    const sameZone = startZone !== undefined && startZone === targetZone;
+
+    // Transitions whose conditions the character cannot currently satisfy — the pathfinder
+    // never routes through a gate it can't pass (e.g. a key it doesn't hold). Recomputed
+    // after a successful acquisition, since newly-held items make gates passable.
+    let unsatisfiableTransitionIds = sameZone
+      ? new Set<number>()
+      : await this.computeUnsatisfiableTransitions();
+    // Transitions the game reported unreachable (595) during this move.
+    const blockedTransitionIds = new Set<number>();
+    let attemptedAcquisition = false;
     const MAX_REROUTES = 3;
 
     for (let attempt = 0; attempt <= MAX_REROUTES; attempt++) {
+      const excludedTransitionIds = new Set<number>([
+        ...unsatisfiableTransitionIds,
+        ...blockedTransitionIds,
+      ]);
       const transitionPath = buildTransitionPath(
         this.data.map_id,
         destination,
@@ -2339,6 +2350,34 @@ export class Character {
       );
 
       if (transitionPath === null) {
+        // Last resort: if the only thing blocking us is item requirements we don't hold,
+        // go and acquire them, then retry. Guarded so acquisition can't recurse into itself
+        // (gather/craft/buy sub-jobs call move() again), and attempted at most once.
+        if (
+          !this.acquiringForTransition &&
+          !attemptedAcquisition &&
+          !sameZone
+        ) {
+          attemptedAcquisition = true;
+          const acquireExcluded = new Set<number>([
+            ...(await this.computeUnacquirableTransitions()),
+            ...blockedTransitionIds,
+          ]);
+          const acquirePath = buildTransitionPath(
+            this.data.map_id,
+            destination,
+            this.navigationGraph,
+            acquireExcluded,
+          );
+          if (
+            acquirePath &&
+            (await this.acquireRequirementsForPath(acquirePath))
+          ) {
+            unsatisfiableTransitionIds =
+              await this.computeUnsatisfiableTransitions();
+            continue;
+          }
+        }
         logger.error(
           `Failed to build transition path to ${destination.name} (${destination.x}, ${destination.y}, ${destination.layer})`,
         );
@@ -2358,7 +2397,7 @@ export class Character {
 
       if (stepFailed) {
         if (blockedTransitionId === null) return false;
-        excludedTransitionIds.add(blockedTransitionId);
+        blockedTransitionIds.add(blockedTransitionId);
         logger.warn(
           `No path to transition ${blockedTransitionId}; rerouting to ${destination.name} (attempt ${attempt + 1}/${MAX_REROUTES})`,
         );
@@ -2380,7 +2419,7 @@ export class Character {
         if (moveResponse.error.code === 595 && transitionPath.length > 0) {
           const lastTransitionId =
             transitionPath[transitionPath.length - 1].map_id;
-          excludedTransitionIds.add(lastTransitionId);
+          blockedTransitionIds.add(lastTransitionId);
           logger.warn(
             `No path from landing point to ${destination.name} [Code: 595]; rerouting (attempt ${attempt + 1}/${MAX_REROUTES})`,
           );
@@ -3176,6 +3215,42 @@ export class Character {
         // Unmodelled operator (eq/ne/gt/lt): nothing to withdraw; let the
         // /transition API enforce it.
         return true;
+    }
+  }
+
+  /**
+   * @description Acquires the item requirements of every gated transition on a route so it
+   * becomes passable. Only item conditions (has_item / non-gold cost) are acquired — the
+   * caller guarantees the route contains no unacquirable (gold/achievement) gates. Sets the
+   * acquiringForTransition guard so the gather/craft/buy sub-jobs (which call move()) don't
+   * recurse back into acquisition. Returns false if any required item can't be obtained.
+   */
+  private async acquireRequirementsForPath(
+    path: MapSchema[],
+  ): Promise<boolean> {
+    const wasAcquiring = this.acquiringForTransition;
+    this.acquiringForTransition = true;
+    try {
+      for (const transitionPoint of path) {
+        const conditions = transitionPoint.interactions.transition?.conditions;
+        if (!conditions) continue;
+        for (const condition of conditions) {
+          if (await this.canSatisfyCondition(condition)) continue;
+          const required = condition.value || 1;
+          logger.info(
+            `Acquiring ${required}x ${condition.code} to pass transition at (${transitionPoint.x}, ${transitionPoint.y})`,
+          );
+          if (!(await this.gatherNow(required, condition.code, true, true))) {
+            logger.warn(
+              `Could not acquire ${condition.code}; abandoning route`,
+            );
+            return false;
+          }
+        }
+      }
+      return true;
+    } finally {
+      this.acquiringForTransition = wasAcquiring;
     }
   }
 
