@@ -22,7 +22,6 @@ import {
   ItemSchema,
   ItemSlot,
   MapContentType,
-  MapLayer,
   MapSchema,
   ResourceResponseSchema,
   SimpleEffectSchema,
@@ -43,7 +42,6 @@ import {
   getLowestWoodcuttingLevel,
   logger,
   sleep,
-  TransitionLocations,
 } from '../utils.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -88,14 +86,8 @@ import {
   getAllResourceInformation,
   getResourceInformation,
 } from '../api_calls/Resources.js';
-import {
-  transitionToMainland,
-  transitionToSandwhisperIsle,
-} from './Movement.js';
-import {
-  buildTransitionPath,
-  SANDWHISPER_Y_BOUNDARY,
-} from './TransitionPathfinder.js';
+import { buildTransitionPath } from './navigation/pathfinding.js';
+import { getNavigationGraph, NavigationGraph } from './navigation/graph.js';
 import {
   BagSlot,
   BodyArmorSlot,
@@ -161,7 +153,7 @@ export class Character {
   weaponMap?: Record<WeaponFlavours, ItemSchema[]>;
 
   allMaps: MapSchema[];
-  transitionLocations: MapSchema[];
+  navigationGraph: NavigationGraph;
 
   allCharacterDetails?: CharacterSchema[];
 
@@ -287,7 +279,7 @@ export class Character {
     }
 
     this.allMaps = await AllMaps();
-    this.transitionLocations = TransitionLocations(this.allMaps);
+    this.navigationGraph = getNavigationGraph(this.allMaps);
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
     this.allCharacterDetails = allCharacterDetails;
@@ -2324,11 +2316,9 @@ export class Character {
 
     for (let attempt = 0; attempt <= MAX_REROUTES; attempt++) {
       const transitionPath = buildTransitionPath(
-        this.data.x,
-        this.data.y,
-        this.data.layer as MapLayer,
+        this.data.map_id,
         destination,
-        this.transitionLocations,
+        this.navigationGraph,
         excludedTransitionIds,
       );
 
@@ -2398,8 +2388,8 @@ export class Character {
 
   /**
    * @description Moves to a transition point and executes the transition.
-   * Handles Sandwhisper Isle overworld↔mainland transitions via dedicated wrappers (for recall
-   * potion logic). All other transitions are handled generically, checking gold cost conditions.
+   * Conditions are handled generically: a plain gold cost is auto-paid; any other
+   * condition we cannot yet satisfy triggers a reroute so move() tries another exit.
    */
   private async performTransitionStep(
     transitionPoint: MapSchema,
@@ -2412,31 +2402,7 @@ export class Character {
       return { ok: false, reroute: false };
     }
 
-    // Sandwhisper Isle: mainland overworld -> island overworld
-    if (
-      transitionPoint.layer === MapLayer.overworld &&
-      transitionPoint.y < SANDWHISPER_Y_BOUNDARY &&
-      transition.layer === MapLayer.overworld &&
-      transition.y >= SANDWHISPER_Y_BOUNDARY
-    ) {
-      return (await transitionToSandwhisperIsle(this))
-        ? { ok: true }
-        : { ok: false, reroute: false };
-    }
-
-    // Sandwhisper Isle: island overworld -> mainland overworld
-    if (
-      transitionPoint.layer === MapLayer.overworld &&
-      transitionPoint.y >= SANDWHISPER_Y_BOUNDARY &&
-      transition.layer === MapLayer.overworld &&
-      transition.y < SANDWHISPER_Y_BOUNDARY
-    ) {
-      return (await transitionToMainland(this))
-        ? { ok: true }
-        : { ok: false, reroute: false };
-    }
-
-    // Generic transition: handle any gold cost conditions
+    // Generic transition: auto-pay a gold cost; reroute around anything else.
     if (transition.conditions) {
       for (const condition of transition.conditions) {
         if (
@@ -2446,9 +2412,9 @@ export class Character {
           await this.withdrawNow(condition.value, 'gold');
         } else {
           logger.warn(
-            `Unsupported transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)}`,
+            `Unsupported transition condition at (${transitionPoint.x}, ${transitionPoint.y}): ${JSON.stringify(condition)} — rerouting`,
           );
-          return { ok: false, reroute: false };
+          return { ok: false, reroute: true };
         }
       }
     }

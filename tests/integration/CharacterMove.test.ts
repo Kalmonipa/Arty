@@ -9,6 +9,43 @@ import {
   CharacterSchema,
   InventorySlot,
 } from '../../src/types/types.js';
+import {
+  NavigationGraph,
+  TransitionEdge,
+} from '../../src/core/navigation/graph.js';
+import { Zone, ZoneId } from '../../src/core/navigation/zones.js';
+
+// Builds a NavigationGraph from explicit zone assignments and edges, so the
+// move() mechanics can be tested without depending on flood-fill geometry.
+function makeGraph(
+  zoneAssignments: Record<number, ZoneId>,
+  edges: { from: ZoneId; to: ZoneId; transitionPoint: MapSchema }[] = [],
+): NavigationGraph {
+  const zoneOfMapId = new Map<number, ZoneId>();
+  const zones = new Map<ZoneId, Zone>();
+  for (const [mapIdStr, zoneId] of Object.entries(zoneAssignments)) {
+    const mapId = Number(mapIdStr);
+    zoneOfMapId.set(mapId, zoneId);
+    const zone = zones.get(zoneId) ?? {
+      id: zoneId,
+      layer: 'overworld',
+      mapIds: new Set<number>(),
+    };
+    zone.mapIds.add(mapId);
+    zones.set(zoneId, zone);
+  }
+  const edgeMap = new Map<ZoneId, TransitionEdge[]>();
+  for (const e of edges) {
+    const list = edgeMap.get(e.from) ?? [];
+    list.push({
+      fromZone: e.from,
+      toZone: e.to,
+      transitionPoint: e.transitionPoint,
+    });
+    edgeMap.set(e.from, list);
+  }
+  return { zoneOfMapId, zones, edges: edgeMap };
+}
 
 // Mock the API calls
 jest.mock('../../src/api_calls/Actions.js', () => ({
@@ -70,109 +107,6 @@ describe('Character.move()', () => {
         return true;
       },
     );
-
-    character.transitionLocations = [
-      {
-        map_id: 571,
-        name: 'Mountain',
-        skin: 'mountain_6',
-        x: -2,
-        y: 6,
-        layer: 'overworld',
-        access: {
-          type: 'standard',
-          conditions: [],
-        },
-        interactions: {
-          content: null,
-          transition: {
-            map_id: 572,
-            x: -2,
-            y: 6,
-            layer: 'underground',
-            conditions: [],
-          },
-        },
-      },
-      {
-        map_id: 572,
-        name: 'Underground',
-        skin: 'mine_1',
-        x: -2,
-        y: 6,
-        layer: 'underground',
-        access: {
-          type: 'standard',
-          conditions: [],
-        },
-        interactions: {
-          content: null,
-          transition: {
-            map_id: 571,
-            x: -2,
-            y: 6,
-            layer: 'overworld',
-            conditions: [],
-          },
-        },
-      },
-      {
-        map_id: 1093,
-        name: 'Forest',
-        skin: 'forest_coastline1',
-        x: 2,
-        y: 16,
-        layer: 'overworld',
-        access: {
-          type: 'standard',
-          conditions: [],
-        },
-        interactions: {
-          content: null,
-          transition: {
-            map_id: 1336,
-            x: -2,
-            y: 21,
-            layer: 'overworld',
-            conditions: [
-              {
-                code: 'gold',
-                operator: 'cost',
-                value: 1000,
-              },
-            ],
-          },
-        },
-      },
-      {
-        map_id: 1336,
-        name: 'Sandwhisper Isle',
-        skin: 'desertisland_16',
-        x: -2,
-        y: 21,
-        layer: 'overworld',
-        access: {
-          type: 'standard',
-          conditions: [],
-        },
-        interactions: {
-          content: null,
-          transition: {
-            map_id: 1093,
-            x: 2,
-            y: 16,
-            layer: 'overworld',
-            conditions: [
-              {
-                code: 'gold',
-                operator: 'cost',
-                value: 1000,
-              },
-            ],
-          },
-        },
-      },
-    ];
   });
 
   describe('Same layer movement', () => {
@@ -188,6 +122,7 @@ describe('Character.move()', () => {
         access: { type: 'standard', conditions: [] },
         interactions: {},
       };
+      character.navigationGraph = makeGraph({ 91: 0, 100: 0 });
 
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {
@@ -230,49 +165,9 @@ describe('Character.move()', () => {
       // Arrange
       mockCharacter.layer = 'underground';
       character = new Character(mockCharacter);
-      // Copy transitionLocations from beforeEach setup so buildTransitionPath has the data it needs
-      character.transitionLocations = [
-        {
-          map_id: 571,
-          name: 'Mountain',
-          skin: 'mountain_6',
-          x: -2,
-          y: 6,
-          layer: 'overworld',
-          access: { type: 'standard', conditions: [] },
-          interactions: {
-            content: null,
-            transition: {
-              map_id: 572,
-              x: -2,
-              y: 6,
-              layer: 'underground',
-              conditions: [],
-            },
-          },
-        },
-        {
-          map_id: 572,
-          name: 'Underground',
-          skin: 'mine_1',
-          x: -2,
-          y: 6,
-          layer: 'underground',
-          access: { type: 'standard', conditions: [] },
-          interactions: {
-            content: null,
-            transition: {
-              map_id: 571,
-              x: -2,
-              y: 6,
-              layer: 'overworld',
-              conditions: [],
-            },
-          },
-        },
-      ];
+      // Character (map 91) and the destination share one underground zone.
+      character.navigationGraph = makeGraph({ 91: 0, 200: 0 });
 
-      // Destination kept within the mainland underground region (y < 17) to match character at y=0
       const destination: MapSchema = {
         map_id: 200,
         name: 'Underground Cave',
@@ -332,6 +227,7 @@ describe('Character.move()', () => {
         access: { type: 'standard', conditions: [] },
         interactions: {},
       };
+      character.navigationGraph = makeGraph({ 91: 0 });
 
       // Act
       const result = await character.move(destination);
@@ -354,6 +250,7 @@ describe('Character.move()', () => {
         access: { type: 'standard', conditions: [] },
         interactions: {},
       };
+      character.navigationGraph = makeGraph({ 91: 0 });
 
       // Act
       const result = await character.move(destination);
@@ -379,7 +276,28 @@ describe('Character.move()', () => {
         interactions: {},
       };
 
-      const transitionLocation = character.transitionLocations[0]; // Mountain transition point
+      const transitionLocation: MapSchema = {
+        map_id: 571,
+        name: 'Mountain',
+        skin: 'mountain_6',
+        x: -2,
+        y: 6,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 572,
+            x: -2,
+            y: 6,
+            layer: 'underground',
+            conditions: [],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph(
+        { 91: 0, 571: 0, 572: 1, 521: 1 },
+        [{ from: 0, to: 1, transitionPoint: transitionLocation }],
+      );
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {
           cooldown: {
@@ -556,7 +474,15 @@ describe('Character.move()', () => {
           },
         },
       };
-      character.transitionLocations = [interiorExit, otherInteriorExit];
+      // Disconnected interiors are different zones, so only interiorExit's edge
+      // is in the character's zone — the other exit is unreachable from here.
+      character.navigationGraph = makeGraph(
+        { 800: 0, 802: 2, 801: 1, 803: 1, 900: 1 },
+        [
+          { from: 0, to: 1, transitionPoint: interiorExit },
+          { from: 2, to: 1, transitionPoint: otherInteriorExit },
+        ],
+      );
 
       const destination: MapSchema = {
         map_id: 900,
@@ -663,6 +589,7 @@ describe('Character.move()', () => {
         access: { type: 'standard', conditions: [] },
         interactions: {},
       };
+      character.navigationGraph = makeGraph({ 91: 0, 600: 0 });
 
       const apiError = new ApiError({ code: 404, message: 'Map not found' });
       mockActionMove.mockResolvedValue(apiError);
@@ -689,6 +616,28 @@ describe('Character.move()', () => {
         access: { type: 'standard', conditions: [] },
         interactions: {},
       };
+      const mountain: MapSchema = {
+        map_id: 571,
+        name: 'Mountain',
+        skin: 'mountain_6',
+        x: -2,
+        y: 6,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 572,
+            x: -2,
+            y: 6,
+            layer: 'underground',
+            conditions: [],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph(
+        { 91: 0, 571: 0, 572: 1, 700: 1 },
+        [{ from: 0, to: 1, transitionPoint: mountain }],
+      );
 
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {
@@ -699,7 +648,7 @@ describe('Character.move()', () => {
             expiration: '2025-01-01T00:00:05.000Z',
             reason: 'movement',
           },
-          destination: character.transitionLocations[0],
+          destination: mountain,
           path: [
             [0, 0],
             [-2, 6],
@@ -737,6 +686,7 @@ describe('Character.move()', () => {
         access: { type: 'standard', conditions: [] },
         interactions: {},
       };
+      character.navigationGraph = makeGraph({ 91: 0, 800: 0 });
 
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {
@@ -819,7 +769,14 @@ describe('Character.move()', () => {
           },
         },
       };
-      character.transitionLocations = [nearExit, farExit];
+      // Both exits leave the same underground zone for the same overworld zone.
+      character.navigationGraph = makeGraph(
+        { 950: 0, 901: 0, 903: 0, 902: 1, 904: 1, 800: 1 },
+        [
+          { from: 0, to: 1, transitionPoint: nearExit },
+          { from: 0, to: 1, transitionPoint: farExit },
+        ],
+      );
 
       const destination: MapSchema = {
         map_id: 800,
@@ -934,6 +891,28 @@ describe('Character.move()', () => {
           transition: null,
         },
       };
+      const forestBoat: MapSchema = {
+        map_id: 1093,
+        name: 'Forest',
+        skin: 'forest_coastline1',
+        x: 2,
+        y: 16,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 1336,
+            x: -2,
+            y: 21,
+            layer: 'overworld',
+            conditions: [{ code: 'gold', operator: 'cost', value: 1000 }],
+          },
+        },
+      };
+      character.navigationGraph = makeGraph(
+        { 91: 0, 1093: 0, 1336: 1, 1285: 1 },
+        [{ from: 0, to: 1, transitionPoint: forestBoat }],
+      );
 
       const mockMoveResponse: CharacterMovementResponseSchema = {
         data: {
@@ -944,7 +923,7 @@ describe('Character.move()', () => {
             expiration: '2025-01-01T00:00:05.000Z',
             reason: 'movement',
           },
-          destination: character.transitionLocations[0],
+          destination: forestBoat,
           path: [
             [0, 0],
             [2, 16],
