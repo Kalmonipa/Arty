@@ -166,11 +166,6 @@ export class Character {
   allCharacterDetails?: CharacterSchema[];
 
   /**
-   * True when character is not doing anything
-   * To be used when we implement idle tasks
-   */
-  isIdle: boolean = true;
-  /**
    * Max default number of slots. Can be increased with a backpack
    */
   maxInventorySlots = 20;
@@ -248,9 +243,10 @@ export class Character {
   hasRune: boolean = false;
 
   /**
-   * Events that we would like to ignore
+   * Toggle that decides if the character should do idle jobs
+   * Toggling off is mostly only useful for testing
    */
-  ignoredEvents = [];
+  shouldDoIdleJobs: boolean = true
 
   constructor(data: CharacterSchema) {
     this.data = data;
@@ -934,7 +930,9 @@ export class Character {
     while (true) {
       if (this.jobList.length === 0) {
         await sleep(5, 'no-more-jobs', false);
-        await this.appendJob(new IdleObjective(this, this.role));
+        if (this.shouldDoIdleJobs) {
+          await this.appendJob(new IdleObjective(this, this.role));
+        }
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];
 

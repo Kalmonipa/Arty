@@ -9,7 +9,7 @@ export default function JobsRouter(char: Character) {
    * @param char
    * @returns {string[]}
    */
-  router.get('/list/all', async (req: Request, res: Response) => {
+  router.get('/list/all', async (_: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
         return res
@@ -37,7 +37,7 @@ export default function JobsRouter(char: Character) {
    * @param char
    * @returns {Array<{id: string, parentId?: string, childId?: string, status: string}>}
    */
-  router.get('/list/with-parents', async (req: Request, res: Response) => {
+  router.get('/list/with-parents', async (_: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
         return res
@@ -97,7 +97,7 @@ export default function JobsRouter(char: Character) {
    * @param char
    * @returns {string[]} Array of cancelled job IDs
    */
-  router.get('/cancelled', async (req: Request, res: Response) => {
+  router.get('/cancelled', async (_: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
         return res
@@ -123,7 +123,7 @@ export default function JobsRouter(char: Character) {
   /**
    * @description Manually saves the current job queue to disk
    */
-  router.post('/save', async (req: Request, res: Response) => {
+  router.post('/save', async (_: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
         return res
@@ -186,7 +186,7 @@ export default function JobsRouter(char: Character) {
     }
   });
 
-  router.post('/pause', async (req: Request, res: Response) => {
+  router.post('/pause', async (_: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
         return res
@@ -208,7 +208,7 @@ export default function JobsRouter(char: Character) {
     }
   });
 
-  router.post('/resume', async (req: Request, res: Response) => {
+  router.post('/resume', async (_: Request, res: Response) => {
     try {
       if (typeof char === 'undefined' || !char) {
         return res
@@ -229,6 +229,20 @@ export default function JobsRouter(char: Character) {
         .json({ error: error.message || 'Internal server error.' });
     }
   });
+
+  router.post('/toggle-idle', async (_: Request, res: Response) => {
+    try {
+      const oldState = char.shouldDoIdleJobs
+      char.shouldDoIdleJobs = !char.shouldDoIdleJobs
+
+      return res.status(200).json({
+        message: `Toggled idle jobs from ${oldState} to ${char.shouldDoIdleJobs}`,
+        character: char.data.name
+      })
+    } catch (error) {
+      return res.status(500).json({ error: error.message || 'Internal server error.' })
+    }
+  })
 
   return router;
 }

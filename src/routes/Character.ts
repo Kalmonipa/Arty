@@ -53,7 +53,6 @@ export default function CharacterRouter(char: Character) {
         character: char.data.name,
         currentJob: char.activeJob?.objectiveId || 'none',
         enableEvents: char.enableEvents,
-        idle: char.isIdle,
         jobsInQueue: char.jobList.length,
       });
     } catch (error) {

@@ -69,7 +69,6 @@ export abstract class Objective {
   }
 
   async execute(): Promise<boolean> {
-    this.character.isIdle = false;
     if (!(await this.checkStatus())) return false;
 
     // Check if parent job has been cancelled
@@ -91,7 +90,6 @@ export abstract class Objective {
     }
 
     this.completeJob(result);
-    this.character.isIdle = true;
     return result;
   }
 
