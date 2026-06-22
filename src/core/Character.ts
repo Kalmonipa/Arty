@@ -23,6 +23,7 @@ import {
   ItemSchema,
   ItemSlot,
   MapContentType,
+  MapLayer,
   MapSchema,
   ResourceResponseSchema,
   SimpleEffectSchema,
@@ -93,6 +94,7 @@ import {
 } from '../api_calls/Resources.js';
 import { buildTransitionPath } from './navigation/pathfinding.js';
 import { getNavigationGraph, NavigationGraph } from './navigation/graph.js';
+import { ForestBankPotion, RecallPotion } from '../names.js';
 import {
   BagSlot,
   BodyArmorSlot,
@@ -163,6 +165,10 @@ export class Character {
   // True while move() is acquiring items to pass a gated transition. Nested move()
   // calls (from gather/craft/buy sub-jobs) check this so acquisition can't recurse.
   private acquiringForTransition = false;
+
+  // Cached id of the mainland overworld zone (the zone containing the spawn tile
+  // at 0,0). Used by the recall-potion shortcut. undefined until first resolved.
+  private mainlandZoneId?: number;
 
   allCharacterDetails?: CharacterSchema[];
 
@@ -2442,6 +2448,69 @@ export class Character {
   }
 
   /**
+   * @description The id of the mainland overworld zone — the zone containing the
+   * spawn tile at (0, 0). Resolved once from the navigation graph and cached.
+   * Returns undefined if the spawn tile or its zone can't be found (recall is then
+   * simply skipped). Used to decide when a recall potion is worthwhile.
+   */
+  private getMainlandZoneId(): number | undefined {
+    if (this.mainlandZoneId !== undefined) return this.mainlandZoneId;
+    if (!this.allMaps) return undefined;
+    const spawn = this.allMaps.find(
+      (m) => m.x === 0 && m.y === 0 && m.layer === MapLayer.overworld,
+    );
+    if (!spawn) {
+      logger.warn(
+        'Could not find spawn tile (0,0) overworld; recall shortcut disabled',
+      );
+      return undefined;
+    }
+    this.mainlandZoneId = this.navigationGraph.zoneOfMapId.get(spawn.map_id);
+    return this.mainlandZoneId;
+  }
+
+  /**
+   * @description If a transition is an overworld→overworld hop into the mainland zone
+   * and the character holds a recall (or forest bank) potion, use the potion to teleport
+   * to the mainland instead of taking the boat — saving the trip and its gold cost.
+   * Returns the step result when it handled the step, or null to fall through to the
+   * normal transition (no potion, not a mainland-bound overworld hop, or use failed).
+   */
+  private async tryRecallToMainland(
+    transitionPoint: MapSchema,
+  ): Promise<TransitionStepResult | null> {
+    const transition = transitionPoint.interactions.transition;
+    if (
+      !transition ||
+      transitionPoint.layer !== MapLayer.overworld ||
+      transition.layer !== MapLayer.overworld
+    ) {
+      return null;
+    }
+
+    const mainlandZoneId = this.getMainlandZoneId();
+    const destZoneId = this.navigationGraph.zoneOfMapId.get(transition.map_id);
+    if (mainlandZoneId === undefined || destZoneId !== mainlandZoneId) {
+      return null;
+    }
+
+    const potion =
+      this.checkQuantityOfItemInInv(RecallPotion) > 0
+        ? RecallPotion
+        : this.checkQuantityOfItemInInv(ForestBankPotion) > 0
+          ? ForestBankPotion
+          : null;
+    if (!potion) return null;
+
+    logger.info(
+      `Using ${potion} to recall to the mainland instead of the boat`,
+    );
+    if (await this.useItem(potion, 1)) return { ok: true };
+    // Use failed — fall through to the normal transition route.
+    return null;
+  }
+
+  /**
    * @description Moves to a transition point and executes the transition.
    * Ensures every transition condition is met first (withdrawing the shortfall of
    * a gold/item cost or required item from the bank). If a condition can't be met,
@@ -2457,6 +2526,11 @@ export class Character {
       );
       return { ok: false, reroute: false };
     }
+
+    // Shortcut: if this overworld transition leads to the mainland and we hold a
+    // teleport potion, recall instead of taking the (slower, gold-costing) boat.
+    const recallResult = await this.tryRecallToMainland(transitionPoint);
+    if (recallResult) return recallResult;
 
     if (transition.conditions) {
       for (const condition of transition.conditions) {
