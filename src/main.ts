@@ -4,7 +4,7 @@ import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
-import { GetCharacterData, logger } from './utils.js';
+import { GetCharacterData, getRandomInt, logger, sleep } from './utils.js';
 import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
@@ -23,7 +23,11 @@ import { db } from './db.js';
 import EventRouter from './events/routes.js';
 
 async function main() {
+  await sleep(getRandomInt(0,10), 'init_jitter', false)
+
   let charDetails: CharacterSchema[] = await GetCharacterData();
+
+  await sleep(getRandomInt(0,20), 'init_jitter', false)
 
   const char = new Character(
     charDetails.find((charData) => charData.name === CharName),
