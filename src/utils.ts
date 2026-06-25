@@ -126,6 +126,18 @@ export function getEnv(name: string): string {
 }
 
 /**
+ * Gets a random number between the two values
+ * @param min Lowest value
+ * @param max Highest value
+ * @returns A random number between the min and max
+ */
+export function getRandomInt(min, max) {
+  const minCeiled = Math.ceil(min);
+  const maxFloored = Math.floor(max);
+  return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
+}
+
+/**
  * @description Used after every action to wait for the cooldown period to finish
  * @param cooldown Number of seconds to sleep for
  */
