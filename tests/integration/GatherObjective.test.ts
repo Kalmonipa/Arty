@@ -12,7 +12,6 @@ import { InventorySlot } from '../../src/types/CharacterData.js';
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
-import { getMaps } from '../../src/api_calls/Maps.js';
 import { actionGather } from '../../src/api_calls/Actions.js';
 
 // Mock item data
@@ -105,10 +104,6 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(),
-}));
-
 jest.mock('../../src/api_calls/Monsters', () => ({
   getAllMonsterInformation: jest.fn(),
 }));
@@ -177,6 +172,8 @@ class SimpleMockCharacter {
       return { x: maps[0].x, y: maps[0].y };
     },
   );
+
+  findMaps = jest.fn((): MapSchema[] => mockMapData.data as MapSchema[]);
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -324,9 +321,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
@@ -368,9 +363,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       // Act
       await gatherObjective.run();
@@ -412,9 +405,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
@@ -446,9 +437,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -480,9 +469,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -532,9 +519,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -565,9 +550,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,

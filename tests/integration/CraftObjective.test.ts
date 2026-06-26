@@ -15,14 +15,9 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(),
-}));
-
 // Import the mocked functions
 import { actionCraft } from '../../src/api_calls/Actions.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { getMaps } from '../../src/api_calls/Maps.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -91,6 +86,10 @@ class SimpleMockCharacter {
     (maps: MapSchema[]): { x: number; y: number } => {
       return { x: maps[0].x, y: maps[0].y };
     },
+  );
+
+  findMaps = jest.fn(
+    (): MapSchema[] => mockWorkshopMapData.data as MapSchema[],
   );
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
@@ -321,8 +320,8 @@ describe('CraftObjective Integration Tests', () => {
     craftObjective = new CraftObjective(mockCharacter as any, target);
 
     // Set up default mock responses
-    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-      mockWorkshopMapData,
+    mockCharacter.findMaps.mockReturnValue(
+      mockWorkshopMapData.data as MapSchema[],
     );
     (actionCraft as jest.MockedFunction<typeof actionCraft>).mockResolvedValue(
       mockCraftResponse,
@@ -405,7 +404,7 @@ describe('CraftObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(getMaps).toHaveBeenCalledWith({
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
         content_code: 'weaponcrafting',
         content_type: 'workshop',
       });
@@ -868,46 +867,9 @@ describe('CraftObjective Integration Tests', () => {
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
     });
 
-    it('should handle getMaps API error', async () => {
-      // Arrange
-      const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        apiError,
-      );
-      mockCharacter.handleErrors.mockResolvedValue(false);
-      // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
-        (code: string) => {
-          switch (code) {
-            case 'iron_bar':
-              return 30; // Have enough for 5 swords
-            case 'feather':
-              return 10; // Have enough for 5 swords
-            case 'iron_sword':
-              return 0;
-            default:
-              return 0;
-          }
-        },
-      );
-      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
-
-      // Act
-      const result = await craftObjective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-    });
-
     it('should handle no workshop maps found', async () => {
       // Arrange
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue({
-        data: [],
-        total: 0,
-        page: 1,
-        size: 50,
-      });
+      mockCharacter.findMaps.mockReturnValue([]);
       // Mock having enough ingredients for crafting
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
         (code: string) => {
@@ -1029,8 +991,8 @@ describe('CraftObjective Integration Tests', () => {
         page: 1,
         size: 50,
       };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        customWorkshopMap,
+      mockCharacter.findMaps.mockReturnValue(
+        customWorkshopMap.data as MapSchema[],
       );
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
       // Mock having enough ingredients for crafting

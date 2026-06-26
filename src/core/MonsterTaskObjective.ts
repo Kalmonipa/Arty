@@ -1,8 +1,6 @@
-import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { DepositObjective } from './DepositObjective.js';
-import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
 export class MonsterTaskObjective extends Objective {
@@ -79,20 +77,16 @@ export class MonsterTaskObjective extends Objective {
       return true;
     }
 
-    const maps = await getMaps({
+    const maps = this.character.findMaps({
       content_code: this.character.data.task,
       content_type: 'monster',
     });
-    if (maps instanceof ApiError) {
-      return this.character.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
+    if (maps.length === 0) {
       logger.error(`Cannot find the task target. This shouldn't happen ??`);
       return false;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps.data);
+    const contentLocation = this.character.evaluateClosestMap(maps);
 
     await this.character.move(contentLocation);
 

@@ -9,7 +9,6 @@ import {
   getAllItemInformation,
   getItemInformation,
 } from '../api_calls/Items.js';
-import { getMaps, getMapsById } from '../api_calls/Maps.js';
 import { HealthStatus, Role } from '../types/CharacterData.js';
 import {
   AccountAchievementSchema,
@@ -1434,6 +1433,43 @@ export class Character {
   }
 
   /**
+   * @description Looks up maps from the in-memory snapshot by content code and/or
+   * type, mirroring the /maps endpoint's content filters. Prefer this over the API
+   * for static content (resources, monsters, workshops, banks, npcs, tasks
+   * masters). Event-spawned content is dynamic and absent from the snapshot, so
+   * keep using the API for those lookups.
+   */
+  findMaps(filter: {
+    content_code?: string;
+    content_type?: MapContentType;
+  }): MapSchema[] {
+    return this.allMaps.filter((map) => {
+      const content = map.interactions.content;
+      if (!content) return false;
+      if (
+        filter.content_code !== undefined &&
+        content.code !== filter.content_code
+      ) {
+        return false;
+      }
+      if (
+        filter.content_type !== undefined &&
+        content.type !== filter.content_type
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * @description Looks up a single map by id from the in-memory snapshot.
+   */
+  findMapById(mapId: number): MapSchema | undefined {
+    return this.allMaps.find((map) => map.map_id === mapId);
+  }
+
+  /**
    * @description Remove an item from the itemsToKeep list
    */
   removeItemFromItemsToKeep(itemCode: string) {
@@ -1850,18 +1886,15 @@ export class Character {
     numToGather: number,
   ): Promise<boolean> {
     logger.debug(`Handing in ${numToGather} ${itemCode}`);
-    const maps = await getMaps({
+    const maps = this.findMaps({
       content_code: 'items',
       content_type: 'tasks_master',
     });
-    if (maps instanceof ApiError) {
-      return this.handleErrors(maps);
-    }
-    if (maps.data.length === 0) {
+    if (maps.length === 0) {
       logger.error(`Cannot find the items tasks master`);
       return false;
     }
-    await this.move(this.evaluateClosestMap(maps.data));
+    await this.move(this.evaluateClosestMap(maps));
 
     const taskTradeResponse: ApiError | TaskTradeResponseSchema =
       await actionTasksTrade(this.data, {
@@ -1883,16 +1916,15 @@ export class Character {
   }
 
   async completeTask(taskType: TaskType): Promise<boolean> {
-    const maps = await getMaps({
+    const maps = this.findMaps({
       content_code: taskType,
       content_type: 'tasks_master',
     });
-    if (maps instanceof ApiError) return this.handleErrors(maps);
-    if (maps.data.length === 0) {
+    if (maps.length === 0) {
       logger.error(`Cannot find the tasks master`);
       return false;
     }
-    const tasksLocation = this.evaluateClosestMap(maps.data);
+    const tasksLocation = this.evaluateClosestMap(maps);
     await this.move(tasksLocation);
     let response = await actionCompleteTask(this.data);
     if (response instanceof ApiError && response.error.code === 497) {
@@ -3332,17 +3364,12 @@ export class Character {
    * @description Gets the available banks. Filters out banks that are locked by achievements
    */
   async getAvailableBanks(): Promise<MapSchema[]> {
-    const maps = await getMaps({ content_type: 'bank' });
-    if (maps instanceof ApiError) {
-      logger.warn(`Failed to get bank map`);
-      this.handleErrors(maps);
-      return [];
-    }
+    const maps = this.findMaps({ content_type: 'bank' });
 
     // Filter maps dynamically based on whether the character can satisfy their
     // access conditions (achievements, held items, affordable gold/item costs).
     const availableMaps: MapSchema[] = [];
-    for (const map of maps.data) {
+    for (const map of maps) {
       if (
         map.access.type === 'standard' ||
         (await this.canSatisfyConditions(map.access.conditions))
@@ -3408,16 +3435,12 @@ export class Character {
           }
         }
 
-        const mapData = await getMapsById(this.data.map_id);
-        if (mapData instanceof ApiError) {
+        const mapData = this.findMapById(this.data.map_id);
+        if (!mapData) {
           logger.error(`Failed to get current map data`);
           return false;
         }
-        await this.evaluateDepositItemsInBank(
-          this.itemsToKeep,
-          mapData.data,
-          true,
-        );
+        await this.evaluateDepositItemsInBank(this.itemsToKeep, mapData, true);
         return true;
       }
       case 499:

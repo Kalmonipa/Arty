@@ -1,6 +1,5 @@
 import { actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import { getMaps } from '../api_calls/Maps.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { db } from '../db.js';
@@ -398,17 +397,13 @@ export class GatherObjective extends Objective {
 
     logger.info(`Finding location of ${resource.code}`);
 
-    const maps = await getMaps({ content_code: resource.code });
-    if (maps instanceof ApiError) {
-      return this.character.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
+    const maps = this.character.findMaps({ content_code: resource.code });
+    if (maps.length === 0) {
       logger.error(`Cannot find any maps for ${resource.code}`);
       return false;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps.data);
+    const contentLocation = this.character.evaluateClosestMap(maps);
     await this.character.move(contentLocation);
 
     const success = await this.gatherItemLoop(

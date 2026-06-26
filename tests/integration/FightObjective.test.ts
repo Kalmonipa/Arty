@@ -11,17 +11,12 @@ jest.mock('../../src/api_calls/Actions', () => ({
   actionFight: jest.fn(),
 }));
 
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(),
-}));
-
 jest.mock('../../src/api_calls/Monsters', () => ({
   getMonsterInformation: jest.fn(),
 }));
 
 // Import the mocked functions
 import { actionFight } from '../../src/api_calls/Actions.js';
-import { getMaps } from '../../src/api_calls/Maps.js';
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
 import { CharacterSchema, ItemSlot, Skill } from '../../src/types/types.js';
 
@@ -183,6 +178,8 @@ class SimpleMockCharacter {
   evaluateClosestMap = jest.fn((maps: any[]): { x: number; y: number } => {
     return { x: maps[0].x, y: maps[0].y };
   });
+
+  findMaps = jest.fn((): any[] => mockMapData.data);
 
   evaluateDepositItemsInBank = jest.fn(async (): Promise<void> => {
     // Mock implementation
@@ -447,9 +444,7 @@ describe('FightObjective Integration Tests', () => {
     fightObjective = new FightObjective(mockCharacter as any, target);
 
     // Set up default mock responses
-    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-      mockMapData,
-    );
+    mockCharacter.findMaps.mockReturnValue(mockMapData.data);
     (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
       mockFightResponse,
     );
@@ -479,7 +474,9 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(getMaps).toHaveBeenCalledWith({ content_code: 'red_slime' });
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+        content_code: 'red_slime',
+      });
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
       expect(actionFight).toHaveBeenCalledTimes(5); // Should fight 5 times
     });
@@ -643,30 +640,9 @@ describe('FightObjective Integration Tests', () => {
       expect(actionFight).toHaveBeenCalledTimes(1); // Should fail on first attempt
     });
 
-    it('should handle getMaps API error', async () => {
-      // Arrange
-      const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        apiError,
-      );
-      mockCharacter.handleErrors.mockResolvedValue(false);
-
-      // Act
-      const result = await fightObjective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-    });
-
     it('should handle no maps found', async () => {
       // Arrange
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue({
-        data: [],
-        total: 0,
-        page: 1,
-        size: 50,
-      });
+      mockCharacter.findMaps.mockReturnValue([]);
 
       mockCharacter.addItemToInventory('apple', 20);
 
@@ -877,9 +853,7 @@ describe('FightObjective Integration Tests', () => {
           page: 1,
           size: 50,
         };
-        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-          testMapData,
-        );
+        mockCharacter.findMaps.mockReturnValue(testMapData.data);
 
         mockCharacter.addItemToInventory('apple', 20);
 
@@ -888,7 +862,9 @@ describe('FightObjective Integration Tests', () => {
 
         // Assert
         expect(result).toBe(true);
-        expect(getMaps).toHaveBeenCalledWith({ content_code: test.code });
+        expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+          content_code: test.code,
+        });
         expect(actionFight).toHaveBeenCalledTimes(test.quantity);
 
         // Reset for next test
@@ -941,9 +917,7 @@ describe('FightObjective Integration Tests', () => {
         page: 1,
         size: 50,
       };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        customMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(customMapData.data);
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
 
       mockCharacter.addItemToInventory('apple', 20);
