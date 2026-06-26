@@ -45,7 +45,7 @@ export async function getMonsterInformation(
   return apiRequest<MonsterResponseSchema>({
     url: apiUrl,
     errorMessages: {
-      404: 'Map not found',
+      404: `Monster not found: ${monsterCode}`,
     },
     fallbackMessage: `Unknown error from /monsters`,
   });
