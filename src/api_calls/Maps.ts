@@ -59,9 +59,10 @@ export async function getMapsById(
 export async function getAllMaps(
   params: GetAllMapsMapsGetParams,
 ): Promise<MapSchema[]> {
+  const size = params.size ?? 100;
   let allMaps: MapSchema[] = [];
 
-  const allMapsResponse = await getMaps(params);
+  const allMapsResponse = await getMaps({ ...params, size, page: 1 });
   if (allMapsResponse instanceof ApiError) {
     logger.error(`Failed to get all maps`);
     return [];
@@ -70,10 +71,10 @@ export async function getAllMaps(
   allMaps = allMapsResponse.data;
 
   if (allMapsResponse.pages > 1) {
-    for (let pages = 2; pages <= allMapsResponse.pages; pages++) {
-      const mapPage = await getMaps({ size: 100, page: pages });
+    for (let page = 2; page <= allMapsResponse.pages; page++) {
+      const mapPage = await getMaps({ ...params, size, page });
       if (mapPage instanceof ApiError) {
-        await this.handleErrors(mapPage);
+        logger.error(`Failed to get maps page ${page}`);
         return [];
       }
       allMaps.push(...mapPage.data);
