@@ -288,7 +288,7 @@ export class EventObjective extends Objective {
           // Ensure response has the expected structure before accessing nested properties
           if (response && response.data && response.data.character) {
             this.character.data = response.data.character;
-            this.progress++; // ToDo There might be edge cases where this doesn't reflect the actual gathered number
+            this.progress++;
           } else {
             logger.error(
               'Invalid response structure from actionGather:',

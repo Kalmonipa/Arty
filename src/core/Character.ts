@@ -2285,7 +2285,7 @@ export class Character {
     const inventoryFood = this.findFoodInInventory();
     if (inventoryFood.length > 0) {
       // Sort by heal value (descending) and return the best one
-      const bestFood = inventoryFood.sort(
+      const bestFood = inventoryFood.toSorted(
         (a, b) => b.healValue - a.healValue,
       )[0];
       logger.debug(`Found ${bestFood.code} as best food in inventory`);
