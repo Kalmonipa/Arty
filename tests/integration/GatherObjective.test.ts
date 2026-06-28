@@ -74,6 +74,7 @@ const mockResourceData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -93,6 +94,7 @@ const mockMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 

@@ -56,7 +56,7 @@ class SimpleMockCharacter {
   allMaps = [{ map_id: mockCharacterData.map_id, x: 0, y: 0 }];
   fishMerchantTradeDate = 0;
   nomadicMerchantTradeDate = 0;
-  role = 'fisherman'
+  role = 'fisherman';
 
   bankItems: Record<string, number> = {};
 

@@ -383,6 +383,7 @@ const mockMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -665,6 +666,7 @@ describe('FightObjective Integration Tests', () => {
         data: [],
         total: 0,
         page: 1,
+        pages: 1,
         size: 50,
       });
 
@@ -875,6 +877,7 @@ describe('FightObjective Integration Tests', () => {
           ],
           total: 1,
           page: 1,
+          pages: 1,
           size: 50,
         };
         (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
@@ -939,6 +942,7 @@ describe('FightObjective Integration Tests', () => {
         ],
         total: 1,
         page: 1,
+        pages: 1,
         size: 50,
       };
       (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(

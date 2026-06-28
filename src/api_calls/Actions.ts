@@ -251,7 +251,7 @@ export async function fightSimulator(
   iterations: number,
 ): Promise<CombatSimulationResponseSchema | ApiError> {
   return apiRequest<CombatSimulationResponseSchema>({
-    url: `${ApiUrl}/simulation/fight_simulation`,
+    url: `${ApiUrl}/simulation/fight`,
     method: 'POST',
     body: {
       characters: characters,
@@ -263,6 +263,6 @@ export async function fightSimulator(
       422: 'Request could not be processed due to an invalid payload.',
       451: 'Access denied, you must be a member to do that.',
     },
-    fallbackMessage: 'Unknown error from /simulation/fight_simulation',
+    fallbackMessage: 'Unknown error from /simulation/fight',
   });
 }

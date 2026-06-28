@@ -197,6 +197,7 @@ const mockWorkshopMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -906,6 +907,7 @@ describe('CraftObjective Integration Tests', () => {
         data: [],
         total: 0,
         page: 1,
+        pages: 1,
         size: 50,
       });
       // Mock having enough ingredients for crafting
@@ -1027,6 +1029,7 @@ describe('CraftObjective Integration Tests', () => {
         ],
         total: 1,
         page: 1,
+        pages: 1,
         size: 50,
       };
       (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(

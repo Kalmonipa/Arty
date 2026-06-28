@@ -281,7 +281,9 @@ describe('Character.computeUnacquirableTransitions', () => {
 
   it('does not mark a gate whose conditions are already satisfiable', async () => {
     character.data.gold = 5000;
-    const affordable = tp(10, [{ code: 'gold', operator: 'cost', value: 1000 }]);
+    const affordable = tp(10, [
+      { code: 'gold', operator: 'cost', value: 1000 },
+    ]);
     character.navigationGraph = graphWithEdges([affordable]);
 
     expect((await character.computeUnacquirableTransitions()).size).toBe(0);

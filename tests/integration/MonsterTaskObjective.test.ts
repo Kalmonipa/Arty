@@ -10,7 +10,7 @@ jest.mock('../../src/api_calls/Maps', () => ({
 
 // Import the mocked functions
 import { getMaps } from '../../src/api_calls/Maps.js';
-import { InventorySlot, MapSchema } from '../../src/types/types.js';
+import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -45,7 +45,7 @@ class SimpleMockCharacter {
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
-      (item: InventorySlot) => item.code === code,
+      (item: InventorySlotSchema) => item.code === code,
     );
     return item ? item.quantity : 0;
   });
@@ -77,6 +77,7 @@ const mockMonsterMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -261,6 +262,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
         data: [],
         total: 0,
         page: 1,
+        pages: 1,
         size: 50,
       });
 
@@ -418,6 +420,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
           ],
           total: 1,
           page: 1,
+          pages: 1,
           size: 50,
         };
         (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
@@ -465,6 +468,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
         ],
         total: 1,
         page: 1,
+        pages: 1,
         size: 50,
       };
       (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(

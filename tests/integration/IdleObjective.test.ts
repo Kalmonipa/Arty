@@ -50,6 +50,10 @@ const makeNpcResult = (
     buy_price: item.buy_price ?? null,
     sell_price: null,
   })),
+  total: 50,
+  page: 1,
+  pages: 1,
+  size: 1,
 });
 
 class MockCharacter {

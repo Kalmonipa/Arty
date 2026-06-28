@@ -1,7 +1,7 @@
 import { ApiError } from '../core/Error.js';
 import {
   CharacterSchema,
-  StaticDataPageNPCItem,
+  StaticDataPageNPCItemSchema,
   StaticDataPageNPCSchema,
   GetAllNpcsItemsNpcsItemsGetParams,
   GetAllNpcsNpcsDetailsGetParams,
@@ -104,7 +104,7 @@ export async function getNpc(code: string): Promise<ApiError | NPCSchema> {
 export async function getNpcItems(
   code: string,
   params?: GetNpcItemsNpcsItemsCodeGetParams,
-): Promise<ApiError | StaticDataPageNPCItem> {
+): Promise<ApiError | StaticDataPageNPCItemSchema> {
   const apiUrl = new URL(`${ApiUrl}/npcs/items/${code}`);
 
   if (params.page) {
@@ -114,7 +114,7 @@ export async function getNpcItems(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  return apiRequest<StaticDataPageNPCItem>({
+  return apiRequest<StaticDataPageNPCItemSchema>({
     url: apiUrl,
     errorMessages: {
       404: 'Item not found.',
@@ -124,7 +124,7 @@ export async function getNpcItems(
 
 export async function getAllNpcItems(
   params: GetAllNpcsItemsNpcsItemsGetParams,
-): Promise<ApiError | StaticDataPageNPCItem> {
+): Promise<ApiError | StaticDataPageNPCItemSchema> {
   const apiUrl = new URL(`${ApiUrl}/npcs/items`);
 
   if (params.code) {
@@ -143,7 +143,7 @@ export async function getAllNpcItems(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  return apiRequest<StaticDataPageNPCItem>({
+  return apiRequest<StaticDataPageNPCItemSchema>({
     url: apiUrl,
     fallbackMessage: 'Unknown error from /npcs/items',
   });

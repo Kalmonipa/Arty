@@ -5,7 +5,7 @@ import {
   getAllNpcItems,
 } from '../api_calls/NPC.js';
 import { TradeType } from '../types/NPCData.js';
-import { NPCItem, SimpleItemSchema } from '../types/types.js';
+import { NPCItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -72,7 +72,7 @@ export class TradeObjective extends Objective {
    * @returns true if successful, false if not
    */
   async buyFromNpc(
-    npcItems: NPCItem[],
+    npcItems: NPCItemSchema[],
     items: SimpleItemSchema,
   ): Promise<boolean> {
     // ToDo: make this iterate through all the NPCs in the list. Some might be better than others
@@ -85,11 +85,10 @@ export class TradeObjective extends Objective {
     // Calculate crystals needed
     let currencyNeeded = this.quantity * buyPrice;
 
-    let numInInv: number
+    let numInInv: number;
     if (this.currency === 'gold') {
-      numInInv = this.character.data.gold
+      numInInv = this.character.data.gold;
     } else {
-
       numInInv = this.character.checkQuantityOfItemInInv(this.currency);
 
       if (numInInv >= currencyNeeded) {
@@ -148,8 +147,10 @@ export class TradeObjective extends Objective {
           );
         }
       }
-    
-      const numCurrInInv = this.character.checkQuantityOfItemInInv(this.currency);
+
+      const numCurrInInv = this.character.checkQuantityOfItemInInv(
+        this.currency,
+      );
       if (numCurrInInv < currencyNeeded) {
         const numInBank = await this.character.checkQuantityOfItemInBank(
           this.currency,

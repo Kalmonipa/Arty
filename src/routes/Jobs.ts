@@ -232,17 +232,19 @@ export default function JobsRouter(char: Character) {
 
   router.post('/toggle-idle', async (_: Request, res: Response) => {
     try {
-      const oldState = char.shouldDoIdleJobs
-      char.shouldDoIdleJobs = !char.shouldDoIdleJobs
+      const oldState = char.shouldDoIdleJobs;
+      char.shouldDoIdleJobs = !char.shouldDoIdleJobs;
 
       return res.status(200).json({
         message: `Toggled idle jobs from ${oldState} to ${char.shouldDoIdleJobs}`,
-        character: char.data.name
-      })
+        character: char.data.name,
+      });
     } catch (error) {
-      return res.status(500).json({ error: error.message || 'Internal server error.' })
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
     }
-  })
+  });
 
   return router;
 }

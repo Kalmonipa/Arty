@@ -135,6 +135,7 @@ const mockCraftableItemsData = {
   ],
   total: 3,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -626,6 +627,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
         ],
         total: 3,
         page: 1,
+        pages: 1,
         size: 50,
       };
       (
@@ -701,6 +703,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
         data: [],
         total: 0,
         page: 1,
+        pages: 1,
         size: 50,
       };
       // Clear previous mocks and set new one
