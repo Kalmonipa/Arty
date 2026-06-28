@@ -10,7 +10,7 @@ import { CharacterSchema } from '../src/types/types.js';
 const characters = [
   {
     name: 'LongLegLarry',
-    skin: 'men1',
+    skin: 'vip_founder',
   },
   {
     name: 'JumpyJimmy',
@@ -18,7 +18,7 @@ const characters = [
   },
   {
     name: 'ZippyZoe',
-    skin: 'women2',
+    skin: 'necromancer',
   },
   {
     name: 'TimidTom',

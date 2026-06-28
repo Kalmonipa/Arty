@@ -46,6 +46,9 @@ export class IdleObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
+    await this.completeTasksFarmerAchievement();
+    if (this.checkIdleJobIsLast()) return true;
+
     await this.character.tidyUpBank(this.character.role);
     if (this.checkIdleJobIsLast()) return true;
 
@@ -639,6 +642,15 @@ export class IdleObjective extends Objective {
       );
     }
 
+    return true;
+  }
+
+  /**
+   * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
+   * This function will ensure that we prioritise doing tasks to get it.
+   * @todo Implement this function
+   */
+  private async completeTasksFarmerAchievement() {
     return true;
   }
 }
