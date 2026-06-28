@@ -7,7 +7,7 @@ import {
   CharacterTransitionResponseSchema,
   MapSchema,
   CharacterSchema,
-  InventorySlot,
+  InventorySlotSchema,
 } from '../../src/types/types.js';
 import {
   NavigationGraph,
@@ -90,14 +90,14 @@ describe('Character.move()', () => {
     character.withdrawNow = jest.fn(
       async (quantity: number, code: string): Promise<boolean> => {
         const item = character.data.inventory.find(
-          (item: InventorySlot) => item.code === code,
+          (item: InventorySlotSchema) => item.code === code,
         );
         if (item) {
           item.quantity += quantity;
         } else {
           // Find first empty slot
           const emptySlot = character.data.inventory.find(
-            (item: InventorySlot) => item.code === '',
+            (item: InventorySlotSchema) => item.code === '',
           );
           if (emptySlot) {
             emptySlot.code = code;

@@ -26,7 +26,7 @@ import {
  */
 export async function actionEquipItem(
   character: CharacterSchema,
-  equipment: EquipSchema,
+  equipment: EquipSchema[],
 ): Promise<EquipmentResponseSchema | ApiError> {
   return apiRequest<EquipmentResponseSchema>({
     url: `${ApiUrl}/my/${character.name}/action/equip`,
@@ -180,8 +180,8 @@ export async function getPendingItems(): Promise<
   DataPagePendingItemSchema | ApiError
 > {
   return apiRequest<DataPagePendingItemSchema>({
-    url: `${ApiUrl}/my/pending-items`,
-    fallbackMessage: 'Unknown error from /my/pending-items',
+    url: `${ApiUrl}/my/pending_items`,
+    fallbackMessage: 'Unknown error from /my/pending_items',
   });
 }
 

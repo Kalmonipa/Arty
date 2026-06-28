@@ -23,11 +23,11 @@ import { db } from './db.js';
 import EventRouter from './events/routes.js';
 
 async function main() {
-  await sleep(getRandomInt(0,10), 'init_jitter', false)
+  await sleep(getRandomInt(0, 10), 'init_jitter', false);
 
   let charDetails: CharacterSchema[] = await GetCharacterData();
 
-  await sleep(getRandomInt(0,20), 'init_jitter', false)
+  await sleep(getRandomInt(0, 20), 'init_jitter', false);
 
   const char = new Character(
     charDetails.find((charData) => charData.name === CharName),

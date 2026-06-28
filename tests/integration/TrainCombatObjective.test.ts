@@ -139,6 +139,7 @@ const mockMonsterData = {
   ],
   total: 2,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -326,6 +327,7 @@ describe('TrainCombatObjective Integration Tests', () => {
         data: [],
         total: 0,
         page: 1,
+        pages: 1,
         size: 50,
       };
       (
@@ -557,6 +559,7 @@ describe('TrainCombatObjective Integration Tests', () => {
         ],
         total: 1,
         page: 1,
+        pages: 1,
         size: 50,
       };
       mockCharacter.data.level = 10; // Start below target level

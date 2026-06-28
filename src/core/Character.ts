@@ -110,6 +110,7 @@ import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
 import { shouldDoEvent } from '../events/functions.js';
 import { db } from '../db.js';
+import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -288,6 +289,15 @@ export class Character {
         resource.drops.forEach((drop) => this.fishingDropCodes.add(drop.code)),
       );
     } else {
+      logger.warn(
+        'Failed to load fishing resources — fish stocking will fall back to all cooking consumables',
+      );
+    }
+
+    const monsterData = await getAllMonsterInformation({
+      size: 100,
+    });
+    if (monsterData instanceof ApiError) {
       logger.warn(
         'Failed to load fishing resources — fish stocking will fall back to all cooking consumables',
       );

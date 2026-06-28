@@ -235,6 +235,7 @@ export const mockResourceData: StaticDataPageResourceSchema = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -255,6 +256,7 @@ export const mockMapData: StaticDataPageMapSchema = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -303,6 +305,7 @@ export const mockMonsterData: StaticDataPageMonsterSchema = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 

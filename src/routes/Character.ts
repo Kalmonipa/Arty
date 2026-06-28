@@ -101,17 +101,19 @@ export default function CharacterRouter(char: Character) {
         });
       }
 
-      const destinationMap = char.allMaps.find((map) => map.map_id === mapId)
+      const destinationMap = char.allMaps.find((map) => map.map_id === mapId);
 
       if (!destinationMap) {
         return res.status(404).json({
-          error: `Map with ID ${mapId} not found`
-        })
+          error: `Map with ID ${mapId} not found`,
+        });
       }
 
-      char.move(destinationMap)
+      char.move(destinationMap);
 
-      logger.info(`Move to ${destinationMap.map_id} (x: ${destinationMap.x}, y: ${destinationMap.y})`)
+      logger.info(
+        `Move to ${destinationMap.map_id} (x: ${destinationMap.x}, y: ${destinationMap.y})`,
+      );
 
       return res.status(200).json({
         message: `Character moved to ${mapId} successfully`,

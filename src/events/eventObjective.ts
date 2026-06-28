@@ -92,7 +92,7 @@ export class EventObjective extends Objective {
           // can buy stuff
           if (this.character.role === 'fisherman') {
             result = await this.sellToNomadicMerchant();
-          
+
             if (!result) {
               this.character.recordEventFailure(this.activeEvent.code);
               return result;

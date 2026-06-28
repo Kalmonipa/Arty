@@ -9,7 +9,7 @@ Website: https://artifactsmmo.com/
 Documentation: https://docs.artifactsmmo.com/
 
 OpenAPI Spec: https://api.artifactsmmo.com/openapi.json
- * OpenAPI spec version: 7.0.3
+ * OpenAPI spec version: 8.0.0
  */
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -69,7 +69,7 @@ export interface AccountDetails {
   username: string;
   /** Member status. */
   member: boolean;
-  /** Account status. */
+  /** Account status. Status for contributors during the alpha and beta phases. It is no longer possible to obtain founder status. */
   status: AccountStatus;
   /** Account badges. */
   badges?: string[];
@@ -93,9 +93,14 @@ export interface AccountLeaderboardSchema {
   /** Account name. */
   account: string;
   /** Member status. */
-  status: AccountStatus;
+  member: boolean;
   /** Achievements points. */
   achievements_points: number;
+  /**
+   * Datetime when all achievement points were completed.
+   * @nullable
+   */
+  completed_at?: string | null;
   /** Gold in the account. */
   gold: number;
 }
@@ -117,6 +122,7 @@ export const AccountStatus = {
   founder: 'founder',
   gold_founder: 'gold_founder',
   vip_founder: 'vip_founder',
+  goblin1: 'goblin1',
 } as const;
 
 /**
@@ -193,6 +199,7 @@ export type ActionType = (typeof ActionType)[keyof typeof ActionType];
 export const ActionType = {
   movement: 'movement',
   fight: 'fight',
+  raid_fight: 'raid_fight',
   multi_fight: 'multi_fight',
   crafting: 'crafting',
   gathering: 'gathering',
@@ -217,6 +224,7 @@ export const ActionType = {
   buy_bank_expansion: 'buy_bank_expansion',
   give_item: 'give_item',
   give_gold: 'give_gold',
+  raid_deposit: 'raid_deposit',
   change_skin: 'change_skin',
   rename: 'rename',
   transition: 'transition',
@@ -224,6 +232,8 @@ export const ActionType = {
   sandbox_give_gold: 'sandbox_give_gold',
   sandbox_give_item: 'sandbox_give_item',
   sandbox_give_xp: 'sandbox_give_xp',
+  sandbox_clear_cooldown: 'sandbox_clear_cooldown',
+  sandbox_teleport: 'sandbox_teleport',
 } as const;
 
 export interface ActiveCharacterSchema {
@@ -232,7 +242,7 @@ export interface ActiveCharacterSchema {
   /** Account name. */
   account: string;
   /** Character skin code. */
-  skin: CharacterSkin;
+  skin: string;
   /** Character x coordinate. */
   x: number;
   /** Character y coordinate. */
@@ -291,18 +301,32 @@ export interface AddCharacterSchema {
    * @pattern ^[a-zA-Z0-9_-]+$
    */
   name: string;
-  /** Your desired skin. Skins unlocked by default: 'men1', 'men2', 'men3', 'women1', 'women2', 'women3'. */
-  skin: CharacterSkin;
+  /** Your desired skin. */
+  skin: string;
 }
 
-export interface BadgeConditionSchema {
-  /** Code of the condition. */
-  code: string;
+export interface AssistantAnswerDataSchema {
+  /** The assistant's answer. */
+  answer: string;
+  /** Updated assistant rate limit after this request. */
+  assistant: RateLimitScopeSchema;
+  /** Whether this question cost 1 gem. */
+  paid_with_gems: boolean;
+}
+
+export interface AssistantAnswerSchema {
+  data: AssistantAnswerDataSchema;
+}
+
+export interface AssistantQuestionSchema {
   /**
-   * Quantity of the condition (if any).
-   * @nullable
+   * Your question
+   * @minLength 1
+   * @maxLength 50000
    */
-  quantity?: number | null;
+  question: string;
+  /** Spend 1 gem if no free member question is available. */
+  pay_with_gems?: boolean;
 }
 
 export interface BadgeResponseSchema {
@@ -319,8 +343,6 @@ export interface BadgeSchema {
   season?: number | null;
   /** Description of the badge. */
   description: string;
-  /** Conditions to get the badge. */
-  conditions: BadgeConditionSchema[];
 }
 
 export interface BankExtensionSchema {
@@ -399,7 +421,37 @@ export interface BankSchema {
   gold: number;
 }
 
-export interface ChangePassword {
+export interface BuyCustomDesignRequestSchema {
+  /** Code of the custom design to purchase. */
+  code: string;
+}
+
+export interface BuySkinRequestSchema {
+  /** Code of the skin to purchase. */
+  code: string;
+}
+
+export interface BuySkinResponseDataSchema {
+  /** Updated list of owned skins. */
+  skins: string[];
+  /** Code of the purchased skin. */
+  skin: string;
+  /** Remaining gem balance. */
+  gems: number;
+}
+
+export interface BuySkinResponseSchema {
+  data: BuySkinResponseDataSchema;
+}
+
+export interface ChangeEmailSchema {
+  /** Your current email. */
+  current_email: string;
+  /** New email. */
+  new_email: string;
+}
+
+export interface ChangePasswordSchema {
   /**
    * Your password.
    * @minLength 5
@@ -426,8 +478,8 @@ export interface ChangeSkinCharacterDataSchema {
 }
 
 export interface ChangeSkinCharacterSchema {
-  /** Your desired skin. Skins unlocked by default: 'men1', 'men2', 'men3', 'women1', 'women2', 'women3'. */
-  skin: CharacterSkin;
+  /** Your desired skin. */
+  skin: string;
 }
 
 export interface ChangeSkinResponseSchema {
@@ -468,7 +520,7 @@ export interface CharacterLeaderboardSchema {
   /** Account name. */
   account: string;
   /** Member status. */
-  status: AccountStatus;
+  member: boolean;
   /** Character skin code. */
   skin: string;
   /** Combat level. */
@@ -578,7 +630,7 @@ export interface CharacterSchema {
   /** Account name. */
   account: string;
   /** Character skin code. */
-  skin: CharacterSkin;
+  skin: string;
   /** Combat level. */
   level: number;
   /** The current xp level of the combat level. */
@@ -746,24 +798,25 @@ export interface CharacterSchema {
   /** Inventory max items. */
   inventory_max_items: number;
   /** List of inventory slots. */
-  inventory?: InventorySlot[];
+  inventory?: InventorySlotSchema[];
 }
 
-export type CharacterSkin = (typeof CharacterSkin)[keyof typeof CharacterSkin];
+export interface CharacterStatsResponseSchema {
+  data: CharacterStatsSchema;
+}
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const CharacterSkin = {
-  men1: 'men1',
-  men2: 'men2',
-  men3: 'men3',
-  women1: 'women1',
-  women2: 'women2',
-  women3: 'women3',
-  corrupted1: 'corrupted1',
-  zombie1: 'zombie1',
-  marauder1: 'marauder1',
-  goblin1: 'goblin1',
-} as const;
+export type CharacterStatsSchemaMonstersKilled = { [key: string]: number };
+
+export type CharacterStatsSchemaResourcesGathered = { [key: string]: number };
+
+export type CharacterStatsSchemaActionCounts = { [key: string]: number };
+
+export interface CharacterStatsSchema {
+  monsters_killed?: CharacterStatsSchemaMonstersKilled;
+  resources_gathered?: CharacterStatsSchemaResourcesGathered;
+  action_counts?: CharacterStatsSchemaActionCounts;
+  deaths?: number;
+}
 
 export interface CharacterTransitionDataSchema {
   /** Cooldown details */
@@ -783,6 +836,20 @@ export interface CharacterTransitionResponseSchema {
 export interface CharactersListSchema {
   /** List of your characters. */
   data: CharacterSchema[];
+}
+
+/**
+ * Checkout session response.
+ */
+export interface CheckoutResponseSchema {
+  /** Stripe checkout URL for payment. */
+  checkout_url: string;
+  /** Stripe checkout session ID. */
+  session_id: string;
+}
+
+export interface CheckoutResponseWrapperSchema {
+  data: CheckoutResponseSchema;
 }
 
 /**
@@ -929,218 +996,122 @@ export interface CraftingSchema {
 
 export interface DataPageAccountAchievementSchema {
   data: AccountAchievementSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DataPageAccountLeaderboardSchema {
   data: AccountLeaderboardSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DataPageActiveCharacterSchema {
   data: ActiveCharacterSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DataPageCharacterLeaderboardSchema {
   data: CharacterLeaderboardSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
+}
+
+export interface DataPageGEOrderHistorySchema {
+  data: GEOrderHistorySchema[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DataPageGEOrderSchema {
   data: GEOrderSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
-}
-
-export interface DataPageGeOrderHistorySchema {
-  data: GeOrderHistorySchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DataPageLogSchema {
   data: LogSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DataPagePendingItemSchema {
   data: PendingItemSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
+}
+
+export interface DataPageRaidLeaderboardEntrySchema {
+  data: RaidLeaderboardEntrySchema[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DataPageSimpleItemSchema {
   data: SimpleItemSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface DeleteCharacterSchema {
@@ -1254,17 +1225,6 @@ export const EffectType = {
   combat: 'combat',
 } as const;
 
-export interface EquipRequestSchema {
-  /** Cooldown details. */
-  cooldown: CooldownSchema;
-  /** Item slot. */
-  slot: ItemSlot;
-  /** Item details. */
-  item: ItemSchema;
-  /** Player details. */
-  character: CharacterSchema;
-}
-
 export interface EquipSchema {
   /**
    * Item code.
@@ -1281,8 +1241,24 @@ export interface EquipSchema {
   quantity?: number;
 }
 
+export interface EquipmentItemSchema {
+  /** Item slot. */
+  slot: ItemSlot;
+  /** Item details. */
+  item: ItemSchema;
+}
+
 export interface EquipmentResponseSchema {
-  data: EquipRequestSchema;
+  data: EquipmentTransactionSchema;
+}
+
+export interface EquipmentTransactionSchema {
+  /** Cooldown details. */
+  cooldown: CooldownSchema;
+  /** Items details. */
+  items: EquipmentItemSchema[];
+  /** Player details. */
+  character: CharacterSchema;
 }
 
 export interface EventContentSchema {
@@ -1310,14 +1286,34 @@ export interface EventSchema {
   name: string;
   /** Code of the event. */
   code: string;
-  /** Content of the event. */
-  content: EventContentSchema;
+  /**
+   * Content of the event.
+   * @nullable
+   */
+  content?: EventContentSchema;
   /** Map list of the event. */
   maps: EventMapSchema[];
   /** Duration in minutes. */
   duration: number;
   /** Rate spawn of the event. (1/rate every minute) */
   rate: number;
+  /** Cooldown in minutes before the event can be spawned with gems. */
+  cooldown?: number;
+  /**
+   * Price in gems to spawn the event. Null if not purchasable.
+   * @nullable
+   */
+  price?: number | null;
+  /**
+   * Transition to add to the map when event is active.
+   * @nullable
+   */
+  transition?: TransitionSchema;
+  /**
+   * Gems spawn cooldown expiration datetime (null if not on cooldown).
+   * @nullable
+   */
+  cooldown_expiration?: string | null;
 }
 
 export interface FakeCharacterSchema {
@@ -1444,7 +1440,6 @@ export interface GEBuyOrderCreationSchema {
   /**
    * Item quantity.
    * @minimum 1
-   * @maximum 100
    */
   quantity: number;
   /**
@@ -1464,7 +1459,6 @@ export interface GEBuyOrderSchema {
   /**
    * Item quantity.
    * @minimum 1
-   * @maximum 100
    */
   quantity: number;
 }
@@ -1487,7 +1481,6 @@ export interface GEFillBuyOrderSchema {
   /**
    * Item quantity to sell.
    * @minimum 1
-   * @maximum 100
    */
   quantity: number;
 }
@@ -1505,7 +1498,6 @@ export interface GEOrderCreatedSchema {
   /**
    * Item quantity.
    * @minimum 1
-   * @maximum 100
    */
   quantity: number;
   /**
@@ -1523,7 +1515,7 @@ export interface GEOrderCreatedSchema {
 /**
  * Schema for creating a sell order.
  */
-export interface GEOrderCreationrSchema {
+export interface GEOrderCreationSchema {
   /**
    * Item code.
    * @pattern ^[a-zA-Z0-9_-]+$
@@ -1532,7 +1524,6 @@ export interface GEOrderCreationrSchema {
   /**
    * Item quantity.
    * @minimum 1
-   * @maximum 100
    */
   quantity: number;
   /**
@@ -1543,6 +1534,29 @@ export interface GEOrderCreationrSchema {
   price: number;
 }
 
+export interface GEOrderHistorySchema {
+  /** Order id. */
+  order_id: string;
+  /** Seller account name. */
+  seller: string;
+  /** Buyer account name. */
+  buyer: string;
+  /** Item code. */
+  code: string;
+  /**
+   * Item quantity.
+   * @minimum 1
+   */
+  quantity: number;
+  /**
+   * Item price per unit.
+   * @minimum 1
+   */
+  price: number;
+  /** Sale datetime. */
+  sold_at: string;
+}
+
 export interface GEOrderResponseSchema {
   data: GEOrderSchema;
 }
@@ -1551,7 +1565,7 @@ export interface GEOrderSchema {
   /** Order id. */
   id: string;
   /** Order type (sell or buy). */
-  type?: GEOrderType;
+  type: GEOrderType;
   /**
    * Account linked to the order.
    * @nullable
@@ -1562,7 +1576,6 @@ export interface GEOrderSchema {
   /**
    * Item quantity.
    * @minimum 1
-   * @maximum 100
    */
   quantity: number;
   /**
@@ -1631,28 +1644,136 @@ export const GatheringSkill = {
   alchemy: 'alchemy',
 } as const;
 
-export interface GeOrderHistorySchema {
-  /** Order id. */
-  order_id: string;
-  /** Seller account name. */
-  seller: string;
-  /** Buyer account name. */
-  buyer: string;
-  /** Item code. */
+export interface GemShopCatalogDataSchema {
+  /** Gem-shop skins. */
+  skins: GemShopSkinCatalogItemSchema[];
+  /** Gem-shop event spawns. */
+  spawn_events: GemShopSpawnEventCatalogItemSchema[];
+  /** Gem-shop subscriptions. */
+  subscriptions: GemShopSubscriptionCatalogItemSchema[];
+  /** Gem-shop custom designs. */
+  custom_designs: GemShopCustomDesignCatalogItemSchema[];
+}
+
+export interface GemShopCatalogResponseSchema {
+  data: GemShopCatalogDataSchema;
+}
+
+/**
+ * Custom design category.
+ */
+export type GemShopCustomDesignCatalogItemSchemaCategory =
+  (typeof GemShopCustomDesignCatalogItemSchemaCategory)[keyof typeof GemShopCustomDesignCatalogItemSchemaCategory];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GemShopCustomDesignCatalogItemSchemaCategory = {
+  npc: 'npc',
+  item: 'item',
+  skin: 'skin',
+} as const;
+
+export interface GemShopCustomDesignCatalogItemSchema {
+  /** Custom design code. */
   code: string;
-  /**
-   * Item quantity.
-   * @minimum 1
-   * @maximum 100
-   */
-  quantity: number;
-  /**
-   * Item price per unit.
-   * @minimum 1
-   */
+  /** Custom design name. */
+  name: string;
+  /** Custom design description. */
+  description: string;
+  /** Custom design price in gems. */
   price: number;
-  /** Sale datetime. */
-  sold_at: string;
+  /** Custom design category. */
+  category: GemShopCustomDesignCatalogItemSchemaCategory;
+  /** Whether the resulting content is unique to the buyer. */
+  unique_to_account: boolean;
+}
+
+export interface GemShopCustomDesignPurchaseResponseDataSchema {
+  /** Purchased custom design code. */
+  code: string;
+  /** Purchased custom design name. */
+  name: string;
+  /** Remaining gem balance. */
+  gems: number;
+  /** Gem cost of the purchase. */
+  cost: number;
+}
+
+export interface GemShopCustomDesignPurchaseResponseSchema {
+  data: GemShopCustomDesignPurchaseResponseDataSchema;
+}
+
+export interface GemShopSkinCatalogItemSchema {
+  /** Skin code. */
+  code: string;
+  /** Skin name. */
+  name: string;
+  /** Skin description. */
+  description: string;
+  /** Skin price in gems. */
+  price: number;
+}
+
+export interface GemShopSpawnEventCatalogItemSchema {
+  /** Event code. */
+  code: string;
+  /** Event name. */
+  name: string;
+  /** Spawned content type. */
+  content_type: MapContentType;
+  /** Spawned content code. */
+  content_code: string;
+  /** Event duration in minutes. */
+  duration: number;
+  /** Spawn cost in gems. */
+  price: number;
+}
+
+export interface GemShopSubscriptionCatalogItemSchema {
+  /** Subscription offer code. */
+  code: string;
+  /** Subscription offer name. */
+  name: string;
+  /** Subscription duration in days. */
+  duration_days: number;
+  /** Subscription price in gems. */
+  price: number;
+}
+
+export interface GemShopSubscriptionResponseDataSchema {
+  /** Whether the account is now a member. */
+  member: boolean;
+  /** Membership expiration date. */
+  member_expiration: string;
+  /** Remaining gem balance. */
+  gems: number;
+  /** Gem cost of the purchase. */
+  cost: number;
+}
+
+export interface GemShopSubscriptionResponseSchema {
+  data: GemShopSubscriptionResponseDataSchema;
+}
+
+export interface GemTransactionListResponseSchema {
+  data: GemTransactionSchema[];
+}
+
+/**
+ * Additional transaction metadata.
+ */
+export type GemTransactionSchemaMetadata = { [key: string]: unknown };
+
+export interface GemTransactionSchema {
+  /** Gem transaction type. */
+  type: string;
+  /** Signed gem delta. */
+  gems: number;
+  /** Human-readable transaction description. */
+  description: string;
+  /** Additional transaction metadata. */
+  metadata: GemTransactionSchemaMetadata;
+  /** Transaction creation date. */
+  created_at: string;
 }
 
 export interface GiveGoldDataSchema {
@@ -1741,7 +1862,7 @@ export interface InteractionSchema {
   transition?: TransitionSchema;
 }
 
-export interface InventorySlot {
+export interface InventorySlotSchema {
   /** Inventory slot identifier. */
   slot: number;
   /** Item code. */
@@ -1781,6 +1902,8 @@ export interface ItemSchema {
   craft?: CraftSchema;
   /** Item tradeable status. A non-tradeable item cannot be exchanged or sold. */
   tradeable: boolean;
+  /** Item recyclable status. A recyclable item can be recycled at the matching workshop. */
+  recyclable?: boolean;
 }
 
 export type ItemSlot = (typeof ItemSlot)[keyof typeof ItemSlot];
@@ -1856,6 +1979,7 @@ export const LogType = {
   delete_character: 'delete_character',
   movement: 'movement',
   fight: 'fight',
+  raid_fight: 'raid_fight',
   multi_fight: 'multi_fight',
   crafting: 'crafting',
   gathering: 'gathering',
@@ -1887,6 +2011,7 @@ export const LogType = {
   give_gold: 'give_gold',
   receive_item: 'receive_item',
   receive_gold: 'receive_gold',
+  raid_deposit: 'raid_deposit',
   change_skin: 'change_skin',
   rename: 'rename',
   transition: 'transition',
@@ -1895,6 +2020,8 @@ export const LogType = {
   sandbox_give_item: 'sandbox_give_item',
   sandbox_give_xp: 'sandbox_give_xp',
   sandbox_reset_account: 'sandbox_reset_account',
+  sandbox_clear_cooldown: 'sandbox_clear_cooldown',
+  sandbox_teleport: 'sandbox_teleport',
 } as const;
 
 export type MapAccessType = (typeof MapAccessType)[keyof typeof MapAccessType];
@@ -1902,7 +2029,7 @@ export type MapAccessType = (typeof MapAccessType)[keyof typeof MapAccessType];
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MapAccessType = {
   standard: 'standard',
-  teleportation: 'teleportation',
+  restricted: 'restricted',
   conditional: 'conditional',
   blocked: 'blocked',
 } as const;
@@ -1926,6 +2053,7 @@ export const MapContentType = {
   grand_exchange: 'grand_exchange',
   tasks_master: 'tasks_master',
   npc: 'npc',
+  raid: 'raid',
 } as const;
 
 export type MapLayer = (typeof MapLayer)[keyof typeof MapLayer];
@@ -1958,6 +2086,19 @@ export interface MapSchema {
   access: AccessSchema;
   /** Interactions available on this map. */
   interactions: InteractionSchema;
+}
+
+export interface MemberTokenSubscriptionResponseDataSchema {
+  /** Whether the account is now a member. */
+  member: boolean;
+  /** Membership expiration date. */
+  member_expiration: string;
+  /** Remaining member tokens. Member tokens are manually granted as rewards for events. */
+  member_token: number;
+}
+
+export interface MemberTokenSubscriptionResponseSchema {
+  data: MemberTokenSubscriptionResponseDataSchema;
 }
 
 export interface MonsterResponseSchema {
@@ -2012,6 +2153,7 @@ export const MonsterType = {
   normal: 'normal',
   elite: 'elite',
   boss: 'boss',
+  raid_boss: 'raid_boss',
 } as const;
 
 export interface MyAccountDetails {
@@ -2022,7 +2164,7 @@ export interface MyAccountDetails {
   /** Member status. */
   member: boolean;
   /**
-   * Member expiration date.
+   * Membership expiration date.
    * @nullable
    */
   member_expiration?: string | null;
@@ -2034,8 +2176,8 @@ export interface MyAccountDetails {
   skins: string[];
   /** Gems. */
   gems: number;
-  /** Event tokens for spawning events. */
-  event_token: number;
+  /** Member tokens manually granted as rewards for events. Each token can be redeemed for one month of membership. */
+  member_token?: number;
   /** Achievement points. */
   achievements_points: number;
   /** Banned. */
@@ -2053,7 +2195,7 @@ export interface MyCharactersListSchema {
   data: CharacterSchema[];
 }
 
-export interface NPCItem {
+export interface NPCItemSchema {
   /** The code of the NPC. This is the NPC's unique identifier (ID). */
   code: string;
   /** Code of the NPC that sells/buys the item. */
@@ -2086,7 +2228,7 @@ export interface NPCSchema {
   /** Type of the NPC. */
   type: NPCType;
   /** Items sold/bought by the NPC. */
-  items?: SimpleNPCItem[];
+  items?: SimpleNPCItemSchema[];
 }
 
 export type NPCType = (typeof NPCType)[keyof typeof NPCType];
@@ -2116,7 +2258,6 @@ export interface NpcMerchantBuySchema {
   /**
    * Item quantity.
    * @minimum 1
-   * @maximum 100
    */
   quantity: number;
 }
@@ -2198,7 +2339,248 @@ export const PendingItemSource = {
   grand_exchange: 'grand_exchange',
   admin: 'admin',
   event: 'event',
+  raid: 'raid',
   other: 'other',
+} as const;
+
+/**
+ * Number of gems to purchase.
+ */
+export type PurchaseGemsRequestSchemaQuantity =
+  (typeof PurchaseGemsRequestSchemaQuantity)[keyof typeof PurchaseGemsRequestSchemaQuantity];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PurchaseGemsRequestSchemaQuantity = {
+  NUMBER_500: 500,
+  NUMBER_1100: 1100,
+  NUMBER_2400: 2400,
+  NUMBER_6125: 6125,
+  NUMBER_12500: 12500,
+} as const;
+
+export interface PurchaseGemsRequestSchema {
+  /** Number of gems to purchase. */
+  quantity: PurchaseGemsRequestSchemaQuantity;
+}
+
+export interface PurchaseHistoryListResponseSchema {
+  data: PurchaseHistorySchema[];
+}
+
+export interface PurchaseHistorySchema {
+  /** Type of purchase. */
+  type: PurchaseType;
+  /** Description of the purchase. */
+  description: string;
+  /** Amount in cents. */
+  amount: number;
+  /** Gems credited from this purchase. */
+  gems_credited?: number;
+  /** When the purchase was made. */
+  created_at: string;
+}
+
+/**
+ * Type of purchase in history.
+ */
+export type PurchaseType = (typeof PurchaseType)[keyof typeof PurchaseType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PurchaseType = {
+  subscription: 'subscription',
+  gem_pack: 'gem_pack',
+} as const;
+
+export interface RaidDamageRewardSchema {
+  /**
+   * Damage required per reward instance.
+   * @minimum 1
+   */
+  damage_per_reward: number;
+  /**
+   * Maximum number of times this reward can be granted. Null means no cap.
+   * @minimum 1
+   * @nullable
+   */
+  max_rewards?: number | null;
+  /** Items granted per reward instance. */
+  items?: SimpleItemSchema[];
+}
+
+export type RaidInstanceResult =
+  (typeof RaidInstanceResult)[keyof typeof RaidInstanceResult];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RaidInstanceResult = {
+  success: 'success',
+  failure: 'failure',
+} as const;
+
+export interface RaidInstanceSchema {
+  /** Weekly raid opening datetime in UTC. */
+  starts_at: string;
+  /** Weekly raid planned closing datetime in UTC. */
+  ends_at: string;
+  /** Current status of this weekly raid instance. */
+  status: RaidStatus;
+  /**
+   * Shared HP pool when this raid instance starts.
+   * @minimum 1
+   */
+  total_hp: number;
+  /**
+   * Remaining shared HP pool for this raid instance.
+   * @minimum 0
+   */
+  remaining_hp: number;
+  /**
+   * Number of accounts that contributed during this raid instance.
+   * @minimum 0
+   */
+  participant_count?: number;
+  /**
+   * Datetime when this raid instance actually ended.
+   * @nullable
+   */
+  ended_at?: string | null;
+  /**
+   * Final result for this raid instance.
+   * @nullable
+   */
+  result?: RaidInstanceResult;
+  /**
+   * Datetime when rewards were distributed for this raid instance.
+   * @nullable
+   */
+  rewards_distributed_at?: string | null;
+}
+
+export interface RaidLeaderboardEntrySchema {
+  /**
+   * Leaderboard position.
+   * @minimum 1
+   */
+  position: number;
+  /** Account name. */
+  account: string;
+  /**
+   * Points earned for this raid instance.
+   * @minimum 0
+   */
+  points: number;
+}
+
+export interface RaidRankRewardSchema {
+  /**
+   * Inclusive minimum rank.
+   * @minimum 1
+   */
+  min_rank: number;
+  /**
+   * Inclusive maximum rank.
+   * @minimum 1
+   */
+  max_rank: number;
+  /** Items granted for this rank bracket. */
+  items?: SimpleItemSchema[];
+}
+
+export interface RaidResponseSchema {
+  /** Raid details. */
+  data: RaidSchema;
+}
+
+export interface RaidRewardsSchema {
+  /** Items granted based on cumulative damage dealt. */
+  damage_rewards?: RaidDamageRewardSchema[];
+  /** Items granted based on leaderboard rank. */
+  leaderboard?: RaidRankRewardSchema[];
+}
+
+export interface RaidScheduleSchema {
+  /**
+   * UTC weekdays when the raid opens.
+   * @minItems 1
+   */
+  weekdays: RaidWeekday[];
+  /**
+   * UTC hour when the raid opens.
+   * @minimum 0
+   * @maximum 23
+   */
+  start_hour_utc?: number;
+  /**
+   * UTC minute when the raid opens.
+   * @minimum 0
+   * @maximum 59
+   */
+  start_minute_utc?: number;
+  /**
+   * Maximum raid duration in hours.
+   * @minimum 1
+   * @maximum 168
+   */
+  duration_hours?: number;
+}
+
+export interface RaidSchema {
+  /** Raid code. */
+  code: string;
+  /** Raid name. */
+  name: string;
+  /**
+   * Raid description.
+   * @nullable
+   */
+  description?: string | null;
+  /** Monster code used for raid combat simulation. */
+  monster: string;
+  /** Weekly raid opening schedule. */
+  schedule: RaidScheduleSchema;
+  /** Reward rules for the raid. */
+  rewards?: RaidRewardsSchema;
+  /** Current overall raid status. */
+  status: RaidStatus;
+  /** Datetime for the next scheduled raid opening in UTC. */
+  next_start_at: string;
+  /**
+   * Number of distinct accounts that contributed to the active or latest raid instance.
+   * @minimum 0
+   */
+  participant_count?: number;
+  /**
+   * Currently active weekly raid instance, if any.
+   * @nullable
+   */
+  active_instance?: RaidInstanceSchema;
+  /**
+   * Latest weekly raid instance, active or finished.
+   * @nullable
+   */
+  latest_instance?: RaidInstanceSchema;
+}
+
+export type RaidStatus = (typeof RaidStatus)[keyof typeof RaidStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RaidStatus = {
+  upcoming: 'upcoming',
+  active: 'active',
+  finished_success: 'finished_success',
+  finished_failure: 'finished_failure',
+} as const;
+
+export type RaidWeekday = (typeof RaidWeekday)[keyof typeof RaidWeekday];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RaidWeekday = {
+  monday: 'monday',
+  tuesday: 'tuesday',
+  wednesday: 'wednesday',
+  thursday: 'thursday',
+  friday: 'friday',
+  saturday: 'saturday',
+  sunday: 'sunday',
 } as const;
 
 export interface RateLimitSchema {
@@ -2206,6 +2588,46 @@ export interface RateLimitSchema {
   type: string;
   /** Value of the rate limit. */
   value: string;
+}
+
+export interface RateLimitScopeSchema {
+  /** @nullable */
+  second?: RateLimitWindowSchema;
+  /** @nullable */
+  minute?: RateLimitWindowSchema;
+  /** @nullable */
+  hour?: RateLimitWindowSchema;
+  /** @nullable */
+  day?: RateLimitWindowSchema;
+}
+
+export interface RateLimitWindowSchema {
+  /** Maximum requests allowed in this window. */
+  limit: number;
+  /** Remaining requests in the current window. */
+  remaining: number;
+  /** UTC datetime when the window resets. */
+  reset: string;
+}
+
+export interface RateLimitsDataSchema {
+  /** Rate limits for account endpoints. */
+  account: RateLimitScopeSchema;
+  /** Rate limits for data endpoints. */
+  data: RateLimitScopeSchema;
+  /** Rate limits for action endpoints. */
+  action: RateLimitScopeSchema;
+  /** Rate limits for the fight simulation endpoint. Only available for members. */
+  simulation: RateLimitScopeSchema;
+  /**
+   * Assistant daily usage. Only available for members.
+   * @nullable
+   */
+  assistant?: RateLimitScopeSchema;
+}
+
+export interface RateLimitsSchema {
+  data: RateLimitsDataSchema;
 }
 
 export interface RecyclingDataSchema {
@@ -2220,6 +2642,10 @@ export interface RecyclingDataSchema {
 export interface RecyclingItemsSchema {
   /** Objects received. */
   items: DropSchema[];
+  /** Whether enhanced recycling was used. */
+  enhanced?: boolean;
+  /** Gold spent for enhanced recycling. */
+  gold?: number;
 }
 
 export interface RecyclingResponseSchema {
@@ -2237,6 +2663,8 @@ export interface RecyclingSchema {
    * @minimum 1
    */
   quantity?: number;
+  /** Whether to use enhanced recycling. */
+  enhanced?: boolean;
 }
 
 export interface ResourceResponseSchema {
@@ -2287,6 +2715,19 @@ export interface RewardResponseSchema {
   data: DropRateSchema;
 }
 
+/**
+ * Type of season reward.
+ */
+export type RewardType = (typeof RewardType)[keyof typeof RewardType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RewardType = {
+  badge: 'badge',
+  skin: 'skin',
+  gold: 'gold',
+  item: 'item',
+} as const;
+
 export interface RewardsSchema {
   /** Items rewards. */
   items: SimpleItemSchema[];
@@ -2294,13 +2735,21 @@ export interface RewardsSchema {
   gold: number;
 }
 
-export interface SeasonBadgeSchema {
-  /** Badge code. */
+export interface SeasonRewardSchema {
+  /** Code of the item/badge/skin associated with this reward. */
   code: string;
-  /** Badge description. */
+  /** Type of the reward. */
+  type: RewardType;
+  /** Description of how to earn this reward. */
   description: string;
-  /** Required achievement points to earn the badge. */
+  /** Number of achievement points required to earn this reward. */
   required_points: number;
+  /** Quantity of the reward (e.g., gold amount, item quantity). */
+  quantity?: number;
+  /** Whether member status is required to earn this reward. */
+  member_required?: boolean;
+  /** Whether this reward is only for the first player to reach the required points. */
+  first_only?: boolean;
 }
 
 export interface SeasonSchema {
@@ -2310,19 +2759,8 @@ export interface SeasonSchema {
   number?: number;
   /** Season start date. */
   start_date?: string;
-  /** Season badges with required achievement points. */
-  badges: SeasonBadgeSchema[];
-  /** Season skins with required achievement points. */
-  skins: SeasonSkinSchema[];
-}
-
-export interface SeasonSkinSchema {
-  /** Skin code. */
-  code: string;
-  /** Skin description. */
-  description: string;
-  /** Required achievement points to earn the skin. */
-  required_points: number;
+  /** Season rewards with required achievement points, sorted by points ascending. */
+  rewards: StatusSeasonRewardSchema[];
 }
 
 export interface SimpleEffectSchema {
@@ -2350,7 +2788,7 @@ export interface SimpleItemSchema {
   quantity: number;
 }
 
-export interface SimpleNPCItem {
+export interface SimpleNPCItemSchema {
   /** Item code. */
   code: string;
   /** Currency used to buy/sell the item. If it's not gold, it's the item code. */
@@ -2401,324 +2839,221 @@ export interface SkillResponseSchema {
   data: SkillDataSchema;
 }
 
-/**
- * Model for the request to spawn a specific event
- */
-export interface SpawnEventRequest {
+export interface SkinResponseSchema {
+  data: SkinSchema;
+}
+
+export interface SkinSchema {
+  /** The code of the skin. This is the skin's unique identifier. */
+  code: string;
+  /** Display name of the skin. */
+  name: string;
+  /** Description of the skin and how to obtain it. */
+  description: string;
+  /** Whether this skin is available to all players by default. */
+  default: boolean;
+  /**
+   * Price in gems to purchase this skin. Null if not purchasable.
+   * @nullable
+   */
+  price?: number | null;
+}
+
+export interface SpawnEventRequestSchema {
   /** Code of the event to spawn */
   code: string;
 }
 
 export interface StaticDataPageAchievementSchema {
   data: AchievementSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageActiveEventSchema {
   data: ActiveEventSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageBadgeSchema {
   data: BadgeSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageDropRateSchema {
   data: DropRateSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageEffectSchema {
   data: EffectSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageEventSchema {
   data: EventSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageItemSchema {
   data: ItemSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageMapSchema {
   data: MapSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageMonsterSchema {
   data: MonsterSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
-export interface StaticDataPageNPCItem {
-  data: NPCItem[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+export interface StaticDataPageNPCItemSchema {
+  data: NPCItemSchema[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageNPCSchema {
   data: NPCSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
+}
+
+export interface StaticDataPageRaidSchema {
+  data: RaidSchema[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageResourceSchema {
   data: ResourceSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
+}
+
+export interface StaticDataPageSeasonRewardSchema {
+  data: SeasonRewardSchema[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
+}
+
+export interface StaticDataPageSkinSchema {
+  data: SkinSchema[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StaticDataPageTaskFullSchema {
   data: TaskFullSchema[];
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  total?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  page?: number | null;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  size?: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  pages?: number | null;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  size: number;
+  /** @minimum 0 */
+  pages: number;
 }
 
 export interface StatusResponseSchema {
@@ -2742,6 +3077,26 @@ export interface StatusSchema {
   rate_limits: RateLimitSchema[];
 }
 
+/**
+ * Season reward as shown in server details (without season number since it's implied).
+ */
+export interface StatusSeasonRewardSchema {
+  /** Unique code identifying this reward. */
+  code: string;
+  /** Type of the reward. */
+  type: RewardType;
+  /** Description of how to earn this reward. */
+  description: string;
+  /** Number of achievement points required to earn this reward. */
+  required_points: number;
+  /** Quantity of the reward (e.g., gold amount, item quantity). */
+  quantity?: number;
+  /** Whether member status is required to earn this reward. */
+  member_required?: boolean;
+  /** Whether this reward is only for the first player to reach the required points. */
+  first_only?: boolean;
+}
+
 export interface StorageEffectSchema {
   /**
    * Effect code.
@@ -2750,6 +3105,74 @@ export interface StorageEffectSchema {
   code: string;
   /** Effect value. */
   value: number;
+}
+
+/**
+ * Stripe subscription plan type.
+ */
+export type StripeSubscriptionPlan =
+  (typeof StripeSubscriptionPlan)[keyof typeof StripeSubscriptionPlan];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const StripeSubscriptionPlan = {
+  monthly: 'monthly',
+  annual: 'annual',
+} as const;
+
+export interface SubscribeRequestSchema {
+  /** Recurring Stripe subscription plan to purchase. */
+  plan: StripeSubscriptionPlan;
+}
+
+/**
+ * Subscription plan type.
+ */
+export type SubscriptionPlan =
+  (typeof SubscriptionPlan)[keyof typeof SubscriptionPlan];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SubscriptionPlan = {
+  monthly: 'monthly',
+  annual: 'annual',
+  prepaid: 'prepaid',
+} as const;
+
+export interface SubscriptionResponseSchema {
+  data: SubscriptionSchema;
+}
+
+/**
+ * How the subscription was purchased. Mixed means both gems and member tokens were used.
+ */
+export type SubscriptionSchemaPurchaseSource =
+  (typeof SubscriptionSchemaPurchaseSource)[keyof typeof SubscriptionSchemaPurchaseSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SubscriptionSchemaPurchaseSource = {
+  stripe: 'stripe',
+  gems: 'gems',
+  member_token: 'member_token',
+  mixed: 'mixed',
+} as const;
+
+export interface SubscriptionSchema {
+  /** Subscription plan (monthly, annual, or prepaid). */
+  plan: SubscriptionPlan;
+  /** How the subscription was purchased. Mixed means both gems and member tokens were used. */
+  purchase_source: SubscriptionSchemaPurchaseSource;
+  /** Subscription status (active, cancelled, past_due, expired). */
+  status: string;
+  /** Start of the current billing period. */
+  current_period_start: string;
+  /** End of the current billing period. */
+  current_period_end: string;
+  /** When the subscription was created. */
+  created_at: string;
+  /**
+   * When the subscription was cancelled.
+   * @nullable
+   */
+  cancelled_at?: string | null;
 }
 
 export interface TaskCancelledResponseSchema {
@@ -2885,10 +3308,14 @@ export interface UseItemSchema {
 
 export type ValidationErrorLocItem = string | number;
 
+export type ValidationErrorCtx = { [key: string]: unknown };
+
 export interface ValidationError {
   loc: ValidationErrorLocItem[];
   msg: string;
   type: string;
+  input?: unknown;
+  ctx?: ValidationErrorCtx;
 }
 
 /**
@@ -3071,6 +3498,52 @@ export type GetAllBadgesBadgesGetParams = {
   size?: number;
 };
 
+export type GetAllSkinsSkinsGetParams = {
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 10000
+   */
+  size?: number;
+};
+
+export type GetAllSeasonRewardsSeasonRewardsGetParams = {
+  /**
+   * Filter by reward type.
+   */
+  type?: RewardType;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 10000
+   */
+  size?: number;
+};
+
+export type GetSeasonRewardsByCodeSeasonRewardsCodeGetParams = {
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 10000
+   */
+  size?: number;
+};
+
 export type GetActiveCharactersCharactersActiveGetParams = {
   /**
    * Page number
@@ -3165,6 +3638,10 @@ export type GetGeOrdersGrandexchangeOrdersGetParams = {
    * Filter by order type (sell or buy).
    */
   type?: GEOrderType;
+  /**
+   * Filter by item type.
+   */
+  item_type?: ItemType;
   /**
    * Page number
    * @minimum 1
@@ -3285,6 +3762,14 @@ export type GetAllMapsMapsGetParams = {
    */
   hide_blocked_maps?: boolean;
   /**
+   * When true, does not overlay active events on maps.
+   */
+  hide_event?: boolean;
+  /**
+   * Filter maps by transition. True returns only maps with transitions, False returns only maps without.
+   */
+  transition?: boolean | null;
+  /**
    * Page number
    * @minimum 1
    */
@@ -3311,6 +3796,14 @@ export type GetLayerMapsMapsLayerGetParams = {
    * When true, excludes maps with access_type 'blocked' from the results.
    */
   hide_blocked_maps?: boolean;
+  /**
+   * When true, does not overlay active events on maps.
+   */
+  hide_event?: boolean;
+  /**
+   * Filter maps by transition. True returns only maps with transitions, False returns only maps without.
+   */
+  transition?: boolean | null;
   /**
    * Page number
    * @minimum 1
@@ -3430,6 +3923,43 @@ export type GetAllNpcsItemsNpcsItemsGetParams = {
    * Page size
    * @minimum 1
    * @maximum 10000
+   */
+  size?: number;
+};
+
+export type GetAllRaidsRaidsGetParams = {
+  /**
+   * Name of the raid.
+   * @pattern ^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*\s?$
+   */
+  name?: string;
+  /**
+   * Filter raids by active status.
+   */
+  active?: boolean | null;
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 10000
+   */
+  size?: number;
+};
+
+export type GetRaidLeaderboardRaidsCodeLeaderboardGetParams = {
+  /**
+   * Page number
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Page size
+   * @minimum 1
+   * @maximum 100
    */
   size?: number;
 };
@@ -3574,7 +4104,7 @@ export const getGeOrdersMyGrandexchangeOrdersGet = <
  * @summary Get Ge History
  */
 export const getGeHistoryMyGrandexchangeHistoryGet = <
-  TData = AxiosResponse<DataPageGeOrderHistorySchema>,
+  TData = AxiosResponse<DataPageGEOrderHistorySchema>,
 >(
   params?: GetGeHistoryMyGrandexchangeHistoryGetParams,
   options?: AxiosRequestConfig,
@@ -3598,19 +4128,6 @@ export const getAccountDetailsMyDetailsGet = <
 };
 
 /**
- * Change your account password. Changing the password reset the account token.
- * @summary Change Password
- */
-export const changePasswordMyChangePasswordPost = <
-  TData = AxiosResponse<ResponseSchema>,
->(
-  changePassword: ChangePassword,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.post(`/my/change_password`, changePassword, options);
-};
-
-/**
  * Retrieve all unclaimed pending items for your account.
 
 These are items from various sources (achievements, grand exchange, events, etc.)
@@ -3623,10 +4140,137 @@ export const getPendingItemsMyPendingItemsGet = <
   params?: GetPendingItemsMyPendingItemsGetParams,
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
-  return axios.get(`/my/pending-items`, {
+  return axios.get(`/my/pending_items`, {
     ...options,
     params: { ...params, ...options?.params },
   });
+};
+
+/**
+ * Get all rate limits.
+ * @summary Get Rate Limits
+ */
+export const getRateLimitsMyRatesGet = <
+  TData = AxiosResponse<RateLimitsSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/rates`, options);
+};
+
+/**
+ * Change your account password. Changing the password reset the account token.
+ * @summary Change Password
+ */
+export const changePasswordMyChangePasswordPost = <
+  TData = AxiosResponse<ResponseSchema>,
+>(
+  changePasswordSchema: ChangePasswordSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/change_password`, changePasswordSchema, options);
+};
+
+/**
+ * Change your account email.
+ * @summary Change Email
+ */
+export const changeEmailMyChangeEmailPost = <
+  TData = AxiosResponse<ResponseSchema>,
+>(
+  changeEmailSchema: ChangeEmailSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/change_email`, changeEmailSchema, options);
+};
+
+/**
+ * Get current subscription details.
+ * @summary Get My Subscription
+ */
+export const getMySubscriptionMySubscriptionGet = <
+  TData = AxiosResponse<SubscriptionResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/subscription`, options);
+};
+
+/**
+ * Subscribe to become a member and unlock the benefits tied to your selected plan.
+You will receive a secure Stripe checkout URL to complete the payment.
+ * @summary Subscribe with Stripe
+ */
+export const buySubscriptionMySubscribeStripePost = <
+  TData = AxiosResponse<CheckoutResponseWrapperSchema>,
+>(
+  subscribeRequestSchema: SubscribeRequestSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/subscribe/stripe`, subscribeRequestSchema, options);
+};
+
+/**
+ * Redeem a member token to start or extend membership by 30 days.
+Member tokens are manually granted as rewards for events.
+Member tokens cannot be redeemed while a Stripe subscription is active.
+ * @summary Subscribe With Member Token
+ */
+export const subscribeWithMemberTokenMySubscribeMemberTokenPost = <
+  TData = AxiosResponse<MemberTokenSubscriptionResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/subscribe/member_token`, undefined, options);
+};
+
+/**
+ * Cancel subscription at the end of the current billing period.
+ * @summary Cancel Subscription
+ */
+export const cancelSubscriptionMySubscribeCancelPost = <
+  TData = AxiosResponse<ResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/subscribe/cancel`, undefined, options);
+};
+
+/**
+ * List all purchases (subscriptions and gem packs).
+ * @summary Get My Purchase History
+ */
+export const getMyPurchaseHistoryMyPurchaseHistoryGet = <
+  TData = AxiosResponse<PurchaseHistoryListResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/purchase_history`, options);
+};
+
+/**
+ * List all gem credits and debits.
+ * @summary Get My Gems History
+ */
+export const getMyGemsHistoryMyGemsHistoryGet = <
+  TData = AxiosResponse<GemTransactionListResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/my/gems_history`, options);
+};
+
+/**
+ * Purchase gems. Returns a Stripe checkout URL for payment.
+ * @summary Buy Gems
+ */
+export const buyGemsMyBuyGemsPost = <
+  TData = AxiosResponse<CheckoutResponseWrapperSchema>,
+>(
+  purchaseGemsRequestSchema: PurchaseGemsRequestSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/my/buy_gems`, purchaseGemsRequestSchema, options);
 };
 
 /**
@@ -3672,28 +4316,30 @@ export const actionRestMyNameActionRestPost = <
 };
 
 /**
- * Equip an item on your character.
+ * Equip multiple items on your character.
+The cooldown will be 3 seconds multiplied by the number of different items equipped.
  * @summary Action Equip Item
  */
 export const actionEquipItemMyNameActionEquipPost = <
   TData = AxiosResponse<EquipmentResponseSchema>,
 >(
   name: string,
-  equipSchema: EquipSchema,
+  equipSchema: EquipSchema[],
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
   return axios.post(`/my/${name}/action/equip`, equipSchema, options);
 };
 
 /**
- * Unequip an item on your character.
+ * Unequip multiple items on your character.
+The cooldown will be 3 seconds multiplied by the number of different items unequipped.
  * @summary Action Unequip Item
  */
 export const actionUnequipItemMyNameActionUnequipPost = <
   TData = AxiosResponse<EquipmentResponseSchema>,
 >(
   name: string,
-  unequipSchema: UnequipSchema,
+  unequipSchema: UnequipSchema[],
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
   return axios.post(`/my/${name}/action/unequip`, unequipSchema, options);
@@ -3921,12 +4567,12 @@ export const actionGeBuyItemMyNameActionGrandexchangeBuyPost = <
 export const actionGeCreateSellOrderMyNameActionGrandexchangeCreateSellOrderPost =
   <TData = AxiosResponse<GECreateOrderTransactionResponseSchema>>(
     name: string,
-    gEOrderCreationrSchema: GEOrderCreationrSchema,
+    gEOrderCreationSchema: GEOrderCreationSchema,
     options?: AxiosRequestConfig,
   ): Promise<TData> => {
     return axios.post(
-      `/my/${name}/action/grandexchange/create-sell-order`,
-      gEOrderCreationrSchema,
+      `/my/${name}/action/grandexchange/create_sell_order`,
+      gEOrderCreationSchema,
       options,
     );
   };
@@ -3967,7 +4613,7 @@ export const actionGeCreateBuyOrderMyNameActionGrandexchangeCreateBuyOrderPost =
     options?: AxiosRequestConfig,
   ): Promise<TData> => {
     return axios.post(
-      `/my/${name}/action/grandexchange/create-buy-order`,
+      `/my/${name}/action/grandexchange/create_buy_order`,
       gEBuyOrderCreationSchema,
       options,
     );
@@ -4181,6 +4827,36 @@ export const getMyCharactersMyCharactersGet = <
 };
 
 /**
+ * Retrieve the achievements of a account.
+ * @summary Get Account Achievements
+ */
+export const getAccountAchievementsAccountsAccountAchievementsGet = <
+  TData = AxiosResponse<DataPageAccountAchievementSchema>,
+>(
+  account: string,
+  params?: GetAccountAchievementsAccountsAccountAchievementsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/accounts/${account}/achievements`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
+ * Account character lists.
+ * @summary Get Account Characters
+ */
+export const getAccountCharactersAccountsAccountCharactersGet = <
+  TData = AxiosResponse<CharactersListSchema>,
+>(
+  account: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/accounts/${account}/characters`, options);
+};
+
+/**
  * @summary Create Account
  */
 export const createAccountAccountsCreatePost = <
@@ -4224,36 +4900,6 @@ export const resetPasswordAccountsResetPasswordPost = <
     passwordResetConfirmSchema,
     options,
   );
-};
-
-/**
- * Retrieve the achievements of a account.
- * @summary Get Account Achievements
- */
-export const getAccountAchievementsAccountsAccountAchievementsGet = <
-  TData = AxiosResponse<DataPageAccountAchievementSchema>,
->(
-  account: string,
-  params?: GetAccountAchievementsAccountsAccountAchievementsGetParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.get(`/accounts/${account}/achievements`, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
-};
-
-/**
- * Account character lists.
- * @summary Get Account Characters
- */
-export const getAccountCharactersAccountsAccountCharactersGet = <
-  TData = AxiosResponse<CharactersListSchema>,
->(
-  account: string,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.get(`/accounts/${account}/characters`, options);
 };
 
 /**
@@ -4328,6 +4974,66 @@ export const getBadgeBadgesCodeGet = <
 };
 
 /**
+ * List of all skins available in the game.
+ * @summary Get All Skins
+ */
+export const getAllSkinsSkinsGet = <
+  TData = AxiosResponse<StaticDataPageSkinSchema>,
+>(
+  params?: GetAllSkinsSkinsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/skins`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
+ * Retrieve the details of a skin.
+ * @summary Get Skin
+ */
+export const getSkinSkinsCodeGet = <TData = AxiosResponse<SkinResponseSchema>>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/skins/${code}`, options);
+};
+
+/**
+ * List of all rewards for the current season.
+ * @summary Get All Season Rewards
+ */
+export const getAllSeasonRewardsSeasonRewardsGet = <
+  TData = AxiosResponse<StaticDataPageSeasonRewardSchema>,
+>(
+  params?: GetAllSeasonRewardsSeasonRewardsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/season_rewards`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
+ * List all season rewards matching a specific code.
+ * @summary Get Season Rewards By Code
+ */
+export const getSeasonRewardsByCodeSeasonRewardsCodeGet = <
+  TData = AxiosResponse<StaticDataPageSeasonRewardSchema>,
+>(
+  code: string,
+  params?: GetSeasonRewardsByCodeSeasonRewardsCodeGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/season_rewards/${code}`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
  * Create new character on your account. You can create up to 5 characters.
  * @summary Create Character
  */
@@ -4351,6 +5057,22 @@ export const deleteCharacterCharactersDeletePost = <
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
   return axios.post(`/characters/delete`, deleteCharacterSchema, options);
+};
+
+/**
+ * Retrieve gameplay statistics for a character.
+
+Stats are only visible if the character's account has an active subscription.
+Statistics are still collected for all accounts regardless of subscription status.
+ * @summary Get Character Stats
+ */
+export const getCharacterStatsCharactersNameStatsGet = <
+  TData = AxiosResponse<CharacterStatsResponseSchema>,
+>(
+  name: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/characters/${name}/stats`, options);
 };
 
 /**
@@ -4444,24 +5166,11 @@ export const getAllEventsEventsGet = <
 };
 
 /**
- * Spawn a specific event by consuming 1 event token. Member or founder account required.
- * @summary Spawn Event
- */
-export const spawnEventEventsSpawnPost = <
-  TData = AxiosResponse<ActiveEventResponseSchema>,
->(
-  spawnEventRequest: SpawnEventRequest,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.post(`/events/spawn`, spawnEventRequest, options);
-};
-
-/**
  * Fetch the transaction history of the item for the last 7 days (buy and sell orders).
  * @summary Get Ge History
  */
 export const getGeHistoryGrandexchangeHistoryCodeGet = <
-  TData = AxiosResponse<DataPageGeOrderHistorySchema>,
+  TData = AxiosResponse<DataPageGEOrderHistorySchema>,
 >(
   code: string,
   params?: GetGeHistoryGrandexchangeHistoryCodeGetParams,
@@ -4477,7 +5186,7 @@ export const getGeHistoryGrandexchangeHistoryCodeGet = <
  * Fetch all orders (sell and buy orders).
 
 Use the `type` parameter to filter by order type; when using `account`, `type`
-is required to decide whether to match seller or buyer.
+is required to keep account searches explicit.
  * @summary Get Ge Orders
  */
 export const getGeOrdersGrandexchangeOrdersGet = <
@@ -4688,7 +5397,7 @@ export const getNpcNpcsDetailsCodeGet = <
  * @summary Get Npc Items
  */
 export const getNpcItemsNpcsItemsCodeGet = <
-  TData = AxiosResponse<StaticDataPageNPCItem>,
+  TData = AxiosResponse<StaticDataPageNPCItemSchema>,
 >(
   code: string,
   params?: GetNpcItemsNpcsItemsCodeGetParams,
@@ -4705,12 +5414,56 @@ export const getNpcItemsNpcsItemsCodeGet = <
  * @summary Get All Npcs Items
  */
 export const getAllNpcsItemsNpcsItemsGet = <
-  TData = AxiosResponse<StaticDataPageNPCItem>,
+  TData = AxiosResponse<StaticDataPageNPCItemSchema>,
 >(
   params?: GetAllNpcsItemsNpcsItemsGetParams,
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
   return axios.get(`/npcs/items`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
+ * Fetch the list of all raids.
+ * @summary Get All Raids
+ */
+export const getAllRaidsRaidsGet = <
+  TData = AxiosResponse<StaticDataPageRaidSchema>,
+>(
+  params?: GetAllRaidsRaidsGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/raids`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
+};
+
+/**
+ * Retrieve the details of a specific raid.
+ * @summary Get Raid
+ */
+export const getRaidRaidsCodeGet = <TData = AxiosResponse<RaidResponseSchema>>(
+  code: string,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/raids/${code}`, options);
+};
+
+/**
+ * Retrieve the leaderboard for the active or latest raid instance.
+ * @summary Get Raid Leaderboard
+ */
+export const getRaidLeaderboardRaidsCodeLeaderboardGet = <
+  TData = AxiosResponse<DataPageRaidLeaderboardEntrySchema>,
+>(
+  code: string,
+  params?: GetRaidLeaderboardRaidsCodeLeaderboardGetParams,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/raids/${code}/leaderboard`, {
     ...options,
     params: { ...params, ...options?.params },
   });
@@ -4808,14 +5561,14 @@ export const getTasksRewardTasksRewardsCodeGet = <
 Member or founder account required.
  * @summary Fight Simulation
  */
-export const fightSimulationSimulationFightSimulationPost = <
+export const fightSimulationSimulationFightPost = <
   TData = AxiosResponse<CombatSimulationResponseSchema>,
 >(
   combatSimulationRequestSchema: CombatSimulationRequestSchema,
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
   return axios.post(
-    `/simulation/fight_simulation`,
+    `/simulation/fight`,
     combatSimulationRequestSchema,
     options,
   );
@@ -4833,6 +5586,89 @@ export const generateTokenTokenPost = <
   return axios.post(`/token`, undefined, options);
 };
 
+/**
+ * Return the gems shop catalog.
+ * @summary Get Catalog
+ */
+export const getCatalogGemsShopGet = <
+  TData = AxiosResponse<GemShopCatalogResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.get(`/gems_shop/`, options);
+};
+
+/**
+ * Buy a skin from the gems shop using gems.
+ * @summary Buy Skin
+ */
+export const buySkinGemsShopSkinPost = <
+  TData = AxiosResponse<BuySkinResponseSchema>,
+>(
+  buySkinRequestSchema: BuySkinRequestSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/gems_shop/skin`, buySkinRequestSchema, options);
+};
+
+/**
+ * Spawn an event from the gems shop using gems.
+ * @summary Buy Spawn Event
+ */
+export const buySpawnEventGemsShopSpawnEventPost = <
+  TData = AxiosResponse<ActiveEventResponseSchema>,
+>(
+  spawnEventRequestSchema: SpawnEventRequestSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/gems_shop/spawn_event`, spawnEventRequestSchema, options);
+};
+
+/**
+ * Buy or extend membership by 30 days using gems. Unavailable while a Stripe subscription is active.
+ * @summary Buy Subscription
+ */
+export const buySubscriptionGemsShopSubscriptionPost = <
+  TData = AxiosResponse<GemShopSubscriptionResponseSchema>,
+>(
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/gems_shop/subscription`, undefined, options);
+};
+
+/**
+ * Buy a custom design using gems.
+ * @summary Buy Custom Design
+ */
+export const buyCustomDesignGemsShopBuyCustomDesignPost = <
+  TData = AxiosResponse<GemShopCustomDesignPurchaseResponseSchema>,
+>(
+  buyCustomDesignRequestSchema: BuyCustomDesignRequestSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(
+    `/gems_shop/buy_custom_design`,
+    buyCustomDesignRequestSchema,
+    options,
+  );
+};
+
+/**
+ * Ask the game assistant a question about game mechanics or public API usage.
+An active membership is required. Members receive a limited number of free
+questions per day. When no free question is available, the request can spend
+1 gem with pay_with_gems=true.
+ * @summary Ask Game Assistant
+ */
+export const askGameAssistantGameAssistantAskPost = <
+  TData = AxiosResponse<AssistantAnswerSchema>,
+>(
+  assistantQuestionSchema: AssistantQuestionSchema,
+  options?: AxiosRequestConfig,
+): Promise<TData> => {
+  return axios.post(`/game_assistant/ask`, assistantQuestionSchema, options);
+};
+
 export type GetServerDetailsGetResult = AxiosResponse<StatusResponseSchema>;
 export type GetBankDetailsMyBankGetResult = AxiosResponse<BankResponseSchema>;
 export type GetBankItemsMyBankItemsGetResult =
@@ -4840,13 +5676,29 @@ export type GetBankItemsMyBankItemsGetResult =
 export type GetGeOrdersMyGrandexchangeOrdersGetResult =
   AxiosResponse<DataPageGEOrderSchema>;
 export type GetGeHistoryMyGrandexchangeHistoryGetResult =
-  AxiosResponse<DataPageGeOrderHistorySchema>;
+  AxiosResponse<DataPageGEOrderHistorySchema>;
 export type GetAccountDetailsMyDetailsGetResult =
   AxiosResponse<MyAccountDetailsSchema>;
-export type ChangePasswordMyChangePasswordPostResult =
-  AxiosResponse<ResponseSchema>;
 export type GetPendingItemsMyPendingItemsGetResult =
   AxiosResponse<DataPagePendingItemSchema>;
+export type GetRateLimitsMyRatesGetResult = AxiosResponse<RateLimitsSchema>;
+export type ChangePasswordMyChangePasswordPostResult =
+  AxiosResponse<ResponseSchema>;
+export type ChangeEmailMyChangeEmailPostResult = AxiosResponse<ResponseSchema>;
+export type GetMySubscriptionMySubscriptionGetResult =
+  AxiosResponse<SubscriptionResponseSchema>;
+export type BuySubscriptionMySubscribeStripePostResult =
+  AxiosResponse<CheckoutResponseWrapperSchema>;
+export type SubscribeWithMemberTokenMySubscribeMemberTokenPostResult =
+  AxiosResponse<MemberTokenSubscriptionResponseSchema>;
+export type CancelSubscriptionMySubscribeCancelPostResult =
+  AxiosResponse<ResponseSchema>;
+export type GetMyPurchaseHistoryMyPurchaseHistoryGetResult =
+  AxiosResponse<PurchaseHistoryListResponseSchema>;
+export type GetMyGemsHistoryMyGemsHistoryGetResult =
+  AxiosResponse<GemTransactionListResponseSchema>;
+export type BuyGemsMyBuyGemsPostResult =
+  AxiosResponse<CheckoutResponseWrapperSchema>;
 export type ActionMoveMyNameActionMovePostResult =
   AxiosResponse<CharacterMovementResponseSchema>;
 export type ActionTransitionMyNameActionTransitionPostResult =
@@ -4917,16 +5769,16 @@ export type GetCharacterLogsMyLogsNameGetResult =
   AxiosResponse<DataPageLogSchema>;
 export type GetMyCharactersMyCharactersGetResult =
   AxiosResponse<MyCharactersListSchema>;
+export type GetAccountAchievementsAccountsAccountAchievementsGetResult =
+  AxiosResponse<DataPageAccountAchievementSchema>;
+export type GetAccountCharactersAccountsAccountCharactersGetResult =
+  AxiosResponse<CharactersListSchema>;
 export type CreateAccountAccountsCreatePostResult =
   AxiosResponse<ResponseSchema>;
 export type ForgotPasswordAccountsForgotPasswordPostResult =
   AxiosResponse<PasswordResetResponseSchema>;
 export type ResetPasswordAccountsResetPasswordPostResult =
   AxiosResponse<PasswordResetResponseSchema>;
-export type GetAccountAchievementsAccountsAccountAchievementsGetResult =
-  AxiosResponse<DataPageAccountAchievementSchema>;
-export type GetAccountCharactersAccountsAccountCharactersGetResult =
-  AxiosResponse<CharactersListSchema>;
 export type GetAccountAccountsAccountGetResult =
   AxiosResponse<AccountDetailsSchema>;
 export type GetAllAchievementsAchievementsGetResult =
@@ -4936,10 +5788,18 @@ export type GetAchievementAchievementsCodeGetResult =
 export type GetAllBadgesBadgesGetResult =
   AxiosResponse<StaticDataPageBadgeSchema>;
 export type GetBadgeBadgesCodeGetResult = AxiosResponse<BadgeResponseSchema>;
+export type GetAllSkinsSkinsGetResult = AxiosResponse<StaticDataPageSkinSchema>;
+export type GetSkinSkinsCodeGetResult = AxiosResponse<SkinResponseSchema>;
+export type GetAllSeasonRewardsSeasonRewardsGetResult =
+  AxiosResponse<StaticDataPageSeasonRewardSchema>;
+export type GetSeasonRewardsByCodeSeasonRewardsCodeGetResult =
+  AxiosResponse<StaticDataPageSeasonRewardSchema>;
 export type CreateCharacterCharactersCreatePostResult =
   AxiosResponse<CharacterResponseSchema>;
 export type DeleteCharacterCharactersDeletePostResult =
   AxiosResponse<CharacterResponseSchema>;
+export type GetCharacterStatsCharactersNameStatsGetResult =
+  AxiosResponse<CharacterStatsResponseSchema>;
 export type GetActiveCharactersCharactersActiveGetResult =
   AxiosResponse<DataPageActiveCharacterSchema>;
 export type GetCharacterCharactersNameGetResult =
@@ -4951,10 +5811,8 @@ export type GetAllActiveEventsEventsActiveGetResult =
   AxiosResponse<StaticDataPageActiveEventSchema>;
 export type GetAllEventsEventsGetResult =
   AxiosResponse<StaticDataPageEventSchema>;
-export type SpawnEventEventsSpawnPostResult =
-  AxiosResponse<ActiveEventResponseSchema>;
 export type GetGeHistoryGrandexchangeHistoryCodeGetResult =
-  AxiosResponse<DataPageGeOrderHistorySchema>;
+  AxiosResponse<DataPageGEOrderHistorySchema>;
 export type GetGeOrdersGrandexchangeOrdersGetResult =
   AxiosResponse<DataPageGEOrderSchema>;
 export type GetGeOrderGrandexchangeOrdersIdGetResult =
@@ -4979,9 +5837,13 @@ export type GetAllNpcsNpcsDetailsGetResult =
   AxiosResponse<StaticDataPageNPCSchema>;
 export type GetNpcNpcsDetailsCodeGetResult = AxiosResponse<NPCResponseSchema>;
 export type GetNpcItemsNpcsItemsCodeGetResult =
-  AxiosResponse<StaticDataPageNPCItem>;
+  AxiosResponse<StaticDataPageNPCItemSchema>;
 export type GetAllNpcsItemsNpcsItemsGetResult =
-  AxiosResponse<StaticDataPageNPCItem>;
+  AxiosResponse<StaticDataPageNPCItemSchema>;
+export type GetAllRaidsRaidsGetResult = AxiosResponse<StaticDataPageRaidSchema>;
+export type GetRaidRaidsCodeGetResult = AxiosResponse<RaidResponseSchema>;
+export type GetRaidLeaderboardRaidsCodeLeaderboardGetResult =
+  AxiosResponse<DataPageRaidLeaderboardEntrySchema>;
 export type GetAllResourcesResourcesGetResult =
   AxiosResponse<StaticDataPageResourceSchema>;
 export type GetResourceResourcesCodeGetResult =
@@ -4994,6 +5856,18 @@ export type GetAllTasksRewardsTasksRewardsGetResult =
   AxiosResponse<StaticDataPageDropRateSchema>;
 export type GetTasksRewardTasksRewardsCodeGetResult =
   AxiosResponse<RewardResponseSchema>;
-export type FightSimulationSimulationFightSimulationPostResult =
+export type FightSimulationSimulationFightPostResult =
   AxiosResponse<CombatSimulationResponseSchema>;
 export type GenerateTokenTokenPostResult = AxiosResponse<TokenResponseSchema>;
+export type GetCatalogGemsShopGetResult =
+  AxiosResponse<GemShopCatalogResponseSchema>;
+export type BuySkinGemsShopSkinPostResult =
+  AxiosResponse<BuySkinResponseSchema>;
+export type BuySpawnEventGemsShopSpawnEventPostResult =
+  AxiosResponse<ActiveEventResponseSchema>;
+export type BuySubscriptionGemsShopSubscriptionPostResult =
+  AxiosResponse<GemShopSubscriptionResponseSchema>;
+export type BuyCustomDesignGemsShopBuyCustomDesignPostResult =
+  AxiosResponse<GemShopCustomDesignPurchaseResponseSchema>;
+export type AskGameAssistantGameAssistantAskPostResult =
+  AxiosResponse<AssistantAnswerSchema>;

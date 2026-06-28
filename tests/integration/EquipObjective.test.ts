@@ -3,7 +3,7 @@ import { EquipObjective } from '../../src/core/EquipObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
-import { ItemSlot } from '../../src/types/types.js';
+import { EquipmentResponseSchema, ItemSlot } from '../../src/types/types.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Items', () => ({
@@ -82,7 +82,7 @@ class SimpleMockCharacter {
 }
 
 // Mock response data
-const mockEquipResponse = {
+const mockEquipResponse: EquipmentResponseSchema = {
   data: {
     character: {
       ...mockCharacterData,
@@ -97,23 +97,28 @@ const mockEquipResponse = {
       expiration: '2025-10-01T16:52:40.196Z',
       reason: 'equip' as const,
     },
-    slot: 'weapon' as ItemSlot,
-    item: {
-      code: 'iron_sword',
-      name: 'Iron Sword',
-      level: 5,
-      type: 'weapon',
-      subtype: 'sword',
-      description: 'A sturdy iron sword',
-      craft: null,
-      tradeable: true,
-      conditions: [],
-      effects: [],
-    },
+    //slot: 'weapon' as ItemSlot,
+    items: [
+      {
+        slot: 'weapon',
+        item: {
+          code: 'iron_sword',
+          name: 'Iron Sword',
+          level: 5,
+          type: 'weapon',
+          subtype: 'sword',
+          description: 'A sturdy iron sword',
+          craft: null,
+          tradeable: true,
+          conditions: [],
+          effects: [],
+        },
+      },
+    ],
   },
 };
 
-const mockUtilityEquipResponse = {
+const mockUtilityEquipResponse: EquipmentResponseSchema = {
   data: {
     character: {
       ...mockCharacterData,
@@ -127,19 +132,24 @@ const mockUtilityEquipResponse = {
       expiration: '2025-10-01T16:52:40.196Z',
       reason: 'equip' as const,
     },
-    slot: 'utility1' as ItemSlot,
-    item: {
-      code: 'health_potion',
-      name: 'Health Potion',
-      level: 1,
-      type: 'consumable',
-      subtype: 'potion',
-      description: 'Restores health',
-      craft: null,
-      tradeable: true,
-      conditions: [],
-      effects: [],
-    },
+    //slot: 'utility1' as ItemSlot,
+    items: [
+      {
+        slot: 'utility1',
+        item: {
+          code: 'health_potion',
+          name: 'Health Potion',
+          level: 1,
+          type: 'consumable',
+          subtype: 'potion',
+          description: 'Restores health',
+          craft: null,
+          tradeable: true,
+          conditions: [],
+          effects: [],
+        },
+      },
+    ],
   },
 };
 
@@ -199,11 +209,13 @@ describe('EquipObjective Integration Tests', () => {
           name: 'TestCharacter',
           level: 10,
         }),
-        {
-          code: 'iron_sword',
-          slot: 'weapon',
-          quantity: 1,
-        },
+        [
+          {
+            code: 'iron_sword',
+            slot: 'weapon',
+            quantity: 1,
+          },
+        ],
       );
     });
 
@@ -226,11 +238,13 @@ describe('EquipObjective Integration Tests', () => {
           name: 'TestCharacter',
           level: 10,
         }),
-        {
-          code: 'iron_helmet',
-          slot: 'helmet',
-          quantity: 1,
-        },
+        [
+          {
+            code: 'iron_helmet',
+            slot: 'helmet',
+            quantity: 1,
+          },
+        ],
       );
     });
 
@@ -259,11 +273,13 @@ describe('EquipObjective Integration Tests', () => {
           name: 'TestCharacter',
           level: 10,
         }),
-        {
-          code: 'health_potion',
-          slot: 'utility1',
-          quantity: 25,
-        },
+        [
+          {
+            code: 'health_potion',
+            slot: 'utility1',
+            quantity: 25,
+          },
+        ],
       );
     });
 
@@ -286,11 +302,13 @@ describe('EquipObjective Integration Tests', () => {
           name: 'TestCharacter',
           level: 10,
         }),
-        {
-          code: 'iron_sword',
-          slot: 'weapon',
-          quantity: 1,
-        },
+        [
+          {
+            code: 'iron_sword',
+            slot: 'weapon',
+            quantity: 1,
+          },
+        ],
       );
     });
   });
@@ -517,11 +535,13 @@ describe('EquipObjective Integration Tests', () => {
           name: 'TestCharacter',
           level: 10,
         }),
-        {
-          code: 'health_potion',
-          slot: 'utility2',
-          quantity: 50,
-        },
+        [
+          {
+            code: 'health_potion',
+            slot: 'utility2',
+            quantity: 50,
+          },
+        ],
       );
     });
 
@@ -603,11 +623,13 @@ describe('EquipObjective Integration Tests', () => {
             name: 'TestCharacter',
             level: 10,
           }),
-          {
-            code: test.item,
-            slot: test.slot,
-            quantity: 1,
-          },
+          [
+            {
+              code: test.item,
+              slot: test.slot,
+              quantity: 1,
+            },
+          ],
         );
 
         // Reset for next test

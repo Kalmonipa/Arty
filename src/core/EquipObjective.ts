@@ -71,7 +71,10 @@ export class EquipObjective extends Objective {
         quantity: this.quantity,
       };
 
-      const response = await actionEquipItem(this.character.data, equipSchema);
+      // ToDo: Make this build an array of EquipSchema and call the equip endpoint once
+      const response = await actionEquipItem(this.character.data, [
+        equipSchema,
+      ]);
       if (response instanceof ApiError) {
         const shouldRetry = await this.character.handleErrors(response);
 
