@@ -1,17 +1,11 @@
 import { actionCraft } from '../api_calls/Actions.js';
-import { isSkill, logger } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import {
-  GatheringSkill,
-  ItemSchema,
-  SimpleItemSchema,
-  Skill,
-} from '../types/types.js';
-import { requestCraftItem } from '../api_calls/Account.js';
+import { ItemSchema, SimpleItemSchema } from '../types/types.js';
 
 /**
  * @description Crafts the requested amount of the item
@@ -22,7 +16,7 @@ import { requestCraftItem } from '../api_calls/Account.js';
 export class CraftObjective extends Objective {
   target: ObjectiveTargets;
   numBatches: number = 1;
-  numItemsPerBatch: number;
+  numCraftsPerBatch: number;
   checkBank?: boolean;
   includeInventory?: boolean;
 
@@ -138,12 +132,21 @@ export class CraftObjective extends Objective {
         // }
         // }
 
+        // One craft consumes a single set of ingredients and yields
+        // craft.quantity output items, so the number of crafts needed is the
+        // requested item count divided by the per-craft yield (rounded up).
+        const outputPerCraft = targetItem.craft.quantity ?? 1;
+        const craftsNeeded = Math.ceil(this.target.quantity / outputPerCraft);
+
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
         // If not enough inv space, split it into 2 jobs, craft half as much at once
         // If still not enough, keep splitting in half until we have enough inv space
-        const batchInfo = this.calculateNumBatches(targetItem.craft.items);
+        const batchInfo = this.calculateNumBatches(
+          targetItem.craft.items,
+          craftsNeeded,
+        );
         this.numBatches = batchInfo.numBatches;
-        this.numItemsPerBatch = batchInfo.numPerBatch;
+        this.numCraftsPerBatch = batchInfo.numPerBatch;
 
         const maps = this.character.findMaps({
           content_code: targetItem.craft.skill,
@@ -156,8 +159,9 @@ export class CraftObjective extends Objective {
 
         const contentLocation = this.character.evaluateClosestMap(maps);
 
+        let craftsProgress = 0;
         for (let batch = 1; batch <= this.numBatches; batch++) {
-          if (this.progress >= this.target.quantity) {
+          if (craftsProgress >= craftsNeeded) {
             logger.info(
               `Successfully crafted ${this.progress} ${this.target.code}`,
             );
@@ -168,19 +172,20 @@ export class CraftObjective extends Objective {
 
           if (!(await this.checkStatus())) return false;
 
-          // Clamp the final batch to what's still outstanding. numItemsPerBatch
-          // is derived from inventory size, so when target.quantity isn't an
-          // exact multiple of it the last batch would otherwise over-craft and
+          // Clamp the final batch to what's still outstanding. numCraftsPerBatch
+          // is derived from inventory size, so when craftsNeeded isn't an exact
+          // multiple of it the last batch would otherwise over-craft and
           // over-gather ingredients past the target.
-          const thisBatch = CraftObjective.batchQuantity(
-            this.numItemsPerBatch,
-            this.target.quantity,
-            this.progress,
+          const craftsThisBatch = CraftObjective.batchQuantity(
+            this.numCraftsPerBatch,
+            craftsNeeded,
+            craftsProgress,
           );
+          const itemsThisBatch = craftsThisBatch * outputPerCraft;
 
           const gathered = await this.gatherIngredients(
             targetItem.craft.items,
-            thisBatch,
+            craftsThisBatch,
           );
           if (!gathered) {
             logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
@@ -193,16 +198,16 @@ export class CraftObjective extends Objective {
             const numInInvAfterGathering =
               this.character.checkQuantityOfItemInInv(craftItem.code);
             logger.debug(
-              `Carrying ${numInInvAfterGathering}/${craftItem.quantity * thisBatch} ${craftItem.code}`,
+              `Carrying ${numInInvAfterGathering}/${craftItem.quantity * craftsThisBatch} ${craftItem.code}`,
             );
-            if (numInInvAfterGathering < craftItem.quantity * thisBatch) {
+            if (numInInvAfterGathering < craftItem.quantity * craftsThisBatch) {
               logger.warn(
-                `Carrying ${numInInvAfterGathering}/${craftItem.quantity * thisBatch} ${craftItem.code}. Regathering`,
+                `Carrying ${numInInvAfterGathering}/${craftItem.quantity * craftsThisBatch} ${craftItem.code}. Regathering`,
               );
 
               const gathered = await this.gatherIngredients(
                 targetItem.craft.items,
-                thisBatch,
+                craftsThisBatch,
               );
               if (!gathered) {
                 logger.warn(
@@ -224,12 +229,12 @@ export class CraftObjective extends Objective {
           }
 
           logger.info(
-            `Crafting ${thisBatch} ${this.target.code} at x: ${this.character.data.x}, y: ${this.character.data.y}`,
+            `Crafting ${itemsThisBatch} ${this.target.code} (${craftsThisBatch} crafts) at x: ${this.character.data.x}, y: ${this.character.data.y}`,
           );
 
           const response = await actionCraft(this.character.data, {
             code: this.target.code,
-            quantity: thisBatch,
+            quantity: craftsThisBatch,
           });
 
           if (response instanceof ApiError) {
@@ -241,7 +246,8 @@ export class CraftObjective extends Objective {
             }
             break;
           } else {
-            this.progress += thisBatch;
+            craftsProgress += craftsThisBatch;
+            this.progress += itemsThisBatch;
 
             if (response.data.character) {
               this.character.data = response.data.character;
@@ -255,25 +261,22 @@ export class CraftObjective extends Objective {
 
             if (this.numBatches > 1) {
               logger.debug(`Depositing items from batch ${batch}`);
-              await this.character.depositNow(thisBatch, this.target.code);
+              await this.character.depositNow(itemsThisBatch, this.target.code);
             }
 
             logger.info(
-              `Successfully crafted ${thisBatch} ${this.target.code}`,
+              `Successfully crafted ${itemsThisBatch} ${this.target.code}`,
             );
           }
         }
         if (
           this.numBatches > 1 &&
-          this.target.quantity < this.character.data.inventory_max_items
+          this.progress < this.character.data.inventory_max_items
         ) {
           logger.debug(
-            `Withdrawing all ${this.target.quantity} ${this.target.code} from bank`,
+            `Withdrawing all ${this.progress} ${this.target.code} from bank`,
           );
-          await this.character.withdrawNow(
-            this.target.quantity,
-            this.target.code,
-          );
+          await this.character.withdrawNow(this.progress, this.target.code);
         }
 
         return true;
@@ -285,7 +288,7 @@ export class CraftObjective extends Objective {
 
   private async gatherIngredients(
     craftingItems: SimpleItemSchema[],
-    itemsPerBatch: number,
+    numCrafts: number,
   ): Promise<boolean> {
     for (const craftingItem of craftingItems) {
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
@@ -299,7 +302,7 @@ export class CraftObjective extends Objective {
       }
 
       logger.debug(
-        `Collecting ${craftingItem.quantity * itemsPerBatch} ${craftingItem.code}`,
+        `Collecting ${craftingItem.quantity * numCrafts} ${craftingItem.code}`,
       );
 
       let numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
@@ -308,7 +311,7 @@ export class CraftObjective extends Objective {
         craftingItem.code,
       );
 
-      const totalIngredNeededToCraft = craftingItem.quantity * itemsPerBatch;
+      const totalIngredNeededToCraft = craftingItem.quantity * numCrafts;
 
       if (numInInv >= totalIngredNeededToCraft) {
         logger.info(
@@ -430,43 +433,48 @@ export class CraftObjective extends Objective {
    * - numPerBatch - The amount of items to craft per batch
    */
   /**
-   * @description How many items to craft in the current batch: the
+   * @description How many crafts to perform in the current batch: the
    * inventory-derived batch size, clamped to what's still outstanding so the
    * final batch never over-crafts (and over-gathers ingredients) past the
-   * target when target.quantity isn't an exact multiple of the batch size.
+   * target when craftsNeeded isn't an exact multiple of the batch size.
    */
   static batchQuantity(
-    numItemsPerBatch: number,
-    targetQuantity: number,
-    progress: number,
+    numCraftsPerBatch: number,
+    craftsNeeded: number,
+    craftsProgress: number,
   ): number {
-    return Math.min(numItemsPerBatch, targetQuantity - progress);
+    return Math.min(numCraftsPerBatch, craftsNeeded - craftsProgress);
   }
 
-  private calculateNumBatches(craftList: SimpleItemSchema[]): {
+  private calculateNumBatches(
+    craftList: SimpleItemSchema[],
+    craftsNeeded: number,
+  ): {
     numBatches: number;
     numPerBatch: number;
   } {
-    const numIngredients = this.getTotalNumberOfIngredients(craftList);
+    const numIngredients = this.getTotalNumberOfIngredients(
+      craftList,
+      craftsNeeded,
+    );
 
     const batches: { numBatches: number; numPerBatch: number } =
-      this.getTotalNumberOfIngredientsPerBatch(
-        numIngredients,
-        1,
-        this.target.quantity,
-      );
+      this.getTotalNumberOfIngredientsPerBatch(numIngredients, 1, craftsNeeded);
 
     return batches;
   }
 
   /**
    * @description Calculates how many ingredients are needed
-   * @returns the total number of ingredients to craft the target number of items
+   * @returns the total number of ingredients to perform craftsNeeded crafts
    */
-  private getTotalNumberOfIngredients(craftList: SimpleItemSchema[]): number {
+  private getTotalNumberOfIngredients(
+    craftList: SimpleItemSchema[],
+    craftsNeeded: number,
+  ): number {
     let totalNumIngredients = 0;
     for (const craftItem of craftList) {
-      totalNumIngredients += craftItem.quantity * this.target.quantity;
+      totalNumIngredients += craftItem.quantity * craftsNeeded;
     }
     return totalNumIngredients;
   }

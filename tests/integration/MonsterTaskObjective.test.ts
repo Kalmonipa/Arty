@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { MonsterTaskObjective } from '../../src/core/MonsterTaskObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
-import { InventorySlot, MapSchema } from '../../src/types/types.js';
+import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {

@@ -283,6 +283,29 @@ const mockFeatherItemData: ItemSchema = {
   effects: [],
 };
 
+const mockMultiOutputItemData: ItemSchema = {
+  name: 'Small Health Potion',
+  code: 'small_health_potion',
+  level: 5,
+  type: 'utility',
+  subtype: 'potion',
+  description: 'A compact potion that restores a bit of health.',
+  conditions: [],
+  effects: [],
+  craft: {
+    skill: 'alchemy',
+    level: 5,
+    items: [
+      {
+        code: 'sunflower',
+        quantity: 3,
+      },
+    ],
+    quantity: 2,
+  },
+  tradeable: true,
+};
+
 const mockMobDropData: ItemSchema = {
   name: 'Cowhide',
   code: 'cowhide',
@@ -417,6 +440,66 @@ describe('CraftObjective Integration Tests', () => {
         }),
         { code: 'iron_sword', quantity: 5 },
       );
+    });
+
+    it('should craft half as many times for recipes that yield 2 per craft', async () => {
+      // Arrange — small_health_potion yields 2 per craft, so 8 potions = 4 crafts
+      const potionTarget = { code: 'small_health_potion', quantity: 8 };
+      const potionObjective = new CraftObjective(
+        mockCharacter as any,
+        potionTarget,
+      );
+      mockCharacter.data.inventory_max_items = 100;
+
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockMultiOutputItemData);
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'sunflower' ? 12 : 0),
+      );
+
+      // Act
+      const result = await potionObjective.run();
+
+      // Assert — 4 crafts (not 8), each consuming 3 sunflower = 12 total
+      expect(result).toBe(true);
+      expect(potionObjective.numCraftsPerBatch).toBe(4);
+      expect(actionCraft).toHaveBeenCalledTimes(1);
+      expect(actionCraft).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'TestCharacter' }),
+        { code: 'small_health_potion', quantity: 4 },
+      );
+      expect(potionObjective.progress).toBe(8);
+    });
+
+    it('should round crafts up when target is not a multiple of the yield', async () => {
+      // Arrange — 5 potions at 2 per craft needs 3 crafts (yields 6)
+      const potionTarget = { code: 'small_health_potion', quantity: 5 };
+      const potionObjective = new CraftObjective(
+        mockCharacter as any,
+        potionTarget,
+      );
+      mockCharacter.data.inventory_max_items = 100;
+
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockMultiOutputItemData);
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'sunflower' ? 9 : 0),
+      );
+
+      // Act
+      const result = await potionObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(actionCraft).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'TestCharacter' }),
+        { code: 'small_health_potion', quantity: 3 },
+      );
+      expect(potionObjective.progress).toBe(6);
     });
 
     it('should handle items with no craft information', async () => {
@@ -718,7 +801,7 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(craftObjective.numBatches).toBe(1);
-      expect(craftObjective.numItemsPerBatch).toBe(5);
+      expect(craftObjective.numCraftsPerBatch).toBe(5);
     });
 
     it('should handle batch calculation for reasonable quantities', async () => {
@@ -752,7 +835,7 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(reasonableCraftObjective.numBatches).toBeGreaterThanOrEqual(1);
-      expect(reasonableCraftObjective.numItemsPerBatch).toBeGreaterThan(0);
+      expect(reasonableCraftObjective.numCraftsPerBatch).toBeGreaterThan(0);
     });
   });
 
