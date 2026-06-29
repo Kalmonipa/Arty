@@ -1,5 +1,4 @@
 import { actionFight } from '../api_calls/Actions.js';
-import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -175,17 +174,13 @@ export class FightObjective extends Objective {
 
       logger.info(`Finding location of ${this.target.code}`);
 
-      const maps = await getMaps({ content_code: this.target.code });
-      if (maps instanceof ApiError) {
-        return this.character.handleErrors(maps);
-      }
-
-      if (maps.data.length === 0) {
+      const maps = this.character.findMaps({ content_code: this.target.code });
+      if (maps.length === 0) {
         logger.error(`Cannot find any maps for ${this.target.code}`);
         return false;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps.data);
+      const contentLocation = this.character.evaluateClosestMap(maps);
 
       await this.character.move(contentLocation);
 

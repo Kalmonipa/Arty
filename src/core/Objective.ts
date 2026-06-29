@@ -7,7 +7,6 @@ import {
   jobCompletionsCounter,
   jobDurationHistogram,
 } from '../metrics.js';
-import { getMaps } from '../api_calls/Maps.js';
 import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { TaskType } from '../types/types.js';
@@ -321,20 +320,16 @@ export abstract class Objective {
    * @description Moves to the nearest task master
    */
   async moveToTaskMaster(taskType: TaskType) {
-    const maps = await getMaps({
+    const maps = this.character.findMaps({
       content_code: taskType,
       content_type: 'tasks_master',
     });
-    if (maps instanceof ApiError) {
-      return this.character.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
+    if (maps.length === 0) {
       this.log.error(`Cannot find the tasks master. This shouldn't happen ??`);
       return;
     }
 
-    const contentLocation = this.character.evaluateClosestMap(maps.data);
+    const contentLocation = this.character.evaluateClosestMap(maps);
 
     await this.character.move(contentLocation);
   }

@@ -1,4 +1,3 @@
-import { getMaps } from '../api_calls/Maps.js';
 import {
   actionBuyItem,
   actionSellItem,
@@ -205,20 +204,16 @@ export class TradeObjective extends Objective {
     logger.info(`Finding location of ${npcCode}`);
     // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
     // Make it into it's own function and just call it
-    const maps = await getMaps({
+    const maps = this.character.findMaps({
       content_code: npcCode,
       content_type: 'npc',
     });
-    if (maps instanceof ApiError) {
-      return await this.character.handleErrors(maps);
-    }
-
-    if (maps.data.length === 0) {
+    if (maps.length === 0) {
       logger.error(`Cannot find any maps for ${npcCode}`);
       return false;
     }
 
-    const traderLocation = this.character.evaluateClosestMap(maps.data);
+    const traderLocation = this.character.evaluateClosestMap(maps);
 
     await this.character.move(traderLocation);
   }

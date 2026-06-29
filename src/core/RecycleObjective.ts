@@ -1,4 +1,3 @@
-import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -57,20 +56,16 @@ export class RecycleObjective extends Objective {
     if (itemInfo instanceof ApiError) {
       this.character.handleErrors(itemInfo);
     } else {
-      const maps = await getMaps({
+      const maps = this.character.findMaps({
         content_code: itemInfo.craft.skill,
         content_type: 'workshop',
       });
-      if (maps instanceof ApiError) {
-        return this.character.handleErrors(maps);
-      }
-
-      if (maps.data.length === 0) {
+      if (maps.length === 0) {
         logger.error(`Cannot find any maps to recycle ${this.target.code}`);
         return false;
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps.data);
+      const contentLocation = this.character.evaluateClosestMap(maps);
 
       await this.character.move(contentLocation);
 

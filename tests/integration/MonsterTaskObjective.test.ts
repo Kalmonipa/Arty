@@ -1,16 +1,7 @@
 import { jest } from '@jest/globals';
 import { MonsterTaskObjective } from '../../src/core/MonsterTaskObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
-import { ApiError } from '../../src/core/Error.js';
-
-// Mock the API modules
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(),
-}));
-
-// Import the mocked functions
-import { getMaps } from '../../src/api_calls/Maps.js';
-import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
+import { InventorySlot, MapSchema } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -32,6 +23,8 @@ class SimpleMockCharacter {
       return { x: maps[0].x, y: maps[0].y };
     },
   );
+
+  findMaps = jest.fn((): MapSchema[] => mockMonsterMapData.data as MapSchema[]);
 
   fightNow = jest.fn(async (quantity: number): Promise<boolean> => {
     // Mock fighting monsters
@@ -94,8 +87,8 @@ describe('MonsterTaskObjective Integration Tests', () => {
     mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
 
     // Set up default mock responses
-    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-      mockMonsterMapData,
+    mockCharacter.findMaps.mockReturnValue(
+      mockMonsterMapData.data as MapSchema[],
     );
   });
 
@@ -233,38 +226,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
   });
 
   describe('Error handling', () => {
-    it('should handle getMaps API errors', async () => {
-      // Arrange
-      const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        apiError,
-      );
-      mockCharacter.handleErrors.mockResolvedValue(false);
-
-      mockCharacter.data.task = 'red_slime';
-      mockCharacter.data.task_type = 'monsters';
-      mockCharacter.data.task_progress = 0;
-      mockCharacter.data.task_total = 5;
-
-      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-
-      // Act
-      const result = await objective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-    });
-
     it('should handle no maps found', async () => {
       // Arrange
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue({
-        data: [],
-        total: 0,
-        page: 1,
-        pages: 1,
-        size: 50,
-      });
+      mockCharacter.findMaps.mockReturnValue([]);
 
       mockCharacter.data.task = 'red_slime';
       mockCharacter.data.task_type = 'monsters';
@@ -423,9 +387,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
           pages: 1,
           size: 50,
         };
-        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-          testMapData,
-        );
+        mockCharacter.findMaps.mockReturnValue(testMapData.data as MapSchema[]);
 
         const objective = new MonsterTaskObjective(mockCharacter as any, 1);
 
@@ -434,7 +396,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
         // Assert
         expect(result).toBe(true);
-        expect(getMaps).toHaveBeenCalledWith({
+        expect(mockCharacter.findMaps).toHaveBeenCalledWith({
           content_code: test.task,
           content_type: 'monster',
         });
@@ -445,9 +407,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
         // Reset for next test
         jest.clearAllMocks();
-        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-          testMapData,
-        );
+        mockCharacter.findMaps.mockReturnValue(testMapData.data as MapSchema[]);
       }
     });
 
@@ -471,9 +431,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
         pages: 1,
         size: 50,
       };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        customMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(customMapData.data as MapSchema[]);
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
 
       mockCharacter.data.task = 'red_slime';

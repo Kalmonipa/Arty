@@ -1,5 +1,4 @@
 import { actionCraft } from '../api_calls/Actions.js';
-import { getMaps } from '../api_calls/Maps.js';
 import { isSkill, logger } from '../utils.js';
 import { Character } from './Character.js';
 import { ApiError } from './Error.js';
@@ -146,20 +145,16 @@ export class CraftObjective extends Objective {
         this.numBatches = batchInfo.numBatches;
         this.numItemsPerBatch = batchInfo.numPerBatch;
 
-        const maps = await getMaps({
+        const maps = this.character.findMaps({
           content_code: targetItem.craft.skill,
           content_type: 'workshop',
         });
-        if (maps instanceof ApiError) {
-          return this.character.handleErrors(maps);
-        }
-
-        if (maps.data.length === 0) {
+        if (maps.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
           return false;
         }
 
-        const contentLocation = this.character.evaluateClosestMap(maps.data);
+        const contentLocation = this.character.evaluateClosestMap(maps);
 
         for (let batch = 1; batch <= this.numBatches; batch++) {
           if (this.progress >= this.target.quantity) {

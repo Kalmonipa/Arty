@@ -16,10 +16,6 @@ jest.mock('../../src/api_calls/Tasks', () => ({
   actionCompleteTask: jest.fn(),
 }));
 
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(async () => ({ data: [], total: 0, page: 1, size: 50 })),
-}));
-
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import {
@@ -79,6 +75,8 @@ class SimpleMockCharacter {
       return { x: maps[0].x, y: maps[0].y };
     },
   );
+
+  findMaps = jest.fn((): MapSchema[] => []);
 
   executeJobNow = jest.fn(async (): Promise<boolean> => {
     return true;
