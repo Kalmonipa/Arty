@@ -113,7 +113,7 @@ export class IdleObjective extends Objective {
           this.character.getCharacterLevel(this.character.data, 'alchemy') >=
           this.character.getCharacterLevel(this.character.data) + 5
         ) {
-          await this.fightMobWithinLevelRange();
+          await this.character.trainCombatLevelNow(this.character.data.level + 1);
         } else {
           await this.trainSkill('alchemy');
         }
@@ -122,7 +122,7 @@ export class IdleObjective extends Objective {
       case 'fisherman':
         await this.trainSkill('fishing');
         if (this.checkIdleJobIsLast()) return true;
-        await this.fightMobWithinLevelRange();
+        await this.character.trainCombatLevelNow(this.character.data.level + 1);
         if (this.checkIdleJobIsLast()) return true;
         break;
       case 'lumberjack':
@@ -429,50 +429,6 @@ export class IdleObjective extends Objective {
       await this.topUpMiningBars();
     }
 
-    return true;
-  }
-
-  /**
-   * Finds a normal mob within a level range below the character's combat level and fights it 10 times.
-   */
-  private async fightMobWithinLevelRange(
-    minOffset: number = 4,
-    maxOffset: number = 6,
-  ): Promise<boolean> {
-    const charLevel = this.character.getCharacterLevel(this.character.data);
-
-    const mobs = await getAllMonsterInformation({
-      min_level: Math.max(charLevel - maxOffset, 0),
-      max_level: Math.max(charLevel - minOffset, 0),
-    });
-
-    if (mobs instanceof ApiError) {
-      return this.character.handleErrors(mobs);
-    }
-
-    const normalMobs = mobs.data.filter((mob) => mob.type === 'normal');
-
-    if (normalMobs.length === 0) {
-      logger.info(
-        `No normal mobs found ${minOffset}-${maxOffset} levels below combat level ${charLevel}. Skipping combat`,
-      );
-      return true;
-    }
-
-    // Try mobs from highest to lowest level, skipping any that aren't accessible (e.g. event-only mobs)
-    for (let i = normalMobs.length - 1; i >= 0; i--) {
-      const mob = normalMobs[i];
-      const result = await this.character.fightNow(
-        10,
-        mob.code,
-        undefined,
-        false,
-      );
-      if (result) return true;
-      logger.info(`Could not fight ${mob.code}, trying next mob in range`);
-    }
-
-    logger.info(`No accessible mobs found in level range, skipping combat`);
     return true;
   }
 
