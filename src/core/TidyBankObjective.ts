@@ -1,5 +1,5 @@
 import { getBankItems } from '../api_calls/Bank.js';
-import { getAllItemInformation } from '../api_calls/Items.js';
+import { actionDeleteItem, getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { CraftSkill, ItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
@@ -317,6 +317,15 @@ export class TidyBankObjective extends Objective {
       if (numInBank === undefined) {
         logger.info(`${gear.code} not found in bank`);
         continue;
+      }
+
+      if (gear.code === 'wooden_stick') {
+        logger.info(`wooden_stick found. Deleting item as it can't be recycled.`)
+        const deleteResult = await actionDeleteItem(this.character.data, { code: gear.code, quantity: numInBank })
+        if (deleteResult instanceof ApiError) {
+          logger.error(`Failed to delete ${numInBank} wooden_stick. [${deleteResult.error.code}] Message: ${deleteResult.error.message}`);
+          continue;
+        }
       }
 
       if (gear.level < obsoleteThreshold) {
