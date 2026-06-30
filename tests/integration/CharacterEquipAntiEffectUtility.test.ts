@@ -73,7 +73,6 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       boost_res_water: [],
     };
 
-    character.maxEquippedUtilities = 100;
     character.data.utility2_slot_quantity = 0;
     character.data.utility2_slot = '';
 
@@ -589,7 +588,6 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         description: 'Poison effect',
       };
       character.data.utility2_slot_quantity = 50;
-      character.maxEquippedUtilities = 100;
       (character as any).addItemToInventory('weak_antidote', 100);
 
       // Act

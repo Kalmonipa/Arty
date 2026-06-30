@@ -22,6 +22,27 @@ export const MAX_COMBAT_LEVEL = 50;
 export const MAX_SKILL_LEVEL = 50;
 export const CRITICAL_MODIFIER = 0.5;
 
+/**
+ * Max default number of slots
+ */
+export const MaxInventorySlots = 20;
+/**
+ * Maximum number of potions that can be equipped
+ */
+export const MaxEquippedUtilities = 100;
+/**
+ * Minimum number of potions to equip
+ */
+export const MinEquippedUtilities = 20;
+/**
+ * Desired number of food in inventory
+ */
+export const DesiredFoodCount = 50;
+/**
+ *  Minimum food in inventory when going into a fight
+ */
+export const MinFood = 15;
+
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 export const ApiToken = getEnv('API_TOKEN');
 

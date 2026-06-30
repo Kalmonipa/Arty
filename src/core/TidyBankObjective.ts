@@ -320,10 +320,17 @@ export class TidyBankObjective extends Objective {
       }
 
       if (gear.code === 'wooden_stick') {
-        logger.info(`wooden_stick found. Deleting item as it can't be recycled.`)
-        const deleteResult = await actionDeleteItem(this.character.data, { code: gear.code, quantity: numInBank })
+        logger.info(
+          `wooden_stick found. Deleting item as it can't be recycled.`,
+        );
+        const deleteResult = await actionDeleteItem(this.character.data, {
+          code: gear.code,
+          quantity: numInBank,
+        });
         if (deleteResult instanceof ApiError) {
-          logger.error(`Failed to delete ${numInBank} wooden_stick. [${deleteResult.error.code}] Message: ${deleteResult.error.message}`);
+          logger.error(
+            `Failed to delete ${numInBank} wooden_stick. [${deleteResult.error.code}] Message: ${deleteResult.error.message}`,
+          );
           continue;
         }
       }

@@ -98,8 +98,12 @@ import {
   BagSlot,
   BodyArmorSlot,
   CharRole,
+  DesiredFoodCount,
   FishMerchant,
   HelmetSlot,
+  MaxEquippedUtilities,
+  MinEquippedUtilities,
+  MinFood,
   NomadicMerchant,
   RuneSlot,
   ShieldSlot,
@@ -172,26 +176,6 @@ export class Character {
 
   allCharacterDetails?: CharacterSchema[];
 
-  /**
-   * Max default number of slots. Can be increased with a backpack
-   */
-  maxInventorySlots = 20;
-  /**
-   * Maximum number of potions that can be equipped
-   */
-  maxEquippedUtilities = 100;
-  /**
-   * Minimum number of potions to equip
-   */
-  minEquippedUtilities = 20;
-  /**
-   * Desired number of food in inventory
-   */
-  desiredFoodCount = 50;
-  /**
-   *  Minimum food in inventory when going into a fight
-   */
-  minFood = 15;
   /**
    * List of items to keep when doing a deposit all
    */
@@ -1145,9 +1129,9 @@ export class Character {
   async topUpHealthPots(potionToEquip?: string): Promise<boolean> {
     if (potionToEquip) {
       const numToEquip =
-        this.maxEquippedUtilities - this.data.utility1_slot_quantity;
+        MaxEquippedUtilities - this.data.utility1_slot_quantity;
       return await this.equipNow(potionToEquip, 'utility1', numToEquip);
-    } else if (this.data.utility1_slot_quantity <= this.minEquippedUtilities) {
+    } else if (this.data.utility1_slot_quantity <= MinEquippedUtilities) {
       return await this.equipUtility('restore', 'utility1');
     }
   }
@@ -1673,11 +1657,9 @@ export class Character {
       if (potion.level <= charLevel && potion.level >= minPotionLevel) {
         let numNeeded: number;
         if (slot === 'utility1') {
-          numNeeded =
-            this.maxEquippedUtilities - this.data.utility1_slot_quantity;
+          numNeeded = MaxEquippedUtilities - this.data.utility1_slot_quantity;
         } else {
-          numNeeded =
-            this.maxEquippedUtilities - this.data.utility2_slot_quantity;
+          numNeeded = MaxEquippedUtilities - this.data.utility2_slot_quantity;
         }
 
         const numInInv = this.checkQuantityOfItemInInv(potion.code);
@@ -1753,7 +1735,7 @@ export class Character {
       }
 
       let numNeeded: number =
-        this.maxEquippedUtilities - this.data.utility2_slot_quantity;
+        MaxEquippedUtilities - this.data.utility2_slot_quantity;
 
       const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
 
@@ -1821,7 +1803,7 @@ export class Character {
       const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
       const numNeeded = Math.min(
         bestFood.quantity,
-        this.desiredFoodCount - currentQuantity,
+        DesiredFoodCount - currentQuantity,
       );
 
       if (numNeeded > 0) {
@@ -1831,15 +1813,15 @@ export class Character {
         await this.withdrawNow(numNeeded, bestFood.code);
       } else {
         logger.debug(
-          `Already have enough ${bestFood.code} in inventory (${currentQuantity}/${this.desiredFoodCount})`,
+          `Already have enough ${bestFood.code} in inventory (${currentQuantity}/${DesiredFoodCount})`,
         );
       }
     } else {
       // Food is already in inventory, check if we need more
       const currentQuantity = this.checkQuantityOfItemInInv(bestFood.code);
-      if (currentQuantity < this.desiredFoodCount) {
+      if (currentQuantity < DesiredFoodCount) {
         logger.debug(
-          `Have ${currentQuantity} ${bestFood.code} in inventory, desired ${this.desiredFoodCount}`,
+          `Have ${currentQuantity} ${bestFood.code} in inventory, desired ${DesiredFoodCount}`,
         );
       }
     }
@@ -2126,16 +2108,16 @@ export class Character {
 
     // Check if any food in inventory meets minimum requirements
     for (const food of inventoryFood) {
-      if (food.quantity > this.minFood) {
+      if (food.quantity > MinFood) {
         logger.debug(
-          `Found ${food.quantity} ${food.code} in inventory (min: ${this.minFood})`,
+          `Found ${food.quantity} ${food.code} in inventory (min: ${MinFood})`,
         );
         return true;
       }
     }
 
     logger.debug(
-      `No food in inventory meets minimum requirements (${this.minFood})`,
+      `No food in inventory meets minimum requirements (${MinFood})`,
     );
     return false;
   }
@@ -2149,9 +2131,9 @@ export class Character {
     // First check if we already have enough food in inventory
     const inventoryFood = this.findFoodInInventory();
     for (const food of inventoryFood) {
-      if (food.quantity >= this.minFood) {
+      if (food.quantity >= MinFood) {
         logger.debug(
-          `Have sufficient ${food.code} in inventory (${food.quantity}/${this.minFood})`,
+          `Have sufficient ${food.code} in inventory (${food.quantity}/${MinFood})`,
         );
         return true;
       }
@@ -2168,7 +2150,7 @@ export class Character {
     if (bestFood.source === 'bank') {
       const withdrawSuccess = await this.withdrawFoodIfNeeded(
         bestFood,
-        this.minFood,
+        MinFood,
       );
       if (withdrawSuccess) {
         logger.info(
@@ -2183,7 +2165,7 @@ export class Character {
 
     // Food is in inventory but not enough
     logger.warn(
-      `Not enough ${bestFood.code} in inventory (${bestFood.quantity}/${this.minFood})`,
+      `Not enough ${bestFood.code} in inventory (${bestFood.quantity}/${MinFood})`,
     );
     return false;
   }

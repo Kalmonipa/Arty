@@ -12,6 +12,7 @@ import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { ApiError } from './Error.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
+import { MinEquippedUtilities } from '../constants.js';
 
 /**
  * @description Evaluates which gear is the best to use for the upcoming fight
@@ -212,10 +213,7 @@ export class EvaluateGearObjective extends Objective {
    * @returns
    */
   private async topUpHealthPots(): Promise<boolean> {
-    if (
-      this.character.data.utility1_slot_quantity <=
-      this.character.minEquippedUtilities
-    ) {
+    if (this.character.data.utility1_slot_quantity <= MinEquippedUtilities) {
       return await this.character.equipUtility('restore', 'utility1');
     }
   }
@@ -236,8 +234,7 @@ export class EvaluateGearObjective extends Objective {
       if (
         !this.character.data.utility2_slot_quantity ||
         (this.character.data.utility2_slot_quantity &&
-          this.character.data.utility2_slot_quantity <
-            this.character.minEquippedUtilities)
+          this.character.data.utility2_slot_quantity < MinEquippedUtilities)
       ) {
         logger.info(`Equipping antidotes`);
         return await this.character.equipAntiEffectUtility(

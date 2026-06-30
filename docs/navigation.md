@@ -209,7 +209,7 @@ the "Pathfinding" section above: build the graph once at startup, then run a sta
 `src/core/navigation/zones.ts`. Flood-fill every map into zones: starting from a map, walk to
 orthogonally-adjacent maps that are walkable (`access.type` not `blocked`), keeping `restricted`
 maps in their own clusters separate from standard maps. The result is a `zoneOfMapId` lookup and
-the set of zones. A transition point is *not* a zone boundary on its own — it only matters if the
+the set of zones. A transition point is _not_ a zone boundary on its own — it only matters if the
 landing tile lands in a different zone.
 
 ### Phase 2 — Transition graph (`7aa8b93`)
@@ -244,7 +244,7 @@ log above.
 
 ### Phase 6 — Transition requirement acquisition (`8736fc7`, `9f08c3e`)
 
-Classified gated transitions as *acquirable* vs *unacquirable* depending on whether the character
+Classified gated transitions as _acquirable_ vs _unacquirable_ depending on whether the character
 could realistically obtain the required item. As a last resort, the character will go and acquire
 a missing item needed for a gated transition rather than giving up on the route.
 

@@ -16,6 +16,7 @@ import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
 import {
   FishMerchant,
   GemstoneMerchant,
+  MinEquippedUtilities,
   NomadicMerchant,
 } from '../constants.js';
 
@@ -337,10 +338,7 @@ export class EventObjective extends Objective {
       await this.character.recoverHealth();
 
       // Check these after each fight in case we need to top up
-      if (
-        this.character.data.utility1_slot_quantity <=
-        this.character.minEquippedUtilities
-      ) {
+      if (this.character.data.utility1_slot_quantity <= MinEquippedUtilities) {
         if (await this.character.equipUtility('restore', 'utility1')) {
           // If we moved to the bank we need to move back to the monster location
           await this.character.equipNow(preferredWeapon, 'weapon');

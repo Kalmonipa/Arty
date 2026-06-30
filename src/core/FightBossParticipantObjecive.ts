@@ -5,6 +5,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
+import { MinEquippedUtilities } from '../constants.js';
 
 export class FightBossParticipantObjective extends Objective {
   target: ObjectiveTargets;
@@ -88,8 +89,7 @@ export class FightBossParticipantObjective extends Objective {
 
         // Check these after each fight in case we need to top up
         if (
-          this.character.data.utility1_slot_quantity <=
-          this.character.minEquippedUtilities
+          this.character.data.utility1_slot_quantity <= MinEquippedUtilities
         ) {
           if (await this.character.equipUtility('restore', 'utility1')) {
             // If we moved to the bank we need to move back to the monster location

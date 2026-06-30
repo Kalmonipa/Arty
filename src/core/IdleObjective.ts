@@ -113,7 +113,9 @@ export class IdleObjective extends Objective {
           this.character.getCharacterLevel(this.character.data, 'alchemy') >=
           this.character.getCharacterLevel(this.character.data) + 5
         ) {
-          await this.character.trainCombatLevelNow(this.character.data.level + 1);
+          await this.character.trainCombatLevelNow(
+            this.character.data.level + 1,
+          );
         } else {
           await this.trainSkill('alchemy');
         }

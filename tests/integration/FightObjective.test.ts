@@ -552,7 +552,7 @@ describe('FightObjective Integration Tests', () => {
     it('should not equip utility when quantity is sufficient', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
-      mockCharacter.data.utility1_slot_quantity = 10; // Above minEquippedUtilities
+      mockCharacter.data.utility1_slot_quantity = 30; // Above minEquippedUtilities
 
       // Act
       const result = await fightObjective.run();
