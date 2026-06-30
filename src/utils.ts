@@ -310,6 +310,9 @@ export async function GetCharacterData(): Promise<CharacterSchema[]> {
       logger.error(
         `Failed to get data for ${character}: [${charDetail.error.code}] ${charDetail.message}`,
       );
+      if (charDetail.error.code === 500 || charDetail.error.code === 502) {
+        await sleep(300, '5xx error code')
+      }
       break;
     }
 
