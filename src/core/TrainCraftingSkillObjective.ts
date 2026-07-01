@@ -153,7 +153,10 @@ async function calculateBestCraftingItem(
   let bestScore = 1000000;
   let bestItem = 'no_item';
 
+  logger.debug(`Example items in craftable list: ${craftableItemList[0]},${craftableItemList[craftableItemList.length/2]}, ${craftableItemList[craftableItemList.length]}`)
+
   for (const item of craftableItemList) {
+    logger.debug(`Calculating score of ${item.code}`)
     const currentScore = calculateScore(item, bankItems, character);
 
     if (currentScore < bestScore) {
@@ -248,6 +251,10 @@ function calculateScore(
       const monsterToKill = character.monsterData.find((mob) => {
         mob.drops.find((drop) => drop.code === ingredSchema.code);
       });
+      if (!monsterToKill) {
+        score += 1000000
+        return;
+      }
       // const monstersThatDrop = character.monsterData.filter(mob => {
       //   mob.drops.find(drop => drop.code === ingredSchema.code)
       // })
