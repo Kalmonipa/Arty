@@ -52,8 +52,26 @@ export class TrainCraftingSkillObjective extends Objective {
       this.skill,
     );
 
+    let numToCraft: number;
+      switch (this.skill) {
+        case 'alchemy':
+        case 'cooking':
+        case 'mining':
+          numToCraft = 10;
+          break;
+        case 'weaponcrafting':
+        case 'gearcrafting':
+          numToCraft = 2;
+          break;
+        default:
+          numToCraft = 1;
+      }
+
     while (charLevel < this.targetLevel) {
       if (!(await this.checkStatus())) return false;
+
+      // Get bank items so we don't need to make lots of bank calls
+      const allBankItems = await this.character.getAllBankItems();
 
       const payload: GetAllItemsItemsGetParams = {
         craft_skill: this.skill,
@@ -72,28 +90,33 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
-      const randInd = Math.floor(Math.random() * craftableItemsList.length);
+      // Ensure that we have at least 3 of each craftable item in the bank
+      // before we start leveling
+      for (const craftableItem of craftableItemsList) {
+        const bankItem = allBankItems.find(
+          (bankItem) => craftableItem.code === bankItem.code,
+        );
 
-      const itemToCraft = craftableItemsList[randInd];
+        if (!bankItem || bankItem.quantity <= 3) {
+          if (await this.character.craftNow(numToCraft, craftableItem.code)) {
+            // Only deposit if the craft was successful
+            await this.character.depositNow(numToCraft, craftableItem.code);
+          }
+        }
+      };
 
-      let numToCraft: number;
-      switch (this.skill) {
-        case 'alchemy':
-        case 'cooking':
-        case 'mining':
-          numToCraft = 10;
-          break;
-        case 'weaponcrafting':
-        case 'gearcrafting':
-          numToCraft = 2;
-          break;
-        default:
-          numToCraft = 1;
-      }
+      // Find item with the best crafting score
+      const itemToCraft = (
+        await calculateBestCraftingItem(
+          this.character,
+          craftableItemsList,
+          allBankItems,
+        )
+      ).code;
 
-      if (await this.character.craftNow(numToCraft, itemToCraft.code)) {
+      if (await this.character.craftNow(numToCraft, itemToCraft)) {
         // Only deposit if the craft was successful
-        await this.character.depositNow(numToCraft, itemToCraft.code);
+        await this.character.depositNow(numToCraft, itemToCraft);
       }
 
       // Recycle excess gear to get materials
@@ -122,18 +145,27 @@ export class TrainCraftingSkillObjective extends Objective {
  * @todo - Make the scores based on actual figures and calculations
  * Gathering: Factor skill level and equipment cooldown in
  */
-async function calculateEquipmentCraftingScore(
+async function calculateBestCraftingItem(
   character: Character,
   craftableItemList: ItemSchema[],
-): Promise<number> {
-  let score = 0;
-
-  const bankItems = await character.getAllBankItems();
+  bankItems: SimpleItemSchema[],
+): Promise<{ code: string; score: number }> {
+  let bestScore = 1000000;
+  let bestItem = 'no_item';
 
   for (const item of craftableItemList) {
+    const currentScore = calculateScore(item, bankItems, character);
+
+    if (currentScore < bestScore) {
+      logger.debug(
+        `${item.code} (${currentScore}) is better to craft than ${bestItem} (${bestScore})`,
+      );
+      bestScore = currentScore;
+      bestItem = item.code;
+    }
   }
 
-  return 1;
+  return { code: bestItem, score: bestScore };
 }
 
 /**
@@ -218,17 +250,23 @@ function calculateScore(
     } else if (ingredSchema.subtype === 'mob') {
       // ToDo: Change this so that it looks at all mobs that drop it
       // and find the best mob to fight
-      const monsterToKill = character.monsterData.find(mob => {
-        mob.drops.find(drop => drop.code === ingredSchema.code)
-      })
+      const monsterToKill = character.monsterData.find((mob) => {
+        mob.drops.find((drop) => drop.code === ingredSchema.code);
+      });
       // const monstersThatDrop = character.monsterData.filter(mob => {
       //   mob.drops.find(drop => drop.code === ingredSchema.code)
       // })
 
-      const dropRate = monsterToKill.drops.find(drop => drop.code === ingredSchema.code)
-      const scoreToAdd = 2 * dropRate.rate * numNeeded
-      logger.debug(`${monsterToKill.code} drops ${ingredSchema.code}. Adding ${scoreToAdd} to score (${score})`)
-      score += scoreToAdd
+      const dropRate = monsterToKill.drops.find(
+        (drop) => drop.code === ingredSchema.code,
+      );
+      const scoreToAdd = 2 * dropRate.rate * numNeeded;
+      logger.debug(
+        `${monsterToKill.code} drops ${ingredSchema.code}. Adding ${scoreToAdd} to score (${score})`,
+      );
+      score += scoreToAdd;
     }
   });
+
+  return score;
 }
