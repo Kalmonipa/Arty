@@ -155,7 +155,7 @@ async function calculateBestCraftingItem(
   let bestScore = 1000000;
   let bestItem = 'no_item';
 
-  logger.debug(`Example items in craftable list: ${craftableItemList[0].code},${craftableItemList[craftableItemList.length/2].code}, ${craftableItemList[craftableItemList.length-1].code}`)
+  logger.debug(`Example items in craftable list: ${craftableItemList[0].code}, ${craftableItemList[craftableItemList.length-1].code}`)
 
   for (const item of craftableItemList) {
     logger.debug(`Calculating score of ${item.code}`)
