@@ -388,7 +388,11 @@ export class EvaluateGearObjective extends Objective {
       let slotFilled = false;
 
       for (let i = artifacts.length - 1; i >= 0; i--) {
-        if (artifacts[i].level > charLevel) continue;
+        if (artifacts[i].level > charLevel) {
+          logger.debug(`${artifacts[i].code} is too high level (${artifacts[i].level}) for ${this.character.data.name} (${charLevel})`)
+          continue;
+        }
+        
 
         if (this.character.getCharacterGearIn(slot) === artifacts[i].code) {
           logger.debug(`${artifacts[i].code} already equipped in ${slot}`);
