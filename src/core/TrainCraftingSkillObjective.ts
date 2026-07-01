@@ -97,7 +97,7 @@ export class TrainCraftingSkillObjective extends Objective {
           (bankItem) => craftableItem.code === bankItem.code,
         );
 
-        if (!bankItem || bankItem.quantity <= 3) {
+        if (!bankItem || bankItem.quantity < 3) {
           if (await this.character.craftNow(numToCraft, craftableItem.code)) {
             // Only deposit if the craft was successful
             await this.character.depositNow(numToCraft, craftableItem.code);
