@@ -73,6 +73,8 @@ export class TrainCraftingSkillObjective extends Objective {
       // Get bank items so we don't need to make lots of bank calls
       const allBankItems = await this.character.getAllBankItems();
 
+      logger.debug(`Finding craftable ${this.skill} items between ${Math.max(charLevel - this.levelRange, 0)} and ${charLevel}`)
+
       const payload: GetAllItemsItemsGetParams = {
         craft_skill: this.skill,
         max_level: charLevel,
@@ -153,7 +155,7 @@ async function calculateBestCraftingItem(
   let bestScore = 1000000;
   let bestItem = 'no_item';
 
-  logger.debug(`Example items in craftable list: ${craftableItemList[0]},${craftableItemList[craftableItemList.length/2]}, ${craftableItemList[craftableItemList.length]}`)
+  logger.debug(`Example items in craftable list: ${craftableItemList[0].code},${craftableItemList[craftableItemList.length/2].code}, ${craftableItemList[craftableItemList.length-1].code}`)
 
   for (const item of craftableItemList) {
     logger.debug(`Calculating score of ${item.code}`)
@@ -181,12 +183,13 @@ function calculateScore(
   bankItems: SimpleItemSchema[],
   character: Character,
 ): number {
-  if (!craftableItem.craft) {
-    logger.debug(`${craftableItem.code} not craftable. Skipping`);
-    return 1000000;
-  }
-
   let score = 0;
+
+    if (craftableItem.type === 'resource') {
+    logger.debug(`${craftableItem.code} is a resource. Adding score 1`);
+    score += 1;
+    return score
+  }
 
   let ingredients = craftableItem.craft.items;
 
