@@ -198,9 +198,7 @@ function calculateScore(
       (itemCode) => itemCode.code === simpleIngredient.code,
     );
 
-    const numInInv = character.data.inventory.find(
-      (item) => item.code === ingredSchema.code,
-    ).quantity;
+    const numInInv = character.checkQuantityOfItemInInv(ingredSchema.code)
     if (numInInv >= simpleIngredient.quantity) {
       logger.debug(
         `${numInInv}/${simpleIngredient.quantity} ${simpleIngredient.code} in inventory. Score is ${score}`,
@@ -209,9 +207,15 @@ function calculateScore(
       return;
     }
 
-    const numInBank = bankItems.find(
+    let numInBank: number
+    const itemInBank = bankItems.find(
       (item) => item.code === ingredSchema.code,
-    ).quantity;
+    );
+    if (itemInBank) {
+      numInBank = itemInBank.quantity
+    } else {
+      numInBank = 0
+    }
 
     if (numInBank >= simpleIngredient.quantity) {
       logger.debug(
