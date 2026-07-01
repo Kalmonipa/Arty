@@ -178,7 +178,7 @@ function calculateScore(
   bankItems: SimpleItemSchema[],
   character: Character,
 ): number {
-  if (!craftableItem.craft && craftableItem.craft.items) {
+  if (!craftableItem.craft) {
     logger.debug(`${craftableItem.code} not craftable. Skipping`);
     return 1000000;
   }
@@ -242,15 +242,6 @@ function calculateScore(
         `${ingredSchema.code} is a task reward, adding ${10 * simpleIngredient.quantity} to score (${score})`,
       );
       score += 10 * simpleIngredient.quantity;
-    } else if (ingredSchema.craft) {
-      logger.debug(`Calculating sub-ingredients of ${ingredSchema.code}`);
-      ingredSchema.craft.items.forEach((simpleSubIngredient) => {
-        logger.debug(`Calculating ${simpleSubIngredient.code} score`);
-        const subIngredient = character.itemData.find(
-          (item) => item.code === simpleSubIngredient.code,
-        );
-        score += calculateScore(subIngredient, bankItems, character);
-      });
     } else if (ingredSchema.subtype === 'mob') {
       // ToDo: Change this so that it looks at all mobs that drop it
       // and find the best mob to fight
@@ -269,6 +260,15 @@ function calculateScore(
         `${monsterToKill.code} drops ${ingredSchema.code}. Adding ${scoreToAdd} to score (${score})`,
       );
       score += scoreToAdd;
+    } else if (ingredSchema.craft) {
+      logger.debug(`Calculating sub-ingredients of ${ingredSchema.code}`);
+      ingredSchema.craft.items.forEach((simpleSubIngredient) => {
+        logger.debug(`Calculating ${simpleSubIngredient.code} score`);
+        const subIngredient = character.itemData.find(
+          (item) => item.code === simpleSubIngredient.code,
+        );
+        score += calculateScore(subIngredient, bankItems, character);
+      });
     }
   });
 
