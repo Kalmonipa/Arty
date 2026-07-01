@@ -20,7 +20,7 @@ interface RetryConfig {
 
 const DEFAULT_RETRY: RetryConfig = {
   maxRetries: 5,
-  baseDelaySeconds: 2,
+  baseDelaySeconds: 5,
   maxDelaySeconds: 60,
 };
 
