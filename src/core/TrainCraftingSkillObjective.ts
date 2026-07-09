@@ -53,19 +53,19 @@ export class TrainCraftingSkillObjective extends Objective {
     );
 
     let numToCraft: number;
-      switch (this.skill) {
-        case 'alchemy':
-        case 'cooking':
-        case 'mining':
-          numToCraft = 10;
-          break;
-        case 'weaponcrafting':
-        case 'gearcrafting':
-          numToCraft = 2;
-          break;
-        default:
-          numToCraft = 1;
-      }
+    switch (this.skill) {
+      case 'alchemy':
+      case 'cooking':
+      case 'mining':
+        numToCraft = 10;
+        break;
+      case 'weaponcrafting':
+      case 'gearcrafting':
+        numToCraft = 2;
+        break;
+      default:
+        numToCraft = 1;
+    }
 
     while (charLevel < this.targetLevel) {
       if (!(await this.checkStatus())) return false;
@@ -73,7 +73,9 @@ export class TrainCraftingSkillObjective extends Objective {
       // Get bank items so we don't need to make lots of bank calls
       const allBankItems = await this.character.getAllBankItems();
 
-      logger.debug(`Finding craftable ${this.skill} items between ${Math.max(charLevel - this.levelRange, 0)} and ${charLevel}`)
+      logger.debug(
+        `Finding craftable ${this.skill} items between ${Math.max(charLevel - this.levelRange, 0)} and ${charLevel}`,
+      );
 
       const payload: GetAllItemsItemsGetParams = {
         craft_skill: this.skill,
@@ -105,7 +107,7 @@ export class TrainCraftingSkillObjective extends Objective {
             await this.character.depositNow(numToCraft, craftableItem.code);
           }
         }
-      };
+      }
 
       // Find item with the best crafting score
       const itemToCraft = (
@@ -155,10 +157,12 @@ async function calculateBestCraftingItem(
   let bestScore = 1000000;
   let bestItem = 'no_item';
 
-  logger.debug(`Example items in craftable list: ${craftableItemList[0].code}, ${craftableItemList[craftableItemList.length-1].code}`)
+  logger.debug(
+    `Example items in craftable list: ${craftableItemList[0].code}, ${craftableItemList[craftableItemList.length - 1].code}`,
+  );
 
   for (const item of craftableItemList) {
-    logger.debug(`Calculating score of ${item.code}`)
+    logger.debug(`Calculating score of ${item.code}`);
     const currentScore = calculateScore(item, bankItems, character);
 
     if (currentScore < bestScore) {
@@ -185,10 +189,10 @@ function calculateScore(
 ): number {
   let score = 0;
 
-    if (craftableItem.type === 'resource') {
+  if (craftableItem.type === 'resource') {
     logger.debug(`${craftableItem.code} is a resource. Adding score 1`);
     score += 1;
-    return score
+    return score;
   }
 
   let ingredients = craftableItem.craft.items;
@@ -204,7 +208,7 @@ function calculateScore(
       (itemCode) => itemCode.code === simpleIngredient.code,
     );
 
-    const numInInv = character.checkQuantityOfItemInInv(ingredSchema.code)
+    const numInInv = character.checkQuantityOfItemInInv(ingredSchema.code);
     if (numInInv >= simpleIngredient.quantity) {
       logger.debug(
         `${numInInv}/${simpleIngredient.quantity} ${simpleIngredient.code} in inventory. Score is ${score}`,
@@ -213,14 +217,14 @@ function calculateScore(
       return;
     }
 
-    let numInBank: number
+    let numInBank: number;
     const itemInBank = bankItems.find(
       (item) => item.code === ingredSchema.code,
     );
     if (itemInBank) {
-      numInBank = itemInBank.quantity
+      numInBank = itemInBank.quantity;
     } else {
-      numInBank = 0
+      numInBank = 0;
     }
 
     if (numInBank >= simpleIngredient.quantity) {
@@ -255,7 +259,7 @@ function calculateScore(
         mob.drops.find((drop) => drop.code === ingredSchema.code);
       });
       if (!monsterToKill) {
-        score += 1000000
+        score += 1000000;
         return;
       }
       // const monstersThatDrop = character.monsterData.filter(mob => {

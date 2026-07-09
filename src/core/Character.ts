@@ -228,6 +228,9 @@ export class Character {
    * we can recycle
    */
   lowestCharLevel: number;
+  /**
+   * Highest character level in the village. Refreshes periodically so might have stale data
+   */
   highestCharLevel: number;
   lowestAlchemyLevel: number;
   lowestFishingLevel: number;

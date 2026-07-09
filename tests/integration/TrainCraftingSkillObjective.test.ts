@@ -70,7 +70,7 @@ class SimpleMockCharacter {
       this.addItemToInventory(code, quantity);
       // Simulate level progression for alchemy
       if (code.includes('potion') || code.includes('alchemy')) {
-        this.data.alchemy_level += 1
+        this.data.alchemy_level += 1;
       }
       return true;
     },

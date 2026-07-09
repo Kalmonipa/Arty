@@ -522,8 +522,8 @@ class SimpleMockCharacter {
 
   // ToDo: Make this more robust. Should actually check the characters equipment
   hasEquipped = (itemCode: string): boolean => {
-    return false
-  }
+    return false;
+  };
 }
 
 describe('EvaluateGearObjective Integration Tests', () => {
