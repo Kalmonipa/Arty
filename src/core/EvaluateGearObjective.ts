@@ -390,7 +390,11 @@ export class EvaluateGearObjective extends Objective {
       // ToDo: Currently this will try to equip the same item in all 3 slots. 
       // Need to handle this better
       for (let i = artifacts.length - 1; i >= 0; i--) {
-        if (artifacts[i].level > charLevel) continue;
+        if (artifacts[i].level > charLevel) {
+          logger.debug(`${artifacts[i].code} is too high level (${artifacts[i].level}) for ${this.character.data.name} (${charLevel})`)
+          continue;
+        }
+        
 
         if (this.character.hasEquipped(artifacts[i].code)) {
           logger.debug(`${artifacts[i].code} already equipped. Skipping`)
