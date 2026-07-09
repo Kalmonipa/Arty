@@ -252,9 +252,7 @@ export function isCraftingSkill(value: string): value is CraftSkill {
 }
 
 /**
- * @description Builds a map of all the utilities
- * The key being the effect (restore, res_fire, fire_damage, etc)
- * The value being an array of the items that have the key effect
+ * @description Builds a map of the specified item so we don't have to make API calls
  */
 export async function buildListOf(
   itemType: ItemType,

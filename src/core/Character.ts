@@ -158,6 +158,8 @@ export class Character {
   ringsMap?: Record<GearEffects, ItemSchema[]>;
   shieldMap?: Record<GearEffects, ItemSchema[]>;
   artifactsMap?: Record<GearEffects, ItemSchema[]>;
+  // ToDo: Get rune information
+  //runesMap?: Record<
 
   consumablesMap?: Record<ConsumableEffects, ItemSchema[]>;
   utilitiesMap?: Record<UtilityEffects, ItemSchema[]>;
