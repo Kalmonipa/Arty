@@ -611,6 +611,12 @@ export class EvaluateGearObjective extends Objective {
 
     // If character doesn't have a rune equipped and is level 20 or greater, buy and equip a healing rune
     if (currentEquipped === '' && this.character.data.level >= 20) {
+      // ToDo: don't hardcode the cost of the rune. store this info in memory so no api calls needed
+      if (this.character.data.gold < 10000) {
+        logger.debug(`${this.character.data.name} cannot afford 'healing_rune'`)
+        return false
+      }
+
       if (await this.character.tradeWithNpcNow('buy', 1, runeName)) {
         const equipResponse = await this.character.equipNow(
           runeName,
