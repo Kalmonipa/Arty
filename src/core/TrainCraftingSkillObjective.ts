@@ -92,11 +92,15 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
-      // Ensure that we have at least 1 of each craftable item in the bank
+      // Ensure that we have at least 1 of each craftable tool in the bank
       // before we start leveling
+      // ToDo: This should expand to craftable items so we can get all weapons/etc
+      // but requires a bit more logic
       for (const craftableItem of craftableItemsList) {
         const bankItem = allBankItems.find(
-          (bankItem) => craftableItem.code === bankItem.code,
+          (bankItem) =>
+            craftableItem.code === bankItem.code &&
+            craftableItem.subtype === 'tool',
         );
 
         if (!bankItem || bankItem.quantity < 1) {
@@ -109,12 +113,14 @@ export class TrainCraftingSkillObjective extends Objective {
 
       // Find item with the best crafting score
       const itemToCraft = await calculateBestCraftingItem(
-          this.character,
-          craftableItemsList,
-          allBankItems,
-        )
+        this.character,
+        craftableItemsList,
+        allBankItems,
+      );
 
-      logger.debug(`Found ${itemToCraft.code} item to craft with score ${itemToCraft.score}`)
+      logger.debug(
+        `Found ${itemToCraft.code} item to craft with score ${itemToCraft.score}`,
+      );
 
       if (await this.character.craftNow(numToCraft, itemToCraft.code)) {
         // Only deposit if the craft was successful

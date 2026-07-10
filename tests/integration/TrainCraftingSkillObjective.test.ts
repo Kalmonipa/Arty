@@ -873,7 +873,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.craftNow).toHaveBeenCalledTimes(6);
+      expect(mockCharacter.craftNow).toHaveBeenCalledTimes(8);
       expect(mockCharacter.data.alchemy_level).toBe(15);
     });
   });

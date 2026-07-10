@@ -135,7 +135,20 @@ describe('Character.evaluateDepositItemsInBank - excess gold', () => {
   it('deposits gold above the carry cap after depositing items', async () => {
     character = makeCharacter(25, 134000); // cap 75000 -> excess 59000
 
-    await character.evaluateDepositItemsInBank([], undefined, true);
+    await character.evaluateDepositItemsInBank(
+      [],
+      {
+        name: 'name',
+        skin: 'skin',
+        x: 1,
+        y: 1,
+        layer: 'overworld',
+        access: { type: 'restricted' },
+        map_id: 1234,
+        interactions: {},
+      },
+      true,
+    );
 
     expect(mockActionDepositItems).toHaveBeenCalled();
     expect(mockActionDepositGold).toHaveBeenCalledWith(
@@ -147,7 +160,20 @@ describe('Character.evaluateDepositItemsInBank - excess gold', () => {
   it('does not deposit gold when holding at or below the carry cap', async () => {
     character = makeCharacter(25, 50000); // below cap 75000
 
-    await character.evaluateDepositItemsInBank([], undefined, true);
+    await character.evaluateDepositItemsInBank(
+      [],
+      {
+        name: 'name',
+        skin: 'skin',
+        x: 1,
+        y: 1,
+        layer: 'overworld',
+        access: { type: 'restricted' },
+        map_id: 1234,
+        interactions: {},
+      },
+      true,
+    );
 
     expect(mockActionDepositItems).toHaveBeenCalled();
     expect(mockActionDepositGold).not.toHaveBeenCalled();
