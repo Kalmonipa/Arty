@@ -95,9 +95,9 @@ export class IdleObjective extends Objective {
               this.character.data.level <
                 this.character.data.jewelrycrafting_level)
           ) {
-            await this.doMonsterTask(5);
+            await this.doMonsterTask(1);
           } else {
-            await this.doItemTask(5);
+            await this.doItemTask(1);
           }
           if (this.checkIdleJobIsLast()) return true;
         }

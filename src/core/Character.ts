@@ -459,9 +459,9 @@ export class Character {
         this.jobQueueFilePath,
         JSON.stringify(jobQueueData, null, 2),
       );
-      logger.debug(
-        `Saved ${this.jobList.length} jobs to ${this.jobQueueFilePath}`,
-      );
+      // logger.debug(
+      //   `Saved ${this.jobList.length} jobs to ${this.jobQueueFilePath}`,
+      // );
     } catch (error) {
       logger.error(`Failed to save job queue: ${error.message}`);
     }
