@@ -259,6 +259,9 @@ export class EvaluateGearObjective extends Objective {
   ): Promise<Partial<FakeCharacterSchema>> {
     const chosen = await this.chooseCombatGear(charLevel, targetMob);
     if (chosen instanceof ApiError) {
+      logger.warn(
+        `Could not evaluate gear for ${targetMob}, simulating current equipment instead`,
+      );
       return {};
     }
 

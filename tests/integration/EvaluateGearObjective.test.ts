@@ -926,7 +926,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      // checkCombatWeapon checks bank and then calls equipNow (which handles withdrawal)
+      // selectWeapon checks bank and then equipNow handles the withdrawal
       expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
         'fire_sword',
       );
