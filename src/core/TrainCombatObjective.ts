@@ -51,24 +51,21 @@ export class TrainCombatObjective extends Objective {
       let foundSuitableMob = false;
       let fightSuccessful = false;
 
-      await this.character.evaluateGear('combat');
-
-      const fakeSchema = this.character.createFakeCharacterSchema(
-        this.character.data,
-      );
-
       for (let ind = mobs.data.length - 1; ind >= 0; ind--) {
         const mob = mobs.data[ind];
 
-        await this.character.evaluateGear('combat', mob.code);
+        const proposedLoadout = await this.character.proposeCombatLoadout(
+          mob.code,
+        );
 
         const fightSimResult = await this.character.simulateFightNow(
-          [fakeSchema],
+          [proposedLoadout],
           mob.code,
         );
 
         if (fightSimResult) {
           foundSuitableMob = true;
+          await this.character.evaluateGear('combat', mob.code);
           const fightResult = await this.character.fightNow(
             10,
             mob.code,

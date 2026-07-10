@@ -2821,6 +2821,12 @@ export class Character {
     );
   }
 
+  async proposeCombatLoadout(targetMob: string): Promise<FakeCharacterSchema> {
+    const job = new EvaluateGearObjective(this, 'combat', targetMob);
+    const charLevel = this.getCharacterLevel(this.data);
+    return await job.proposeCombatLoadout(charLevel, targetMob);
+  }
+
   /**
    * @description equip the item
    */

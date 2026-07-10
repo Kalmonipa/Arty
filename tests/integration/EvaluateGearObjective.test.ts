@@ -449,6 +449,25 @@ class SimpleMockCharacter {
     return true;
   });
 
+  createFakeCharacterSchema = jest.fn((charData: any) => ({
+    level: charData.level,
+    weapon_slot: charData.weapon_slot,
+    rune_slot: charData.rune_slot,
+    shield_slot: charData.shield_slot,
+    helmet_slot: charData.helmet_slot,
+    body_armor_slot: charData.body_armor_slot,
+    leg_armor_slot: charData.leg_armor_slot,
+    boots_slot: charData.boots_slot,
+    ring1_slot: charData.ring1_slot,
+    ring2_slot: charData.ring2_slot,
+    amulet_slot: charData.amulet_slot,
+    artifact1_slot: charData.artifact1_slot,
+    artifact2_slot: charData.artifact2_slot,
+    artifact3_slot: charData.artifact3_slot,
+    utility1_slot: charData.utility1_slot,
+    utility2_slot: charData.utility2_slot,
+  }));
+
   equipUtility = jest.fn(async (): Promise<boolean> => {
     this.data.utility1_slot = 'health_potion';
     this.data.utility1_slot_quantity = 100;
@@ -804,7 +823,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       );
     });
 
-    it('should withdraw shield from bank if not in inventory', async () => {
+    it('should equip shield sourced from bank when not in inventory', async () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
@@ -818,12 +837,8 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Act
       const result = await objective.run();
 
-      // Assert
+      // Assert — equipNow handles the bank withdrawal internally
       expect(result).toBe(true);
-      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(
-        1,
-        'res_fire_shield',
-      );
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'res_fire_shield',
         'shield',
@@ -911,7 +926,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      // checkCombatWeapon checks bank and then calls equipNow (which handles withdrawal)
+      // selectWeapon checks bank and then equipNow handles the withdrawal
       expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
         'fire_sword',
       );
@@ -1428,6 +1443,88 @@ describe('EvaluateGearObjective Integration Tests', () => {
         'ancient_charm',
         expect.anything(),
       );
+    });
+  });
+
+  describe('selectCombatLoadout (in-memory, no side effects)', () => {
+    it('returns chosen slot codes without equipping or withdrawing', async () => {
+      mockCharacter.addItemToInventory('fire_sword', 1);
+      mockCharacter.addItemToInventory('res_fire_shield', 1);
+      mockCharacter.addItemToInventory('fire_helmet', 1);
+      mockCharacter.addItemToInventory('hp_boots', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+      expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+      expect(mockCharacter.recoverHealth).not.toHaveBeenCalled();
+      expect(loadout.weapon_slot).toBe('fire_sword');
+      expect(loadout.shield_slot).toBe('res_fire_shield');
+      expect(loadout.helmet_slot).toBe('fire_helmet');
+      expect(loadout.boots_slot).toBe('hp_boots');
+    });
+
+    it('does not assign a single-copy ring to both ring slots', async () => {
+      // Only one of each ring type exists (in inventory); bank has no rings.
+      mockCharacter.addItemToInventory('earth_ring', 1);
+      mockCharacter.addItemToInventory('fire_ring', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      // earth (res 0) is preferred over fire (res 25); ring2 falls back to the
+      // next available ring rather than reusing the single earth_ring copy.
+      expect(loadout.ring1_slot).toBe('earth_ring');
+      expect(loadout.ring2_slot).toBe('fire_ring');
+      expect(loadout.ring1_slot).not.toBe(loadout.ring2_slot);
+    });
+
+    it('keeps an already-equipped item selectable for its own slot', async () => {
+      mockCharacter.data.shield_slot = 'res_fire_shield';
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      expect(loadout.shield_slot).toBe('res_fire_shield');
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('proposeCombatLoadout (merged schema, no side effects)', () => {
+    it('merges selected slots over the current-equipment snapshot', async () => {
+      mockCharacter.data.artifact1_slot = 'novice_guide';
+      mockCharacter.addItemToInventory('fire_sword', 1);
+      mockCharacter.addItemToInventory('res_fire_shield', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const schema = await objective.proposeCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+      expect(schema.weapon_slot).toBe('fire_sword');
+      expect(schema.shield_slot).toBe('res_fire_shield');
+      expect(schema.artifact1_slot).toBe('novice_guide');
+      expect(schema.level).toBe(mockCharacter.data.level);
     });
   });
 });

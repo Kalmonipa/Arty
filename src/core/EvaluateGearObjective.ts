@@ -3,6 +3,7 @@ import { Character } from './Character.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
 import {
+  FakeCharacterSchema,
   ItemSchema,
   ItemSlot,
   MonsterSchema,
@@ -71,24 +72,42 @@ export class EvaluateGearObjective extends Objective {
     }
   }
 
-  /**
-   * @description Evaluates gear in preparation for a fight
-   */
-  private async evaluateCombatGear(
+  private async selectForSlotWithResistancePriority(
+    gearType: ItemSlot,
+    mobResistances: MonsterResistance[],
     charLevel: number,
-    targetMob: string,
-  ): Promise<boolean> {
-    // If we're not doing a gathering task, then we're fighting and should check all gear
-
-    await this.character.recoverHealth();
-
-    const mobInfo = await getMonsterInformation(targetMob);
-    if (mobInfo instanceof ApiError) {
-      return this.character.handleErrors(mobInfo);
+    allocated: Map<string, number>,
+  ): Promise<string | undefined> {
+    for (const resistance of mobResistances) {
+      const code = await this.selectForSlot(
+        gearType,
+        resistance.dmgCounterType,
+        charLevel,
+        allocated,
+      );
+      if (code) {
+        logger.debug(
+          `Selected ${gearType} with ${resistance.dmgCounterType} resistance`,
+        );
+        return code;
+      }
     }
 
-    logger.debug(`Setting array of monster attacks`);
-    // Array of the mobs attack values, sorted from highest in 1st pos, to lowest in last pos
+    logger.debug(
+      `No good ${gearType} gear found for resistance types, trying 'dmg'`,
+    );
+    return await this.selectForSlot(gearType, 'dmg', charLevel, allocated);
+  }
+
+  private async chooseCombatGear(
+    charLevel: number,
+    targetMob: string,
+  ): Promise<Map<ItemSlot, string> | ApiError> {
+    const mobInfo = await getMonsterInformation(targetMob);
+    if (mobInfo instanceof ApiError) {
+      return mobInfo;
+    }
+
     const mobAttacks: MonsterAttack[] = [
       {
         type: 'attack_air' as const,
@@ -112,8 +131,6 @@ export class EvaluateGearObjective extends Objective {
       },
     ].sort((a, b) => b.value - a.value);
 
-    logger.debug(`Setting array of monster resistances`);
-    // Array of the mobs resistance values, sorted from lowest in 1st pos to highest in last pos
     const mobResistances: MonsterResistance[] = [
       {
         type: 'res_air' as const,
@@ -141,21 +158,23 @@ export class EvaluateGearObjective extends Objective {
       },
     ].sort((a, b) => a.value - b.value);
 
-    // This would take in the effects property to see what the best potion to equip
-    // await this.topUpSecondaryPots(mobInfo.data);
+    // Tracks how many of each item code have already been claimed by earlier
+    // slots in this pass, so a single-copy item isn't picked for two slots.
+    const allocated = new Map<string, number>();
+    const chosen = new Map<ItemSlot, string>();
 
-    logger.debug(`Finding best shield`);
-    let equipResult: boolean;
     for (const attack of mobAttacks) {
       logger.info(
         `Finding best ${attack.counterType} shield against ${attack.value} ${attack.type}`,
       );
-      equipResult = await this.checkGearOfType(
+      const code = await this.selectForSlot(
         'shield',
         attack.counterType,
         charLevel,
+        allocated,
       );
-      if (equipResult) {
+      if (code) {
+        chosen.set('shield', code);
         break;
       }
     }
@@ -164,16 +183,17 @@ export class EvaluateGearObjective extends Objective {
       logger.info(
         `Finding best ${resistance.atkCounterType} weapon against ${resistance.value} ${resistance.type}`,
       );
-      equipResult = await this.checkCombatWeapon(
+      const code = await this.selectWeapon(
         resistance.atkCounterType,
         charLevel,
+        allocated,
       );
-      if (equipResult) {
+      if (code) {
+        chosen.set('weapon', code);
         break;
       }
     }
 
-    // Check gear types with mob resistance priorities
     const gearTypes: ItemSlot[] = [
       'helmet',
       'body_armor',
@@ -184,27 +204,81 @@ export class EvaluateGearObjective extends Objective {
     ];
 
     for (const gearType of gearTypes) {
-      await this.checkGearWithResistancePriority(
+      const code = await this.selectForSlotWithResistancePriority(
         gearType,
         mobResistances,
         charLevel,
+        allocated,
       );
+      if (code) {
+        chosen.set(gearType, code);
+      }
     }
 
-    // Check boots
-    await this.checkGearOfType('boots', 'hp', charLevel);
+    const bootsCode = await this.selectForSlot(
+      'boots',
+      'hp',
+      charLevel,
+      allocated,
+    );
+    if (bootsCode) {
+      chosen.set('boots', bootsCode);
+    }
+
+    return chosen;
+  }
+
+  /**
+   * @description Evaluates gear in preparation for a fight
+   */
+  private async evaluateCombatGear(
+    charLevel: number,
+    targetMob: string,
+  ): Promise<boolean> {
+    await this.character.recoverHealth();
+
+    const chosen = await this.chooseCombatGear(charLevel, targetMob);
+    if (chosen instanceof ApiError) {
+      return this.character.handleErrors(chosen);
+    }
+
+    for (const [slot, code] of chosen) {
+      if (this.character.getCharacterGearIn(slot) !== code) {
+        logger.debug(`Attempting to equip ${code} into ${slot}`);
+        await this.character.equipNow(code, slot);
+      }
+    }
 
     await this.checkRuneSlot();
-
-    // // Check health potions in utility slot 1
-    // if (
-    //   this.character.data.utility1_slot_quantity <=
-    //   this.character.minEquippedUtilities
-    // ) {
-    //   await this.character.equipUtility('restore', 'utility1');
-    // }
-
     return true;
+  }
+
+  async selectCombatLoadout(
+    charLevel: number,
+    targetMob: string,
+  ): Promise<Partial<FakeCharacterSchema>> {
+    const chosen = await this.chooseCombatGear(charLevel, targetMob);
+    if (chosen instanceof ApiError) {
+      logger.warn(
+        `Could not evaluate gear for ${targetMob}, simulating current equipment instead`,
+      );
+      return {};
+    }
+
+    const loadout: Partial<FakeCharacterSchema> = {};
+    for (const [slot, code] of chosen) {
+      (loadout as Record<string, string>)[`${slot}_slot`] = code;
+    }
+    return loadout;
+  }
+
+  async proposeCombatLoadout(
+    charLevel: number,
+    targetMob: string,
+  ): Promise<FakeCharacterSchema> {
+    const selected = await this.selectCombatLoadout(charLevel, targetMob);
+    const base = this.character.createFakeCharacterSchema(this.character.data);
+    return { ...base, ...selected };
   }
 
   /**
@@ -257,10 +331,11 @@ export class EvaluateGearObjective extends Objective {
    * Otherwise equips the best available weapon for the gathering skill
    * @param activityType
    */
-  private async checkCombatWeapon(
+  private async selectWeapon(
     targetEffect: GearEffects,
     charLevel: number,
-  ): Promise<boolean> {
+    allocated: Map<string, number>,
+  ): Promise<string | undefined> {
     const weapons = this.character.weaponMap['combat'];
 
     const bestWeapon = await this.identifyBestGear(
@@ -268,28 +343,14 @@ export class EvaluateGearObjective extends Objective {
       targetEffect,
       charLevel,
       'weapon',
+      allocated,
     );
     if (bestWeapon === undefined) {
       logger.warn(`Found no good weapon for ${targetEffect}`);
-      return false;
+      return undefined;
     }
 
-    if (this.character.data.weapon_slot === bestWeapon.code) {
-      logger.debug(`Already have ${bestWeapon.code} equipped`);
-      return true;
-    }
-
-    logger.debug(`Attempting to equip ${bestWeapon.name} in weapon slot`);
-    if (this.character.checkQuantityOfItemInInv(bestWeapon.code) > 0) {
-      return await this.character.equipNow(bestWeapon.code, 'weapon');
-    } else if (
-      (await this.character.checkQuantityOfItemInBank(bestWeapon.code)) > 0
-    ) {
-      return await this.character.equipNow(bestWeapon.code, 'weapon');
-    } else {
-      logger.debug(`Can't find any ${bestWeapon.name}`);
-      return false;
-    }
+    return bestWeapon.code;
   }
 
   /**
@@ -431,53 +492,12 @@ export class EvaluateGearObjective extends Objective {
     }
   }
 
-  /**
-   * @description Checks gear with priority based on mob resistances, falling back to 'dmg' if no good gear found
-   * @param gearType The slot that we want to equip into
-   * @param mobResistances Array of monster resistances sorted by priority
-   * @param charLevel the characters combat level
-   * @returns true if we successfully equipped something
-   */
-  private async checkGearWithResistancePriority(
-    gearType: ItemSlot,
-    mobResistances: MonsterResistance[],
-    charLevel: number,
-  ): Promise<boolean> {
-    // Try each resistance type in order of priority (lowest resistance first)
-    for (const resistance of mobResistances) {
-      const success = await this.checkGearOfType(
-        gearType,
-        resistance.dmgCounterType,
-        charLevel,
-      );
-      if (success) {
-        logger.debug(
-          `Successfully equipped ${gearType} with ${resistance.dmgCounterType} resistance`,
-        );
-        return true;
-      }
-    }
-
-    // If no good gear found for any resistance type, fall back to 'dmg'
-    logger.debug(
-      `No good ${gearType} gear found for resistance types, trying 'dmg'`,
-    );
-    return await this.checkGearOfType(gearType, 'dmg', charLevel);
-  }
-
-  /**
-   * @description Checks the gear that we could equip and looks for it in inv or bank. If available will equip it
-   * @todo Check gear based on the mob we're going to fight. Equip best against their strengths/weaknesses
-   * @param gearType The slot that we want to equip into
-   * @param targetEffect Which effect we want to focus on
-   * @param charLevel the characters combat level
-   * @returns true if we successfully equipped something
-   */
-  private async checkGearOfType(
+  private async selectForSlot(
     gearType: ItemSlot,
     targetEffect: GearEffects,
     charLevel: number,
-  ): Promise<boolean> {
+    allocated: Map<string, number>,
+  ): Promise<string | undefined> {
     let map: ItemSchema[];
     switch (gearType) {
       case 'amulet':
@@ -508,7 +528,7 @@ export class EvaluateGearObjective extends Objective {
         logger.warn(
           `Checking gear of type ${gearType} is unavailable right now`,
         );
-        return false;
+        return undefined;
     }
 
     const bestGear = await this.identifyBestGear(
@@ -516,28 +536,14 @@ export class EvaluateGearObjective extends Objective {
       targetEffect,
       charLevel,
       gearType,
+      allocated,
     );
     if (bestGear === undefined) {
       logger.debug(`Found no good ${gearType} gear for ${targetEffect}`);
-      return false;
+      return undefined;
     }
 
-    // Check if the gear is already equipped first
-    if (this.character.getCharacterGearIn(gearType) === bestGear.code) {
-      return true;
-    }
-
-    logger.debug(`Attempting to equip ${bestGear.name} for ${targetEffect}`);
-    if (this.character.checkQuantityOfItemInInv(bestGear.code) > 0) {
-      return await this.character.equipNow(bestGear.code, gearType);
-    } else if (
-      (await this.character.checkQuantityOfItemInBank(bestGear.code)) > 0
-    ) {
-      await this.character.withdrawNow(1, bestGear.code);
-      return await this.character.equipNow(bestGear.code, gearType);
-    } else {
-      logger.debug(`Can't find any ${bestGear.name}`);
-    }
+    return bestGear.code;
   }
 
   /**
@@ -555,14 +561,13 @@ export class EvaluateGearObjective extends Objective {
     targetEffect: GearEffects,
     charLevel: number,
     gearSlot: ItemSlot,
+    allocated: Map<string, number>,
   ): Promise<ItemSchema> {
     let bestGear: ItemSchema;
 
     for (let ind = map.length - 1; ind >= 0; ind--) {
       if (map[ind].level <= charLevel && map[ind].level > charLevel - 15) {
-        // Iterate through all the options to find the one that gives the best target effect
         logger.debug(`Checking ${map[ind].code} for ${targetEffect}`);
-        // If bestGear isn't set, set it to the highest level item that has that effect
         if (
           bestGear === undefined &&
           map[ind].effects &&
@@ -573,17 +578,20 @@ export class EvaluateGearObjective extends Objective {
             return map[ind];
           }
 
-          // Check inventory
           let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
           if (numHeld === 0) {
-            // Check bank
             numHeld = await this.character.checkQuantityOfItemInBank(
               map[ind].code,
             );
           }
 
-          if (numHeld > 0) {
+          const available = numHeld - (allocated.get(map[ind].code) ?? 0);
+          if (available > 0) {
             logger.debug(`bestGear not set yet. Setting to ${map[ind].code}`);
+            allocated.set(
+              map[ind].code,
+              (allocated.get(map[ind].code) ?? 0) + 1,
+            );
             bestGear = map[ind];
           } else {
             continue;
