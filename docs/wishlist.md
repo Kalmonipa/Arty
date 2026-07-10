@@ -35,12 +35,13 @@ CREATE TABLE wishlist (
 | Column               | Type          | Notes                                                                                            |
 | -------------------- | ------------- | ------------------------------------------------------------------------------------------------ |
 | `item_code`          | `TEXT`        | Item code of the item being requested                                                            |
+| `quantity`           | `INTEGER`     | How many are being requested                                                                     |
 | `character`          | `TEXT`        | Character requesting the item                                                                    |
 | `min_level`          | `INT`         | Min level needed to acquire                                                                      |
 | `max_level`          | `INT`         | Max level needed to acquire                                                                      |
 | `expiration_date`    | `TIMESTAMPTZ` | When the request should be removed from the table                                                |
 | `cost`               | `INT`         | Cost to acquire (gold required?)                                                                 |
 | `acquisition_method` | `TEXT`        | One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks |
-| `executing` | `BOOLEAN` | True if a character has picked up the request |
-| `fulfilled` | `BOOLEAN` | True if a character has completed the request |
+| `executing`          | `BOOLEAN`     | True if a character has picked up the request                                                    |
+| `fulfilled`          | `BOOLEAN`     | True if a character has completed the request                                                    |
 | `created_at`         | `TIMESTAMPTZ` | When the request was made. Defaults to now                                                       |
