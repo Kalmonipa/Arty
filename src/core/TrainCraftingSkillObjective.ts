@@ -97,7 +97,7 @@ export class TrainCraftingSkillObjective extends Objective {
       // ToDo: This should expand to craftable items so we can get all weapons/etc
       // but requires a bit more logic
       for (const craftableItem of craftableItemsList) {
-        logger.debug(`Checking ${craftableItem.code} count in bank`)
+        logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
           (bankItem) =>
             craftableItem.code === bankItem.code &&
@@ -105,7 +105,9 @@ export class TrainCraftingSkillObjective extends Objective {
         );
 
         if (!bankItem || bankItem.quantity < 1) {
-          logger.debug(`Crafting ${craftableItem.code} because there aren't enough in bank`)
+          logger.debug(
+            `Crafting ${craftableItem.code} because there aren't enough in bank`,
+          );
           if (await this.character.craftNow(numToCraft, craftableItem.code)) {
             // Only deposit if the craft was successful
             await this.character.depositNow(numToCraft, craftableItem.code);
@@ -214,56 +216,19 @@ function calculateScore(
       (itemCode) => itemCode.code === simpleIngredient.code,
     );
 
-    const numInInv = character.checkQuantityOfItemInInv(ingredSchema.code);
-    if (numInInv >= simpleIngredient.quantity) {
-      logger.debug(
-        `${numInInv}/${simpleIngredient.quantity} ${simpleIngredient.code} in inventory. Score is ${score}`,
-      );
-      score += 0;
-      return;
-    }
-
-    let numInBank: number;
-    const itemInBank = bankItems.find(
-      (item) => item.code === ingredSchema.code,
-    );
-    if (itemInBank) {
-      numInBank = itemInBank.quantity;
-    } else {
-      numInBank = 0;
-    }
-
-    if (numInBank >= simpleIngredient.quantity) {
-      logger.debug(
-        `${numInBank}/${simpleIngredient.quantity} ${simpleIngredient.code} in bank. Score is ${score}`,
-      );
-      score += 0;
-      return;
-    }
-
-    const numAvailableWithoutGathering = numInBank + numInInv;
-
-    if (numAvailableWithoutGathering >= simpleIngredient.quantity) {
-      logger.debug(
-        `${numAvailableWithoutGathering}/${simpleIngredient.quantity} ${simpleIngredient.code} in bank + inventory. Score is ${score}`,
-      );
-      score += 0;
-      return;
-    }
-
-    const numNeeded = simpleIngredient.quantity - numAvailableWithoutGathering;
+    const numNeeded = simpleIngredient.quantity;
 
     if (ingredSchema.subtype === 'task') {
       logger.debug(
-        `${ingredSchema.code} is a task reward, adding ${10 * simpleIngredient.quantity} to score (${score})`,
+        `${ingredSchema.code} is a task reward, adding ${150 * numNeeded} to score (${score})`,
       );
-      score += 150 * simpleIngredient.quantity;
+      score += 150 * numNeeded;
     } else if (ingredSchema.subtype === 'mob') {
       // ToDo: Change this so that it looks at all mobs that drop it
       // and find the best mob to fight
-      const monsterToKill = character.monsterData.find((mob) => {
-        mob.drops.find((drop) => drop.code === ingredSchema.code);
-      });
+      const monsterToKill = character.monsterData.find((mob) =>
+        mob.drops.some((drop) => drop.code === ingredSchema.code),
+      );
       if (!monsterToKill) {
         score += 1000000;
         return;
