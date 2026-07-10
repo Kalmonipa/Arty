@@ -111,13 +111,20 @@ export class IdleObjective extends Objective {
       case 'alchemist':
         if (
           this.character.getCharacterLevel(this.character.data, 'alchemy') >=
-          this.character.getCharacterLevel(this.character.data) + 5
+            this.character.getCharacterLevel(this.character.data) + 5 &&
+          this.character.getCharacterLevel(this.character.data) <=
+            this.character.highestCharLevel
         ) {
           await this.character.trainCombatLevelNow(
             this.character.data.level + 1,
           );
-        } else {
+        } else if (
+          this.character.getCharacterLevel(this.character.data, 'alchemy') <=
+          this.character.getCharacterLevel(this.character.data) + 5
+        ) {
           await this.trainSkill('alchemy');
+        } else {
+          await this.character.doItemsTask(2);
         }
         if (this.checkIdleJobIsLast()) return true;
         break;

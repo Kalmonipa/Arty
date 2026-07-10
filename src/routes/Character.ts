@@ -54,6 +54,7 @@ export default function CharacterRouter(char: Character) {
         currentJob: char.activeJob?.objectiveId || 'none',
         enableEvents: char.enableEvents,
         jobsInQueue: char.jobList.length,
+        itemsToKeep: char.itemsToKeep,
       });
     } catch (error) {
       return res

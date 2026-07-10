@@ -24,6 +24,7 @@ import {
   MapContentType,
   MapLayer,
   MapSchema,
+  MonsterSchema,
   ResourceResponseSchema,
   SimpleEffectSchema,
   SimpleItemSchema,
@@ -166,6 +167,9 @@ export class Character {
   allMaps: MapSchema[];
   navigationGraph: NavigationGraph;
 
+  itemData: ItemSchema[];
+  monsterData: MonsterSchema[];
+
   // True while move() is acquiring items to pass a gated transition. Nested move()
   // calls (from gather/craft/buy sub-jobs) check this so acquisition can't recurse.
   private acquiringForTransition = false;
@@ -224,6 +228,9 @@ export class Character {
    * we can recycle
    */
   lowestCharLevel: number;
+  /**
+   * Highest character level in the village. Refreshes periodically so might have stale data
+   */
   highestCharLevel: number;
   lowestAlchemyLevel: number;
   lowestFishingLevel: number;
@@ -278,12 +285,25 @@ export class Character {
     }
 
     const monsterData = await getAllMonsterInformation({
-      size: 100,
+      size: 1000,
     });
     if (monsterData instanceof ApiError) {
       logger.warn(
-        'Failed to load fishing resources — fish stocking will fall back to all cooking consumables',
+        `Failed to load monster data. [${monsterData.error.code}] ${monsterData.error.message}`,
       );
+    } else {
+      this.monsterData = monsterData.data;
+    }
+
+    const itemData = await getAllItemInformation({
+      size: 1000,
+    });
+    if (itemData instanceof ApiError) {
+      logger.warn(
+        `Failed to load monster data. [${itemData.error.code}] ${itemData.error.message}`,
+      );
+    } else {
+      this.itemData = itemData.data;
     }
 
     this.allMaps = await AllMaps();

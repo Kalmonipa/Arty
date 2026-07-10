@@ -3,6 +3,7 @@ import {
   CraftSkill,
   GetAllItemsItemsGetParams,
   ItemSchema,
+  SimpleItemSchema,
 } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from './Character.js';
@@ -51,8 +52,30 @@ export class TrainCraftingSkillObjective extends Objective {
       this.skill,
     );
 
+    let numToCraft: number;
+    switch (this.skill) {
+      case 'alchemy':
+      case 'cooking':
+      case 'mining':
+        numToCraft = 10;
+        break;
+      case 'weaponcrafting':
+      case 'gearcrafting':
+        numToCraft = 2;
+        break;
+      default:
+        numToCraft = 1;
+    }
+
     while (charLevel < this.targetLevel) {
       if (!(await this.checkStatus())) return false;
+
+      // Get bank items so we don't need to make lots of bank calls
+      const allBankItems = await this.character.getAllBankItems();
+
+      logger.debug(
+        `Finding craftable ${this.skill} items between ${Math.max(charLevel - this.levelRange, 0)} and ${charLevel}`,
+      );
 
       const payload: GetAllItemsItemsGetParams = {
         craft_skill: this.skill,
@@ -71,28 +94,33 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
-      const randInd = Math.floor(Math.random() * craftableItemsList.length);
+      // Ensure that we have at least 3 of each craftable item in the bank
+      // before we start leveling
+      for (const craftableItem of craftableItemsList) {
+        const bankItem = allBankItems.find(
+          (bankItem) => craftableItem.code === bankItem.code,
+        );
 
-      const itemToCraft = craftableItemsList[randInd];
-
-      let numToCraft: number;
-      switch (this.skill) {
-        case 'alchemy':
-        case 'cooking':
-        case 'mining':
-          numToCraft = 10;
-          break;
-        case 'weaponcrafting':
-        case 'gearcrafting':
-          numToCraft = 2;
-          break;
-        default:
-          numToCraft = 1;
+        if (!bankItem || bankItem.quantity < 3) {
+          if (await this.character.craftNow(numToCraft, craftableItem.code)) {
+            // Only deposit if the craft was successful
+            await this.character.depositNow(numToCraft, craftableItem.code);
+          }
+        }
       }
 
-      if (await this.character.craftNow(numToCraft, itemToCraft.code)) {
+      // Find item with the best crafting score
+      const itemToCraft = (
+        await calculateBestCraftingItem(
+          this.character,
+          craftableItemsList,
+          allBankItems,
+        )
+      ).code;
+
+      if (await this.character.craftNow(numToCraft, itemToCraft)) {
         // Only deposit if the craft was successful
-        await this.character.depositNow(numToCraft, itemToCraft.code);
+        await this.character.depositNow(numToCraft, itemToCraft);
       }
 
       // Recycle excess gear to get materials
@@ -111,7 +139,8 @@ export class TrainCraftingSkillObjective extends Objective {
  * Calculates the 'cheapest' item to craft. These scorings are somewhat arbitrary at
  * the moment and will be adjusted.
  * Scoring is based on the following criteria (lowest score is best):
- * - Ingredients in bank/inv: 1 per ingredient
+ * - All ingredients in bank/inv: 0
+ * - Some ingredients in bank/inv: 1 per ingredient
  * - Gathering: 30 per item needed (approx time to gather 1 resource)
  * - Mob Drop: 30 per fight * (100 - drop rate %)
  * - Task Reward: 200 items * 30 seconds = 6000 score
@@ -120,15 +149,142 @@ export class TrainCraftingSkillObjective extends Objective {
  * @todo - Make the scores based on actual figures and calculations
  * Gathering: Factor skill level and equipment cooldown in
  */
-function calculateEquipmentCraftingScore(
+async function calculateBestCraftingItem(
+  character: Character,
   craftableItemList: ItemSchema[],
-): number {
-  let lowestScore = 1000000;
+  bankItems: SimpleItemSchema[],
+): Promise<{ code: string; score: number }> {
+  let bestScore = 1000000;
+  let bestItem = 'no_item';
+
+  logger.debug(
+    `Example items in craftable list: ${craftableItemList[0].code}, ${craftableItemList[craftableItemList.length - 1].code}`,
+  );
 
   for (const item of craftableItemList) {
-    let score = 0;
-    let ingredients = item.craft;
+    logger.debug(`Calculating score of ${item.code}`);
+    const currentScore = calculateScore(item, bankItems, character);
+
+    if (currentScore < bestScore) {
+      logger.debug(
+        `${item.code} (${currentScore}) is better to craft than ${bestItem} (${bestScore})`,
+      );
+      bestScore = currentScore;
+      bestItem = item.code;
+    }
   }
 
-  return 1;
+  return { code: bestItem, score: bestScore };
+}
+
+/**
+ * Returns the score of the craftable item
+ * Takes in the bank items as input so we don't repeat calls to get bank items
+ * @param craftableItem
+ */
+function calculateScore(
+  craftableItem: ItemSchema,
+  bankItems: SimpleItemSchema[],
+  character: Character,
+): number {
+  let score = 0;
+
+  if (craftableItem.type === 'resource') {
+    logger.debug(`${craftableItem.code} is a resource. Adding score 1`);
+    score += 1;
+    return score;
+  }
+
+  let ingredients = craftableItem.craft.items;
+
+  /**
+   * Check how to retrieve each ingredient and update score based on each type
+   * Check inventory
+   * Check bank
+   * Check item type
+   */
+  ingredients.forEach((simpleIngredient) => {
+    const ingredSchema = character.itemData.find(
+      (itemCode) => itemCode.code === simpleIngredient.code,
+    );
+
+    const numInInv = character.checkQuantityOfItemInInv(ingredSchema.code);
+    if (numInInv >= simpleIngredient.quantity) {
+      logger.debug(
+        `${numInInv}/${simpleIngredient.quantity} ${simpleIngredient.code} in inventory. Score is ${score}`,
+      );
+      score += 0;
+      return;
+    }
+
+    let numInBank: number;
+    const itemInBank = bankItems.find(
+      (item) => item.code === ingredSchema.code,
+    );
+    if (itemInBank) {
+      numInBank = itemInBank.quantity;
+    } else {
+      numInBank = 0;
+    }
+
+    if (numInBank >= simpleIngredient.quantity) {
+      logger.debug(
+        `${numInBank}/${simpleIngredient.quantity} ${simpleIngredient.code} in bank. Score is ${score}`,
+      );
+      score += 0;
+      return;
+    }
+
+    const numAvailableWithoutGathering = numInBank + numInInv;
+
+    if (numAvailableWithoutGathering >= simpleIngredient.quantity) {
+      logger.debug(
+        `${numAvailableWithoutGathering}/${simpleIngredient.quantity} ${simpleIngredient.code} in bank + inventory. Score is ${score}`,
+      );
+      score += 0;
+      return;
+    }
+
+    const numNeeded = simpleIngredient.quantity - numAvailableWithoutGathering;
+
+    if (ingredSchema.subtype === 'task') {
+      logger.debug(
+        `${ingredSchema.code} is a task reward, adding ${10 * simpleIngredient.quantity} to score (${score})`,
+      );
+      score += 10 * simpleIngredient.quantity;
+    } else if (ingredSchema.subtype === 'mob') {
+      // ToDo: Change this so that it looks at all mobs that drop it
+      // and find the best mob to fight
+      const monsterToKill = character.monsterData.find((mob) => {
+        mob.drops.find((drop) => drop.code === ingredSchema.code);
+      });
+      if (!monsterToKill) {
+        score += 1000000;
+        return;
+      }
+      // const monstersThatDrop = character.monsterData.filter(mob => {
+      //   mob.drops.find(drop => drop.code === ingredSchema.code)
+      // })
+
+      const dropRate = monsterToKill.drops.find(
+        (drop) => drop.code === ingredSchema.code,
+      );
+      const scoreToAdd = 2 * dropRate.rate * numNeeded;
+      logger.debug(
+        `${monsterToKill.code} drops ${ingredSchema.code}. Adding ${scoreToAdd} to score (${score})`,
+      );
+      score += scoreToAdd;
+    } else if (ingredSchema.craft) {
+      logger.debug(`Calculating sub-ingredients of ${ingredSchema.code}`);
+      ingredSchema.craft.items.forEach((simpleSubIngredient) => {
+        logger.debug(`Calculating ${simpleSubIngredient.code} score`);
+        const subIngredient = character.itemData.find(
+          (item) => item.code === simpleSubIngredient.code,
+        );
+        score += calculateScore(subIngredient, bankItems, character);
+      });
+    }
+  });
+
+  return score;
 }
