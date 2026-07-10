@@ -838,7 +838,6 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalled();
     });
 
-    // ToDo: This test should ignore the bank check done on line 95 of TrainCraftingSkillObjective
     it('should continue crafting until target level is reached', async () => {
       // Arrange
       mockCharacter.data.alchemy_level = 10;
@@ -873,7 +872,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.craftNow).toHaveBeenCalledTimes(8);
+      expect(mockCharacter.craftNow).toHaveBeenCalledTimes(5);
       expect(mockCharacter.data.alchemy_level).toBe(15);
     });
   });

@@ -97,11 +97,12 @@ export class TrainCraftingSkillObjective extends Objective {
       // ToDo: This should expand to craftable items so we can get all weapons/etc
       // but requires a bit more logic
       for (const craftableItem of craftableItemsList) {
+        if (craftableItem.subtype !== 'tool') {
+          continue;
+        }
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
-          (bankItem) =>
-            craftableItem.code === bankItem.code &&
-            craftableItem.subtype === 'tool',
+          (bankItem) => craftableItem.code === bankItem.code,
         );
 
         if (!bankItem || bankItem.quantity < 1) {
