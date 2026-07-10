@@ -1976,12 +1976,12 @@ export class Character {
     // getInventoryFullness() returns a percentage (0-100), so 95 here means 95% full
     if (usedInventorySpace >= 95 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing all items`);
-      logger.info(`Items to keep:`);
       // Quick hack to prevent panics. No clue why it's not
       if (!this.itemsToKeep) {
         this.itemsToKeep = [];
       }
       for (const item of this.itemsToKeep) {
+        logger.info(`Items to keep:`);
         logger.info(`  - ${item}`);
       }
       const maps = await this.getAvailableBanks();
@@ -1992,6 +1992,8 @@ export class Character {
       );
 
       const contentLocation = this.evaluateClosestMap(maps);
+
+      logger.debug(``)
 
       await this.move(contentLocation);
 
@@ -2047,6 +2049,7 @@ export class Character {
         }
         // Already at the bank, so shed any gold above the carry cap before leaving
         await this.depositExcessGold();
+        logger.debug(`Moving to prior location ${priorLocation.map_id} (x: ${priorLocation.x}, y: ${priorLocation.y})`)
         await this.move(priorLocation);
       }
       return true;
