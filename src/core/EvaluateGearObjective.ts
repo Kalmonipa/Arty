@@ -269,6 +269,15 @@ export class EvaluateGearObjective extends Objective {
     return loadout;
   }
 
+  async proposeCombatLoadout(
+    charLevel: number,
+    targetMob: string,
+  ): Promise<FakeCharacterSchema> {
+    const selected = await this.selectCombatLoadout(charLevel, targetMob);
+    const base = this.character.createFakeCharacterSchema(this.character.data);
+    return { ...base, ...selected };
+  }
+
   /**
    * @description Equips 100 health potions into the utility 1 slot
    * utility 1 is reserved for health potions

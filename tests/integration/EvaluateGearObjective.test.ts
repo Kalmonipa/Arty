@@ -449,6 +449,25 @@ class SimpleMockCharacter {
     return true;
   });
 
+  createFakeCharacterSchema = jest.fn((charData: any) => ({
+    level: charData.level,
+    weapon_slot: charData.weapon_slot,
+    rune_slot: charData.rune_slot,
+    shield_slot: charData.shield_slot,
+    helmet_slot: charData.helmet_slot,
+    body_armor_slot: charData.body_armor_slot,
+    leg_armor_slot: charData.leg_armor_slot,
+    boots_slot: charData.boots_slot,
+    ring1_slot: charData.ring1_slot,
+    ring2_slot: charData.ring2_slot,
+    amulet_slot: charData.amulet_slot,
+    artifact1_slot: charData.artifact1_slot,
+    artifact2_slot: charData.artifact2_slot,
+    artifact3_slot: charData.artifact3_slot,
+    utility1_slot: charData.utility1_slot,
+    utility2_slot: charData.utility2_slot,
+  }));
+
   equipUtility = jest.fn(async (): Promise<boolean> => {
     this.data.utility1_slot = 'health_potion';
     this.data.utility1_slot_quantity = 100;
@@ -1484,6 +1503,28 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       expect(loadout.shield_slot).toBe('res_fire_shield');
       expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('proposeCombatLoadout (merged schema, no side effects)', () => {
+    it('merges selected slots over the current-equipment snapshot', async () => {
+      mockCharacter.data.artifact1_slot = 'novice_guide';
+      mockCharacter.addItemToInventory('fire_sword', 1);
+      mockCharacter.addItemToInventory('res_fire_shield', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const schema = await objective.proposeCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+      expect(schema.weapon_slot).toBe('fire_sword');
+      expect(schema.shield_slot).toBe('res_fire_shield');
+      expect(schema.artifact1_slot).toBe('novice_guide');
+      expect(schema.level).toBe(mockCharacter.data.level);
     });
   });
 });
