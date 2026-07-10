@@ -38,6 +38,15 @@ should check in periodically to see if the request has been fulfilled.
 This should not get out of hand with a character requesting too many items, because a character can only
 have 1 active task at a time.
 
+## Things that can be implemented now
+
+1. [ ] Idle jobs can be split into IdleHealerObjective, etc, allowing for more specialised idle jobs and decluttering
+       the current IdleObjective class.
+2. [ ] Characters can request items via the wishlist table.
+3. [ ] Characters should check the wishlist table to see what things are being requested and what they can fulfill. This
+       would be based on the skill required and their role. Only certain roles should fulfill certain requests (i.e. mining
+       resources fulfilled by a labourer, potions by the healer, etc)
+
 ## Requirements before this can happen
 
 1. Jobs should be able to be put on hold. If a character requests 50 iron bars, they shouldn't wait around for them. The
