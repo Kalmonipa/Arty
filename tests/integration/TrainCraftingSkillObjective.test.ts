@@ -177,7 +177,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(objective.character).toBe(mockCharacter);
       expect(objective.objectiveId).toMatch(/^train_15_alchemy_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
-      expect(objective.levelRange).toBe(4); // Default value
+      expect(objective.levelRange).toBe(9); // Default value
     });
 
     it('should use custom levelRange when provided', () => {
