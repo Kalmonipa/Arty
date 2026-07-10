@@ -302,7 +302,7 @@ export class Character {
     });
     if (itemData instanceof ApiError) {
       logger.warn(
-        `Failed to load monster data. [${itemData.error.code}] ${itemData.error.message}`,
+        `Failed to load item data. [${itemData.error.code}] ${itemData.error.message}`,
       );
     } else {
       this.itemData = itemData.data;

@@ -613,8 +613,10 @@ export class EvaluateGearObjective extends Objective {
     if (currentEquipped === '' && this.character.data.level >= 20) {
       // ToDo: don't hardcode the cost of the rune. store this info in memory so no api calls needed
       if (this.character.data.gold < 10000) {
-        logger.debug(`${this.character.data.name} cannot afford 'healing_rune'`)
-        return false
+        logger.debug(
+          `${this.character.data.name} cannot afford 'healing_rune'`,
+        );
+        return false;
       }
 
       if (await this.character.tradeWithNpcNow('buy', 1, runeName)) {
