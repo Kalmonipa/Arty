@@ -804,7 +804,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       );
     });
 
-    it('should withdraw shield from bank if not in inventory', async () => {
+    it('should equip shield sourced from bank when not in inventory', async () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
@@ -818,12 +818,8 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Act
       const result = await objective.run();
 
-      // Assert
+      // Assert — equipNow handles the bank withdrawal internally
       expect(result).toBe(true);
-      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(
-        1,
-        'res_fire_shield',
-      );
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'res_fire_shield',
         'shield',
@@ -1428,6 +1424,66 @@ describe('EvaluateGearObjective Integration Tests', () => {
         'ancient_charm',
         expect.anything(),
       );
+    });
+  });
+
+  describe('selectCombatLoadout (in-memory, no side effects)', () => {
+    it('returns chosen slot codes without equipping or withdrawing', async () => {
+      mockCharacter.addItemToInventory('fire_sword', 1);
+      mockCharacter.addItemToInventory('res_fire_shield', 1);
+      mockCharacter.addItemToInventory('fire_helmet', 1);
+      mockCharacter.addItemToInventory('hp_boots', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+      expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+      expect(mockCharacter.recoverHealth).not.toHaveBeenCalled();
+      expect(loadout.weapon_slot).toBe('fire_sword');
+      expect(loadout.shield_slot).toBe('res_fire_shield');
+      expect(loadout.helmet_slot).toBe('fire_helmet');
+      expect(loadout.boots_slot).toBe('hp_boots');
+    });
+
+    it('does not assign a single-copy ring to both ring slots', async () => {
+      // Only one of each ring type exists (in inventory); bank has no rings.
+      mockCharacter.addItemToInventory('earth_ring', 1);
+      mockCharacter.addItemToInventory('fire_ring', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      // earth (res 0) is preferred over fire (res 25); ring2 falls back to the
+      // next available ring rather than reusing the single earth_ring copy.
+      expect(loadout.ring1_slot).toBe('earth_ring');
+      expect(loadout.ring2_slot).toBe('fire_ring');
+      expect(loadout.ring1_slot).not.toBe(loadout.ring2_slot);
+    });
+
+    it('keeps an already-equipped item selectable for its own slot', async () => {
+      mockCharacter.data.shield_slot = 'res_fire_shield';
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      expect(loadout.shield_slot).toBe('res_fire_shield');
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
     });
   });
 });
