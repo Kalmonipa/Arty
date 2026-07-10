@@ -1708,20 +1708,18 @@ export class Character {
             Math.min(numInBank, numNeeded),
           );
           return true;
-        } else {
-          if (potion.level <= this.getCharacterLevel(this.data, 'alchemy')) {
-            logger.debug(`Can't find any ${potion.name}. Crafting`);
-            if (await this.craftNow(numNeeded, potion.code)) {
-              return await this.equipNow(potion.code, slot, numNeeded);
-            } else {
-              logger.debug(
-                `Can't craft ${potion.name}. Trying next best option`,
-              );
-              continue;
-            }
+        } else if (
+          potion.level <= this.getCharacterLevel(this.data, 'alchemy')
+        ) {
+          logger.debug(`Can't find any ${potion.name}. Crafting`);
+          if (await this.craftNow(numNeeded, potion.code)) {
+            return await this.equipNow(potion.code, slot, numNeeded);
           } else {
-            logger.debug(`Can't find any ${potion.name}`);
+            logger.debug(`Can't craft ${potion.name}. Trying next best option`);
+            continue;
           }
+        } else {
+          logger.debug(`Can't find any ${potion.name}`);
         }
       }
     }

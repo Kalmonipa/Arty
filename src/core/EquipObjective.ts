@@ -82,7 +82,6 @@ export class EquipObjective extends Objective {
           logger.error(`Equip failed after ${attempt} attempts`);
           return false;
         }
-        continue;
       } else {
         if (response.data.character) {
           this.character.data = response.data.character;
