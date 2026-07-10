@@ -92,14 +92,14 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
-      // Ensure that we have at least 3 of each craftable item in the bank
+      // Ensure that we have at least 1 of each craftable item in the bank
       // before we start leveling
       for (const craftableItem of craftableItemsList) {
         const bankItem = allBankItems.find(
           (bankItem) => craftableItem.code === bankItem.code,
         );
 
-        if (!bankItem || bankItem.quantity < 3) {
+        if (!bankItem || bankItem.quantity < 1) {
           if (await this.character.craftNow(numToCraft, craftableItem.code)) {
             // Only deposit if the craft was successful
             await this.character.depositNow(numToCraft, craftableItem.code);
@@ -108,17 +108,17 @@ export class TrainCraftingSkillObjective extends Objective {
       }
 
       // Find item with the best crafting score
-      const itemToCraft = (
-        await calculateBestCraftingItem(
+      const itemToCraft = await calculateBestCraftingItem(
           this.character,
           craftableItemsList,
           allBankItems,
         )
-      ).code;
 
-      if (await this.character.craftNow(numToCraft, itemToCraft)) {
+      logger.debug(`Found ${itemToCraft.code} item to craft with score ${itemToCraft.score}`)
+
+      if (await this.character.craftNow(numToCraft, itemToCraft.code)) {
         // Only deposit if the craft was successful
-        await this.character.depositNow(numToCraft, itemToCraft);
+        await this.character.depositNow(numToCraft, itemToCraft.code);
       }
 
       // Recycle excess gear to get materials
