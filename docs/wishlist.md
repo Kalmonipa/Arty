@@ -21,6 +21,8 @@ CREATE TABLE wishlist (
     expiration_date TIMESTAMPTZ,
     cost INT,
     acquisition_method TEXT,
+    executing BOOLEAN,
+    fulfilled BOOLEAN,
     created_at TIMESTAMPTZ DEFAULT NOW(),
 
     -- Safety check: Ensure min_level is never greater than max_level
@@ -39,4 +41,6 @@ CREATE TABLE wishlist (
 | `expiration_date`    | `TIMESTAMPTZ` | When the request should be removed from the table                                                |
 | `cost`               | `INT`         | Cost to acquire (gold required?)                                                                 |
 | `acquisition_method` | `TEXT`        | One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks |
+| `executing` | `BOOLEAN` | True if a character has picked up the request |
+| `fulfilled` | `BOOLEAN` | True if a character has completed the request |
 | `created_at`         | `TIMESTAMPTZ` | When the request was made. Defaults to now                                                       |
