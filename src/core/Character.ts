@@ -2047,10 +2047,12 @@ export class Character {
         }
         // Already at the bank, so shed any gold above the carry cap before leaving
         await this.depositExcessGold();
-        logger.debug(
-          `Moving to prior location ${priorLocation.map_id} (x: ${priorLocation.x}, y: ${priorLocation.y})`,
-        );
-        await this.move(priorLocation);
+        if (priorLocation) {
+          logger.debug(
+            `Moving to prior location ${priorLocation.map_id} (x: ${priorLocation.x}, y: ${priorLocation.y})`,
+          );
+          await this.move(priorLocation);
+        }
       }
       return true;
     }

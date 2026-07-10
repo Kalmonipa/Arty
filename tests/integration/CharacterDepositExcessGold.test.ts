@@ -179,6 +179,19 @@ describe('Character.evaluateDepositItemsInBank - excess gold', () => {
     expect(mockActionDepositGold).not.toHaveBeenCalled();
   });
 
+  it('does not move back when no prior location is provided', async () => {
+    character = makeCharacter(25, 50000);
+
+    await expect(
+      character.evaluateDepositItemsInBank([], undefined, true),
+    ).resolves.toBe(true);
+
+    expect(mockActionDepositItems).toHaveBeenCalled();
+    // Only the trip to the bank should happen; there is no prior location to return to.
+    expect(character.move).toHaveBeenCalledTimes(1);
+    expect(character.move).toHaveBeenCalledWith({ x: 0, y: 0 });
+  });
+
   it('does not deposit gold when the inventory is not full enough to visit the bank', async () => {
     character = makeCharacter(25, 134000);
 
