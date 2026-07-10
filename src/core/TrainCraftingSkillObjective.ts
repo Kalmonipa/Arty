@@ -257,7 +257,7 @@ function calculateScore(
       logger.debug(
         `${ingredSchema.code} is a task reward, adding ${10 * simpleIngredient.quantity} to score (${score})`,
       );
-      score += 10 * simpleIngredient.quantity;
+      score += 150 * simpleIngredient.quantity;
     } else if (ingredSchema.subtype === 'mob') {
       // ToDo: Change this so that it looks at all mobs that drop it
       // and find the best mob to fight
