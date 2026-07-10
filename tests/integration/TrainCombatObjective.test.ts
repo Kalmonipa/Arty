@@ -24,6 +24,10 @@ class SimpleMockCharacter {
     return true;
   });
 
+  proposeCombatLoadout = jest.fn(async (mobCode: string): Promise<any> => {
+    return { level: this.data.level, weapon_slot: `weapon_for_${mobCode}` };
+  });
+
   fightNow = jest.fn(async (): Promise<boolean> => {
     // Simulate level progression
     this.data.level += 1;
@@ -592,6 +596,52 @@ describe('TrainCombatObjective Integration Tests', () => {
         expect.any(Array),
         'ogre',
       );
+    });
+  });
+
+  describe('In-memory gear evaluation during search', () => {
+    it('proposes a loadout per candidate and does not equip until a sim passes', async () => {
+      mockCharacter.data.level = 10;
+      mockCharacter.getCharacterLevel.mockReturnValue(10);
+
+      // Candidates iterate from the end: blue_slime first (loses), then red_slime (wins)
+      mockCharacter.simulateFightNow
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true);
+      mockCharacter.fightNow.mockImplementation(async () => {
+        mockCharacter.data.level = 15;
+        mockCharacter.getCharacterLevel.mockReturnValue(15);
+        return true;
+      });
+
+      await trainCombatObjective.run();
+
+      expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
+        'blue_slime',
+      );
+      expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
+        'red_slime',
+      );
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
+        [{ level: 10, weapon_slot: 'weapon_for_blue_slime' }],
+        'blue_slime',
+      );
+      expect(mockCharacter.evaluateGear).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.evaluateGear).toHaveBeenCalledWith(
+        'combat',
+        'red_slime',
+      );
+    });
+
+    it('never equips when no candidate simulation passes', async () => {
+      mockCharacter.data.level = 10;
+      mockCharacter.getCharacterLevel.mockReturnValue(10);
+      mockCharacter.simulateFightNow.mockResolvedValue(false);
+
+      await trainCombatObjective.run();
+
+      expect(mockCharacter.evaluateGear).not.toHaveBeenCalled();
+      expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
   });
 });
