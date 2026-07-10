@@ -377,16 +377,47 @@ export class IdleObjective extends Objective {
     // and the ceiling being either the alchemists alchemy level or the highest character level
     if (this.role === 'alchemist') {
       const minPotionsToCraft = minimumPotionInBank * 2;
-      for (const potion of this.character.utilitiesMap['restore'].reverse()) {
-        if (
-          potion.craft.level <=
-            this.character.getCharacterLevel(this.character.data, 'alchemy') &&
-          potion.craft.level <= this.character.highestCharLevel &&
-          potion.craft.level >= this.character.lowestCharLevel
-        ) {
-          logger.info(`Crafting ${minPotionsToCraft} ${potion.code}`);
-          await this.character.craftNow(minPotionsToCraft, potion.code);
-          break;
+      const alchemyLevel = this.character.getCharacterLevel(
+        this.character.data,
+        'alchemy',
+      );
+      const restorePotions = this.character.utilitiesMap['restore'];
+
+      // Craft the best potion each character can actually use, so low-level
+      // characters get low tiers and high-level characters get higher ones,
+      // without wasting mats on tiers no character is stuck at.
+      const tiersToCraft = new Set<string>();
+      for (const char of this.character.allCharacterDetails ?? []) {
+        let best: ItemSchema | undefined;
+        for (const potion of restorePotions) {
+          if (
+            potion.craft.level <= alchemyLevel &&
+            potion.level <= char.level &&
+            (best === undefined || potion.level > best.level)
+          ) {
+            best = potion;
+          }
+        }
+        if (best) {
+          tiersToCraft.add(best.code);
+        }
+      }
+
+      for (const potion of restorePotions) {
+        if (!tiersToCraft.has(potion.code)) {
+          continue;
+        }
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          potion.code,
+        );
+        if (numInBank < minPotionsToCraft) {
+          logger.info(
+            `Crafting ${minPotionsToCraft - numInBank} ${potion.code}`,
+          );
+          await this.character.craftNow(
+            minPotionsToCraft - numInBank,
+            potion.code,
+          );
         }
       }
 

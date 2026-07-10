@@ -40,6 +40,19 @@ const createMockArtifact = (
   ],
 });
 
+const makeRestorePotion = (code: string, level: number): ItemSchema => ({
+  code,
+  name: code,
+  level,
+  type: 'utility',
+  subtype: 'potion',
+  description: '',
+  craft: { skill: 'alchemy', level, items: [], quantity: 1 } as any,
+  tradeable: true,
+  conditions: [],
+  effects: [{ code: 'restore', value: 100, description: 'restore' }],
+});
+
 const makeNpcResult = (
   items: Array<{ buy_price?: number | null; currency?: string; code?: string }>,
 ) => ({
@@ -77,9 +90,21 @@ class MockCharacter {
 
   depositNow = jest.fn(async (): Promise<boolean> => true);
 
+  craftNow = jest.fn(
+    async (_quantity: number, _code: string): Promise<boolean> => true,
+  );
+
   handleErrors = jest.fn(async (): Promise<boolean> => true);
 
   saveJobQueue = jest.fn(async (): Promise<void> => {});
+
+  utilitiesMap: Record<string, ItemSchema[]> = { restore: [], antipoison: [] };
+
+  allCharacterDetails: CharacterSchema[] = [];
+
+  highestCharLevel = 30;
+
+  lowestCharLevel = 1;
 }
 
 describe('IdleObjective.checkAndBuyArtifacts', () => {
@@ -317,5 +342,74 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
 
     // Attempted deposit for both effects
     expect(mockCharacter.depositNow).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('IdleObjective.topUpBank (alchemist restore potions)', () => {
+  let mockCharacter: MockCharacter;
+  let objective: IdleObjective;
+
+  const rosterLevels = (levels: number[]): CharacterSchema[] =>
+    levels.map((level) => ({ level }) as CharacterSchema);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCharacter = new MockCharacter();
+    mockCharacter.data = { ...mockCharacterData };
+    mockCharacter.utilitiesMap = {
+      restore: [
+        makeRestorePotion('small_health_potion', 5),
+        makeRestorePotion('minor_health_potion', 20),
+        makeRestorePotion('health_potion', 30),
+      ],
+      antipoison: [],
+    };
+    // Alchemist skill is high enough to craft every tier
+    mockCharacter.getCharacterLevel.mockReturnValue(45);
+    objective = new IdleObjective(mockCharacter as any, 'alchemist');
+  });
+
+  it('crafts the best usable tier for each character, covering low and high levels', async () => {
+    // 2 characters below 20 -> small is their best; 3 above 20 -> minor is theirs
+    mockCharacter.allCharacterDetails = rosterLevels([12, 18, 22, 25, 28]);
+
+    await (objective as any).topUpBank();
+
+    const craftedCodes = mockCharacter.craftNow.mock.calls.map(
+      (call) => call[1],
+    );
+    expect(craftedCodes).toContain('small_health_potion');
+    expect(craftedCodes).toContain('minor_health_potion');
+    // No character can use health_potion (level 30); highest is 28
+    expect(craftedCodes).not.toContain('health_potion');
+  });
+
+  it('does not craft low tiers when no character is stuck at that tier', async () => {
+    // Every character is high level -> small potions are wasteful, nobody needs them
+    mockCharacter.allCharacterDetails = rosterLevels([35, 40, 42]);
+
+    await (objective as any).topUpBank();
+
+    const craftedCodes = mockCharacter.craftNow.mock.calls.map(
+      (call) => call[1],
+    );
+    expect(craftedCodes).not.toContain('small_health_potion');
+    expect(craftedCodes).not.toContain('minor_health_potion');
+    expect(craftedCodes).toContain('health_potion');
+  });
+
+  it('skips a tier already stocked in the bank', async () => {
+    mockCharacter.allCharacterDetails = rosterLevels([12, 25]);
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'small_health_potion' ? 500 : 0),
+    );
+
+    await (objective as any).topUpBank();
+
+    const craftedCodes = mockCharacter.craftNow.mock.calls.map(
+      (call) => call[1],
+    );
+    expect(craftedCodes).not.toContain('small_health_potion');
+    expect(craftedCodes).toContain('minor_health_potion');
   });
 });
