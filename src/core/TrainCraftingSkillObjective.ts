@@ -97,6 +97,7 @@ export class TrainCraftingSkillObjective extends Objective {
       // ToDo: This should expand to craftable items so we can get all weapons/etc
       // but requires a bit more logic
       for (const craftableItem of craftableItemsList) {
+        logger.debug(`Checking ${craftableItem.code} count in bank`)
         const bankItem = allBankItems.find(
           (bankItem) =>
             craftableItem.code === bankItem.code &&
@@ -104,6 +105,7 @@ export class TrainCraftingSkillObjective extends Objective {
         );
 
         if (!bankItem || bankItem.quantity < 1) {
+          logger.debug(`Crafting ${craftableItem.code} because there aren't enough in bank`)
           if (await this.character.craftNow(numToCraft, craftableItem.code)) {
             // Only deposit if the craft was successful
             await this.character.depositNow(numToCraft, craftableItem.code);
