@@ -18,11 +18,9 @@ export class TrainCraftingSkillObjective extends Objective {
   skill: CraftSkill;
   targetLevel: number;
   /**
-   * Range within the character level that they should craft. Defaults to 4
-   * Useful to only craft higher level items during trainSkill objectives when there are
-   * items to craft every 5 levels (e.g weapon/gear crafting)
-   * Alchemy for example only has items every 10 levels so setting a range of 5 levels wouldn't
-   * work for that
+   * Range within the character level that they should craft. Defaults to 9
+   * so that skill level 29 will craft lvl 20-29 items, skill level 30 will only
+   * craft lvl 21-30 items
    */
   levelRange?: number;
 
@@ -37,7 +35,7 @@ export class TrainCraftingSkillObjective extends Objective {
     this.jobFlavour = 'TrainCraftingSkill';
     this.targetLevel = targetLevel;
     this.skill = skill;
-    this.levelRange = levelRange ?? 4;
+    this.levelRange = levelRange ?? 9;
     this.shouldEmitMetrics = true;
     this.metricLabel = skill;
   }
