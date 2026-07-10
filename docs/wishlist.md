@@ -28,19 +28,15 @@ CREATE TABLE wishlist (
 );
 ```
 
-## Seed data
-
-```sql
-INSERT INTO acquisition_limits (category, max_per_item, max_per_character_per_item) VALUES
-  ('voidstone_tool', 1, NULL),  -- one of each tool, total
-  ('artifact',       5, 1),     -- five of each, but only one per character
-  ('rune',           3, NULL);  -- three of each, total
-```
-
 ## Columns
 
-| Column                       | Type             | Notes                                                                |
-| ---------------------------- | ---------------- | -------------------------------------------------------------------- |
-| `category`                   | `TEXT`           | Primary key. Matches `acquisitions.category`.                        |
-| `max_per_item`               | `INT`            | Team-wide cap per `item_code`.                                       |
-| `max_per_character_per_item` | `INT` (nullable) | Per-character cap per `item_code`; `NULL` = unlimited per character. |
+| Column               | Type          | Notes                                                                                            |
+| -------------------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| `item_code`          | `TEXT`        | Item code of the item being requested                                                            |
+| `character`          | `TEXT`        | Character requesting the item                                                                    |
+| `min_level`          | `INT`         | Min level needed to acquire                                                                      |
+| `max_level`          | `INT`         | Max level needed to acquire                                                                      |
+| `expiration_date`    | `TIMESTAMPTZ` | When the request should be removed from the table                                                |
+| `cost`               | `INT`         | Cost to acquire (gold required?)                                                                 |
+| `acquisition_method` | `TEXT`        | One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks |
+| `created_at`         | `TIMESTAMPTZ` | When the request was made. Defaults to now                                                       |
