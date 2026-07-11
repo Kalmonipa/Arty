@@ -11,7 +11,7 @@ export default function JobsRouter(char: Character) {
    */
   router.get('/list/all', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -39,7 +39,7 @@ export default function JobsRouter(char: Character) {
    */
   router.get('/list/with-parents', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -70,7 +70,7 @@ export default function JobsRouter(char: Character) {
     try {
       const rootJobId = req.params.rootJobId;
 
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -99,7 +99,7 @@ export default function JobsRouter(char: Character) {
    */
   router.get('/cancelled', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -125,7 +125,7 @@ export default function JobsRouter(char: Character) {
    */
   router.post('/save', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -154,14 +154,14 @@ export default function JobsRouter(char: Character) {
     try {
       const objId = req.params.objectiveId;
 
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
       }
 
       // Check if the job exists
-      const obj = char.jobList.find((obj) => objId === obj.objectiveId);
+      const obj = char.jobList.some((obj) => objId === obj.objectiveId);
       if (!obj) {
         return res.status(404).json({
           message: `Objective ${objId} not found`,
@@ -188,7 +188,7 @@ export default function JobsRouter(char: Character) {
 
   router.post('/pause', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -210,7 +210,7 @@ export default function JobsRouter(char: Character) {
 
   router.post('/resume', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
