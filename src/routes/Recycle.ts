@@ -9,11 +9,11 @@ export default function RecycleRouter(char: Character) {
     try {
       const { quantity, itemCode } = req.body;
 
-      if (isNaN(quantity) || !itemCode) {
+      if (Number.isNaN(quantity) || !itemCode) {
         return res.status(400).json({ error: 'Invalid quantity or itemCode.' });
       }
 
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });

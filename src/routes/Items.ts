@@ -12,7 +12,7 @@ export default function ItemsRouter(char: Character) {
    */
   router.get('/inventory', async (req: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
