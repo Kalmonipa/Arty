@@ -115,6 +115,7 @@ import { getAccountAchievements } from '../api_calls/Achievements.js';
 import { shouldDoEvent } from '../events/functions.js';
 import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
+import { IdleHealerObjective } from './IdleHealer.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -955,7 +956,11 @@ export class Character {
       if (this.jobList.length === 0) {
         await sleep(5, 'no-more-jobs', false);
         if (this.shouldDoIdleJobs) {
-          await this.appendJob(new IdleObjective(this, this.role));
+          if (this.role === 'healer') {
+            await this.appendJob(new IdleHealerObjective(this));
+          } else {
+            await this.appendJob(new IdleObjective(this, this.role));
+          }
         }
       } else if (this.jobList.length > 0) {
         const currentJob = this.jobList[0];

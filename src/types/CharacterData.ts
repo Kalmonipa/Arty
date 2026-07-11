@@ -18,6 +18,7 @@ export type InventorySlot = {
 
 export type Role =
   | 'alchemist'
+  | 'healer'
   | 'fisherman'
   | 'gearcrafter'
   | 'jewelrycrafter'
@@ -27,6 +28,7 @@ export type Role =
 
 export const ROLES: Role[] = [
   'alchemist',
+  'healer',
   'fisherman',
   'gearcrafter',
   'jewelrycrafter',
