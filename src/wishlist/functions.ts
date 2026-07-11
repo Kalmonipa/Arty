@@ -1,6 +1,6 @@
 import { db } from '../db.js';
 import { logger } from '../utils.js';
-import { WishlistRequest } from './types.js';
+import { AcquisitionMethod, WishlistRequest, WishlistRow } from './types.js';
 
 /**
  * Adds an item to the wishlist with the specified info
@@ -36,5 +36,38 @@ export async function addToWishlist(
   } catch (err) {
     logger.error(`Failed to add ${wishlistInfo.itemCode} to wishlist: ${err}`);
     return false;
+  }
+}
+
+/**
+ * Finds open wishlist requests for a given acquisition method — i.e. requests
+ * that no character has picked up (executing) or completed (fulfilled) yet.
+ * Ordered oldest-first so requests are worked as a FIFO queue.
+ * @param acquisitionMethod One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks
+ * @returns matching rows, or an empty array on error
+ */
+export async function getOpenWishlistRequests(
+  acquisitionMethod: AcquisitionMethod,
+): Promise<WishlistRow[]> {
+  const query = `
+    SELECT id, item_code, quantity, character,
+           min_level, max_level, expiration_date,
+           cost, currency, acquisition_method,
+           executing, fulfilled, created_at
+    FROM wishlist
+    WHERE acquisition_method = $1
+      AND executing = false
+      AND fulfilled = false
+    ORDER BY created_at ASC;
+  `;
+
+  try {
+    const result = await db.query<WishlistRow>(query, [acquisitionMethod]);
+    return result.rows;
+  } catch (err) {
+    logger.error(
+      `Failed to fetch wishlist requests for ${acquisitionMethod}: ${err}`,
+    );
+    return [];
   }
 }

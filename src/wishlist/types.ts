@@ -9,3 +9,34 @@ export type WishlistRequest = {
   currency?: string;
   acquisitionMethod?: string;
 };
+
+export interface WishlistRow {
+  id: number;
+  item_code: string;
+  quantity: number;
+  character: string;
+  min_level: number | null;
+  max_level: number | null;
+  expiration_date: Date | null;
+  cost: number | null;
+  currency: string | null;
+  acquisition_method: string | null;
+  executing: boolean;
+  fulfilled: boolean;
+  created_at: Date;
+}
+
+/**
+ * Different ways to acquire something. Characters can filter wishlist request based on the methods
+ * that are within their role responsibilities
+ * One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks
+ */
+export type AcquisitionMethod =
+  | 'buy'
+  | 'mining'
+  | 'fishing'
+  | 'woodcutting'
+  | 'gearcrafting'
+  | 'weaponcrafting'
+  | 'jewelrycrafting'
+  | 'tasks';

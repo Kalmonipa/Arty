@@ -21,6 +21,7 @@ import { AllCharNames, CharName } from './constants.js';
 import { register } from './metrics.js';
 import { db } from './db.js';
 import EventRouter from './events/routes.js';
+import WishlistRouter from './wishlist/routes.js';
 
 async function main() {
   await sleep(getRandomInt(0, 10), 'init_jitter', false);
@@ -71,6 +72,7 @@ async function main() {
   app.use('/trade', TradeRouter(char));
   app.use('/train', TrainSkillRouter(char));
   app.use('/character', CharacterRouter(char));
+  app.use('/wishlist', WishlistRouter(char));
 
   app.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);
