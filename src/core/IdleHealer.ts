@@ -81,7 +81,7 @@ export class IdleHealerObjective extends Objective {
   private async topUpFishInBank(): Promise<boolean> {
     const minimumFoodInBank = 500;
 
-    for (const fish of this.character.consumablesMap['heal'].filter(
+    for (const cookedFish of this.character.consumablesMap['heal'].filter(
       (consumable) =>
         consumable.craft?.skill === 'cooking' &&
         consumable.craft.items.some((ingredient) =>
@@ -89,18 +89,24 @@ export class IdleHealerObjective extends Objective {
         ),
     )) {
       if (
-        fish.craft.level <
+        cookedFish.craft.level <
           this.character.getCharacterLevel(this.character.data, 'fishing') &&
-        fish.craft.level <= this.character.highestCharLevel &&
-        fish.craft.level >= this.character.lowestCharLevel - 9
+        cookedFish.craft.level <= this.character.highestCharLevel &&
+        cookedFish.craft.level >= this.character.lowestCharLevel - 9
       ) {
         const numInBank = await this.character.checkQuantityOfItemInBank(
-          fish.code,
+          cookedFish.code,
         );
-        if (numInBank < minimumFoodInBank) {
-          await this.character.gatherNow(
-            Math.round(this.character.data.inventory_max_items * 0.95),
-            fish.code,
+        if (cookedFish.craft.items.length === 1) {
+          if (numInBank < minimumFoodInBank) {
+            await this.character.gatherNow(
+              Math.round(this.character.data.inventory_max_items * 0.95),
+              cookedFish.craft.items[0].code,
+            );
+          }
+        } else {
+          logger.debug(
+            `${cookedFish.code} requires more than 1 ingredient. Skipping`,
           );
         }
       }
