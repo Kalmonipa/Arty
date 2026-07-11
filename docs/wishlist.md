@@ -41,7 +41,7 @@ CREATE TABLE wishlist (
 | `character`          | `TEXT`        | Character requesting the item                                                                    |
 | `min_level`          | `INT`         | Min level needed to acquire                                                                      |
 | `max_level`          | `INT`         | Max level needed to acquire                                                                      |
-| `expiration_date`    | `TIMESTAMPTZ` | When the request should be removed from the table                                                |
+| `expiration_date`    | `TIMESTAMPTZ` | When the request should be removed from the table. Defaults to 7 days after creation (applied in the insert via `COALESCE`) |
 | `cost`               | `INT`         | Cost to acquire (gold required?)                                                                 |
 | `currency`           | `TEXT`        | The currency needed to acquire it                                                                |
 | `acquisition_method` | `TEXT`        | One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks |

@@ -33,10 +33,13 @@ export interface WishlistRow {
  */
 export type AcquisitionMethod =
   | 'buy'
+  | 'tasks'
+  | 'fight'
   | 'mining'
   | 'fishing'
   | 'woodcutting'
+  | 'alchemy'
+  | 'cooking'
   | 'gearcrafting'
   | 'weaponcrafting'
-  | 'jewelrycrafting'
-  | 'tasks';
+  | 'jewelrycrafting';
