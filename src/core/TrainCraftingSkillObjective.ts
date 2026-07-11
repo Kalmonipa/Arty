@@ -1,4 +1,4 @@
-import { getAllItemInformation } from '../api_calls/Items.js';
+import { getAllItemInformation, getItemInformation } from '../api_calls/Items.js';
 import {
   CraftSkill,
   GetAllItemsItemsGetParams,
@@ -172,7 +172,7 @@ async function calculateBestCraftingItem(
 
   for (const item of craftableItemList) {
     logger.debug(`Calculating score of ${item.code}`);
-    const currentScore = calculateScore(item, bankItems, character);
+    const currentScore = await calculateScore(item, bankItems, character);
 
     if (currentScore < bestScore) {
       logger.debug(
@@ -191,11 +191,11 @@ async function calculateBestCraftingItem(
  * Takes in the bank items as input so we don't repeat calls to get bank items
  * @param craftableItem
  */
-function calculateScore(
+async function calculateScore(
   craftableItem: ItemSchema,
   bankItems: SimpleItemSchema[],
   character: Character,
-): number {
+): Promise<number> {
   let score = 0;
 
   if (craftableItem.type === 'resource') {
@@ -212,10 +212,14 @@ function calculateScore(
    * Check bank
    * Check item type
    */
-  ingredients.forEach((simpleIngredient) => {
-    const ingredSchema = character.itemData.find(
-      (itemCode) => itemCode.code === simpleIngredient.code,
-    );
+  for (const simpleIngredient of ingredients) {
+    const ingredSchema = await getItemInformation(simpleIngredient.code);
+    if (ingredSchema instanceof ApiError) {
+      logger.warn(
+        `Failed to load ingredient ${simpleIngredient.code}: ${ingredSchema.message}`,
+      );
+      continue;
+    }
 
     const numNeeded = simpleIngredient.quantity;
 
@@ -232,11 +236,8 @@ function calculateScore(
       );
       if (!monsterToKill) {
         score += 1000000;
-        return;
+        continue;
       }
-      // const monstersThatDrop = character.monsterData.filter(mob => {
-      //   mob.drops.find(drop => drop.code === ingredSchema.code)
-      // })
 
       const dropRate = monsterToKill.drops.find(
         (drop) => drop.code === ingredSchema.code,
@@ -248,15 +249,21 @@ function calculateScore(
       score += scoreToAdd;
     } else if (ingredSchema.craft) {
       logger.debug(`Calculating sub-ingredients of ${ingredSchema.code}`);
-      ingredSchema.craft.items.forEach((simpleSubIngredient) => {
+      for (const simpleSubIngredient of ingredSchema.craft.items) {
         logger.debug(`Calculating ${simpleSubIngredient.code} score`);
-        const subIngredient = character.itemData.find(
-          (item) => item.code === simpleSubIngredient.code,
+        const subIngredient = await getItemInformation(
+          simpleSubIngredient.code,
         );
-        score += calculateScore(subIngredient, bankItems, character);
-      });
+        if (subIngredient instanceof ApiError) {
+          logger.warn(
+            `Failed to load sub-ingredient ${simpleSubIngredient.code}: ${subIngredient.message}`,
+          );
+          continue;
+        }
+        score += await calculateScore(subIngredient, bankItems, character);
+      }
     }
-  });
+  }
 
   return score;
 }

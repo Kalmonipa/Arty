@@ -170,7 +170,6 @@ export class Character {
   allMaps: MapSchema[];
   navigationGraph: NavigationGraph;
 
-  itemData: ItemSchema[];
   monsterData: MonsterSchema[];
 
   // True while move() is acquiring items to pass a gated transition. Nested move()
@@ -298,6 +297,8 @@ export class Character {
       this.monsterData = monsterData.data;
     }
 
+    // Warm the process-wide item cache with a single bulk fetch so subsequent
+    // per-item getItemInformation lookups are served from memory.
     const itemData = await getAllItemInformation({
       size: 1000,
     });
@@ -305,8 +306,6 @@ export class Character {
       logger.warn(
         `Failed to load item data. [${itemData.error.code}] ${itemData.error.message}`,
       );
-    } else {
-      this.itemData = itemData.data;
     }
 
     this.allMaps = await AllMaps();
@@ -725,6 +724,9 @@ export class Character {
           break;
         case 'IdleObjective':
           job = new IdleObjective(this, specificData.role as Role);
+          break;
+        case 'IdleHealerObjective':
+          job = new IdleHealerObjective(this);
           break;
         default:
           logger.warn(`Unknown job type: ${type}`);
