@@ -7,6 +7,18 @@ import {
 import { ApiUrl } from '../constants.js';
 import { apiRequest } from './request.js';
 
+/**
+ * Resource data is static, so it is cached by code for the process lifetime.
+ * Warmed in bulk by getAllResourceInformation and read by getResourceInformation
+ * to avoid per-resource API calls.
+ */
+const resourceCache = new Map<string, ResourceResponseSchema>();
+
+/** Test seam: drop the cached resources so each test starts from a clean fetch. */
+export function clearResourceCache(): void {
+  resourceCache.clear();
+}
+
 export async function getAllResourceInformation(
   data: GetAllResourcesResourcesGetParams,
 ): Promise<StaticDataPageResourceSchema | ApiError> {
@@ -31,22 +43,42 @@ export async function getAllResourceInformation(
     apiUrl.searchParams.set('skill', data.skill);
   }
 
-  return apiRequest<StaticDataPageResourceSchema>({
+  const res = await apiRequest<StaticDataPageResourceSchema>({
     url: apiUrl,
     fallbackMessage: `Unknown error from /resources`,
   });
+
+  if (!(res instanceof ApiError)) {
+    for (const resource of res.data) {
+      resourceCache.set(resource.code, { data: resource });
+    }
+  }
+
+  return res;
 }
 
 export async function getResourceInformation(
   itemCode: string,
 ): Promise<ResourceResponseSchema | ApiError> {
+  const cached = resourceCache.get(itemCode);
+  if (cached) {
+    return cached;
+  }
+
   const apiUrl = new URL(`${ApiUrl}/resources/${itemCode}`);
 
-  return apiRequest<ResourceResponseSchema>({
+  const res = await apiRequest<ResourceResponseSchema>({
     url: apiUrl,
     errorMessages: {
       404: 'Item not found.',
     },
     fallbackMessage: 'Unknown error from /action/bank/deposit/item',
   });
+
+  if (res instanceof ApiError) {
+    return res;
+  }
+
+  resourceCache.set(itemCode, res);
+  return res;
 }

@@ -251,8 +251,7 @@ export class IdleHealerObjective extends Objective {
 
   /**
    * Ensure that we have a minimum amount of certain items in the bank
-   * - 100 Health potions of varying levels
-   * - 500 Food of varying levels
+   * - 200 Health potions of varying levels
    */
   private async topUpPotionsInBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
@@ -305,7 +304,8 @@ export class IdleHealerObjective extends Objective {
     for (const potion of this.character.utilitiesMap['antipoison']) {
       if (
         potion.craft.level <
-        this.character.getCharacterLevel(this.character.data, 'alchemy')
+          this.character.getCharacterLevel(this.character.data, 'alchemy') &&
+        potion.craft.level <= this.character.highestCharLevel
       ) {
         const numInBank = await this.character.checkQuantityOfItemInBank(
           potion.code,

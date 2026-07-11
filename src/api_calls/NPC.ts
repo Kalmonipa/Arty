@@ -16,6 +16,18 @@ import { ApiUrl } from '../constants.js';
 import { apiRequest } from './request.js';
 
 /**
+ * NPC trade offerings are static game data, so list responses are cached by
+ * request URL (which encodes the code/npc/currency/page/size query) for the
+ * process lifetime. Shared by getNpcItems and getAllNpcItems.
+ */
+const npcItemsCache = new Map<string, StaticDataPageNPCItemSchema>();
+
+/** Test seam: drop the cached NPC items so each test starts from a clean fetch. */
+export function clearNpcItemsCache(): void {
+  npcItemsCache.clear();
+}
+
+/**
  * @description buy items into the npc. Character must be at the same map as the NPC
  * @param character
  * @param items items to purchase
@@ -114,12 +126,23 @@ export async function getNpcItems(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  return apiRequest<StaticDataPageNPCItemSchema>({
+  const cached = npcItemsCache.get(apiUrl.toString());
+  if (cached) {
+    return cached;
+  }
+
+  const res = await apiRequest<StaticDataPageNPCItemSchema>({
     url: apiUrl,
     errorMessages: {
       404: 'Item not found.',
     },
   });
+
+  if (!(res instanceof ApiError)) {
+    npcItemsCache.set(apiUrl.toString(), res);
+  }
+
+  return res;
 }
 
 export async function getAllNpcItems(
@@ -143,8 +166,19 @@ export async function getAllNpcItems(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  return apiRequest<StaticDataPageNPCItemSchema>({
+  const cached = npcItemsCache.get(apiUrl.toString());
+  if (cached) {
+    return cached;
+  }
+
+  const res = await apiRequest<StaticDataPageNPCItemSchema>({
     url: apiUrl,
     fallbackMessage: 'Unknown error from /npcs/items',
   });
+
+  if (!(res instanceof ApiError)) {
+    npcItemsCache.set(apiUrl.toString(), res);
+  }
+
+  return res;
 }

@@ -91,6 +91,18 @@ export async function actionUse(
 }
 
 /**
+ * Item data is static, so once fetched it is cached by code for the lifetime of
+ * the process. Warmed in bulk by getAllItemInformation (Character.init loads the
+ * full item list) and read by getItemInformation to avoid per-item API calls.
+ */
+const itemCache = new Map<string, ItemSchema>();
+
+/** Test seam: drop the cached items so each test starts from a clean fetch. */
+export function clearItemCache(): void {
+  itemCache.clear();
+}
+
+/**
  * @description Uses /items to get all the items that match the input parameters
  * @param data
  * @returns
@@ -125,10 +137,18 @@ export async function getAllItemInformation(
     apiUrl.searchParams.set('type', data.type);
   }
 
-  return apiRequest<StaticDataPageItemSchema>({
+  const res = await apiRequest<StaticDataPageItemSchema>({
     url: apiUrl,
     fallbackMessage: `Unknown error from /items`,
   });
+
+  if (!(res instanceof ApiError)) {
+    for (const item of res.data) {
+      itemCache.set(item.code, item);
+    }
+  }
+
+  return res;
 }
 
 /**
@@ -139,6 +159,11 @@ export async function getAllItemInformation(
 export async function getItemInformation(
   code: string,
 ): Promise<ItemSchema | ApiError> {
+  const cached = itemCache.get(code);
+  if (cached) {
+    return cached;
+  }
+
   const res = await apiRequest<ItemResponseSchema>({
     url: `${ApiUrl}/items/${code}`,
     errorMessages: {
@@ -146,7 +171,13 @@ export async function getItemInformation(
     },
     fallbackMessage: `Unknown error from /items/${code}`,
   });
-  return res instanceof ApiError ? res : res.data;
+
+  if (res instanceof ApiError) {
+    return res;
+  }
+
+  itemCache.set(code, res.data);
+  return res.data;
 }
 
 /**
