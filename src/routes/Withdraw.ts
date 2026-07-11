@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../core/Character.js';
+import { Character } from '../character/characterClass.js';
 import { WithdrawObjective } from '../core/WithdrawObjective.js';
 
 export default function WithdrawRouter(char: Character) {

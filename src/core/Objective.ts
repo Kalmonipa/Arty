@@ -1,6 +1,6 @@
 import * as crypto from 'node:crypto';
 import { ObjectiveStatus } from '../types/ObjectiveData.js';
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { logger, sleep } from '../utils.js';
 import {
   jobActiveGauge,

@@ -1,4 +1,4 @@
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { Objective } from './Objective.js';
 import { ApiError } from './Error.js';
 import { getResourceInformation } from '../api_calls/Resources.js';

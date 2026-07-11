@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../core/Character.js';
+import { Character } from '../character/characterClass.js';
 import { SimpleItemSchema } from '../types/types.js';
 import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
 

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Character } from '../../src/core/Character.js';
+import { Character } from '../../src/character/characterClass.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 jest.mock('../../src/api_calls/Actions.js', () => ({

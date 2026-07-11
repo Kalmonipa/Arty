@@ -15,11 +15,13 @@ They'll also check what other characters want. For example, the weaponcrafter ma
 CREATE TABLE wishlist (
     id SERIAL PRIMARY KEY,
     item_code TEXT NOT NULL,
+    quantity INT NOT NULL,
     character TEXT NOT NULL,
     min_level INT,
     max_level INT,
     expiration_date TIMESTAMPTZ,
     cost INT,
+    currency TEXT,
     acquisition_method TEXT,
     executing BOOLEAN,
     fulfilled BOOLEAN,
@@ -41,6 +43,7 @@ CREATE TABLE wishlist (
 | `max_level`          | `INT`         | Max level needed to acquire                                                                      |
 | `expiration_date`    | `TIMESTAMPTZ` | When the request should be removed from the table                                                |
 | `cost`               | `INT`         | Cost to acquire (gold required?)                                                                 |
+| `currency`           | `TEXT`        | The currency needed to acquire it                                                                |
 | `acquisition_method` | `TEXT`        | One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks |
 | `executing`          | `BOOLEAN`     | True if a character has picked up the request                                                    |
 | `fulfilled`          | `BOOLEAN`     | True if a character has completed the request                                                    |

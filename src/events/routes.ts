@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../core/Character.js';
+import { Character } from '../character/characterClass.js';
 import { db } from '../db.js';
 import { logger } from '../utils.js';
 import { AllCharNames } from '../constants.js';

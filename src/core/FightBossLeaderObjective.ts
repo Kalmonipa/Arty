@@ -1,10 +1,10 @@
 import { logger } from '../utils.js';
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { getMyCharacters } from '../api_calls/Character.js';
+import { getMyCharacters } from '../character/apiCalls.js';
 import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { pauseCharacter } from '../api_calls/Account.js';
 

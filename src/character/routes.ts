@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../core/Character.js';
+import { Character } from './characterClass.js';
 import { isRole, logger } from '../utils.js';
 import { ROLES } from '../types/CharacterData.js';
-import { getCharacter } from '../api_calls/Character.js';
+import { getCharacter } from './apiCalls.js';
 import { ApiError } from '../core/Error.js';
 
 export default function CharacterRouter(char: Character) {

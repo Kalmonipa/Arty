@@ -1,7 +1,7 @@
 import { actionEquipItem } from '../api_calls/Items.js';
 import { EquipSchema, ItemSlot } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 

@@ -7,7 +7,7 @@ import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema } from '../types/types.js';
 import { GetCharacterData, getHighestCharLevel, logger } from '../utils.js';
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
@@ -67,7 +67,6 @@ export class IdleHealerObjective extends Objective {
     ) {
       await this.trainAlchemySkill();
     }
-
     if (this.checkIdleJobIsLast()) return true;
   }
 

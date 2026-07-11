@@ -14,7 +14,7 @@ import {
   isGatheringSkill,
   logger,
 } from '../utils.js';
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';

@@ -1,5 +1,5 @@
-import { Character } from './core/Character.js';
-import { getCharacter } from './api_calls/Character.js';
+import { Character } from './character/characterClass.js';
+import { getCharacter } from './character/apiCalls.js';
 import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
@@ -15,7 +15,7 @@ import { ApiError } from './core/Error.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
 import BankRouter from './routes/Bank.js';
-import CharacterRouter from './routes/Character.js';
+import CharacterRouter from './character/routes.js';
 import { CharacterSchema } from './types/types.js';
 import { AllCharNames, CharName } from './constants.js';
 import { register } from './metrics.js';
@@ -26,8 +26,6 @@ async function main() {
   await sleep(getRandomInt(0, 10), 'init_jitter', false);
 
   let charDetails: CharacterSchema[] = await GetCharacterData();
-
-  await sleep(getRandomInt(0, 20), 'init_jitter', false);
 
   const char = new Character(
     charDetails.find((charData) => charData.name === CharName),

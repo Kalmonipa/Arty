@@ -47,53 +47,56 @@ import {
 } from '../utils.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { CraftObjective } from './CraftObjective.js';
-import { DepositObjective } from './DepositObjective.js';
-import { ApiError, TRANSPORT_ERROR_CODE } from './Error.js';
-import { GatherObjective } from './GatherObjective.js';
-import { Objective } from './Objective.js';
+import { CraftObjective } from '../core/CraftObjective.js';
+import { DepositObjective } from '../core/DepositObjective.js';
+import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
+import { GatherObjective } from '../core/GatherObjective.js';
+import { Objective } from '../core/Objective.js';
 import {
   ObjectiveTargets,
   ObjectiveStatus,
   SerializedJob,
   SimpleObjectiveInfo,
 } from '../types/ObjectiveData.js';
-import { FightObjective } from './FightObjective.js';
-import { EquipObjective } from './EquipObjective.js';
-import { UnequipObjective } from './UnequipObjective.js';
-import { WithdrawObjective } from './WithdrawObjective.js';
-import { MonsterTaskObjective } from './MonsterTaskObjective.js';
+import { FightObjective } from '../core/FightObjective.js';
+import { EquipObjective } from '../core/EquipObjective.js';
+import { UnequipObjective } from '../core/UnequipObjective.js';
+import { WithdrawObjective } from '../core/WithdrawObjective.js';
+import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import {
   actionDepositGold,
   getBankDetails,
   getBankItems,
 } from '../api_calls/Bank.js';
-import { ItemTaskObjective } from './ItemTaskObjective.js';
+import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import {
   UtilityEffects,
   WeaponFlavours,
   GearEffects,
   ConsumableEffects,
 } from '../types/ItemData.js';
-import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
-import { TidyBankObjective } from './TidyBankObjective.js';
-import { EvaluateGearObjective } from './EvaluateGearObjective.js';
-import { TradeObjective } from './TradeWithNPCObjective.js';
+import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import { TidyBankObjective } from '../core/TidyBankObjective.js';
+import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
+import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
-import { FightSimulator } from './FightSimulator.js';
-import { IdleObjective } from './IdleObjective.js';
-import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
-import { TrainCombatObjective } from './TrainCombatObjective.js';
-import { RecycleObjective } from './RecycleObjective.js';
-import { ExpandBankObjective } from './BankExpansion.js';
+import { FightSimulator } from '../core/FightSimulator.js';
+import { IdleObjective } from '../core/IdleObjective.js';
+import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { RecycleObjective } from '../core/RecycleObjective.js';
+import { ExpandBankObjective } from '../core/BankExpansion.js';
 import { getActiveEvents } from '../events/apiCalls.js';
 import { EventObjective } from '../events/eventObjective.js';
 import {
   getAllResourceInformation,
   getResourceInformation,
 } from '../api_calls/Resources.js';
-import { buildTransitionPath } from './navigation/pathfinding.js';
-import { getNavigationGraph, NavigationGraph } from './navigation/graph.js';
+import { buildTransitionPath } from '../core/navigation/pathfinding.js';
+import {
+  getNavigationGraph,
+  NavigationGraph,
+} from '../core/navigation/graph.js';
 import { ForestBankPotion, RecallPotion } from '../names.js';
 import {
   BagSlot,
@@ -115,7 +118,7 @@ import { getAccountAchievements } from '../api_calls/Achievements.js';
 import { shouldDoEvent } from '../events/functions.js';
 import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
-import { IdleHealerObjective } from './IdleHealer.js';
+import { IdleHealerObjective } from '../core/IdleHealer.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the

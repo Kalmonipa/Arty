@@ -1,7 +1,7 @@
 import { ApiError } from '../core/Error.js';
 import { CharacterSchema } from '../types/types.js';
 import { ApiUrl } from '../constants.js';
-import { apiRequest } from './request.js';
+import { apiRequest } from '../api_calls/request.js';
 
 /**
  * @description returns the character information

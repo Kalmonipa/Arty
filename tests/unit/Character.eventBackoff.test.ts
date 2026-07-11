@@ -40,7 +40,7 @@ jest.mock('../../src/api_calls/NPC.js', () => ({
   getNpc: jest.fn(),
 }));
 
-import { Character } from '../../src/core/Character.js';
+import { Character } from '../../src/character/characterClass.js';
 import * as fs from 'node:fs/promises';
 
 const mockWriteFile = fs.writeFile as jest.MockedFunction<typeof fs.writeFile>;

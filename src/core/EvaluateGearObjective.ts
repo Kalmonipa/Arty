@@ -1,5 +1,5 @@
 import { logger } from '../utils.js';
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
 import {

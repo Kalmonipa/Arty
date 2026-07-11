@@ -2,7 +2,7 @@ import { getItemInformation } from '../api_calls/Items.js';
 import { actionTasksTrade } from '../api_calls/Tasks.js';
 import { ItemSchema, TaskTradeResponseSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from './Character.js';
+import { Character } from '../character/characterClass.js';
 import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
