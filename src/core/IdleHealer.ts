@@ -99,7 +99,7 @@ export class IdleHealerObjective extends Objective {
         );
         if (numInBank < minimumFoodInBank) {
           await this.character.gatherNow(
-            this.character.data.inventory_max_items * 0.95,
+            Math.round(this.character.data.inventory_max_items * 0.95),
             fish.code,
           );
         }

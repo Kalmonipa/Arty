@@ -63,13 +63,13 @@ function hasCooldown(body: unknown): body is CooldownBody {
   return typeof cooldown?.remaining_seconds === 'number';
 }
 
-/** Exponential backoff with up to +50% jitter, capped at maxDelaySeconds. */
+/** Exponential backoff with up to +100% jitter, capped at maxDelaySeconds. */
 function backoffSeconds(attempt: number, retry: RetryConfig): number {
   const exponential = Math.min(
     retry.baseDelaySeconds * 2 ** attempt,
     retry.maxDelaySeconds,
   );
-  const jitter = Math.random() * 0.5 * exponential;
+  const jitter = Math.random() * exponential;
   return Math.round(exponential + jitter);
 }
 
