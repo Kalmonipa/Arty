@@ -5,7 +5,11 @@ import {
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
-import { ItemSchema, Skill } from '../types/types.js';
+import {
+  ItemSchema,
+  Skill,
+  StaticDataPageResourceSchema,
+} from '../types/types.js';
 import {
   GetCharacterData,
   getHighestCharLevel,
@@ -19,6 +23,8 @@ import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import { completeTasksFarmerAchievement } from './SharedFunctions.js';
+import { GatherObjective } from '../core/GatherObjective.js';
+import { getAllResourceInformation } from '../api_calls/Resources.js';
 
 export class IdleHealerObjective extends Objective {
   role: Role;
@@ -337,10 +343,10 @@ export class IdleHealerObjective extends Objective {
   }
 
   /**
-   * Increase the level of a skill by 1, or combat level if no skill passed in
-   * @todo Change this so that it only gets a set amount of an item at a time so that the idle task doesn't take a long time.
-   *        I would like to have characters check for events and prioritise events over leveling skills so if we spend ~5 hours
-   *        leveling a skill then we might miss some important events
+   * For the healer, we'd like them to level up alchemy and fishing
+   * For fishing, we want them to grab an inventory full at a time, before checking
+   * if potions need crafting etc. It's slower overall but means they prioritise
+   * topping up potions
    * @param skill the skill to train
    * @returns true if successful
    */
@@ -367,11 +373,26 @@ export class IdleHealerObjective extends Objective {
     }
 
     let job: Objective;
-    if (isGatheringSkill(skill)) {
-      job = new TrainGatheringSkillObjective(
-        this.character,
-        skill,
-        this.character.getCharacterLevel(this.character.data, skill) + 1,
+    if (skill === 'fishing') {
+      const resourceTypes: StaticDataPageResourceSchema | ApiError =
+        await getAllResourceInformation({
+          skill: skill,
+          max_level: this.character.getCharacterLevel(
+            this.character.data,
+            skill,
+          ),
+        });
+      if (resourceTypes instanceof ApiError) {
+        return this.character.handleErrors(resourceTypes);
+      }
+
+      let resourceToGather =
+        resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;
+
+      return await this.character.gatherNow(
+        Math.round(this.character.data.inventory_max_items * 0.9),
+        resourceToGather,
+        false,
       );
     } else {
       job = new TrainCraftingSkillObjective(
