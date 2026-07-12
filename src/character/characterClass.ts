@@ -120,6 +120,7 @@ import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { IdleHealerObjective } from '../core/IdleHealer.js';
 import { IdleCrafterObjective } from '../core/IdleCrafter.js';
+import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -624,6 +625,11 @@ export class Character {
             specificData.target as ObjectiveTargets,
           );
           break;
+        case 'DeleteItemObjective':
+          job = new DeleteItemObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
         case 'EvaluateGearObjective':
           job = new EvaluateGearObjective(
             this,
