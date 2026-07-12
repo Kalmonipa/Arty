@@ -43,7 +43,7 @@ export async function addToWishlist(
  * Finds open wishlist requests for a given acquisition method — i.e. requests
  * that no character has picked up (executing) or completed (fulfilled) yet.
  * Ordered oldest-first so requests are worked as a FIFO queue.
- * @param acquisitionMethod One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks
+ * @param acquisitionMethod One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewelrycrafting, tasks
  * @returns matching rows, or an empty array on error
  */
 export async function getOpenWishlistRequests(

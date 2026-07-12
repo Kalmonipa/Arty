@@ -70,6 +70,11 @@ export class TidyBankObjective extends Objective {
       case 'weaponcrafter':
         return await this.recycleExcessEquipment('weaponcrafting');
 
+      case 'crafter':
+        await this.recycleExcessEquipment('gearcrafting');
+        await this.recycleExcessEquipment('jewelrycrafting');
+        return await this.recycleExcessEquipment('weaponcrafting');
+
       case 'miner':
         return await this.craftBars();
 

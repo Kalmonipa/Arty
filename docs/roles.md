@@ -13,7 +13,7 @@ cooldowns so they should be crafting potions.
 
 ### Crafter
 
-Weapon, gear and jewellry crafting
+Weapon, gear and jewelry crafting
 
 ### Healer
 

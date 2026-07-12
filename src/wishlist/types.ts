@@ -29,7 +29,7 @@ export interface WishlistRow {
 /**
  * Different ways to acquire something. Characters can filter wishlist request based on the methods
  * that are within their role responsibilities
- * One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewellrycrafting, tasks
+ * One of: buy, mining, fishing, woodcutting, gearcrafting, weaponcrafting, jewelrycrafting, tasks
  */
 export type AcquisitionMethod =
   | 'buy'
