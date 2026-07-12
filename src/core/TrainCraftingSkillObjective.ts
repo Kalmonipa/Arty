@@ -118,6 +118,11 @@ export class TrainCraftingSkillObjective extends Objective {
               await this.character.depositNow(numToCraft, craftableItem.code);
             }
           }
+
+          // Check if character has reached the level goal
+          if (this.character.getCharacterLevel(this.character.data, this.skill) >= this.targetLevel) {
+            return true
+          }
         }
       }
       // Then move on to crafting 2 of every other item
@@ -136,6 +141,10 @@ export class TrainCraftingSkillObjective extends Objective {
             await this.character.depositNow(numToCraft, craftableItem.code);
           }
         }
+          // Check if character has reached the level goal
+          if (this.character.getCharacterLevel(this.character.data, this.skill) >= this.targetLevel) {
+            return true
+          }
       }
 
       // Find item with the best crafting score
