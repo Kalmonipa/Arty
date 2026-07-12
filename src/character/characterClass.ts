@@ -2000,6 +2000,12 @@ export class Character {
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
     const usedInventorySpace = this.getInventoryFullness();
+    // We may have handed in the items to the task master so we now have space
+    if (usedInventorySpace < 10) {
+      logger.debug(`Inventory is below 10% full. Skipping deposit`)
+      return true;
+    }
+    
     // getInventoryFullness() returns a percentage (0-100), so 95 here means 95% full
     if (usedInventorySpace >= 95 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing all items`);
@@ -3475,7 +3481,7 @@ export class Character {
 
             if (numLeftToHandIn > 0) {
               logger.info(
-                `Found  item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`,
+                `Found item task resource (${this.data.task} x${numInInv}) in inventory. Attempting to hand in ${Math.min(numLeftToHandIn, numInInv)} to clear up inv space`,
               );
               await this.tradeWithTasksMaster(
                 this.data.task,
