@@ -11,6 +11,7 @@ import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { Objective } from './Objective.js';
+import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 
 /**
  * @description Objective to buy or sell goods from/to a trader. Automatically finds
@@ -122,12 +123,26 @@ export class TradeObjective extends Objective {
           ) {
             if (!(await this.checkStatus())) return false;
             taskAttempts++;
-            await this.character.executeJobNow(
-              new ItemTaskObjective(this.character, 1),
-              true,
-              true,
-              this.objectiveId,
-            );
+            if (
+              this.character.role === 'weaponcrafter' ||
+              this.character.role === 'gearcrafter' ||
+              this.character.role === 'jewelrycrafter' ||
+              this.character.role === 'crafter'
+            ) {
+              await this.character.executeJobNow(
+                new MonsterTaskObjective(this.character, 1),
+                true,
+                true,
+                this.objectiveId,
+              );
+            } else {
+              await this.character.executeJobNow(
+                new ItemTaskObjective(this.character, 1),
+                true,
+                true,
+                this.objectiveId,
+              );
+            }
           }
 
           if (taskAttempts >= maxTaskAttempts) {
