@@ -110,6 +110,11 @@ export class IdleCrafterObjective extends Objective {
       }
       if (this.checkIdleJobIsLast()) return true;
     }
+
+    // As a last resort, level up combat level
+    await this.trainSkill();
+
+    return true;
   }
 
   /**

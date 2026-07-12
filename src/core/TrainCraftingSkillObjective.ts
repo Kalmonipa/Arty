@@ -95,28 +95,32 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
-      // Ensure we have 2 of every tool first
-      for (const craftableItem of craftableItemsList) {
-        if (craftableItem.subtype !== 'tool') {
-          continue;
-        }
-        logger.debug(`Checking ${craftableItem.code} count in bank`);
-        const bankItem = allBankItems.find(
-          (bankItem) => craftableItem.code === bankItem.code,
-        );
-
-        if (!bankItem || bankItem.quantity < 2) {
-          logger.debug(
-            `Crafting ${craftableItem.code} because there aren't enough in bank`,
+      // Weaponcrafter ensures we have 2 of every tool first
+      if (this.skill === 'weaponcrafting') {
+        for (const craftableItem of craftableItemsList) {
+          if (craftableItem.subtype !== 'tool') {
+            logger.debug(
+              `[train_${this.skill}] Skipping ${craftableItem.code} because it's not a tool`,
+            );
+            continue;
+          }
+          logger.debug(`Checking ${craftableItem.code} count in bank`);
+          const bankItem = allBankItems.find(
+            (bankItem) => craftableItem.code === bankItem.code,
           );
-          if (await this.character.craftNow(numToCraft, craftableItem.code)) {
-            // Only deposit if the craft was successful
-            await this.character.depositNow(numToCraft, craftableItem.code);
+
+          if (!bankItem || bankItem.quantity < 2) {
+            logger.debug(
+              `Crafting ${craftableItem.code} because there aren't enough in bank`,
+            );
+            if (await this.character.craftNow(numToCraft, craftableItem.code)) {
+              // Only deposit if the craft was successful
+              await this.character.depositNow(numToCraft, craftableItem.code);
+            }
           }
         }
       }
-      // Then move on to crafting 2 of every other item. Non-weapon crafters will 
-      // skip the first check inherently
+      // Then move on to crafting 2 of every other item
       for (const craftableItem of craftableItemsList) {
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(

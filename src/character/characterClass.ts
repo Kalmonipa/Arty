@@ -2002,10 +2002,10 @@ export class Character {
     const usedInventorySpace = this.getInventoryFullness();
     // We may have handed in the items to the task master so we now have space
     if (usedInventorySpace < 10) {
-      logger.debug(`Inventory is below 10% full. Skipping deposit`)
+      logger.debug(`Inventory is below 10% full. Skipping deposit`);
       return true;
     }
-    
+
     // getInventoryFullness() returns a percentage (0-100), so 95 here means 95% full
     if (usedInventorySpace >= 95 || makeSpaceForOtherItems) {
       logger.warn(`Inventory is almost full. Depositing all items`);
