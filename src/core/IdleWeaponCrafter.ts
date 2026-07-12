@@ -27,14 +27,13 @@ import { TradeObjective } from './TradeWithNPCObjective.js';
 export class IdleWeaponCrafterObjective extends Objective {
   role: Role;
 
-  constructor(character: Character, role: Role) {
+  constructor(character: Character) {
     super(character, `idle_weaponcrafter_objective`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'Idle';
-    this.role = role;
     this.shouldEmitMetrics = true;
-    this.metricLabel = role;
+    this.metricLabel = 'weaponcrafter';
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

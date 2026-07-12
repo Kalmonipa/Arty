@@ -119,6 +119,7 @@ import { shouldDoEvent } from '../events/functions.js';
 import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { IdleHealerObjective } from '../core/IdleHealer.js';
+import { IdleWeaponCrafterObjective } from '../core/IdleWeaponCrafter.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -731,6 +732,9 @@ export class Character {
         case 'IdleHealerObjective':
           job = new IdleHealerObjective(this);
           break;
+        case 'IdleWeaponCrafterObjective':
+          job = new IdleWeaponCrafterObjective(this)
+          break;
         default:
           logger.warn(`Unknown job type: ${type}`);
           return null;
@@ -963,6 +967,8 @@ export class Character {
         if (this.shouldDoIdleJobs) {
           if (this.role === 'healer') {
             await this.appendJob(new IdleHealerObjective(this));
+          } else if (this.role === 'weaponcrafter') {
+            await this.appendJob(new IdleWeaponCrafterObjective(this))
           } else {
             await this.appendJob(new IdleObjective(this, this.role));
           }
