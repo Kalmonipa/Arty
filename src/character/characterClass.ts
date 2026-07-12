@@ -1640,7 +1640,7 @@ export class Character {
     const healthStatus: HealthStatus = this.checkHealth();
 
     if (healthStatus.percentage !== 100) {
-      if (healthStatus.difference < 150) {
+      if (100 - healthStatus.percentage < 40) {
         await this.rest();
         return true;
       } else {
