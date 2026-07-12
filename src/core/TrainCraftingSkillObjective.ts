@@ -95,20 +95,16 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
-      // Ensure that we have at least 1 of each craftable tool in the bank
-      // before we start leveling
-      // ToDo: This should expand to craftable items so we can get all weapons/etc
-      // but requires a bit more logic
       for (const craftableItem of craftableItemsList) {
-        if (craftableItem.subtype !== 'tool') {
-          continue;
-        }
+        // if (craftableItem.subtype !== 'tool') {
+        //   continue;
+        // }
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
           (bankItem) => craftableItem.code === bankItem.code,
         );
 
-        if (!bankItem || bankItem.quantity < 1) {
+        if (!bankItem || bankItem.quantity < 2) {
           logger.debug(
             `Crafting ${craftableItem.code} because there aren't enough in bank`,
           );
