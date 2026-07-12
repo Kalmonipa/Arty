@@ -5,13 +5,19 @@ import {
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
-import { ItemSchema } from '../types/types.js';
-import { GetCharacterData, getHighestCharLevel, logger } from '../utils.js';
+import { ItemSchema, Skill } from '../types/types.js';
+import {
+  GetCharacterData,
+  getHighestCharLevel,
+  isGatheringSkill,
+  logger,
+} from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TradeObjective } from './TradeWithNPCObjective.js';
+import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 
 export class IdleHealerObjective extends Objective {
   role: Role;
@@ -65,7 +71,9 @@ export class IdleHealerObjective extends Objective {
       this.character.getCharacterLevel(this.character.data, 'alchemy') <=
       this.character.getCharacterLevel(this.character.data) + 5
     ) {
-      await this.trainAlchemySkill();
+      await this.trainSkill('alchemy');
+    } else {
+      await this.trainSkill('fishing');
     }
     if (this.checkIdleJobIsLast()) return true;
   }
@@ -335,9 +343,7 @@ export class IdleHealerObjective extends Objective {
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainAlchemySkill(): Promise<boolean> {
-    const skill = 'alchemy';
-
+  private async trainSkill(skill: Skill): Promise<boolean> {
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
       skill,
@@ -359,11 +365,20 @@ export class IdleHealerObjective extends Objective {
       return true;
     }
 
-    const job = new TrainCraftingSkillObjective(
-      this.character,
-      'alchemy',
-      this.character.getCharacterLevel(this.character.data, skill) + 1,
-    );
+    let job: Objective;
+    if (isGatheringSkill(skill)) {
+      job = new TrainGatheringSkillObjective(
+        this.character,
+        skill,
+        this.character.getCharacterLevel(this.character.data, skill) + 1,
+      );
+    } else {
+      job = new TrainCraftingSkillObjective(
+        this.character,
+        'alchemy',
+        this.character.getCharacterLevel(this.character.data, skill) + 1,
+      );
+    }
     return await this.character.executeJobNow(
       job,
       true,

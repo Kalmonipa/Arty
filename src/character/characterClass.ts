@@ -974,9 +974,9 @@ export class Character {
             await this.appendJob(new IdleCrafterObjective(this, this.role));
           } else if (this.role === 'gearcrafter') {
             await this.appendJob(new IdleCrafterObjective(this, this.role));
-          }  else if (this.role === 'jewelrycrafter') {
+          } else if (this.role === 'jewelrycrafter') {
             await this.appendJob(new IdleCrafterObjective(this, this.role));
-          }  else {
+          } else {
             await this.appendJob(new IdleObjective(this, this.role));
           }
         }
