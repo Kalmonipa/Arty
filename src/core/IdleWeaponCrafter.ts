@@ -24,11 +24,11 @@ import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TradeObjective } from './TradeWithNPCObjective.js';
 
-export class IdleCrafterObjective extends Objective {
+export class IdleWeaponCrafterObjective extends Objective {
   role: Role;
 
   constructor(character: Character, role: Role) {
-    super(character, `idle_crafter_objective`, 'not_started');
+    super(character, `idle_weaponcrafter_objective`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'Idle';
@@ -64,14 +64,6 @@ export class IdleCrafterObjective extends Objective {
     await this.checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
-    const gearcraftingLevel = this.character.getCharacterLevel(
-      this.character.data,
-      'gearcrafting',
-    );
-    const jewelrycraftingLevel = this.character.getCharacterLevel(
-      this.character.data,
-      'jewelrycrafting',
-    );
     const weaponcraftingLevel = this.character.getCharacterLevel(
       this.character.data,
       'weaponcrafting',
@@ -79,15 +71,6 @@ export class IdleCrafterObjective extends Objective {
     const combatLevel = this.character.getCharacterLevel(this.character.data);
 
     // Crafting skills should aim to be at the combat level
-    if (gearcraftingLevel < combatLevel) {
-      await this.trainSkill('gearcrafting');
-      if (this.checkIdleJobIsLast()) return true;
-    }
-
-    if (jewelrycraftingLevel < combatLevel) {
-      await this.trainSkill('jewelrycrafting');
-      if (this.checkIdleJobIsLast()) return true;
-    }
 
     if (weaponcraftingLevel < combatLevel) {
       await this.trainSkill('weaponcrafting');
@@ -96,9 +79,7 @@ export class IdleCrafterObjective extends Objective {
 
     // We only want to do monster tasks if our crafter skills are at or above our combat level
     if (
-      weaponcraftingLevel >= combatLevel &&
-      jewelrycraftingLevel >= combatLevel &&
-      gearcraftingLevel >= combatLevel
+      weaponcraftingLevel >= combatLevel
     ) {
       // Only do tasks if the bank is low on task coins.
       const taskCoinsInBank =
@@ -109,38 +90,6 @@ export class IdleCrafterObjective extends Objective {
       }
       if (this.checkIdleJobIsLast()) return true;
     }
-  }
-
-  /**
-   * @description Checks whether each applicable fish type is sufficiently stocked in the bank.
-   * Uses the same fish list and level filters as topUpBank so the definition of "applicable"
-   * is consistent. Returns true if every applicable type has >= 500 in the bank.
-   */
-  private async isFishSufficientlyStocked(): Promise<boolean> {
-    const minimumFoodInBank = 500;
-
-    for (const fish of this.character.consumablesMap['heal'].filter(
-      (consumable) =>
-        consumable.craft?.skill === 'cooking' &&
-        consumable.craft.items.some((ingredient) =>
-          this.character.fishingDropCodes.has(ingredient.code),
-        ),
-    )) {
-      if (
-        fish.craft.level <
-          this.character.getCharacterLevel(this.character.data, 'fishing') &&
-        fish.craft.level <= this.character.highestCharLevel &&
-        fish.craft.level >= this.character.lowestCharLevel - 9
-      ) {
-        const numInBank = await this.character.checkQuantityOfItemInBank(
-          fish.code,
-        );
-        if (numInBank < minimumFoodInBank) {
-          return false;
-        }
-      }
-    }
-    return true;
   }
 
   /**
@@ -276,28 +225,6 @@ export class IdleCrafterObjective extends Objective {
   }
 
   /**
-   * Looks at certain achievements to see if we can make progress towards any of them
-   * I have a feeling this might be mostly hardcoding for specific achievements.
-   * @returns true if successful, false if not
-   */
-  private checkAchievementProgress(): boolean {
-    return true;
-  }
-
-  /**
-   * Completes an item task
-   * @returns true if successful, false if not
-   */
-  private async doItemTask(num?: number): Promise<boolean> {
-    return await this.character.executeJobNow(
-      new ItemTaskObjective(this.character, num ?? 1),
-      true,
-      true,
-      this.objectiveId,
-    );
-  }
-
-  /**
    * Completes an item task
    * @returns true if successful, false if not
    */
@@ -383,54 +310,6 @@ export class IdleCrafterObjective extends Objective {
       true,
       this.objectiveId,
     );
-  }
-
-  /**
-   * @description Miner should make sure there are at least ~100 (maybe increase the value?) of each bar in the bank
-   * @todo Maybe make this raw ore instead of crafted bars? Or have another function to top up the ore
-   */
-  private async topUpMiningBars(): Promise<boolean> {
-    const minNumRequired = 100;
-
-    const barResponse = await getAllItemInformation({
-      craft_skill: 'mining',
-      type: 'resource',
-    });
-    if (barResponse instanceof ApiError) {
-      return this.character.handleErrors(barResponse);
-    }
-    const barInfo: ItemSchema[] = barResponse.data.filter(
-      (item) => item.subtype === 'bar',
-    );
-
-    for (const bar of barInfo) {
-      if (bar.craft.level > this.character.data.mining_level) {
-        logger.debug(`Not high enough level to craft ${bar.code}`);
-        break;
-      }
-
-      const numInBank = await this.character.checkQuantityOfItemInBank(
-        bar.code,
-      );
-      if (numInBank > minNumRequired) {
-        logger.debug(
-          `${numInBank}/${minNumRequired} ${bar.code} in bank already`,
-        );
-        break;
-      }
-
-      logger.info(
-        `Crafting ${minNumRequired - numInBank} ${bar.code} to top up to 100`,
-      );
-
-      return await this.character.craftNow(
-        minNumRequired - numInBank,
-        bar.code,
-      );
-    }
-
-    logger.info(`Already have the minimum amount of each bar`);
-    return true;
   }
 
   /**
