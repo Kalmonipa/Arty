@@ -95,10 +95,29 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
+      // Ensure we have 2 of every tool first
       for (const craftableItem of craftableItemsList) {
-        // if (craftableItem.subtype !== 'tool') {
-        //   continue;
-        // }
+        if (craftableItem.subtype !== 'tool') {
+          continue;
+        }
+        logger.debug(`Checking ${craftableItem.code} count in bank`);
+        const bankItem = allBankItems.find(
+          (bankItem) => craftableItem.code === bankItem.code,
+        );
+
+        if (!bankItem || bankItem.quantity < 2) {
+          logger.debug(
+            `Crafting ${craftableItem.code} because there aren't enough in bank`,
+          );
+          if (await this.character.craftNow(numToCraft, craftableItem.code)) {
+            // Only deposit if the craft was successful
+            await this.character.depositNow(numToCraft, craftableItem.code);
+          }
+        }
+      }
+      // Then move on to crafting 2 of every other item. Non-weapon crafters will 
+      // skip the first check inherently
+      for (const craftableItem of craftableItemsList) {
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
           (bankItem) => craftableItem.code === bankItem.code,
