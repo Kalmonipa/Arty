@@ -24,16 +24,17 @@ import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
 import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
 import { TradeObjective } from './TradeWithNPCObjective.js';
 
-export class IdleWeaponCrafterObjective extends Objective {
+export class IdleCrafterObjective extends Objective {
   role: Role;
 
-  constructor(character: Character) {
-    super(character, `idle_weaponcrafter_objective`, 'not_started');
+  constructor(character: Character, role: Role) {
+    super(character, `idle_${role}_objective`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'Idle';
+    this.role = role;
     this.shouldEmitMetrics = true;
-    this.metricLabel = 'weaponcrafter';
+    this.metricLabel = role;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -63,23 +64,43 @@ export class IdleWeaponCrafterObjective extends Objective {
     await this.checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
-    const weaponcraftingLevel = this.character.getCharacterLevel(
-      this.character.data,
-      'weaponcrafting',
-    );
+    // Get the relevant skill level based on which role the char is
+    let relevantSkillLevel: number;
+    let relevantSkillToTrain: Skill;
+    switch (this.role) {
+      case 'weaponcrafter':
+        relevantSkillLevel = this.character.getCharacterLevel(
+          this.character.data,
+          'weaponcrafting',
+        );
+        relevantSkillToTrain = 'weaponcrafting';
+        break;
+      case 'gearcrafter':
+        relevantSkillLevel = this.character.getCharacterLevel(
+          this.character.data,
+          'gearcrafting',
+        );
+        relevantSkillToTrain = 'gearcrafting';
+        break;
+      case 'jewelrycrafter':
+        relevantSkillLevel = this.character.getCharacterLevel(
+          this.character.data,
+          'jewelrycrafting',
+        );
+        relevantSkillToTrain = 'jewelrycrafting';
+        break;
+    }
     const combatLevel = this.character.getCharacterLevel(this.character.data);
 
     // Crafting skills should aim to be at the combat level
 
-    if (weaponcraftingLevel < combatLevel) {
-      await this.trainSkill('weaponcrafting');
+    if (relevantSkillLevel < combatLevel) {
+      await this.trainSkill(relevantSkillToTrain);
       if (this.checkIdleJobIsLast()) return true;
     }
 
     // We only want to do monster tasks if our crafter skills are at or above our combat level
-    if (
-      weaponcraftingLevel >= combatLevel
-    ) {
+    if (relevantSkillLevel >= combatLevel) {
       // Only do tasks if the bank is low on task coins.
       const taskCoinsInBank =
         await this.character.checkQuantityOfItemInBank('tasks_coin');

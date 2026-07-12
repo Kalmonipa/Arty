@@ -119,7 +119,7 @@ import { shouldDoEvent } from '../events/functions.js';
 import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { IdleHealerObjective } from '../core/IdleHealer.js';
-import { IdleWeaponCrafterObjective } from '../core/IdleWeaponCrafter.js';
+import { IdleCrafterObjective } from '../core/IdleCrafter.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -732,8 +732,8 @@ export class Character {
         case 'IdleHealerObjective':
           job = new IdleHealerObjective(this);
           break;
-        case 'IdleWeaponCrafterObjective':
-          job = new IdleWeaponCrafterObjective(this)
+        case 'IdleCrafterObjective':
+          job = new IdleCrafterObjective(this, this.role);
           break;
         default:
           logger.warn(`Unknown job type: ${type}`);
@@ -964,12 +964,19 @@ export class Character {
     while (true) {
       if (this.jobList.length === 0) {
         await sleep(5, 'no-more-jobs', false);
+
+        // ToDo: I'm tempted to separate out the IdleCrafterObjective into specific crafter
+        // roles. At the moment they are all the same so no need but I see that changing.
         if (this.shouldDoIdleJobs) {
           if (this.role === 'healer') {
             await this.appendJob(new IdleHealerObjective(this));
           } else if (this.role === 'weaponcrafter') {
-            await this.appendJob(new IdleWeaponCrafterObjective(this))
-          } else {
+            await this.appendJob(new IdleCrafterObjective(this, this.role));
+          } else if (this.role === 'gearcrafter') {
+            await this.appendJob(new IdleCrafterObjective(this, this.role));
+          }  else if (this.role === 'jewelrycrafter') {
+            await this.appendJob(new IdleCrafterObjective(this, this.role));
+          }  else {
             await this.appendJob(new IdleObjective(this, this.role));
           }
         }
