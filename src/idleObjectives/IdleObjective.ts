@@ -15,14 +15,15 @@ import {
   logger,
 } from '../utils.js';
 import { Character } from '../character/characterClass.js';
-import { ApiError } from './Error.js';
-import { ItemTaskObjective } from './ItemTaskObjective.js';
-import { MonsterTaskObjective } from './MonsterTaskObjective.js';
-import { Objective } from './Objective.js';
-import { TrainCombatObjective } from './TrainCombatObjective.js';
-import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
-import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
-import { TradeObjective } from './TradeWithNPCObjective.js';
+import { ApiError } from '../core/Error.js';
+import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
+import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
+import { Objective } from '../core/Objective.js';
+import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import { TradeObjective } from '../core/TradeWithNPCObjective.js';
+import { completeTasksFarmerAchievement } from './SharedFunctions.js';
 
 export class IdleObjective extends Objective {
   role: Role;
@@ -46,7 +47,7 @@ export class IdleObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
-    await this.completeTasksFarmerAchievement();
+    await completeTasksFarmerAchievement(this.character, this.role);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.character.tidyUpBank(this.character.role);
@@ -638,15 +639,6 @@ export class IdleObjective extends Objective {
       );
     }
 
-    return true;
-  }
-
-  /**
-   * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
-   * This function will ensure that we prioritise doing tasks to get it.
-   * @todo Implement this function
-   */
-  private async completeTasksFarmerAchievement() {
     return true;
   }
 }

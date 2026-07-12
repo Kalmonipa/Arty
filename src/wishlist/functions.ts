@@ -6,6 +6,7 @@ import { AcquisitionMethod, WishlistRequest, WishlistRow } from './types.js';
  * Adds an item to the wishlist with the specified info
  * @param wishlistInfo The information for the request so other characters can understand what's required
  * @returns true if the request was saved, false otherwise
+ * @todo Check if there's already a request in the wishlist for this item from this char
  */
 export async function addToWishlist(
   wishlistInfo: WishlistRequest,

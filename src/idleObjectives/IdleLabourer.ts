@@ -15,16 +15,24 @@ import {
   logger,
 } from '../utils.js';
 import { Character } from '../character/characterClass.js';
-import { ApiError } from './Error.js';
-import { ItemTaskObjective } from './ItemTaskObjective.js';
-import { MonsterTaskObjective } from './MonsterTaskObjective.js';
-import { Objective } from './Objective.js';
-import { TrainCombatObjective } from './TrainCombatObjective.js';
-import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
-import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
-import { TradeObjective } from './TradeWithNPCObjective.js';
+import { ApiError } from '../core/Error.js';
+import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
+import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
+import { Objective } from '../core/Objective.js';
+import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import { TradeObjective } from '../core/TradeWithNPCObjective.js';
+import { completeTasksFarmerAchievement } from './SharedFunctions.js';
 
-export class IdleCrafterObjective extends Objective {
+/**
+ * Labourer role idle jobs
+ * Primary focus is mining and woodcutting
+ *
+ * @todo Check the wishlist for any mining, wooductting requests
+ * and fulfill them
+ */
+export class IdleLabourerObjective extends Objective {
   role: Role;
 
   constructor(character: Character, role: Role) {
@@ -46,7 +54,7 @@ export class IdleCrafterObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
-    await this.completeTasksFarmerAchievement();
+    await completeTasksFarmerAchievement(this.character, this.role);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.character.tidyUpBank(this.character.role);
@@ -61,60 +69,20 @@ export class IdleCrafterObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
+    // ToDo: Check wishlist for any mining or woodcutting requests
+    // await this.checkWishlist();
+
     await this.checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
-    // Get the relevant skill level based on which role the char is
-    let relevantSkillLevel: number;
-    let relevantSkillToTrain: Skill;
-    switch (this.role) {
-      case 'weaponcrafter':
-        relevantSkillLevel = this.character.getCharacterLevel(
-          this.character.data,
-          'weaponcrafting',
-        );
-        relevantSkillToTrain = 'weaponcrafting';
-        break;
-      case 'gearcrafter':
-        relevantSkillLevel = this.character.getCharacterLevel(
-          this.character.data,
-          'gearcrafting',
-        );
-        relevantSkillToTrain = 'gearcrafting';
-        break;
-      case 'jewelrycrafter':
-        relevantSkillLevel = this.character.getCharacterLevel(
-          this.character.data,
-          'jewelrycrafting',
-        );
-        relevantSkillToTrain = 'jewelrycrafting';
-        break;
-    }
-    const combatLevel = this.character.getCharacterLevel(this.character.data);
+    await this.trainSkill('woodcutting');
+    if (this.checkIdleJobIsLast()) return true;
 
-    // Crafting skills should aim to be at the combat level
+    await this.trainSkill('mining');
+    if (this.checkIdleJobIsLast()) return true;
 
-    if (relevantSkillLevel < combatLevel) {
-      await this.trainSkill(relevantSkillToTrain);
-      if (this.checkIdleJobIsLast()) return true;
-    }
-
-    // We only want to do monster tasks if our crafter skills are at or above our combat level
-    if (relevantSkillLevel >= combatLevel) {
-      // Only do tasks if the bank is low on task coins.
-      const taskCoinsInBank =
-        await this.character.checkQuantityOfItemInBank('tasks_coin');
-
-      if (taskCoinsInBank < 25) {
-        await this.doMonsterTask(1);
-      }
-      if (this.checkIdleJobIsLast()) return true;
-    }
-
-    // As a last resort, level up combat level
     await this.trainSkill();
-
-    return true;
+    if (this.checkIdleJobIsLast()) return true;
   }
 
   /**
@@ -250,19 +218,6 @@ export class IdleCrafterObjective extends Objective {
   }
 
   /**
-   * Completes an item task
-   * @returns true if successful, false if not
-   */
-  private async doMonsterTask(num?: number): Promise<boolean> {
-    return await this.character.executeJobNow(
-      new MonsterTaskObjective(this.character, num ?? 1),
-      true,
-      true,
-      this.objectiveId,
-    );
-  }
-
-  /**
    * Increase the level of a skill by 1, or combat level if no skill passed in
    * @todo Change this so that it only gets a set amount of an item at a time so that the idle task doesn't take a long time.
    *        I would like to have characters check for events and prioritise events over leveling skills so if we spend ~5 hours
@@ -354,26 +309,6 @@ export class IdleCrafterObjective extends Objective {
       );
     }
 
-    return true;
-  }
-
-  /**
-   * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
-   * This function will ensure that we prioritise doing tasks to get it.
-   */
-  private async completeTasksFarmerAchievement() {
-    if (
-      this.character.completedAchievements.find(
-        (achievement) => achievement.code === 'tasks_farmer',
-      )
-    ) {
-      return true;
-    } else {
-      logger.debug(
-        `tasks_farmer achievement not completed. Doing monster tasks to contribute`,
-      );
-      await this.character.doMonsterTask(2);
-    }
     return true;
   }
 }

@@ -81,7 +81,7 @@ import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from '../core/FightSimulator.js';
-import { IdleObjective } from '../core/IdleObjective.js';
+import { IdleObjective } from '../idleObjectives/IdleObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
@@ -118,8 +118,8 @@ import { getAccountAchievements } from '../api_calls/Achievements.js';
 import { shouldDoEvent } from '../events/functions.js';
 import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
-import { IdleHealerObjective } from '../core/IdleHealer.js';
-import { IdleCrafterObjective } from '../core/IdleCrafter.js';
+import { IdleHealerObjective } from '../idleObjectives/IdleHealer.js';
+import { IdleCrafterObjective } from '../idleObjectives/IdleCrafter.js';
 import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
 
 /**
@@ -1435,11 +1435,15 @@ export class Character {
   /**
    * @description Deposit all inventory items into bank
    */
-  async depositAllItems() {
-    const job = new DepositObjective(this, {
-      code: 'all',
-      quantity: 0,
-    });
+  async depositAllItems(shouldIgnoreKeepList?: boolean) {
+    const job = new DepositObjective(
+      this,
+      {
+        code: 'all',
+        quantity: 0,
+      },
+      shouldIgnoreKeepList,
+    );
     await this.executeJobNow(
       job,
       true,

@@ -13,22 +13,26 @@ import {
   logger,
 } from '../utils.js';
 import { Character } from '../character/characterClass.js';
-import { ApiError } from './Error.js';
-import { Objective } from './Objective.js';
-import { TrainCraftingSkillObjective } from './TrainCraftingSkillObjective.js';
-import { TradeObjective } from './TradeWithNPCObjective.js';
-import { TrainGatheringSkillObjective } from './TrainGatheringSkillObjective.js';
+import { ApiError } from '../core/Error.js';
+import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
+import { Objective } from '../core/Objective.js';
+import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import { TradeObjective } from '../core/TradeWithNPCObjective.js';
+import { completeTasksFarmerAchievement } from './SharedFunctions.js';
 
-export class IdleHealerObjective extends Objective {
+export class IdleCrafterObjective extends Objective {
   role: Role;
 
-  constructor(character: Character) {
-    super(character, `idle_healer_objective`, 'not_started');
+  constructor(character: Character, role: Role) {
+    super(character, `idle_${role}_objective`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'Idle';
+    this.role = role;
     this.shouldEmitMetrics = true;
-    this.metricLabel = 'healer';
+    this.metricLabel = role;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -40,19 +44,13 @@ export class IdleHealerObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
-    await this.completeTasksFarmerAchievement();
+    await completeTasksFarmerAchievement(this.character, this.role);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.character.tidyUpBank(this.character.role);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.depositGoldIntoBank();
-    if (this.checkIdleJobIsLast()) return true;
-
-    await this.topUpPotionsInBank();
-    if (this.checkIdleJobIsLast()) return true;
-
-    await this.topUpFishInBank();
     if (this.checkIdleJobIsLast()) return true;
 
     await this.claimPendingItems();
@@ -64,60 +62,56 @@ export class IdleHealerObjective extends Objective {
     await this.checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
-    // Train skills depending on their role
-    // If the skill gets 5 levels ahead of their combat level then they won't train the skill any further
-    // There's no need for skills to get too far ahead of combat level
-    if (
-      this.character.getCharacterLevel(this.character.data, 'alchemy') <=
-      this.character.getCharacterLevel(this.character.data) + 5
-    ) {
-      await this.trainSkill('alchemy');
-    } else {
-      await this.trainSkill('fishing');
-    }
-    if (this.checkIdleJobIsLast()) return true;
-  }
-
-  /**
-   * @description The healer also needs to train their fishing skill for algae etc for potions
-   * This means that they can also help with stocking up fish in the bank. Their role doesn't
-   * include cooking so they will put raw fish in the bank, leaving the cooking up to the fisherman
-   * If there isn't enough of a certain fish in the bank, this char will retrieve an inventory load only.
-   * Their priority is potions with fish as a secondary so we don't want to focus on fish too much
-   */
-  private async topUpFishInBank(): Promise<boolean> {
-    const minimumFoodInBank = 500;
-
-    for (const cookedFish of this.character.consumablesMap['heal'].filter(
-      (consumable) =>
-        consumable.craft?.skill === 'cooking' &&
-        consumable.craft.items.some((ingredient) =>
-          this.character.fishingDropCodes.has(ingredient.code),
-        ),
-    )) {
-      if (
-        cookedFish.craft.level <
-          this.character.getCharacterLevel(this.character.data, 'fishing') &&
-        cookedFish.craft.level <= this.character.highestCharLevel &&
-        cookedFish.craft.level >= this.character.lowestCharLevel - 9
-      ) {
-        const numInBank = await this.character.checkQuantityOfItemInBank(
-          cookedFish.code,
+    // Get the relevant skill level based on which role the char is
+    let relevantSkillLevel: number;
+    let relevantSkillToTrain: Skill;
+    switch (this.role) {
+      case 'weaponcrafter':
+        relevantSkillLevel = this.character.getCharacterLevel(
+          this.character.data,
+          'weaponcrafting',
         );
-        if (cookedFish.craft.items.length === 1) {
-          if (numInBank < minimumFoodInBank) {
-            await this.character.gatherNow(
-              Math.round(this.character.data.inventory_max_items * 0.95),
-              cookedFish.craft.items[0].code,
-            );
-          }
-        } else {
-          logger.debug(
-            `${cookedFish.code} requires more than 1 ingredient. Skipping`,
-          );
-        }
-      }
+        relevantSkillToTrain = 'weaponcrafting';
+        break;
+      case 'gearcrafter':
+        relevantSkillLevel = this.character.getCharacterLevel(
+          this.character.data,
+          'gearcrafting',
+        );
+        relevantSkillToTrain = 'gearcrafting';
+        break;
+      case 'jewelrycrafter':
+        relevantSkillLevel = this.character.getCharacterLevel(
+          this.character.data,
+          'jewelrycrafting',
+        );
+        relevantSkillToTrain = 'jewelrycrafting';
+        break;
     }
+    const combatLevel = this.character.getCharacterLevel(this.character.data);
+
+    // Crafting skills should aim to be at the combat level
+
+    if (relevantSkillLevel < combatLevel) {
+      await this.trainSkill(relevantSkillToTrain);
+      if (this.checkIdleJobIsLast()) return true;
+    }
+
+    // We only want to do monster tasks if our crafter skills are at or above our combat level
+    if (relevantSkillLevel >= combatLevel) {
+      // Only do tasks if the bank is low on task coins.
+      const taskCoinsInBank =
+        await this.character.checkQuantityOfItemInBank('tasks_coin');
+
+      if (taskCoinsInBank < 25) {
+        await this.doMonsterTask(1);
+      }
+      if (this.checkIdleJobIsLast()) return true;
+    }
+
+    // As a last resort, level up combat level
+    await this.trainSkill();
+
     return true;
   }
 
@@ -254,85 +248,16 @@ export class IdleHealerObjective extends Objective {
   }
 
   /**
-   * Looks at certain achievements to see if we can make progress towards any of them
-   * I have a feeling this might be mostly hardcoding for specific achievements.
+   * Completes an item task
    * @returns true if successful, false if not
    */
-  private checkAchievementProgress(): boolean {
-    return true;
-  }
-
-  /**
-   * Ensure that we have a minimum amount of certain items in the bank
-   * - 200 Health potions of varying levels
-   */
-  private async topUpPotionsInBank(): Promise<boolean> {
-    // The lowest amount of an item we'd like in the bank
-    const minPotionsToCraft = 300;
-
-    // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
-    // and the ceiling being either the alchemists alchemy level or the highest character level
-    const alchemyLevel = this.character.getCharacterLevel(
-      this.character.data,
-      'alchemy',
+  private async doMonsterTask(num?: number): Promise<boolean> {
+    return await this.character.executeJobNow(
+      new MonsterTaskObjective(this.character, num ?? 1),
+      true,
+      true,
+      this.objectiveId,
     );
-    const restorePotions = this.character.utilitiesMap['restore'];
-
-    // Craft the best potion each character can actually use, so low-level
-    // characters get low tiers and high-level characters get higher ones,
-    // without wasting mats on tiers no character is stuck at.
-    const tiersToCraft = new Set<string>();
-    for (const char of this.character.allCharacterDetails ?? []) {
-      let best: ItemSchema | undefined;
-      for (const potion of restorePotions) {
-        if (
-          potion.craft.level <= alchemyLevel &&
-          potion.level <= char.level &&
-          (best === undefined || potion.level > best.level)
-        ) {
-          best = potion;
-        }
-      }
-      if (best) {
-        tiersToCraft.add(best.code);
-      }
-    }
-
-    for (const potion of restorePotions) {
-      if (!tiersToCraft.has(potion.code)) {
-        continue;
-      }
-      const numInBank = await this.character.checkQuantityOfItemInBank(
-        potion.code,
-      );
-      if (numInBank < minPotionsToCraft) {
-        logger.info(`Crafting ${minPotionsToCraft - numInBank} ${potion.code}`);
-        await this.character.craftNow(
-          minPotionsToCraft - numInBank,
-          potion.code,
-        );
-      }
-    }
-
-    for (const potion of this.character.utilitiesMap['antipoison']) {
-      if (
-        potion.craft.level <
-          this.character.getCharacterLevel(this.character.data, 'alchemy') &&
-        potion.craft.level <= this.character.highestCharLevel
-      ) {
-        const numInBank = await this.character.checkQuantityOfItemInBank(
-          potion.code,
-        );
-        if (numInBank < minPotionsToCraft) {
-          await this.character.craftNow(
-            minPotionsToCraft - numInBank,
-            potion.code,
-          );
-        }
-      }
-    }
-
-    return true;
   }
 
   /**
@@ -343,16 +268,24 @@ export class IdleHealerObjective extends Objective {
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainSkill(skill: Skill): Promise<boolean> {
+  private async trainSkill(skill?: Skill): Promise<boolean> {
+    let job: Objective;
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
       skill,
     );
-    const maxLevelGap = 5;
+    // Crafting skills should stay relatively close to combat level. Gathering skills can go further above
+    const maxLevelGap = [
+      'weaponcrafting',
+      'gearcrafting',
+      'jewelrycrafting',
+    ].includes(skill)
+      ? 0
+      : 5;
 
     if (skillLevel === MAX_SKILL_LEVEL) {
       logger.info(
-        `Max ${skill} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+        `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
       return true;
     } else if (
@@ -365,8 +298,23 @@ export class IdleHealerObjective extends Objective {
       return true;
     }
 
-    let job: Objective;
-    if (isGatheringSkill(skill)) {
+    // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
+    if (
+      this.character.getCharacterLevel(this.character.data, skill) >
+      this.character.getCharacterLevel(this.character.data) + 10
+    ) {
+      logger.info(
+        `${skill} level (${this.character.getCharacterLevel(this.character.data, skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel(this.character.data)}. Not training`,
+      );
+      return true;
+    }
+
+    if (!skill) {
+      job = new TrainCombatObjective(
+        this.character,
+        this.character.data.level + 1,
+      );
+    } else if (isGatheringSkill(skill)) {
       job = new TrainGatheringSkillObjective(
         this.character,
         skill,
@@ -375,7 +323,7 @@ export class IdleHealerObjective extends Objective {
     } else {
       job = new TrainCraftingSkillObjective(
         this.character,
-        'alchemy',
+        skill,
         this.character.getCharacterLevel(this.character.data, skill) + 1,
       );
     }
@@ -404,15 +352,6 @@ export class IdleHealerObjective extends Objective {
       );
     }
 
-    return true;
-  }
-
-  /**
-   * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
-   * This function will ensure that we prioritise doing tasks to get it.
-   * @todo Implement this function
-   */
-  private async completeTasksFarmerAchievement() {
     return true;
   }
 }

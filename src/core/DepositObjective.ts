@@ -15,8 +15,13 @@ import { ExpandBankObjective } from './BankExpansion.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;
+  shouldIgnoreItemsToKeepList: boolean;
 
-  constructor(character: Character, target: ObjectiveTargets) {
+  constructor(
+    character: Character,
+    target: ObjectiveTargets,
+    shouldIgnoreItemsToKeepList?: boolean,
+  ) {
     super(
       character,
       `deposit_${target.quantity}_${target.code}`,
@@ -26,6 +31,7 @@ export class DepositObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'Deposit';
     this.target = target;
+    this.shouldIgnoreItemsToKeepList = shouldIgnoreItemsToKeepList || false;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -88,6 +94,14 @@ export class DepositObjective extends Objective {
 
         for (let i = 0; i < this.character.data.inventory.length; i++) {
           if (
+            this.shouldIgnoreItemsToKeepList &&
+            this.character.data.inventory[i].code !== ''
+          ) {
+            itemsToDeposit.push({
+              code: this.character.data.inventory[i].code,
+              quantity: this.character.data.inventory[i].quantity,
+            });
+          } else if (
             this.character.data.inventory[i].code !== '' &&
             !this.character.itemsToKeep.includes(
               this.character.data.inventory[i].code,

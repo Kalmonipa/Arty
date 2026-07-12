@@ -2,7 +2,6 @@ import { actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { db } from '../db.js';
 import { WeaponFlavours } from '../types/ItemData.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import {
@@ -16,6 +15,7 @@ import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { addToWishlist } from '../wishlist/functions.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -374,10 +374,19 @@ export class GatherObjective extends Objective {
       return this.character.handleErrors(resources);
     }
 
+    // skillNeeded is used for the wishlist if we can't find something that
+    // the current character can gather
+    let skillNeeded: GatheringSkill;
+    // levelNeeded is used for the wishlist to tell the char checking the wishlist
+    // what level they need of the required skill to fulfill it
+    let levelNeeded: number;
+
     logger.debug(`Finding best resource to gather`);
     const resource = (() => {
       for (let i = resources.data.length - 1; i >= 0; i--) {
         const resource = resources.data[i];
+        skillNeeded = resource.skill;
+        levelNeeded = resource.level;
         if (
           resource.level <=
           this.character.getCharacterLevel(this.character.data, resource.skill)
@@ -385,13 +394,21 @@ export class GatherObjective extends Objective {
           return resource;
         }
       }
-      logger.warn(
-        `${this.character.data.name} level is not high enough to gather ${code}`,
-      );
+
       return undefined;
     })();
 
     if (!resource) {
+      logger.warn(
+        `${this.character.data.name} ${skillNeeded} level is not high enough to gather ${code}. Adding to wishlist`,
+      );
+      await addToWishlist({
+        itemCode: code,
+        quantity: quantity,
+        characterName: this.character.data.name,
+        acquisitionMethod: skillNeeded,
+        minLevel: levelNeeded,
+      });
       return false;
     }
 

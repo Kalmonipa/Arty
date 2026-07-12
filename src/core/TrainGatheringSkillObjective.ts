@@ -65,7 +65,7 @@ export class TrainGatheringSkillObjective extends Objective {
       }
 
       await this.character.gatherNow(
-        Math.round(this.character.data.inventory_max_items * 0.8),
+        Math.round(this.character.data.inventory_max_items * 0.9),
         resourceToGather,
         false,
       );
@@ -75,7 +75,7 @@ export class TrainGatheringSkillObjective extends Objective {
 
       await this.craftItem(resourceToGather, numGathered);
 
-      await this.character.depositAllItems();
+      await this.character.depositAllItems(true);
 
       charLevel = this.character.getCharacterLevel(
         this.character.data,

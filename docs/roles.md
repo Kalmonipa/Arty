@@ -27,7 +27,7 @@ High mining and wooductting skill
 
 ### Fisherman
 
-Keeping fish stocked up and cooking raw ingredients in the bank
+Keeping fish stocked up and cooking raw ingredients in the bank. Also in charge of doing tasks
 
 ## Tasks
 

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { IdleObjective } from '../../src/core/IdleObjective.js';
+import { IdleObjective } from '../../src/idleObjectives/IdleObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ItemSchema, CharacterSchema } from '../../src/types/types.js';
 import { GearEffects } from '../../src/types/ItemData.js';
