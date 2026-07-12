@@ -540,8 +540,8 @@ class SimpleMockCharacter {
   };
 
   // ToDo: Make this more robust. Should actually check the characters equipment
-  hasEquipped = (itemCode: string): boolean => {
-    return false;
+  getEquippedSlot = (itemCode: string): string => {
+    return null;
   };
 }
 
@@ -1409,22 +1409,22 @@ describe('EvaluateGearObjective Integration Tests', () => {
         >
       ).mockResolvedValue(mockProspectingResource);
 
-      // Add a level-15 artifact (above char level 10) to the map — should be skipped
+      // Add a level-35 artifact (above char level 10) to the map — should be skipped
       const highLevelArtifact = createMockArtifact(
-        'ancient_charm',
-        'Ancient Charm',
-        15,
+        'Perfect Pearl',
+        'Perfect Pearl',
+        20,
         'prospecting',
       );
       mockCharacter.artifactsMap = {
         prospecting: [
-          createMockArtifact('lucky_charm', 'Lucky Charm', 5, 'prospecting'),
+          createMockArtifact('novice_guide', 'Novice Guide', 10, 'prospecting'),
           highLevelArtifact,
         ],
         wisdom: [],
       };
-      mockCharacter.addItemToInventory('lucky_charm', 1);
-      mockCharacter.addItemToInventory('ancient_charm', 1);
+      mockCharacter.addItemToInventory('novice_guide', 1);
+      mockCharacter.addItemToInventory('perfect_pearl', 1);
 
       const objective = new EvaluateGearObjective(
         mockCharacter as any,
@@ -1434,13 +1434,13 @@ describe('EvaluateGearObjective Integration Tests', () => {
       );
       await objective.run();
 
-      // Should equip lucky_charm (level 5), not ancient_charm (level 15 > char level 10)
+      // Should equip novice_guide (level 10), not perfect_pearl (level 20 > char level 10)
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
-        'lucky_charm',
+        'novice_guide',
         'artifact1',
       );
       expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
-        'ancient_charm',
+        'perfect_pearl',
         expect.anything(),
       );
     });

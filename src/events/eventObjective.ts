@@ -407,9 +407,11 @@ export class EventObjective extends Objective {
     const itemsToBuy = ['backpack', 'lost_world_map'];
 
     for (const item of itemsToBuy) {
-      const isEquipped: boolean = this.character.hasEquipped(item);
-      if (isEquipped) {
-        logger.debug(`${item} is equipped. No need to purchase`);
+      const equipSlot: string = this.character.getEquippedSlot(item);
+      if (equipSlot) {
+        logger.debug(
+          `${item} is equipped in ${equipSlot}. No need to purchase`,
+        );
         continue;
       }
       const numInInv: number = this.character.checkQuantityOfItemInInv(item);

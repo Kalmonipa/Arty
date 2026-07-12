@@ -458,7 +458,7 @@ export class EvaluateGearObjective extends Objective {
           continue;
         }
 
-        if (this.character.hasEquipped(artifacts[i].code)) {
+        if (this.character.getEquippedSlot(artifacts[i].code)) {
           logger.debug(`${artifacts[i].code} already equipped. Skipping`);
           break;
         }

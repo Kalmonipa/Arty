@@ -99,18 +99,28 @@ import {
 } from '../core/navigation/graph.js';
 import { ForestBankPotion, RecallPotion } from '../names.js';
 import {
+  AmuletSlot,
+  Artifact1Slot,
+  Artifact2Slot,
+  Artifact3Slot,
   BagSlot,
   BodyArmorSlot,
+  BootsSlot,
   CharRole,
   DesiredFoodCount,
   FishMerchant,
   HelmetSlot,
+  LegArmorSlot,
   MaxEquippedUtilities,
   MinEquippedUtilities,
   MinFood,
   NomadicMerchant,
+  Ring1Slot,
+  Ring2Slot,
   RuneSlot,
   ShieldSlot,
+  Utility1Slot,
+  Utility2Slot,
   WeaponSlot,
 } from '../constants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
@@ -1224,36 +1234,39 @@ export class Character {
   }
 
   /**
-   * @description Returns true if the character has the item equipped, false if not
-   * Maybe I should return _where_ it is equipped?
+   * @description Returns the slot name if equipped, or null if not equipped
    */
-  hasEquipped(itemCode: string): boolean {
-    const equippedItems = new Map<string, string>();
-    equippedItems.set(WeaponSlot, this.data.weapon_slot);
-    equippedItems.set(RuneSlot, this.data.rune_slot);
-    equippedItems.set(ShieldSlot, this.data.shield_slot);
-    equippedItems.set(HelmetSlot, this.data.helmet_slot);
-    equippedItems.set(BodyArmorSlot, this.data.body_armor_slot);
-    equippedItems.set('leg_armor_slot', this.data.leg_armor_slot);
-    equippedItems.set('boots_slot', this.data.boots_slot);
-    equippedItems.set('ring1_slot', this.data.ring1_slot);
-    equippedItems.set('ring2_slot', this.data.ring2_slot);
-    equippedItems.set('amulet_slot', this.data.amulet_slot);
-    equippedItems.set('artifact1_slot', this.data.artifact1_slot);
-    equippedItems.set('artifact2_slot', this.data.artifact2_slot);
-    equippedItems.set('artifact3_slot', this.data.artifact3_slot);
-    equippedItems.set('utility1_slot', this.data.utility1_slot);
-    equippedItems.set('utility2_slot', this.data.utility2_slot);
-    equippedItems.set(BagSlot, this.data.bag_slot);
+  getEquippedSlot(itemCode: string): string | null {
+    const slots: Record<string, string> = {
+      [WeaponSlot]: this.data.weapon_slot,
+      [RuneSlot]: this.data.rune_slot,
+      [ShieldSlot]: this.data.shield_slot,
+      [HelmetSlot]: this.data.helmet_slot,
+      [BodyArmorSlot]: this.data.body_armor_slot,
+      [LegArmorSlot]: this.data.leg_armor_slot,
+      [BootsSlot]: this.data.boots_slot,
+      [Ring1Slot]: this.data.ring1_slot,
+      [Ring2Slot]: this.data.ring2_slot,
+      [AmuletSlot]: this.data.amulet_slot,
+      [Artifact1Slot]: this.data.artifact1_slot,
+      [Artifact2Slot]: this.data.artifact2_slot,
+      [Artifact3Slot]: this.data.artifact3_slot,
+      [Utility1Slot]: this.data.utility1_slot,
+      [Utility2Slot]: this.data.utility2_slot,
+      [BagSlot]: this.data.bag_slot,
+    };
 
-    equippedItems.forEach((value, key) => {
-      if (value === itemCode) {
-        logger.info(`${this.data.name} has ${itemCode} equipped in ${key}`);
-        return true;
+    for (const [slotName, equippedItem] of Object.entries(slots)) {
+      if (equippedItem === itemCode) {
+        logger.info(
+          `${this.data.name} has ${itemCode} equipped in ${slotName}`,
+        );
+        return slotName;
       }
-    });
+    }
+
     logger.info(`${this.data.name} does NOT have ${itemCode} equipped`);
-    return false;
+    return null;
   }
 
   /**
@@ -3271,7 +3284,7 @@ export class Character {
 
       case ConditionOperator.has_item: {
         const required = condition.value || 1;
-        if (this.hasEquipped(condition.code)) return true;
+        if (this.getEquippedSlot(condition.code)) return true;
         const onHand = this.checkQuantityOfItemInInv(condition.code);
         if (onHand >= required) return true;
         const inBank = await this.checkQuantityOfItemInBank(condition.code);
@@ -3366,7 +3379,7 @@ export class Character {
 
       case ConditionOperator.has_item: {
         const required = condition.value || 1;
-        if (this.hasEquipped(condition.code)) return true;
+        if (this.getEquippedSlot(condition.code)) return true;
         const onHand = this.checkQuantityOfItemInInv(condition.code);
         if (onHand >= required) return true;
         return await this.withdrawNow(required - onHand, condition.code);

@@ -1362,7 +1362,7 @@ describe('Character.move()', () => {
 
       // The character has no key anywhere until it acquires one.
       let keyAcquired = false;
-      character.hasEquipped = jest.fn(() => false);
+      character.getEquippedSlot = jest.fn(() => null);
       character.checkQuantityOfItemInInv = jest.fn((c) =>
         keyAcquired && c === 'lich_tomb_key' ? 1 : 0,
       );
@@ -1478,7 +1478,7 @@ describe('Character.move()', () => {
       };
       character = new Character(mockCharacter);
       character.data.gold = 0;
-      character.hasEquipped = jest.fn(() => false);
+      character.getEquippedSlot = jest.fn(() => null);
       character.checkQuantityOfItemInInv = jest.fn(() => 0);
       character.checkQuantityOfItemInBank = jest.fn(async () => 0);
       (

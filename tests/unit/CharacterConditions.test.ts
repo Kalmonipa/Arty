@@ -27,7 +27,7 @@ describe('Character.canSatisfyConditions', () => {
     character = new Character({ ...mockCharacterData });
     character.completedAchievements = [];
     character.data.gold = 0;
-    character.hasEquipped = jest.fn(() => false);
+    character.getEquippedSlot = jest.fn(() => null);
     character.checkQuantityOfItemInInv = jest.fn(() => 0);
     character.checkQuantityOfItemInBank = jest.fn(async () => 0);
     (
@@ -59,10 +59,10 @@ describe('Character.canSatisfyConditions', () => {
     ];
     expect(await character.canSatisfyConditions(cond)).toBe(false);
 
-    character.hasEquipped = jest.fn((c) => c === 'lich_tomb_key');
-    expect(await character.canSatisfyConditions(cond)).toBe(true);
+    character.getEquippedSlot = jest.fn(() => null);
+    expect(await character.canSatisfyConditions(cond)).toBe(false);
 
-    character.hasEquipped = jest.fn(() => false);
+    //character.getEquippedSlot = jest.fn(() => null);
     character.checkQuantityOfItemInInv = jest.fn((c) =>
       c === 'lich_tomb_key' ? 1 : 0,
     );
@@ -248,7 +248,7 @@ describe('Character.computeUnacquirableTransitions', () => {
     character = new Character({ ...mockCharacterData });
     character.completedAchievements = [];
     character.data.gold = 0;
-    character.hasEquipped = jest.fn(() => false);
+    character.getEquippedSlot = jest.fn(() => null);
     character.checkQuantityOfItemInInv = jest.fn(() => 0);
     character.checkQuantityOfItemInBank = jest.fn(async () => 0);
     (

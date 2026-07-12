@@ -74,7 +74,7 @@ class SimpleMockCharacter {
   equipNow = jest.fn(async (): Promise<boolean> => true);
   recordEventSuccess = jest.fn();
   recordEventFailure = jest.fn();
-  hasEquipped = jest.fn((_code: string): boolean => false);
+  getEquippedSlot = jest.fn((_code: string): string => null);
 }
 
 describe('EventObjective - sellToMerchant', () => {
@@ -632,9 +632,7 @@ describe('EventObjective - sellToMerchant', () => {
     });
 
     it('skips backpack when already equipped', async () => {
-      character.hasEquipped.mockImplementation(
-        (code: string) => code === 'backpack',
-      );
+      character.getEquippedSlot.mockImplementation(() => 'bag_slot');
       mockBuyPrices({ backpack: 100 });
 
       await makeObjective('nomadic_merchant').run();
@@ -779,9 +777,7 @@ describe('EventObjective - sellToMerchant', () => {
     });
 
     it('skips lost_world_map when already equipped', async () => {
-      character.hasEquipped.mockImplementation(
-        (code: string) => code === 'lost_world_map',
-      );
+      character.getEquippedSlot.mockImplementation(() => 'artifact_1_slot');
       mockBuyPrices({ lost_world_map: 500 });
 
       await makeObjective('nomadic_merchant').run();
