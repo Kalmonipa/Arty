@@ -1,4 +1,5 @@
 import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
 import {
   CharacterSchema,
   CraftSkill,
@@ -99,8 +100,12 @@ export const logger = winston.createLogger({
     character: CharName,
   },
   transports: [
-    new winston.transports.File({
-      filename: './logs/arty.log',
+    new DailyRotateFile({
+      filename: './logs/arty-%DATE%.log',
+      datePattern: 'YYYY-[W]WW',
+      maxSize: '200m',
+      maxFiles: '30d',
+      zippedArchive: true,
       level: logLevel,
       format: customFormat,
     }),
