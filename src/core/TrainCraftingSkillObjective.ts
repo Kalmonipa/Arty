@@ -12,6 +12,7 @@ import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 
 /**
  * @description Trains the desired crafting skill until reaching the desired level
@@ -110,6 +111,13 @@ export class TrainCraftingSkillObjective extends Objective {
           );
 
           if (!bankItem || bankItem.quantity < 2) {
+            if (await needsBossDrop(craftableItem)) {
+              logger.warn(
+                `Skipping ${craftableItem.code} because it needs a boss drop`,
+              );
+              continue;
+            }
+
             logger.debug(
               `Crafting ${craftableItem.code} because there aren't enough in bank`,
             );
@@ -136,6 +144,13 @@ export class TrainCraftingSkillObjective extends Objective {
         );
 
         if (!bankItem || bankItem.quantity < 2) {
+          if (await needsBossDrop(craftableItem)) {
+            logger.warn(
+              `Skipping ${craftableItem.code} because it needs a boss drop`,
+            );
+            continue;
+          }
+
           logger.debug(
             `Crafting ${craftableItem.code} because there aren't enough in bank`,
           );
@@ -179,6 +194,37 @@ export class TrainCraftingSkillObjective extends Objective {
     }
     return true;
   }
+}
+
+/**
+ * Returns true if any ingredient of the item is dropped by a boss monster,
+ * meaning the item can't be reliably crafted while training.
+ */
+async function needsBossDrop(item: ItemSchema): Promise<boolean> {
+  if (!item.craft?.items) return false;
+
+  for (const ingredient of item.craft.items) {
+    const ingredientInfo = await getItemInformation(ingredient.code);
+    if (ingredientInfo instanceof ApiError) {
+      logger.warn(`Item info not found for ${ingredient.code}`);
+      continue;
+    }
+    if (ingredientInfo.subtype !== 'mob') continue;
+
+    const mobsThatDrop = await getAllMonsterInformation({
+      drop: ingredientInfo.code,
+    });
+    if (mobsThatDrop instanceof ApiError) {
+      logger.warn(`Mob info not found for drop ${ingredientInfo.code}`);
+      continue;
+    }
+
+    if (mobsThatDrop.data.some((mob) => mob.type === 'boss')) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -268,9 +314,19 @@ async function calculateScore(
     } else if (ingredSchema.subtype === 'mob') {
       // ToDo: Change this so that it looks at all mobs that drop it
       // and find the best mob to fight
-      const monsterToKill = character.monsterData.find((mob) =>
+      const droppingMonsters = character.monsterData.filter((mob) =>
         mob.drops.some((drop) => drop.code === ingredSchema.code),
       );
+
+      if (droppingMonsters.some((mob) => mob.type === 'boss')) {
+        logger.debug(
+          `${ingredSchema.code} drops from a boss. Marking ${craftableItem.code} as unattainable`,
+        );
+        score += 1000000;
+        continue;
+      }
+
+      const monsterToKill = droppingMonsters[0];
       if (!monsterToKill) {
         score += 1000000;
         continue;
