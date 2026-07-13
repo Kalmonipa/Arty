@@ -153,10 +153,13 @@ export class TradeObjective extends Objective {
           }
         } else {
           logger.info(`Attempting to gather ${this.currency}`);
+          // GatherObjective counts currency already held (which will be spent
+          // on the trade) toward its target, so it must be asked for the full
+          // amount needed, not the outstanding deficit.
           await this.character.executeJobNow(
             new GatherObjective(this.character, {
               code: this.currency,
-              quantity: currencyNeeded,
+              quantity: this.quantity * buyPrice,
             }),
           );
         }
