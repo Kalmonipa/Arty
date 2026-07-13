@@ -113,13 +113,12 @@ export class IdleHealerObjective extends Objective {
         );
         if (cookedFish.craft.items.length === 1) {
           if (numInBank < minimumFoodInBank) {
-            const numToGather = Math.round(this.character.data.inventory_max_items * 0.95)
-            const fishToGather = cookedFish.craft.items[0].code
-            await this.character.gatherNow(
-              numToGather,
-              fishToGather,
+            const numToGather = Math.round(
+              this.character.data.inventory_max_items * 0.95,
             );
-            await this.character.depositNow(numToGather, fishToGather)
+            const fishToGather = cookedFish.craft.items[0].code;
+            await this.character.gatherNow(numToGather, fishToGather);
+            await this.character.depositNow(numToGather, fishToGather);
           }
         } else {
           logger.debug(
@@ -392,11 +391,11 @@ export class IdleHealerObjective extends Objective {
       let resourceToGather =
         resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;
 
-      return await this.character.gatherNow(
-        Math.round(this.character.data.inventory_max_items * 0.9),
-        resourceToGather,
-        false,
+      const numToGather = Math.round(
+        this.character.data.inventory_max_items * 0.9,
       );
+      await this.character.gatherNow(numToGather, resourceToGather, false);
+      return await this.character.depositNow(numToGather, resourceToGather);
     } else {
       job = new TrainCraftingSkillObjective(
         this.character,

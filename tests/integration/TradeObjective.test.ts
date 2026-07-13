@@ -51,7 +51,8 @@ describe('TradeObjective buy currency gathering', () => {
     await objective.run();
 
     expect(character.executeJobNow).toHaveBeenCalledTimes(1);
-    const gatherJob = character.executeJobNow.mock.calls[0][0] as GatherObjective;
+    const gatherJob = character.executeJobNow.mock
+      .calls[0][0] as GatherObjective;
     expect(gatherJob).toBeInstanceOf(GatherObjective);
     // Must ask for the full 3 wool. GatherObjective counts the 2 already held
     // (which will be spent) toward its target, so asking for the deficit of 1

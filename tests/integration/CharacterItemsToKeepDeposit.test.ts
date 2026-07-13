@@ -15,7 +15,12 @@ jest.mock('../../src/api_calls/Maps.js', () => ({
 
 jest.mock('../../src/api_calls/Bank.js', () => ({
   actionDepositGold: jest.fn(),
-  getBankItems: jest.fn(async () => ({ data: [], total: 0, page: 1, size: 50 })),
+  getBankItems: jest.fn(async () => ({
+    data: [],
+    total: 0,
+    page: 1,
+    size: 50,
+  })),
 }));
 
 import { actionDepositItems } from '../../src/api_calls/Actions.js';
@@ -76,7 +81,8 @@ describe('Character.evaluateDepositItemsInBank - itemsToKeep', () => {
     await character.evaluateDepositItemsInBank([], bankLocation, true);
 
     expect(mockActionDepositItems).toHaveBeenCalled();
-    const deposited = mockActionDepositItems.mock.calls[0][1] as SimpleItemSchema[];
+    const deposited = mockActionDepositItems.mock
+      .calls[0][1] as SimpleItemSchema[];
     const codes = deposited.map((i) => i.code);
     expect(codes).not.toContain('iron_ore');
     expect(codes).toContain('cooked_trout');
