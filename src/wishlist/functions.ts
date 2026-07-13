@@ -6,19 +6,13 @@ import { isGatheringSkill, logger } from '../utils.js';
 import { AcquisitionMethod, WishlistRequest, WishlistRow } from './types.js';
 
 /**
- * Works out how an item is acquired from its own data. Acquisition method is an
- * intrinsic property of the item, not a per-request choice, so it's derived once
- * here and stored on the request for cheap fulfiller-side filtering.
+ * @description Works out the acquisition method based on the requested item info
  */
 export function deriveAcquisitionMethod(item: ItemSchema): AcquisitionMethod {
-  // Crafted items (bars, gear, weapons, food, potions): the craft skill is how
-  // you make it. Takes priority — e.g. a copper bar has subtype "bar" but is
-  // made with the mining skill.
   if (item.craft?.skill) {
     return item.craft.skill;
   }
 
-  // Raw resources gathered with a skill carry that skill as their subtype.
   if (isGatheringSkill(item.subtype)) {
     return item.subtype;
   }
@@ -30,12 +24,12 @@ export function deriveAcquisitionMethod(item: ItemSchema): AcquisitionMethod {
     return 'tasks';
   }
 
-  // Everything else is bought from an NPC.
+  // Might be missing some edge cases here
   return 'buy';
 }
 
 /**
- * The skill/character level needed to acquire an item: the craft level for
+ * @description The skill/character level needed to acquire an item: the craft level for
  * crafted items, otherwise the item's own level.
  */
 export function deriveRequiredLevel(item: ItemSchema): number {
