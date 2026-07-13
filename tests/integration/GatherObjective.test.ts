@@ -116,7 +116,10 @@ jest.mock('../../src/api_calls/Resources', () => ({
 
 // Simple mock character
 class SimpleMockCharacter {
-  data = mockCharacterData;
+  data = {
+    ...mockCharacterData,
+    inventory: mockCharacterData.inventory.map((slot) => ({ ...slot })),
+  };
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
@@ -251,24 +254,29 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
     // Create fresh gather objective
     gatherObjective = new GatherObjective(mockCharacter as any, target);
 
-    // Mock actionGather to simulate successful gathering
+    // Mock actionGather to simulate successful gathering. Each gather adds the
+    // ore to the inventory so the progress counter (which reads real holdings)
+    // advances and the loop terminates.
     (
       actionGather as jest.MockedFunction<typeof actionGather>
-    ).mockResolvedValue({
-      data: {
-        character: mockCharacter.data,
-        cooldown: {
-          total_seconds: 1,
-          remaining_seconds: 0,
-          started_at: new Date().toISOString(),
-          expiration: new Date(Date.now() + 1000).toISOString(),
-          reason: 'gathering',
+    ).mockImplementation(async () => {
+      mockCharacter.addItemToInventory('iron_ore', 1);
+      return {
+        data: {
+          character: mockCharacter.data,
+          cooldown: {
+            total_seconds: 1,
+            remaining_seconds: 0,
+            started_at: new Date().toISOString(),
+            expiration: new Date(Date.now() + 1000).toISOString(),
+            reason: 'gathering',
+          },
+          details: {
+            xp: 10,
+            items: [{ code: 'iron_ore', quantity: 1 }],
+          },
         },
-        details: {
-          xp: 10,
-          items: [{ code: 'iron_ore', quantity: 1 }],
-        },
-      },
+      };
     });
   });
 
@@ -310,7 +318,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should withdraw partial amount from bank and gather the rest', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(3);
+      mockCharacter.addItemToInventory('iron_ore', 3);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
       mockCharacter.withdrawNow.mockResolvedValue(true);
 
@@ -353,7 +361,6 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should call evaluateGear with item code as targetResource', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Mock the API calls for gathering
@@ -394,7 +401,6 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should gather all and not withdraw from bank when bank has 0', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
       mockCharacter.withdrawNow.mockResolvedValue(true);
 
@@ -427,7 +433,6 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
   describe('New simplified logic tests', () => {
     it('should reset progress to 0 when starting to gather', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Mock the API calls
@@ -458,7 +463,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should calculate correct quantity to gather after bank withdrawal', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(2);
+      mockCharacter.addItemToInventory('iron_ore', 2);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(3);
       mockCharacter.withdrawNow.mockResolvedValue(true);
 
@@ -510,8 +515,6 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should not check bank when checkBank is false', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
-
       // Mock the API calls
       (
         getItemInformation as jest.MockedFunction<typeof getItemInformation>
@@ -540,7 +543,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should handle includeInventory parameter correctly', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(5);
+      mockCharacter.addItemToInventory('iron_ore', 5);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Mock the API calls

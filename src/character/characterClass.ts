@@ -2003,16 +2003,16 @@ export class Character {
 
   /**
    * @description if inventory if 90% full, we empty everything into the bank
-   * @param exceptions List of items that will not get deposited. Useful for keeping food when fighting, etc
+   * @param itemsToKeep List of items that will not get deposited. Useful for keeping food when fighting, etc. Unioned with the persistent this.itemsToKeep list
    * @param priorLocation If we move to the bank to deposit, we move back to these coordinates to continue activities
    * @param makeSpaceForOtherItems If we need to make space but not above the 90% threshold, this will empty our inv
-   * except for our exception items
+   * except for the items we're keeping
    * @returns {boolean}
    *  - true means bank was visited and items deposited
    *  - false means nothing happened
    */
   async evaluateDepositItemsInBank(
-    exceptions?: string[],
+    itemsToKeep?: string[],
     priorLocation?: MapSchema,
     makeSpaceForOtherItems?: boolean,
   ): Promise<boolean> {
@@ -2047,12 +2047,14 @@ export class Character {
 
       await this.move(contentLocation);
 
+      const keep = [...new Set([...(itemsToKeep ?? []), ...this.itemsToKeep])];
+
       const itemsToDeposit: SimpleItemSchema[] = [];
       for (const item of this.data.inventory) {
         if (item.quantity === 0) {
           // If the item slot is empty we can ignore
           continue;
-        } else if (exceptions && exceptions.includes(item.code)) {
+        } else if (keep.includes(item.code)) {
           logger.info(`Not depositing ${item.code} because we need it`);
         } else {
           logger.debug(`Adding ${item.quantity} ${item.code} to deposit list`);
@@ -2090,7 +2092,7 @@ export class Character {
 
       if (response instanceof ApiError) {
         this.handleErrors(response);
-        await this.evaluateDepositItemsInBank(exceptions, priorLocation);
+        await this.evaluateDepositItemsInBank(itemsToKeep, priorLocation);
       } else {
         if (response.data.character) {
           this.data = response.data.character;
