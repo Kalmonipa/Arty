@@ -101,7 +101,6 @@ export class TidyBankObjective extends Objective {
 
       if (numInBank === 0) {
         logger.info(`Found no ${item} in the bank. Moving on`);
-        continue;
       } else {
         logger.info(`Found ${numInBank} ${item} in the bank.`);
         const itemToCraftSchema = await this.identifyCraftedItemFrom(
@@ -109,7 +108,7 @@ export class TidyBankObjective extends Objective {
           'cooking',
         );
         if (!itemToCraftSchema) {
-          break;
+          continue;
         }
 
         logger.info(`Cooking ${itemToCraftSchema.code} from ${item}`);
@@ -121,7 +120,7 @@ export class TidyBankObjective extends Objective {
         await this.character.craftNow(numToCraft, itemToCraftSchema.code);
       }
     }
-    logger.info(`Found no food in the bank to clean up`);
+    logger.info(`Finished cooking uncooked food in the bank`);
     return true;
   }
 
