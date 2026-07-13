@@ -113,10 +113,13 @@ export class IdleHealerObjective extends Objective {
         );
         if (cookedFish.craft.items.length === 1) {
           if (numInBank < minimumFoodInBank) {
+            const numToGather = Math.round(this.character.data.inventory_max_items * 0.95)
+            const fishToGather = cookedFish.craft.items[0].code
             await this.character.gatherNow(
-              Math.round(this.character.data.inventory_max_items * 0.95),
-              cookedFish.craft.items[0].code,
+              numToGather,
+              fishToGather,
             );
+            await this.character.depositNow(numToGather, fishToGather)
           }
         } else {
           logger.debug(
