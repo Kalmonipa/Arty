@@ -122,3 +122,56 @@ export async function getOpenWishlistRequests(
     return [];
   }
 }
+
+/**
+ * Marks a wishlist request as executing so other characters skip it while it's
+ * being worked on.
+ * @param id The wishlist row id
+ * @returns true if a row was updated, false otherwise
+ */
+export async function markAsExecuting(id: number): Promise<boolean> {
+  const query = `UPDATE wishlist SET executing = true WHERE id = $1;`;
+
+  try {
+    const result = await db.query(query, [id]);
+    return (result.rowCount ?? 0) > 0;
+  } catch (err) {
+    logger.error(`Failed to mark wishlist request ${id} as executing: ${err}`);
+    return false;
+  }
+}
+
+/**
+ * Marks a wishlist request as fulfilled and clears its executing flag so its
+ * row is left in a clean, final state.
+ * @param id The wishlist row id
+ * @returns true if a row was updated, false otherwise
+ */
+export async function markAsFulfilled(id: number): Promise<boolean> {
+  const query = `UPDATE wishlist SET fulfilled = true, executing = false WHERE id = $1;`;
+
+  try {
+    const result = await db.query(query, [id]);
+    return (result.rowCount ?? 0) > 0;
+  } catch (err) {
+    logger.error(`Failed to mark wishlist request ${id} as fulfilled: ${err}`);
+    return false;
+  }
+}
+
+/**
+ * Deletes a wishlist request outright.
+ * @param id The wishlist row id
+ * @returns true if a row was deleted, false otherwise
+ */
+export async function deleteWishlistRequest(id: number): Promise<boolean> {
+  const query = `DELETE FROM wishlist WHERE id = $1;`;
+
+  try {
+    const result = await db.query(query, [id]);
+    return (result.rowCount ?? 0) > 0;
+  } catch (err) {
+    logger.error(`Failed to delete wishlist request ${id}: ${err}`);
+    return false;
+  }
+}
