@@ -72,6 +72,7 @@ export class IdleLabourerObjective extends Objective {
     await this.claimPendingItems();
     if (this.checkIdleJobIsLast()) return true;
 
+    // Improve this to equip wisdom/prospecting gear/artifacts/runes if any
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
@@ -84,13 +85,16 @@ export class IdleLabourerObjective extends Objective {
     await this.checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.trainSkill('woodcutting');
+    await this.checkWishlistToFulfill('mining');
     if (this.checkIdleJobIsLast()) return true;
 
     await this.trainSkill('mining');
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.trainSkill();
+    await this.checkWishlistToFulfill('woodcutting');
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.trainSkill('woodcutting');
     if (this.checkIdleJobIsLast()) return true;
   }
 
@@ -178,12 +182,8 @@ export class IdleLabourerObjective extends Objective {
       }
 
       if (
-        request.min_level &&
-        request.min_level <
-          this.character.getCharacterLevel(
-            this.character.data,
-            acquisitionMethod,
-          )
+        itemInformation.level <
+        this.character.getCharacterLevel(this.character.data, acquisitionMethod)
       ) {
         await markAsExecuting(request.id);
         await this.character.gatherNow(request.quantity, request.item_code);
