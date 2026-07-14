@@ -856,25 +856,21 @@ describe('CraftObjective Integration Tests', () => {
   });
 
   describe('Role gating', () => {
-    it('posts to the wishlist when the character role does not match the craft skill', async () => {
-      // Arrange — iron_bar needs mining (a labourer's job), but this is a crafter
-      mockCharacter.role = 'crafter';
-      const barTarget = { code: 'iron_bar', quantity: 3 };
-      const barObjective = new CraftObjective(mockCharacter as any, barTarget);
-      (
-        getItemInformation as jest.MockedFunction<typeof getItemInformation>
-      ).mockResolvedValue(mockIngredientItemData); // craft.skill === 'mining'
+    it('wishlists and returns false when the character role does not match the craft skill', async () => {
+      // Arrange — iron_sword needs weaponcrafting, but this character is a healer.
+      // Returning false stops the caller proceeding as if the item now exists.
+      mockCharacter.role = 'healer';
 
       // Act
-      const result = await barObjective.run();
+      const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result).toBe(false);
       expect(addToWishlist).toHaveBeenCalledWith({
-        itemCode: 'iron_bar',
-        quantity: 3,
+        itemCode: 'iron_sword',
+        quantity: 5,
         characterName: 'TestCharacter',
-        acquisitionMethod: 'mining',
+        acquisitionMethod: 'weaponcrafting',
       });
       expect(actionCraft).not.toHaveBeenCalled();
     });
@@ -1084,6 +1080,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should handle missing character data in response', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const responseWithoutCharacter = {
         data: {
           // Missing character data

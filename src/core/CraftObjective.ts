@@ -11,12 +11,13 @@ import { addToWishlist } from '../wishlist/functions.js';
 
 /**
  * Maps a craft skill to the role responsible for it. Skills without an entry
- * (e.g. cooking) aren't gated by role.
+ * aren't gated by role, so any character crafts them with the normal logic.
+ *
+ * Only the crafter's skills are gated for now: gating alchemy/gathering skills
+ * caused non-specialist characters (e.g. a fighter needing health potions
+ * mid-fight) to wishlist an item they needed immediately and then fail.
  */
 const SKILL_ROLE: Partial<Record<Skill, Role>> = {
-  mining: 'labourer',
-  woodcutting: 'labourer',
-  alchemy: 'healer',
   weaponcrafting: 'crafter',
   gearcrafting: 'crafter',
   jewelrycrafting: 'crafter',
@@ -120,8 +121,11 @@ export class CraftObjective extends Objective {
               characterName: this.character.data.name,
               acquisitionMethod: skillNeeded,
             });
+            // The item wasn't crafted — it was delegated to the wishlist — so
+            // report failure. Callers (e.g. equipUtility) must not proceed as if
+            // the item now exists, otherwise they fail with a 478.
             // ToDo: Should add this job to an 'onHold' job list instead of ending it
-            return true;
+            return false;
           }
         }
 
