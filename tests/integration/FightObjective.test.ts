@@ -922,7 +922,10 @@ describe('FightObjective Integration Tests', () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
       const lossTarget: ObjectiveTargets = { code: 'red_slime', quantity: 2 };
-      const lossObjective = new FightObjective(mockCharacter as any, lossTarget);
+      const lossObjective = new FightObjective(
+        mockCharacter as any,
+        lossTarget,
+      );
       // lose twice, then win the two required fights
       (actionFight as jest.MockedFunction<typeof actionFight>)
         .mockResolvedValueOnce(mockLossResponse as any)

@@ -23,7 +23,10 @@ import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
-import { completeTasksFarmerAchievement } from './SharedFunctions.js';
+import {
+  checkWithinLevelRange,
+  completeTasksFarmerAchievement,
+} from './SharedFunctions.js';
 
 export class IdleObjective extends Objective {
   role: Role;
@@ -65,7 +68,7 @@ export class IdleObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.checkWithinLevelRange();
+    await checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
     // Alchemist never does tasks — sole responsibility is crafting potions.
@@ -619,26 +622,6 @@ export class IdleObjective extends Objective {
     }
 
     logger.info(`Already have the minimum amount of each bar`);
-    return true;
-  }
-
-  /**
-   * The aim of this function is to keep all characters within 10 level of the highest level char
-   * This lets us recycle older gear so that it doesn't clog up the bank
-   */
-  private async checkWithinLevelRange(): Promise<boolean> {
-    const allCharacterDetails = await GetCharacterData();
-    this.character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
-
-    if (this.character.data.level < this.character.highestCharLevel - 10) {
-      logger.info(
-        `Character level (${this.character.data.level}) is more than 10 levels behind the leader (${this.character.highestCharLevel}). Training ${this.character.highestCharLevel - this.character.data.level} levels`,
-      );
-      return await this.character.trainCombatLevelNow(
-        this.character.highestCharLevel - 10,
-      );
-    }
-
     return true;
   }
 }

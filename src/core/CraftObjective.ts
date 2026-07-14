@@ -5,7 +5,22 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import { ItemSchema, SimpleItemSchema } from '../types/types.js';
+import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
+import { Role } from '../types/CharacterData.js';
+import { addToWishlist } from '../wishlist/functions.js';
+
+/**
+ * Maps a craft skill to the role responsible for it. Skills without an entry
+ * (e.g. cooking) aren't gated by role.
+ */
+const SKILL_ROLE: Partial<Record<Skill, Role>> = {
+  mining: 'labourer',
+  woodcutting: 'labourer',
+  alchemy: 'healer',
+  weaponcrafting: 'crafter',
+  gearcrafting: 'crafter',
+  jewelrycrafting: 'crafter',
+};
 
 /**
  * @description Crafts the requested amount of the item
@@ -57,9 +72,6 @@ export class CraftObjective extends Objective {
 
   /**
    * @description Craft the item. Character will move to the correct workshop map
-   * @todo If the item to craft/retrieve is wooductting or mining then labourers should do it
-   * If item is alchemy, healer should do it
-   * If item is weapon/gear/jewelry, crafter should do it
    */
   async run(): Promise<boolean> {
     if (this.target.quantity === 0) {
@@ -93,45 +105,29 @@ export class CraftObjective extends Objective {
         }
 
         // Check if the character has the skill level required to craft
-        // if (targetItem.craft && targetItem.craft.skill) {
-        //   let charSkillLevel: number = this.character.getCharacterLevel(
-        //     this.character.data,
-        //     targetItem.craft.skill,
-        //   );
+        // ToDo: Make this based on roles not skill level
+        if (targetItem.craft?.skill) {
+          const skillNeeded = targetItem.craft.skill;
+          let charSkillLevel: number = this.character.getCharacterLevel(
+            this.character.data,
+            skillNeeded,
+          );
 
-        // // ToDo: Add the item to a wishlist instead of requesting it directly
-        // if (charSkillLevel < targetItem.craft.level) {
-        //   logger.warn(
-        //     `Character ${this.character.data.name} has ${targetItem.craft.skill} level ${charSkillLevel} but needs level ${targetItem.craft.level} to craft ${targetItem.code}`,
-        //   );
-        //   let crafter = this.character.allCharacterDetails.find(
-        //     (char) =>
-        //       this.character.getCharacterLevel(char, targetItem.craft.skill) >
-        //       targetItem.craft.level,
-        //   );
-        //   if (!crafter) {
-        //     logger.warn(
-        //       `Found no character capable of crafting ${targetItem.code}`,
-        //     );
-        //     return false;
-        //   }
-        //   logger.info(
-        //     `Requesting ${this.target.quantity} ${targetItem.code} from ${crafter.name} and continuing`,
-        //   );
-        //   // let response = await requestCraftItem(crafter.name, {
-        //   //   code: this.target.code,
-        //   //   quantity: this.target.quantity,
-        //   // });
-        //   // if (response instanceof ApiError) {
-        //   //   logger.error(
-        //   //     `${response.error} | Code: [${response.error.code}]`,
-        //   //   );
-        //   //   return false;
-        //   // }
-
-        //   return true;
-        // }
-        // }
+          const requiredRole = SKILL_ROLE[skillNeeded];
+          if (requiredRole && this.character.role !== requiredRole) {
+            logger.warn(
+              `${this.character.data.name} (${charSkillLevel}) needs ${targetItem.craft.level} ${skillNeeded} to craft ${targetItem.code}. Posting to wishlist`,
+            );
+            await addToWishlist({
+              itemCode: targetItem.code,
+              quantity: this.target.quantity,
+              characterName: this.character.data.name,
+              acquisitionMethod: skillNeeded,
+            });
+            // ToDo: Should add this job to an 'onHold' job list instead of ending it
+            return true;
+          }
+        }
 
         // One craft consumes a single set of ingredients and yields
         // craft.quantity output items, so the number of crafts needed is the

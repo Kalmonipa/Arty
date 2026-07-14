@@ -15,13 +15,20 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
+jest.mock('../../src/wishlist/functions', () => ({
+  addToWishlist: jest.fn(),
+}));
+
 // Import the mocked functions
 import { actionCraft } from '../../src/api_calls/Actions.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
+import { addToWishlist } from '../../src/wishlist/functions.js';
+import { Role } from '../../src/types/CharacterData.js';
 
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
+  role?: Role;
 
   itemsToKeep = [];
 
@@ -406,6 +413,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should successfully craft items when all ingredients are available', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       mockCharacter.addItemToInventory('iron_bar', 30);
       mockCharacter.addItemToInventory('feather', 10);
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
@@ -444,6 +452,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should craft half as many times for recipes that yield 2 per craft', async () => {
       // Arrange — small_health_potion yields 2 per craft, so 8 potions = 4 crafts
+      mockCharacter.role = 'healer';
       const potionTarget = { code: 'small_health_potion', quantity: 8 };
       const potionObjective = new CraftObjective(
         mockCharacter as any,
@@ -475,6 +484,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should round crafts up when target is not a multiple of the yield', async () => {
       // Arrange — 5 potions at 2 per craft needs 3 crafts (yields 6)
+      mockCharacter.role = 'healer';
       const potionTarget = { code: 'small_health_potion', quantity: 5 };
       const potionObjective = new CraftObjective(
         mockCharacter as any,
@@ -514,6 +524,7 @@ describe('CraftObjective Integration Tests', () => {
   describe('Ingredient gathering', () => {
     it('should withdraw ingredients from bank when available', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
         (code: string) => {
           switch (code) {
@@ -554,6 +565,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should gather ingredients when not in bank', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       // Track inventory state - after gathering, we should have the required amount
       let ironBarInInv = 10;
       let featherInInv = 0;
@@ -610,6 +622,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should craft sub-ingredients when they are craftable', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const craftableIngredientData = {
         ...mockIngredientItemData,
         craft: {
@@ -694,6 +707,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should handle mob drop ingredients', async () => {
       // Arrange - Create a recipe that uses cowhide as an ingredient
+      mockCharacter.role = 'crafter';
       const mockCraftableItemWithMobDrop: ItemSchema = {
         ...mockCraftableItemData,
         craft: {
@@ -777,6 +791,7 @@ describe('CraftObjective Integration Tests', () => {
   describe('Batch processing', () => {
     it('should handle single batch when inventory space is sufficient', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       // Set a high inventory limit to avoid batching
       mockCharacter.data.inventory_max_items = 100;
 
@@ -806,6 +821,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should handle batch calculation for reasonable quantities', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const reasonableTarget = { code: 'iron_sword', quantity: 5 }; // Smaller quantity to avoid recursion
       const reasonableCraftObjective = new CraftObjective(
         mockCharacter as any,
@@ -839,9 +855,92 @@ describe('CraftObjective Integration Tests', () => {
     });
   });
 
+  describe('Role gating', () => {
+    it('posts to the wishlist when the character role does not match the craft skill', async () => {
+      // Arrange — iron_bar needs mining (a labourer's job), but this is a crafter
+      mockCharacter.role = 'crafter';
+      const barTarget = { code: 'iron_bar', quantity: 3 };
+      const barObjective = new CraftObjective(mockCharacter as any, barTarget);
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIngredientItemData); // craft.skill === 'mining'
+
+      // Act
+      const result = await barObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(addToWishlist).toHaveBeenCalledWith({
+        itemCode: 'iron_bar',
+        quantity: 3,
+        characterName: 'TestCharacter',
+        acquisitionMethod: 'mining',
+      });
+      expect(actionCraft).not.toHaveBeenCalled();
+    });
+
+    it('crafts without posting to the wishlist when the role matches the craft skill', async () => {
+      // Arrange — iron_sword needs weaponcrafting, and this is a crafter
+      mockCharacter.role = 'crafter';
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+        code === 'iron_bar' ? 30 : code === 'feather' ? 10 : 0,
+      );
+
+      // Act
+      const result = await craftObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(actionCraft).toHaveBeenCalled();
+    });
+
+    it('does not gate on role for craft skills with no assigned role', async () => {
+      // Arrange — cooking has no dedicated role, so any role may craft it
+      mockCharacter.role = 'crafter';
+      const cookedTarget = { code: 'cooked_gudgeon', quantity: 1 };
+      const cookedObjective = new CraftObjective(
+        mockCharacter as any,
+        cookedTarget,
+      );
+      const cookingItem: ItemSchema = {
+        name: 'Cooked Gudgeon',
+        code: 'cooked_gudgeon',
+        level: 1,
+        type: 'consumable',
+        subtype: 'food',
+        description: 'A cooked fish.',
+        conditions: [],
+        effects: [],
+        craft: {
+          skill: 'cooking',
+          level: 1,
+          items: [{ code: 'gudgeon', quantity: 1 }],
+          quantity: 1,
+        },
+        tradeable: true,
+      };
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(cookingItem);
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+        code === 'gudgeon' ? 10 : 0,
+      );
+
+      // Act
+      const result = await cookedObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(actionCraft).toHaveBeenCalled();
+    });
+  });
+
   describe('Error handling', () => {
     it('does not attempt to craft when moving to the workshop fails', async () => {
       // Arrange — ingredients present, but the workshop is unreachable (move returns false).
+      mockCharacter.role = 'crafter';
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
         (code: string) => {
           switch (code) {
@@ -866,6 +965,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should handle API errors and retry', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const apiError = new ApiError({ code: 500, message: 'Server error' });
       (actionCraft as jest.MockedFunction<typeof actionCraft>)
         .mockResolvedValueOnce(apiError)
@@ -901,6 +1001,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should return false when max retries exceeded', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const apiError = new ApiError({ code: 500, message: 'Server error' });
       (
         actionCraft as jest.MockedFunction<typeof actionCraft>
@@ -953,6 +1054,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should handle no workshop maps found', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       mockCharacter.findMaps.mockReturnValue([]);
       // Mock having enough ingredients for crafting
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
@@ -1018,6 +1120,7 @@ describe('CraftObjective Integration Tests', () => {
   describe('Cancellation handling', () => {
     it('should return false when objective is cancelled during execution', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       mockCharacter.isCancelled.mockReturnValue(true);
       // Mock having enough ingredients for crafting
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
@@ -1058,6 +1161,7 @@ describe('CraftObjective Integration Tests', () => {
   describe('Movement and location', () => {
     it('should move to workshop location before crafting', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const customWorkshopMap = {
         data: [
           {

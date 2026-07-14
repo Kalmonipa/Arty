@@ -20,7 +20,10 @@ import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
-import { completeTasksFarmerAchievement } from './SharedFunctions.js';
+import {
+  checkWithinLevelRange,
+  completeTasksFarmerAchievement,
+} from './SharedFunctions.js';
 
 export class IdleCrafterObjective extends Objective {
   role: Role;
@@ -59,54 +62,83 @@ export class IdleCrafterObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.checkWithinLevelRange();
+    await checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
-    // Get the relevant skill level based on which role the char is
-    let relevantSkillLevel: number;
-    let relevantSkillToTrain: Skill;
-    switch (this.role) {
-      case 'weaponcrafter':
-        relevantSkillLevel = this.character.getCharacterLevel(
-          this.character.data,
-          'weaponcrafting',
-        );
-        relevantSkillToTrain = 'weaponcrafting';
-        break;
-      case 'gearcrafter':
-        relevantSkillLevel = this.character.getCharacterLevel(
-          this.character.data,
-          'gearcrafting',
-        );
-        relevantSkillToTrain = 'gearcrafting';
-        break;
-      case 'jewelrycrafter':
-        relevantSkillLevel = this.character.getCharacterLevel(
-          this.character.data,
-          'jewelrycrafting',
-        );
-        relevantSkillToTrain = 'jewelrycrafting';
-        break;
-    }
-    const combatLevel = this.character.getCharacterLevel(this.character.data);
-
-    // Crafting skills should aim to be at the combat level
-
-    if (relevantSkillLevel < combatLevel) {
-      await this.trainSkill(relevantSkillToTrain);
-      if (this.checkIdleJobIsLast()) return true;
-    }
-
-    // We only want to do monster tasks if our crafter skills are at or above our combat level
-    if (relevantSkillLevel >= combatLevel) {
-      // Only do tasks if the bank is low on task coins.
-      const taskCoinsInBank =
-        await this.character.checkQuantityOfItemInBank('tasks_coin');
-
-      if (taskCoinsInBank < 25) {
-        await this.doMonsterTask(1);
+    // If crafter, trian weapon gear and jewelrycrafting
+    if (this.role === 'crafter') {
+      const combatLevel = this.character.getCharacterLevel(this.character.data);
+      const weaponLevel = this.character.getCharacterLevel(
+        this.character.data,
+        'weaponcrafting',
+      );
+      const gearLevel = this.character.getCharacterLevel(
+        this.character.data,
+        'gearcrafting',
+      );
+      const jewelryLevel = this.character.getCharacterLevel(
+        this.character.data,
+        'jewelrycrafting',
+      );
+      if (weaponLevel < combatLevel) {
+        await this.trainSkill('weaponcrafting');
+        if (this.checkIdleJobIsLast()) return true;
       }
-      if (this.checkIdleJobIsLast()) return true;
+      if (gearLevel < combatLevel) {
+        await this.trainSkill('weaponcrafting');
+        if (this.checkIdleJobIsLast()) return true;
+      }
+      if (jewelryLevel < combatLevel) {
+        await this.trainSkill('weaponcrafting');
+        if (this.checkIdleJobIsLast()) return true;
+      }
+    } else {
+      // Get the relevant skill level based on which role the char is
+      let relevantSkillLevel: number;
+      let relevantSkillToTrain: Skill;
+      switch (this.role) {
+        case 'weaponcrafter':
+          relevantSkillLevel = this.character.getCharacterLevel(
+            this.character.data,
+            'weaponcrafting',
+          );
+          relevantSkillToTrain = 'weaponcrafting';
+          break;
+        case 'gearcrafter':
+          relevantSkillLevel = this.character.getCharacterLevel(
+            this.character.data,
+            'gearcrafting',
+          );
+          relevantSkillToTrain = 'gearcrafting';
+          break;
+        case 'jewelrycrafter':
+          relevantSkillLevel = this.character.getCharacterLevel(
+            this.character.data,
+            'jewelrycrafting',
+          );
+          relevantSkillToTrain = 'jewelrycrafting';
+          break;
+      }
+      const combatLevel = this.character.getCharacterLevel(this.character.data);
+
+      // Crafting skills should aim to be at the combat level
+
+      if (relevantSkillLevel < combatLevel) {
+        await this.trainSkill(relevantSkillToTrain);
+        if (this.checkIdleJobIsLast()) return true;
+      }
+
+      // We only want to do monster tasks if our crafter skills are at or above our combat level
+      if (relevantSkillLevel >= combatLevel) {
+        // Only do tasks if the bank is low on task coins.
+        const taskCoinsInBank =
+          await this.character.checkQuantityOfItemInBank('tasks_coin');
+
+        if (taskCoinsInBank < 10) {
+          await this.doMonsterTask(1);
+        }
+        if (this.checkIdleJobIsLast()) return true;
+      }
     }
 
     // As a last resort, level up combat level
@@ -285,7 +317,7 @@ export class IdleCrafterObjective extends Objective {
 
     if (skillLevel === MAX_SKILL_LEVEL) {
       logger.info(
-        `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+        `Max ${skill || 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
       return true;
     } else if (
@@ -333,25 +365,5 @@ export class IdleCrafterObjective extends Objective {
       true,
       this.objectiveId,
     );
-  }
-
-  /**
-   * The aim of this function is to keep all characters within 10 level of the highest level char
-   * This lets us recycle older gear so that it doesn't clog up the bank
-   */
-  private async checkWithinLevelRange(): Promise<boolean> {
-    const allCharacterDetails = await GetCharacterData();
-    this.character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
-
-    if (this.character.data.level < this.character.highestCharLevel - 10) {
-      logger.info(
-        `Character level (${this.character.data.level}) is more than 10 levels behind the leader (${this.character.highestCharLevel}). Training ${this.character.highestCharLevel - this.character.data.level} levels`,
-      );
-      return await this.character.trainCombatLevelNow(
-        this.character.highestCharLevel - 10,
-      );
-    }
-
-    return true;
   }
 }

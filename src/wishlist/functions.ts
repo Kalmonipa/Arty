@@ -130,9 +130,9 @@ export async function getOpenWishlistRequests(
  * @param filter Optional filter; `character` limits results to one requester
  * @returns matching rows, or an empty array on error
  */
-export async function listOpenWishlistRequests(
-  filter?: { character?: string },
-): Promise<WishlistRow[]> {
+export async function listOpenWishlistRequests(filter?: {
+  character?: string;
+}): Promise<WishlistRow[]> {
   const conditions = ['executing = false', 'fulfilled = false'];
   const params: string[] = [];
   if (filter?.character) {

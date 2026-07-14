@@ -7,7 +7,7 @@ export type WishlistRequest = {
   expirationDate?: string;
   cost?: number;
   currency?: string;
-  acquisitionMethod?: string;
+  acquisitionMethod?: AcquisitionMethod;
 };
 
 export interface WishlistRow {
