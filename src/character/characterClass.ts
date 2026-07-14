@@ -789,6 +789,12 @@ export class Character {
         case 'IdleCrafterObjective':
           job = new IdleCrafterObjective(this, this.role);
           break;
+        case 'IdleFishermanObjective':
+          job = new IdleFishermanObjective(this)
+          break;
+        case 'IdleLabourerObjective':
+          job = new IdleLabourerObjective(this)
+          break;
         default:
           logger.warn(`Unknown job type: ${type}`);
           return null;
