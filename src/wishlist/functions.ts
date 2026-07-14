@@ -130,6 +130,7 @@ export async function getOpenWishlistRequests(
  * @returns true if a row was updated, false otherwise
  */
 export async function markAsExecuting(id: number): Promise<boolean> {
+  logger.debug(`Marking request ${id} as executing`);
   const query = `UPDATE wishlist SET executing = true WHERE id = $1;`;
 
   try {
@@ -148,6 +149,7 @@ export async function markAsExecuting(id: number): Promise<boolean> {
  * @returns true if a row was updated, false otherwise
  */
 export async function markAsFulfilled(id: number): Promise<boolean> {
+  logger.debug(`Marking request ${id} as fulfilled`);
   const query = `UPDATE wishlist SET fulfilled = true, executing = false WHERE id = $1;`;
 
   try {
@@ -165,6 +167,8 @@ export async function markAsFulfilled(id: number): Promise<boolean> {
  * @returns true if a row was deleted, false otherwise
  */
 export async function deleteWishlistRequest(id: number): Promise<boolean> {
+  logger.debug(`Deleting request ${id} from wishlist`);
+
   const query = `DELETE FROM wishlist WHERE id = $1;`;
 
   try {

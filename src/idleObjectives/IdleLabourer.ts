@@ -1,6 +1,7 @@
 import {
   actionClaimPendingItems,
   getAllItemInformation,
+  getItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
@@ -24,6 +25,12 @@ import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { completeTasksFarmerAchievement } from './SharedFunctions.js';
+import { AcquisitionMethod } from '../wishlist/types.js';
+import {
+  getOpenWishlistRequests,
+  markAsExecuting,
+  markAsFulfilled,
+} from '../wishlist/functions.js';
 
 /**
  * Labourer role idle jobs
@@ -69,8 +76,11 @@ export class IdleLabourerObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
-    // ToDo: Check wishlist for any mining or woodcutting requests
-    // await this.checkWishlist();
+    await this.checkWishlistToFulfill('mining');
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.checkWishlistToFulfill('woodcutting');
+    if (this.checkIdleJobIsLast()) return true;
 
     await this.checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
@@ -132,6 +142,60 @@ export class IdleLabourerObjective extends Objective {
         await this.character.handleErrors(claimResponse);
       }
     }
+    return true;
+  }
+
+  /**
+   * @description Checks the wishlist for any requests of a certain type
+   * Labourers primarily look at mining + woodcutting
+   * Crafter looks at weapon/gear/jewelrycrafting
+   * Alchemist looks at alchemy
+   * Fisherman looks at fishing + cooking
+   * @param acquisitionMethod The way to retrieve the requested item
+   * @returns true if successful, false if encounter some failure along the way
+   */
+  private async checkWishlistToFulfill(
+    acquisitionMethod: AcquisitionMethod,
+  ): Promise<boolean> {
+    const wishlistRequests = await getOpenWishlistRequests(acquisitionMethod);
+
+    if (wishlistRequests.length === 0) {
+      logger.info(`No ${acquisitionMethod} wishlist requests to fulfill`);
+      return true;
+    }
+
+    for (const request of wishlistRequests) {
+      const itemInformation = await getItemInformation(request.item_code);
+      if (itemInformation instanceof ApiError) {
+        logger.warn(`Item information not found for ${request.item_code}`);
+        return false;
+      }
+
+      if (
+        acquisitionMethod !== 'mining' &&
+        acquisitionMethod !== 'woodcutting'
+      ) {
+        continue;
+      }
+
+      if (
+        request.min_level &&
+        request.min_level <
+          this.character.getCharacterLevel(
+            this.character.data,
+            acquisitionMethod,
+          )
+      ) {
+        await markAsExecuting(request.id);
+        await this.character.gatherNow(request.quantity, request.item_code);
+        if (
+          await this.character.depositNow(request.quantity, request.item_code)
+        ) {
+          await markAsFulfilled(request.id);
+        }
+      }
+    }
+
     return true;
   }
 

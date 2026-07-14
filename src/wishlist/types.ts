@@ -20,7 +20,7 @@ export interface WishlistRow {
   expiration_date: Date | null;
   cost: number | null;
   currency: string | null;
-  acquisition_method: string | null;
+  acquisition_method: AcquisitionMethod | null;
   executing: boolean;
   fulfilled: boolean;
   created_at: Date;
