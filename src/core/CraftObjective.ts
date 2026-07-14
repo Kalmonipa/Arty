@@ -116,7 +116,7 @@ export class CraftObjective extends Objective {
           const requiredRole = SKILL_ROLE[skillNeeded];
           if (requiredRole && this.character.role !== requiredRole) {
             logger.warn(
-              `${this.character.data.name} (${charSkillLevel}) needs ${targetItem.craft.level} ${skillNeeded} to craft ${targetItem.code}. Posting to wishlist`,
+              `${this.character.data.name} (${this.character.role}) needs a ${skillNeeded} to craft ${targetItem.code}. Posting to wishlist`,
             );
             await addToWishlist({
               itemCode: targetItem.code,

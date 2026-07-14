@@ -882,8 +882,9 @@ describe('CraftObjective Integration Tests', () => {
     it('crafts without posting to the wishlist when the role matches the craft skill', async () => {
       // Arrange — iron_sword needs weaponcrafting, and this is a crafter
       mockCharacter.role = 'crafter';
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
-        code === 'iron_bar' ? 30 : code === 'feather' ? 10 : 0,
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) =>
+          code === 'iron_bar' ? 30 : code === 'feather' ? 10 : 0,
       );
 
       // Act
@@ -923,8 +924,8 @@ describe('CraftObjective Integration Tests', () => {
       (
         getItemInformation as jest.MockedFunction<typeof getItemInformation>
       ).mockResolvedValue(cookingItem);
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
-        code === 'gudgeon' ? 10 : 0,
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'gudgeon' ? 10 : 0),
       );
 
       // Act

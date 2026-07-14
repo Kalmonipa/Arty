@@ -9,6 +9,7 @@ import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
+import { getAllMaps } from '../api_calls/Maps.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { Objective } from './Objective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
@@ -188,7 +189,9 @@ export class TradeObjective extends Objective {
       }
     }
 
-    await this.findNpc(targetNpc);
+    if (!(await this.findNpc(targetNpc))) {
+      return false;
+    }
 
     const buyResponse = await actionBuyItem(this.character.data, items);
     if (buyResponse instanceof ApiError) {
@@ -203,7 +206,9 @@ export class TradeObjective extends Objective {
    * @description Sells to the NPC. The char must already be on the same map as the NPC
    */
   async sellToNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
-    await this.findNpc(npcCode);
+    if (!(await this.findNpc(npcCode))) {
+      return false;
+    }
 
     logger.info(`Selling ${items.quantity} ${items.code} to ${npcCode}`);
     const sellResponse = await actionSellItem(this.character.data, items);
@@ -218,11 +223,12 @@ export class TradeObjective extends Objective {
   /**
    * @description Find and move to NPC
    */
-  async findNpc(npcCode: string) {
+  async findNpc(npcCode: string): Promise<boolean> {
     logger.info(`Finding location of ${npcCode}`);
-    // ToDo: From here down to this.evaluateClosestMap() is repeated a lot
-    // Make it into it's own function and just call it
-    const maps = this.character.findMaps({
+    // Event traders like the nomadic_merchant only appear on a map while their
+    // event is active, so they won't be in the cached map snapshot. Query the
+    // live maps API, which overlays active events, rather than findMaps.
+    const maps = await getAllMaps({
       content_code: npcCode,
       content_type: 'npc',
     });
@@ -234,6 +240,7 @@ export class TradeObjective extends Objective {
     const traderLocation = this.character.evaluateClosestMap(maps);
 
     await this.character.move(traderLocation);
+    return true;
   }
 
   /**
