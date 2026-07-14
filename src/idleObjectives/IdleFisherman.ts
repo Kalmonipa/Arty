@@ -65,26 +65,24 @@ export class IdleFishermanObjective extends Objective {
     await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
+    await this.topUpBank();
+    if (this.checkIdleJobIsLast()) return true;
+
     // Fisherman has an additional check: food must be sufficiently stocked first.
     const taskCoinsInBank =
       await this.character.checkQuantityOfItemInBank('tasks_coin');
 
-    if (taskCoinsInBank < 10) {
-      let shouldDoTasks = true;
-
-      shouldDoTasks = await this.isFishSufficientlyStocked();
-
-      if (shouldDoTasks) {
-        await this.doItemTask(1);
-        if (this.checkIdleJobIsLast()) return true;
-      }
+    if (taskCoinsInBank < 25) {
+      await this.doItemTask(1);
+      if (this.checkIdleJobIsLast()) return true;
     }
+
+    await this.topUpBank();
+    if (this.checkIdleJobIsLast()) return true;
 
     // If the skill gets 5 levels ahead of their combat level then they won't train the skill any further
     // There's no need for skills to get too far ahead of combat level
     await this.trainSkill('fishing');
-    if (this.checkIdleJobIsLast()) return true;
-    await this.character.trainCombatLevelNow(this.character.data.level + 1);
     if (this.checkIdleJobIsLast()) return true;
   }
 

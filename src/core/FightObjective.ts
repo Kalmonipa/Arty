@@ -101,7 +101,7 @@ export class FightObjective extends Objective {
         ) {
           return true;
         } else {
-          await this.topUpSecondaryPots(mobInfo.data)
+          await this.topUpSecondaryPots(mobInfo.data);
         }
       }
 
