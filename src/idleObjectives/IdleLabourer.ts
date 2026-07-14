@@ -42,14 +42,13 @@ import {
 export class IdleLabourerObjective extends Objective {
   role: Role;
 
-  constructor(character: Character, role: Role) {
-    super(character, `idle_${role}_objective`, 'not_started');
+  constructor(character: Character) {
+    super(character, `idle_labourer_objective`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'Idle';
-    this.role = role;
     this.shouldEmitMetrics = true;
-    this.metricLabel = role;
+    this.metricLabel = 'labourer';
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {

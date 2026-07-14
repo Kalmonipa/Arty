@@ -23,6 +23,7 @@ export type Role =
   | 'fisherman'
   | 'gearcrafter'
   | 'jewelrycrafter'
+  | 'labourer'
   | 'lumberjack'
   | 'miner'
   | 'weaponcrafter';
@@ -34,6 +35,7 @@ export const ROLES: Role[] = [
   'fisherman',
   'gearcrafter',
   'jewelrycrafter',
+  'labourer',
   'lumberjack',
   'miner',
   'weaponcrafter',

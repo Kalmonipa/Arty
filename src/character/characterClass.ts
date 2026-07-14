@@ -131,6 +131,7 @@ import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { IdleHealerObjective } from '../idleObjectives/IdleHealer.js';
 import { IdleCrafterObjective } from '../idleObjectives/IdleCrafter.js';
 import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
+import { IdleLabourerObjective } from '../idleObjectives/IdleLabourer.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -984,7 +985,9 @@ export class Character {
         // ToDo: I'm tempted to separate out the IdleCrafterObjective into specific crafter
         // roles. At the moment they are all the same so no need but I see that changing.
         if (this.shouldDoIdleJobs) {
-          if (this.role === 'healer') {
+          if (this.role === 'labourer') {
+            await this.appendJob(new IdleLabourerObjective(this));
+          } else if (this.role === 'healer') {
             await this.appendJob(new IdleHealerObjective(this));
           } else if (this.role === 'weaponcrafter') {
             await this.appendJob(new IdleCrafterObjective(this, this.role));
