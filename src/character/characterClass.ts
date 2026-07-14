@@ -1106,7 +1106,7 @@ export class Character {
         // roles. At the moment they are all the same so no need but I see that changing.
         if (this.shouldDoIdleJobs) {
           if (this.role === 'crafter') {
-            await this.appendJob(new IdleCrafterObjective(this, this.role))
+            await this.appendJob(new IdleCrafterObjective(this, this.role));
           } else if (this.role === 'fisherman') {
             await this.appendJob(new IdleFishermanObjective(this));
           } else if (this.role === 'labourer') {

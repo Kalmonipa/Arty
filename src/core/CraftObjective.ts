@@ -18,6 +18,9 @@ import { addToWishlist } from '../wishlist/functions.js';
  * mid-fight) to wishlist an item they needed immediately and then fail.
  */
 const SKILL_ROLE: Partial<Record<Skill, Role>> = {
+  mining: 'labourer',
+  woodcutting: 'labourer',
+  alchemy: 'healer',
   weaponcrafting: 'crafter',
   gearcrafting: 'crafter',
   jewelrycrafting: 'crafter',

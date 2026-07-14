@@ -64,7 +64,10 @@ export class EvaluateGearObjective extends Objective {
       // Just check the weapon if we're doing a gathering task
       if (this.activityType !== 'combat') {
         await this.checkGatheringWeapon(this.activityType, charLevel);
-        await this.checkGatheringArtifacts(this.targetResource, this.character.getCharacterLevel(this.character.data));
+        await this.checkGatheringArtifacts(
+          this.targetResource,
+          this.character.getCharacterLevel(this.character.data),
+        );
         return true;
       } else {
         return await this.evaluateCombatGear(charLevel, this.targetMob);
