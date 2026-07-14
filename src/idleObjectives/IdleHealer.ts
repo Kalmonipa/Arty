@@ -374,7 +374,6 @@ export class IdleHealerObjective extends Objective {
       return true;
     }
 
-    let job: Objective;
     if (skill === 'fishing') {
       const resourceTypes: StaticDataPageResourceSchema | ApiError =
         await getAllResourceInformation({
@@ -397,18 +396,11 @@ export class IdleHealerObjective extends Objective {
       await this.character.gatherNow(numToGather, resourceToGather, false);
       return await this.character.depositNow(numToGather, resourceToGather);
     } else {
-      job = new TrainCraftingSkillObjective(
-        this.character,
+      return await this.character.trainCraftingSkillNow(
         'alchemy',
         this.character.getCharacterLevel(this.character.data, skill) + 1,
       );
     }
-    return await this.character.executeJobNow(
-      job,
-      true,
-      true,
-      this.objectiveId,
-    );
   }
 
   /**
