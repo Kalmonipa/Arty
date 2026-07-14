@@ -24,7 +24,7 @@ import {
   checkWithinLevelRange,
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
-} from './SharedFunctions.js';
+} from './idleUtils.js';
 
 export class IdleCrafterObjective extends Objective {
   role: Role;

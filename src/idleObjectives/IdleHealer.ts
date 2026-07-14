@@ -26,7 +26,7 @@ import {
   checkWithinLevelRange,
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
-} from './SharedFunctions.js';
+} from './idleUtils.js';
 import { GatherObjective } from '../core/GatherObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 

@@ -19,7 +19,7 @@ import {
   checkWithinLevelRange,
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
-} from './SharedFunctions.js';
+} from './idleUtils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 
 export class IdleFishermanObjective extends Objective {

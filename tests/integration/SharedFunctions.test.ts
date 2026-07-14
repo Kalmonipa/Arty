@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,
-} from '../../src/idleObjectives/SharedFunctions.js';
+} from '../../src/idleObjectives/idleUtils.js';
 import { GetCharacterData } from '../../src/utils.js';
 import { CharacterSchema } from '../../src/types/types.js';
 import {

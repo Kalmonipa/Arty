@@ -3,17 +3,11 @@ import {
   getAllItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
-import {
-  GetCharacterData,
-  getHighestCharLevel,
-  isGatheringSkill,
-  logger,
-} from '../utils.js';
+import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
@@ -27,7 +21,7 @@ import {
   checkWithinLevelRange,
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
-} from './SharedFunctions.js';
+} from './idleUtils.js';
 
 export class IdleObjective extends Objective {
   role: Role;

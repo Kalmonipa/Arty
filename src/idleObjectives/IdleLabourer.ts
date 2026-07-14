@@ -32,7 +32,7 @@ import {
   checkWithinLevelRange,
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
-} from './SharedFunctions.js';
+} from './idleUtils.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 import {
   getOpenWishlistRequests,
