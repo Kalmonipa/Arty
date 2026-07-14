@@ -280,7 +280,9 @@ export class IdleHealerObjective extends Objective {
 
   /**
    * Ensure that we have a minimum amount of certain items in the bank
-   * - 200 Health potions of varying levels
+   * - 300 Health potions of varying levels
+   * @todo If there are less than 300 maybe I just craft 300 instead of 
+   * 300-(number in the bank)?
    */
   private async topUpPotionsInBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank

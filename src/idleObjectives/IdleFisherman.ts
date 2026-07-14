@@ -310,19 +310,11 @@ export class IdleFishermanObjective extends Objective {
    * @returns true if successful
    */
   private async trainSkill(skill?: GatheringSkill): Promise<boolean> {
-    let job: Objective;
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
       skill,
     );
-    // Crafting skills should stay relatively close to combat level. Gathering skills can go further above
-    const maxLevelGap = [
-      'weaponcrafting',
-      'gearcrafting',
-      'jewelrycrafting',
-    ].includes(skill)
-      ? 0
-      : 5;
+    const maxLevelGap = 5;
 
     if (skillLevel === MAX_SKILL_LEVEL) {
       logger.info(

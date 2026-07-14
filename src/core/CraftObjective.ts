@@ -154,9 +154,6 @@ export class CraftObjective extends Objective {
               characterName: this.character.data.name,
               acquisitionMethod: skillNeeded,
             });
-            // The item wasn't crafted — it was delegated to the wishlist — so
-            // report failure. Callers (e.g. equipUtility) must not proceed as if
-            // the item now exists, otherwise they fail with a 478.
             // ToDo: Should add this job to an 'onHold' job list instead of ending it
             return false;
           }
