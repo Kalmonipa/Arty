@@ -6,6 +6,7 @@ import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
+  lostTooManyFights = false;
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -263,6 +264,31 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(2);
+    });
+
+    it('should cancel the task and stop retrying when too many fights are lost', async () => {
+      // Arrange
+      mockCharacter.data.task = 'red_slime';
+      mockCharacter.data.task_type = 'monsters';
+      mockCharacter.data.task_progress = 0;
+      mockCharacter.data.task_total = 5;
+      mockCharacter.fightNow.mockImplementation(async () => {
+        mockCharacter.lostTooManyFights = true;
+        return false;
+      });
+
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      const cancelTaskSpy = jest
+        .spyOn(objective, 'cancelCurrentTask')
+        .mockResolvedValue(true);
+
+      // Act
+      const result = await objective.run();
+
+      // Assert
+      expect(result).toBe(false);
+      expect(cancelTaskSpy).toHaveBeenCalledWith('monsters');
+      expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1); // No retries after bailing
     });
 
     it('should return false when max retries exceeded for fights', async () => {

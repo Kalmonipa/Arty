@@ -16,9 +16,6 @@ export class MonsterTaskObjective extends Objective {
     this.shouldEmitMetrics = true;
   }
 
-  // ToDo:
-  //  - If 3 fights lost, cancel job. We don't want to keep losing fights
-
   async runPrerequisiteChecks(): Promise<boolean> {
     return true;
   }
@@ -39,6 +36,16 @@ export class MonsterTaskObjective extends Objective {
         if (result) {
           this.progress++;
           break; // Exit the retry loop on success
+        }
+
+        // If we keep losing the fight, cancel the task rather than retrying an
+        // unwinnable monster so the character can move on to different work
+        if (this.character.lostTooManyFights) {
+          logger.warn(
+            `Lost too many fights against ${this.character.data.task}. Cancelling monster task`,
+          );
+          await this.cancelCurrentTask('monsters');
+          break;
         }
       }
 
@@ -68,6 +75,8 @@ export class MonsterTaskObjective extends Objective {
   }
 
   private async doTask(): Promise<boolean> {
+    this.character.lostTooManyFights = false;
+
     if (!this.character.data.task || this.character.data.task === '') {
       await this.startNewTask('monsters');
     }

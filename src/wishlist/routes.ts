@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../character/characterClass.js';
 import { logger } from '../utils.js';
-import { addToWishlist } from './functions.js';
+import { addToWishlist, listOpenWishlistRequests } from './functions.js';
 import { WishlistRequest } from './types.js';
 
 export default function WishlistRouter(char: Character) {
@@ -42,6 +42,18 @@ export default function WishlistRouter(char: Character) {
     const message = `Added ${wishlistInfo.quantity}x ${wishlistInfo.itemCode} to the wishlist`;
     logger.info(message);
     return res.json({ message });
+  });
+
+  /**
+   * Lists open wishlist requests. Defaults to this character's own requests;
+   * pass ?all=true to list every open request across characters.
+   */
+  router.get('/', async (req: Request, res: Response) => {
+    const all = req.query.all === 'true';
+    const requests = await listOpenWishlistRequests(
+      all ? undefined : { character: char.data.name },
+    );
+    return res.json({ requests });
   });
 
   return router;

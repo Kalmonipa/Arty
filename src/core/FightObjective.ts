@@ -11,6 +11,8 @@ import { MinEquippedUtilities } from '../constants.js';
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
   shouldEquipHealthPots = true;
+  maxConsecutiveLosses = 3;
+  lostTooManyFights = false;
   participants?: string[];
   runFightSim?: boolean;
 
@@ -171,6 +173,7 @@ export class FightObjective extends Objective {
    * @description Fight the requested amount of mobs
    */
   async run(): Promise<boolean> {
+    let consecutiveLosses = 0;
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (!(await this.checkStatus())) return false;
 
@@ -256,10 +259,23 @@ export class FightObjective extends Objective {
           }
 
           if (response.data.fight.result === 'loss') {
+            consecutiveLosses++;
             logger.info(
-              `Previous fight was a loss so will equip health potions for future fights`,
+              `Lost fight ${consecutiveLosses}/${this.maxConsecutiveLosses} against ${this.target.code}. Will equip health potions for future fights`,
             );
             this.shouldEquipHealthPots = true;
+            // Don't count a lost fight toward progress
+            this.progress--;
+
+            if (consecutiveLosses >= this.maxConsecutiveLosses) {
+              this.lostTooManyFights = true;
+              logger.warn(
+                `Lost ${consecutiveLosses} fights in a row against ${this.target.code}. Stopping fight objective`,
+              );
+              return false;
+            }
+          } else {
+            consecutiveLosses = 0;
           }
 
           await this.character.recoverHealth();

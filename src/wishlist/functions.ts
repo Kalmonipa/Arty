@@ -124,6 +124,42 @@ export async function getOpenWishlistRequests(
 }
 
 /**
+ * Lists open wishlist requests — not yet picked up (executing) or completed
+ * (fulfilled) — ordered oldest-first. With no filter, returns every open
+ * request; with a character filter, only that character's own requests.
+ * @param filter Optional filter; `character` limits results to one requester
+ * @returns matching rows, or an empty array on error
+ */
+export async function listOpenWishlistRequests(
+  filter?: { character?: string },
+): Promise<WishlistRow[]> {
+  const conditions = ['executing = false', 'fulfilled = false'];
+  const params: string[] = [];
+  if (filter?.character) {
+    params.push(filter.character);
+    conditions.push(`character = $${params.length}`);
+  }
+
+  const query = `
+    SELECT id, item_code, quantity, character,
+           min_level, max_level, expiration_date,
+           cost, currency, acquisition_method,
+           executing, fulfilled, created_at
+    FROM wishlist
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY created_at ASC;
+  `;
+
+  try {
+    const result = await db.query<WishlistRow>(query, params);
+    return result.rows;
+  } catch (err) {
+    logger.error(`Failed to list open wishlist requests: ${err}`);
+    return [];
+  }
+}
+
+/**
  * Marks a wishlist request as executing so other characters skip it while it's
  * being worked on.
  * @param id The wishlist row id

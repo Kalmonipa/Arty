@@ -363,6 +363,31 @@ const mockFightResponse = {
   },
 };
 
+const mockLossResponse = {
+  data: {
+    cooldown: {
+      total_seconds: 5,
+      remaining_seconds: 5,
+      started_at: '2025-10-01T16:52:35.196Z',
+      expiration: '2025-10-01T16:52:40.196Z',
+      reason: 'fight' as const,
+    },
+    fight: {
+      result: 'loss' as const,
+      turns: 10,
+      opponent: 'red_slime',
+      logs: ['Character attacks', 'Monster attacks', 'Character loses'],
+      characters: [],
+    },
+    characters: [
+      {
+        ...mockCharacterData,
+        hp: 0,
+      },
+    ],
+  },
+};
+
 const mockMapData = {
   data: [
     {
@@ -875,6 +900,69 @@ describe('FightObjective Integration Tests', () => {
           actionFight as jest.MockedFunction<typeof actionFight>
         ).mockResolvedValue(mockFightResponse);
       }
+    });
+
+    it('should stop fighting and return false after 3 consecutive losses', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockResolvedValue(mockLossResponse as any);
+
+      // Act
+      const result = await fightObjective.run();
+
+      // Assert
+      expect(result).toBe(false);
+      expect(fightObjective.lostTooManyFights).toBe(true);
+      expect(actionFight).toHaveBeenCalledTimes(3);
+    });
+
+    it('should not count lost fights toward progress', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const lossTarget: ObjectiveTargets = { code: 'red_slime', quantity: 2 };
+      const lossObjective = new FightObjective(mockCharacter as any, lossTarget);
+      // lose twice, then win the two required fights
+      (actionFight as jest.MockedFunction<typeof actionFight>)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValue(mockFightResponse);
+
+      // Act
+      const result = await lossObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(lossObjective.progress).toBe(2);
+      expect(actionFight).toHaveBeenCalledTimes(4); // 2 losses + 2 wins
+    });
+
+    it('should reset the loss counter after a win', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const resetTarget: ObjectiveTargets = { code: 'red_slime', quantity: 3 };
+      const resetObjective = new FightObjective(
+        mockCharacter as any,
+        resetTarget,
+      );
+      // Interleave losses and wins so it never loses 3 in a row
+      (actionFight as jest.MockedFunction<typeof actionFight>)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockFightResponse)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockFightResponse)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockFightResponse);
+
+      // Act
+      const result = await resetObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(resetObjective.lostTooManyFights).toBe(false);
+      expect(resetObjective.progress).toBe(3);
+      expect(actionFight).toHaveBeenCalledTimes(6);
     });
 
     it('should handle progress tracking correctly', async () => {

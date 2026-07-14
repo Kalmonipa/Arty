@@ -161,6 +161,12 @@ export class Character {
   currentExecutingJob?: Objective;
 
   /**
+   * Set by fightNow when the last fight objective bailed out after losing too
+   * many fights in a row, so callers can decide to move on to different work
+   */
+  lostTooManyFights = false;
+
+  /**
    * Path to the job queue persistence file
    */
   private jobQueueFilePath: string;
@@ -2961,12 +2967,16 @@ export class Character {
       runFightSim,
     );
 
-    return await this.executeJobNow(
+    const result = await this.executeJobNow(
       fightJob,
       true,
       true,
       this.currentExecutingJob?.objectiveId,
     );
+
+    this.lostTooManyFights = fightJob.lostTooManyFights;
+
+    return result;
   }
 
   /**
