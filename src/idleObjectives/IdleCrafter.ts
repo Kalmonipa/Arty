@@ -22,6 +22,7 @@ import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjecti
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import {
   checkWithinLevelRange,
+  checkOnHoldQueue,
   completeTasksFarmerAchievement,
 } from './SharedFunctions.js';
 
@@ -60,6 +61,9 @@ export class IdleCrafterObjective extends Objective {
     if (this.checkIdleJobIsLast()) return true;
 
     await this.checkAndBuyArtifacts();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await checkOnHoldQueue(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
     await checkWithinLevelRange(this.character);

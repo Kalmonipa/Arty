@@ -111,6 +111,10 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
+  removeItemListfromItemsToKeep = jest.fn((): void => {
+    // Mock implementation
+  });
+
   addItemToItemsToKeep = jest.fn((): void => {
     // Nothing here
   });
@@ -152,6 +156,8 @@ class SimpleMockCharacter {
   getCharacterLevel = jest.fn((): number => {
     return 10;
   });
+
+  addBlockingWishlistRequest = jest.fn();
 }
 
 // Mock response data
@@ -611,6 +617,7 @@ describe('CraftObjective Integration Tests', () => {
         'iron_bar',
         true,
         false,
+        false,
       );
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
         10,
@@ -695,6 +702,7 @@ describe('CraftObjective Integration Tests', () => {
         20,
         'iron_bar',
         true,
+        false,
         false,
       );
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
@@ -931,6 +939,109 @@ describe('CraftObjective Integration Tests', () => {
       expect(result).toBe(true);
       expect(addToWishlist).not.toHaveBeenCalled();
       expect(actionCraft).toHaveBeenCalled();
+    });
+  });
+
+  describe('blockOnMissing', () => {
+    const mockCustomItem: ItemSchema = {
+      name: 'Custom Item',
+      code: 'custom_item',
+      level: 10,
+      type: 'weapon',
+      subtype: '',
+      description: '',
+      conditions: [],
+      effects: [],
+      craft: {
+        skill: 'weaponcrafting',
+        level: 10,
+        items: [
+          { code: 'ore_a', quantity: 1 },
+          { code: 'ore_b', quantity: 1 },
+        ],
+        quantity: 1,
+      },
+      tradeable: true,
+    };
+    const gatherableOre = (code: string): ItemSchema => ({
+      name: code,
+      code,
+      level: 10,
+      type: 'resource',
+      subtype: 'mining',
+      description: '',
+      conditions: [],
+      effects: [],
+      craft: null,
+      tradeable: true,
+    });
+
+    it('wishlists every unobtainable ingredient, keeps going, and fails so it can be parked', async () => {
+      // Arrange
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'custom_item') return Promise.resolve(mockCustomItem);
+        return Promise.resolve(gatherableOre(code));
+      });
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.gatherNow.mockResolvedValue(false); // can't gather either ore
+      (addToWishlist as jest.MockedFunction<typeof addToWishlist>)
+        .mockResolvedValueOnce(101)
+        .mockResolvedValueOnce(102);
+
+      const objective = new CraftObjective(
+        mockCharacter as any,
+        { code: 'custom_item', quantity: 1 },
+        undefined,
+        undefined,
+        true, // blockOnMissing
+      );
+
+      // Act
+      const result = await objective.run();
+
+      // Assert — both ingredients requested (didn't bail on the first), job fails
+      expect(result).toBe(false);
+      expect(addToWishlist).toHaveBeenCalledTimes(2);
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
+        101,
+      );
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
+        102,
+      );
+      expect(actionCraft).not.toHaveBeenCalled();
+    });
+
+    it('does not wishlist ingredients when blockOnMissing is false (default)', async () => {
+      // Arrange
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'custom_item') return Promise.resolve(mockCustomItem);
+        return Promise.resolve(gatherableOre(code));
+      });
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.gatherNow.mockResolvedValue(false);
+
+      const objective = new CraftObjective(mockCharacter as any, {
+        code: 'custom_item',
+        quantity: 1,
+      });
+
+      // Act
+      const result = await objective.run();
+
+      // Assert — bails on the first missing ingredient, no wishlist
+      expect(result).toBe(false);
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(mockCharacter.addBlockingWishlistRequest).not.toHaveBeenCalled();
     });
   });
 

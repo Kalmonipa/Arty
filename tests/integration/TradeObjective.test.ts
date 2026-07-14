@@ -46,7 +46,11 @@ describe('TradeObjective buy currency gathering', () => {
     jest.clearAllMocks();
     // Default: NPC is present on a cached-style map so findNpc succeeds
     mockedGetAllMaps.mockResolvedValue([
-      { x: 1, y: 1, interactions: { content: { type: 'npc', code: 'tailor' } } },
+      {
+        x: 1,
+        y: 1,
+        interactions: { content: { type: 'npc', code: 'tailor' } },
+      },
     ] as any);
   });
 

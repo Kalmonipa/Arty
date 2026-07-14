@@ -9,7 +9,8 @@ export type ObjectiveStatus =
   | 'in_progress'
   | 'complete'
   | 'failed'
-  | 'paused';
+  | 'paused'
+  | 'on_hold';
 
 export interface SerializedJob {
   type: string;
@@ -20,6 +21,18 @@ export interface SerializedJob {
   childId?: string;
   maxRetries: number;
   [key: string]: unknown;
+}
+
+/**
+ * A job parked because it raised one or more wishlist requests it needs
+ * fulfilled before it can continue. Resumed when every `waitingOn` request is
+ * fulfilled; retried once (then dropped) if a request expires or disappears.
+ */
+export interface OnHoldJob {
+  job: SerializedJob;
+  waitingOn: number[];
+  parkedAt: string;
+  retried: boolean;
 }
 
 export type SimpleObjectiveInfo = {

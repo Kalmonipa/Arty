@@ -56,6 +56,7 @@ import {
   ObjectiveTargets,
   ObjectiveStatus,
   SerializedJob,
+  OnHoldJob,
   SimpleObjectiveInfo,
 } from '../types/ObjectiveData.js';
 import { FightObjective } from '../core/FightObjective.js';
@@ -155,6 +156,25 @@ export class Character {
    * The list of jobs that have not been started yet
    */
   jobList: Objective[] = [];
+  /**
+   * Jobs parked because they raised wishlist requests they need fulfilled
+   * before continuing. Checked and resumed during idle jobs.
+   */
+  onHold: OnHoldJob[] = [];
+  /** The most parked jobs a character may hold at once */
+  maxOnHoldJobs = 3;
+  /**
+   * Wishlist request ids raised during the current root job that should cause
+   * the job to be parked when it finishes. Reset before each root job runs.
+   */
+  pendingWishlistRequestIds: number[] = [];
+  /**
+   * Objective ids of on-hold jobs that have already been retried once, so a
+   * re-parked job is dropped (rather than retried again) if it can't be
+   * fulfilled. Only needs to survive within a process — the parked entry's own
+   * `retried` flag is persisted and carries the decision across restarts.
+   */
+  private onHoldRetriedIds = new Set<string>();
   /**
    * The currently executing job (for tracking parent-child relationships)
    */
@@ -475,6 +495,7 @@ export class Character {
         nomadicMerchantTradeDate: this.nomadicMerchantTradeDate,
         eventBackoffs: Object.fromEntries(this.eventBackoffs),
         jobs: this.jobList.map((job) => this.serializeJob(job)),
+        onHold: this.onHold,
       };
 
       await fs.writeFile(
@@ -499,6 +520,7 @@ export class Character {
 
       // Clear current job list
       this.jobList = [];
+      this.onHold = jobQueueData.onHold ?? [];
 
       this.enableEvents = jobQueueData.enableEvents;
       this.shouldDoIdleJobs = jobQueueData.enableIdleJobs;
@@ -557,7 +579,12 @@ export class Character {
    */
   private getJobSpecificData(job: Objective): Record<string, unknown> {
     if (job instanceof CraftObjective) {
-      return { target: job.target };
+      return {
+        target: job.target,
+        checkBank: job.checkBank,
+        includeInventory: job.includeInventory,
+        blockOnMissing: job.blockOnMissing,
+      };
     } else if (job instanceof EvaluateGearObjective) {
       return {
         activityType: job.activityType,
@@ -640,6 +667,9 @@ export class Character {
           job = new CraftObjective(
             this,
             specificData.target as ObjectiveTargets,
+            specificData.checkBank as boolean,
+            specificData.includeInventory as boolean,
+            specificData.blockOnMissing as boolean,
           );
           break;
         case 'DeleteItemObjective':
@@ -929,6 +959,89 @@ export class Character {
     }
     await this.saveJobQueue();
     return true;
+  }
+
+  /**
+   * @description Records a wishlist request that the running job needs fulfilled
+   * before it can continue, so the job gets parked when it finishes. A null id
+   * (failed request) is ignored.
+   */
+  addBlockingWishlistRequest(requestId: number | null): void {
+    if (requestId == null) return;
+    if (!this.pendingWishlistRequestIds.includes(requestId)) {
+      this.pendingWishlistRequestIds.push(requestId);
+    }
+  }
+
+  /**
+   * @description Parks a job onto the onHold queue so it can be resumed once the
+   * wishlist requests it raised are fulfilled. Called by Objective.execute when a
+   * job that opts into parking finished with pending requests. Skips parking when
+   * the onHold queue is already full, letting the job end normally instead.
+   * @returns true if the job was parked
+   */
+  async parkJob(job: Objective): Promise<boolean> {
+    if (this.onHold.length >= this.maxOnHoldJobs) {
+      logger.warn(
+        `onHold queue full (${this.maxOnHoldJobs}); not parking ${job.objectiveId}`,
+      );
+      return false;
+    }
+
+    const waitingOn = [...this.pendingWishlistRequestIds];
+    job.setOnHold();
+
+    this.onHold.push({
+      job: this.serializeJob(job),
+      waitingOn,
+      parkedAt: new Date().toISOString(),
+      retried: this.onHoldRetriedIds.has(job.objectiveId),
+    });
+    logger.info(
+      `Parked ${job.objectiveId} on hold, waiting on wishlist request(s) ${waitingOn.join(', ')}`,
+    );
+    await this.saveJobQueue();
+    return true;
+  }
+
+  /**
+   * @description Removes an onHold entry and re-enqueues its job so it runs again
+   * from its saved progress. Used when the entry's requests are fulfilled, or to
+   * retry once when a request has expired.
+   */
+  async resumeOnHoldJob(entry: OnHoldJob): Promise<void> {
+    this.onHold = this.onHold.filter((e) => e !== entry);
+    const job = this.deserializeJob(entry.job);
+    if (job) {
+      // The job finished (likely 'failed') before being parked; reset it so the
+      // execution loop actually runs it again rather than skipping it.
+      job.status = 'not_started';
+      await this.prependJob(job);
+      logger.info(`Resumed on-hold job ${job.objectiveId}`);
+    } else {
+      logger.warn(`Could not deserialize on-hold job; dropping it`);
+      await this.saveJobQueue();
+    }
+  }
+
+  /**
+   * @description Drops an onHold entry without resuming it (its requests can no
+   * longer be fulfilled).
+   */
+  async dropOnHoldJob(entry: OnHoldJob): Promise<void> {
+    this.onHold = this.onHold.filter((e) => e !== entry);
+    this.onHoldRetriedIds.delete(entry.job.objectiveId);
+    await this.saveJobQueue();
+  }
+
+  /** Marks an on-hold job as having used its one retry */
+  markOnHoldRetried(objectiveId: string): void {
+    this.onHoldRetriedIds.add(objectiveId);
+  }
+
+  /** Clears retry tracking for a job that resumed successfully */
+  clearOnHoldRetried(objectiveId: string): void {
+    this.onHoldRetriedIds.delete(objectiveId);
   }
 
   /**
@@ -2796,6 +2909,7 @@ export class Character {
     code: string,
     checkBank?: boolean,
     includeInventory?: boolean,
+    blockOnMissing?: boolean,
   ): Promise<boolean> {
     const craftJob = new CraftObjective(
       this,
@@ -2805,6 +2919,7 @@ export class Character {
       },
       checkBank,
       includeInventory,
+      blockOnMissing,
     );
     return await this.executeJobNow(
       craftJob,

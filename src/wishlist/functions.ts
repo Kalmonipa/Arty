@@ -46,7 +46,7 @@ export function deriveRequiredLevel(item: ItemSchema): number {
  */
 export async function addToWishlist(
   wishlistInfo: WishlistRequest,
-): Promise<boolean> {
+): Promise<number | null> {
   let acquisitionMethod: string | null = wishlistInfo.acquisitionMethod ?? null;
   let minLevel: number | null = wishlistInfo.minLevel ?? null;
 
@@ -61,32 +61,50 @@ export async function addToWishlist(
     minLevel = wishlistInfo.minLevel ?? deriveRequiredLevel(item);
   }
 
-  const query = `
-    INSERT INTO wishlist (
-      item_code, quantity, character,
-      min_level, max_level, expiration_date,
-      cost, currency, acquisition_method,
-      executing, fulfilled
-    )
-    VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW() + INTERVAL '7 days'), $7, $8, $9, false, false);
-  `;
-
   try {
-    await db.query(query, [
-      wishlistInfo.itemCode,
-      wishlistInfo.quantity,
-      wishlistInfo.characterName,
-      minLevel,
-      wishlistInfo.maxLevel ?? null,
-      wishlistInfo.expirationDate ?? null,
-      wishlistInfo.cost ?? null,
-      wishlistInfo.currency ?? null,
-      acquisitionMethod,
-    ]);
-    return true;
+    // Reuse an existing open request for the same item/character rather than
+    // piling up duplicates (e.g. when a parked job restarts and re-checks).
+    const existing = await db.query<{ id: number }>(
+      `
+      SELECT id FROM wishlist
+      WHERE item_code = $1 AND character = $2
+        AND fulfilled = false AND executing = false
+        AND (expiration_date IS NULL OR expiration_date > NOW())
+      LIMIT 1;
+      `,
+      [wishlistInfo.itemCode, wishlistInfo.characterName],
+    );
+    if (existing.rows.length > 0) {
+      return existing.rows[0].id;
+    }
+
+    const result = await db.query<{ id: number }>(
+      `
+      INSERT INTO wishlist (
+        item_code, quantity, character,
+        min_level, max_level, expiration_date,
+        cost, currency, acquisition_method,
+        executing, fulfilled
+      )
+      VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW() + INTERVAL '7 days'), $7, $8, $9, false, false)
+      RETURNING id;
+      `,
+      [
+        wishlistInfo.itemCode,
+        wishlistInfo.quantity,
+        wishlistInfo.characterName,
+        minLevel,
+        wishlistInfo.maxLevel ?? null,
+        wishlistInfo.expirationDate ?? null,
+        wishlistInfo.cost ?? null,
+        wishlistInfo.currency ?? null,
+        acquisitionMethod,
+      ],
+    );
+    return result.rows[0].id;
   } catch (err) {
     logger.error(`Failed to add ${wishlistInfo.itemCode} to wishlist: ${err}`);
-    return false;
+    return null;
   }
 }
 
@@ -109,6 +127,7 @@ export async function getOpenWishlistRequests(
     WHERE acquisition_method = $1
       AND executing = false
       AND fulfilled = false
+      AND (expiration_date IS NULL OR expiration_date > NOW())
     ORDER BY created_at ASC;
   `;
 
@@ -133,7 +152,11 @@ export async function getOpenWishlistRequests(
 export async function listOpenWishlistRequests(filter?: {
   character?: string;
 }): Promise<WishlistRow[]> {
-  const conditions = ['executing = false', 'fulfilled = false'];
+  const conditions = [
+    'executing = false',
+    'fulfilled = false',
+    '(expiration_date IS NULL OR expiration_date > NOW())',
+  ];
   const params: string[] = [];
   if (filter?.character) {
     params.push(filter.character);
@@ -194,6 +217,57 @@ export async function markAsFulfilled(id: number): Promise<boolean> {
   } catch (err) {
     logger.error(`Failed to mark wishlist request ${id} as fulfilled: ${err}`);
     return false;
+  }
+}
+
+/**
+ * Fetches wishlist rows by their ids. Used to check the status of the requests
+ * an onHold job is waiting on.
+ * @param ids The wishlist row ids
+ * @returns matching rows, or an empty array (also when given no ids or on error)
+ */
+export async function getWishlistRequestsByIds(
+  ids: number[],
+): Promise<WishlistRow[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const query = `
+    SELECT id, item_code, quantity, character,
+           min_level, max_level, expiration_date,
+           cost, currency, acquisition_method,
+           executing, fulfilled, created_at
+    FROM wishlist
+    WHERE id = ANY($1);
+  `;
+
+  try {
+    const result = await db.query<WishlistRow>(query, [ids]);
+    return result.rows;
+  } catch (err) {
+    logger.error(`Failed to fetch wishlist requests by id: ${err}`);
+    return [];
+  }
+}
+
+/**
+ * Hard-deletes every wishlist request whose expiration date has passed, so the
+ * table doesn't accumulate dead rows. Run periodically (during idle jobs).
+ * @returns the number of rows deleted
+ */
+export async function deleteExpiredWishlistRequests(): Promise<number> {
+  const query = `
+    DELETE FROM wishlist
+    WHERE expiration_date IS NOT NULL AND expiration_date < NOW();
+  `;
+
+  try {
+    const result = await db.query(query);
+    return result.rowCount ?? 0;
+  } catch (err) {
+    logger.error(`Failed to delete expired wishlist requests: ${err}`);
+    return 0;
   }
 }
 

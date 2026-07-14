@@ -17,6 +17,7 @@ import { Objective } from '../core/Objective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import {
   checkWithinLevelRange,
+  checkOnHoldQueue,
   completeTasksFarmerAchievement,
 } from './SharedFunctions.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
@@ -56,6 +57,9 @@ export class IdleFishermanObjective extends Objective {
     if (this.checkIdleJobIsLast()) return true;
 
     await this.checkAndBuyArtifacts();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await checkOnHoldQueue(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
     await checkWithinLevelRange(this.character);

@@ -42,6 +42,9 @@ export class TrainCraftingSkillObjective extends Objective {
     this.levelRange = levelRange ?? 9;
     this.shouldEmitMetrics = true;
     this.metricLabel = skill;
+    // If an ingredient must come from another role, wishlist it and park this
+    // job until it's fulfilled rather than failing the craft outright.
+    this.parkOnWishlistRequest = true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -71,6 +74,13 @@ export class TrainCraftingSkillObjective extends Objective {
 
     while (charLevel < this.targetLevel) {
       if (!(await this.checkStatus())) return false;
+
+      // If a previous iteration wishlisted ingredients it couldn't obtain, stop
+      // so this job gets parked (onHold) until they're fulfilled — otherwise the
+      // loop would spin without ever levelling up.
+      if (this.character.pendingWishlistRequestIds.length > 0) {
+        return false;
+      }
 
       // Get bank items so we don't need to make lots of bank calls
       const allBankItems = await this.character.getAllBankItems();
@@ -121,7 +131,15 @@ export class TrainCraftingSkillObjective extends Objective {
             logger.debug(
               `Crafting ${craftableItem.code} because there aren't enough in bank`,
             );
-            if (await this.character.craftNow(numToCraft, craftableItem.code)) {
+            if (
+              await this.character.craftNow(
+                numToCraft,
+                craftableItem.code,
+                undefined,
+                undefined,
+                true,
+              )
+            ) {
               // Only deposit if the craft was successful
               await this.character.depositNow(numToCraft, craftableItem.code);
             }
@@ -154,7 +172,15 @@ export class TrainCraftingSkillObjective extends Objective {
           logger.debug(
             `Crafting ${craftableItem.code} because there aren't enough in bank`,
           );
-          if (await this.character.craftNow(numToCraft, craftableItem.code)) {
+          if (
+            await this.character.craftNow(
+              numToCraft,
+              craftableItem.code,
+              undefined,
+              undefined,
+              true,
+            )
+          ) {
             // Only deposit if the craft was successful
             await this.character.depositNow(numToCraft, craftableItem.code);
           }
@@ -179,7 +205,15 @@ export class TrainCraftingSkillObjective extends Objective {
         `Found ${itemToCraft.code} item to craft with score ${itemToCraft.score}`,
       );
 
-      if (await this.character.craftNow(numToCraft, itemToCraft.code)) {
+      if (
+        await this.character.craftNow(
+          numToCraft,
+          itemToCraft.code,
+          undefined,
+          undefined,
+          true,
+        )
+      ) {
         // Only deposit if the craft was successful
         await this.character.depositNow(numToCraft, itemToCraft.code);
       }

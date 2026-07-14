@@ -21,6 +21,14 @@ export abstract class Objective {
   parentId?: string;
   childId?: string;
   rootId: string;
+  /**
+   * When true, this job is parked onto the onHold queue if it raised any
+   * blocking wishlist requests while running, and resumed once they're
+   * fulfilled. Set on jobs that represent a resumable unit of work (e.g.
+   * TrainCraftingSkillObjective); left false on nested helper jobs so the
+   * requests bubble up to the owning job.
+   */
+  parkOnWishlistRequest: boolean = false;
   protected log: typeof logger;
   /** Set to true in subclasses that represent meaningful work worth tracking */
   protected shouldEmitMetrics: boolean = false;
@@ -77,6 +85,11 @@ export abstract class Objective {
 
     this.startJob();
 
+    // Start from a clean slate so only requests raised by this job's run park it
+    if (this.parkOnWishlistRequest) {
+      this.character.pendingWishlistRequestIds = [];
+    }
+
     await this.runSharedPrereqChecks();
     let result = await this.runPrerequisiteChecks();
     // If prerequisite checks fail then we should stop the job
@@ -88,8 +101,31 @@ export abstract class Objective {
       );
     }
 
+    // If this job wishlisted things it needs, park it (instead of completing)
+    // so it resumes once those requests are fulfilled.
+    if (
+      this.parkOnWishlistRequest &&
+      this.character.pendingWishlistRequestIds.length > 0
+    ) {
+      const parked = await this.character.parkJob(this);
+      this.character.pendingWishlistRequestIds = [];
+      if (parked) {
+        return false;
+      }
+    }
+
     this.completeJob(result);
     return result;
+  }
+
+  /**
+   * @description Marks the job as parked on the onHold queue and clears its
+   * active metric so it doesn't look like it's still running.
+   */
+  setOnHold() {
+    this.log.info(`Setting status of ${this.objectiveId} to 'on_hold'`);
+    this.status = 'on_hold';
+    this.clearActiveMetric();
   }
 
   abstract run(): Promise<boolean>;

@@ -44,6 +44,7 @@ const createMockCraftableItem = (
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
+  pendingWishlistRequestIds: number[] = [];
 
   getCharacterLevel = jest.fn(
     (char: CharacterSchema, skillName?: string): number => {
@@ -295,6 +296,9 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
+        undefined,
+        undefined,
+        true,
       );
     });
 
@@ -328,6 +332,9 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
+        undefined,
+        undefined,
+        true,
       );
     });
 
@@ -361,6 +368,9 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         2,
         expect.any(String),
+        undefined,
+        undefined,
+        true,
       );
     });
 
@@ -394,6 +404,9 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         2,
         expect.any(String),
+        undefined,
+        undefined,
+        true,
       );
     });
 
@@ -427,6 +440,9 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         1,
         expect.any(String),
+        undefined,
+        undefined,
+        true,
       );
     });
 
@@ -994,6 +1010,65 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       // Should exit loop when level >= target (even if exceeded)
+    });
+  });
+
+  describe('onHold parking', () => {
+    it('opts into parking on wishlist requests', () => {
+      const objective = new TrainCraftingSkillObjective(
+        mockCharacter as any,
+        'alchemy',
+        15,
+      );
+      expect(objective.parkOnWishlistRequest).toBe(true);
+    });
+
+    it('passes blockOnMissing through to craftNow', async () => {
+      mockCharacter.data.alchemy_level = 1;
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) =>
+          skill === 'alchemy'
+            ? mockCharacter.data.alchemy_level
+            : mockCharacter.data.level,
+      );
+      mockCharacter.craftNow.mockImplementation(async () => {
+        mockCharacter.data.alchemy_level = 15;
+        return true;
+      });
+
+      const objective = new TrainCraftingSkillObjective(
+        mockCharacter as any,
+        'alchemy',
+        15,
+      );
+
+      await objective.run();
+
+      const call = (mockCharacter.craftNow as jest.Mock).mock.calls[0];
+      expect(call[4]).toBe(true); // blockOnMissing
+    });
+
+    it('stops without crafting once ingredients have been wishlisted so it can be parked', async () => {
+      mockCharacter.data.alchemy_level = 1;
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) =>
+          skill === 'alchemy'
+            ? mockCharacter.data.alchemy_level
+            : mockCharacter.data.level,
+      );
+      // A blocking request is already pending from a prior craft attempt
+      mockCharacter.pendingWishlistRequestIds = [1];
+
+      const objective = new TrainCraftingSkillObjective(
+        mockCharacter as any,
+        'alchemy',
+        15,
+      );
+
+      const result = await objective.run();
+
+      expect(result).toBe(false);
+      expect(mockCharacter.craftNow).not.toHaveBeenCalled();
     });
   });
 });

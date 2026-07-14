@@ -35,12 +35,21 @@ export class CraftObjective extends Objective {
   numCraftsPerBatch: number;
   checkBank?: boolean;
   includeInventory?: boolean;
+  /**
+   * When true, an ingredient this character can't obtain itself is added to the
+   * wishlist and crafting continues to the next ingredient; the job then fails
+   * so it gets parked (onHold) until the requests are fulfilled. When false
+   * (the default) a missing ingredient just fails the craft, as before.
+   */
+  blockOnMissing: boolean;
+  private raisedBlockingRequest = false;
 
   constructor(
     character: Character,
     target: ObjectiveTargets,
     checkBank?: boolean,
     includeInventory?: boolean,
+    blockOnMissing?: boolean,
   ) {
     super(character, `craft_${target.quantity}_${target.code}`, 'not_started');
 
@@ -51,6 +60,27 @@ export class CraftObjective extends Objective {
     this.metricLabel = target.code;
     this.checkBank = checkBank;
     this.includeInventory = includeInventory ?? true;
+    this.blockOnMissing = blockOnMissing ?? false;
+  }
+
+  /**
+   * @description Adds a missing ingredient to the wishlist and records it as a
+   * blocking request so the root job gets parked until it's fulfilled.
+   */
+  private async requestIngredientFromWishlist(
+    craftingItem: SimpleItemSchema,
+    quantity: number,
+  ): Promise<void> {
+    logger.info(
+      `${this.character.data.name} can't obtain ${quantity} ${craftingItem.code}; adding to wishlist`,
+    );
+    const requestId = await addToWishlist({
+      itemCode: craftingItem.code,
+      quantity,
+      characterName: this.character.data.name,
+    });
+    this.character.addBlockingWishlistRequest(requestId);
+    this.raisedBlockingRequest = true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -347,6 +377,13 @@ export class CraftObjective extends Objective {
             logger.warn(
               `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
             );
+            if (this.blockOnMissing) {
+              await this.requestIngredientFromWishlist(
+                craftingItem,
+                totalIngredNeededToCraft,
+              );
+              continue;
+            }
             this.character.removeItemListfromItemsToKeep(craftingItems);
             return false;
           }
@@ -365,11 +402,19 @@ export class CraftObjective extends Objective {
               craftingItem.code,
               true,
               false,
+              this.blockOnMissing,
             ))
           ) {
             logger.warn(
               `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
             );
+            if (this.blockOnMissing) {
+              await this.requestIngredientFromWishlist(
+                craftingItem,
+                totalIngredNeededToCraft,
+              );
+              continue;
+            }
             this.character.removeItemListfromItemsToKeep(craftingItems);
             return false;
           }
@@ -390,6 +435,13 @@ export class CraftObjective extends Objective {
             logger.warn(
               `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
             );
+            if (this.blockOnMissing) {
+              await this.requestIngredientFromWishlist(
+                craftingItem,
+                totalIngredNeededToCraft,
+              );
+              continue;
+            }
             this.character.removeItemListfromItemsToKeep(craftingItems);
             return false;
           }
@@ -418,7 +470,9 @@ export class CraftObjective extends Objective {
       }
     }
 
-    return true;
+    // If we wishlisted any ingredient we can't complete the craft now — fail so
+    // the job is parked until the requests are fulfilled.
+    return !this.raisedBlockingRequest;
   }
 
   /**
