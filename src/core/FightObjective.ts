@@ -100,6 +100,8 @@ export class FightObjective extends Objective {
           await this.character.simulateFightNow([fakeSchema], this.target.code)
         ) {
           return true;
+        } else {
+          await this.topUpSecondaryPots(mobInfo.data)
         }
       }
 

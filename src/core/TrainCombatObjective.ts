@@ -81,7 +81,7 @@ export class TrainCombatObjective extends Objective {
               logger.info(`Train to combat level ${this.targetLevel} achieved`);
               return true;
             }
-            break; // Exit the for loop after a successful fight
+            break;
           }
         }
       }
