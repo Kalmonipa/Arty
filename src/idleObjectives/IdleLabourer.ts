@@ -8,7 +8,11 @@ import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
-import { ItemSchema, Skill } from '../types/types.js';
+import {
+  ItemSchema,
+  Skill,
+  StaticDataPageResourceSchema,
+} from '../types/types.js';
 import {
   GetCharacterData,
   getHighestCharLevel,
@@ -31,6 +35,7 @@ import {
   markAsExecuting,
   markAsFulfilled,
 } from '../wishlist/functions.js';
+import { getAllResourceInformation } from '../api_calls/Resources.js';
 
 /**
  * Labourer role idle jobs
@@ -85,13 +90,16 @@ export class IdleLabourerObjective extends Objective {
     await this.checkWithinLevelRange();
     if (this.checkIdleJobIsLast()) return true;
 
+    await this.doItemTask(2);
+    if (this.checkIdleJobIsLast()) return true;
+
     await this.checkWishlistToFulfill('mining');
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.trainSkill('mining');
+    await this.checkWishlistToFulfill('woodcutting');
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.checkWishlistToFulfill('woodcutting');
+    await this.trainSkill('mining');
     if (this.checkIdleJobIsLast()) return true;
 
     await this.trainSkill('woodcutting');
@@ -114,6 +122,19 @@ export class IdleLabourerObjective extends Objective {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Completes an item task
+   * @returns true if successful, false if not
+   */
+  private async doItemTask(num?: number): Promise<boolean> {
+    return await this.character.executeJobNow(
+      new ItemTaskObjective(this.character, num ?? 1),
+      true,
+      true,
+      this.objectiveId,
+    );
   }
 
   /**
@@ -281,10 +302,7 @@ export class IdleLabourerObjective extends Objective {
   }
 
   /**
-   * Increase the level of a skill by 1, or combat level if no skill passed in
-   * @todo Change this so that it only gets a set amount of an item at a time so that the idle task doesn't take a long time.
-   *        I would like to have characters check for events and prioritise events over leveling skills so if we spend ~5 hours
-   *        leveling a skill then we might miss some important events
+   * Gather an inventory full of the highest level material to level up that skill
    * @param skill the skill to train
    * @returns true if successful
    */
@@ -329,30 +347,29 @@ export class IdleLabourerObjective extends Objective {
       return true;
     }
 
-    if (!skill) {
-      job = new TrainCombatObjective(
-        this.character,
-        this.character.data.level + 1,
+    if (skill !== 'woodcutting' && skill !== 'mining') {
+      logger.debug(
+        `Labourers shouldn't be training ${skill}. Should only train mining or woodcutting`,
       );
-    } else if (isGatheringSkill(skill)) {
-      job = new TrainGatheringSkillObjective(
-        this.character,
-        skill,
-        this.character.getCharacterLevel(this.character.data, skill) + 1,
-      );
-    } else {
-      job = new TrainCraftingSkillObjective(
-        this.character,
-        skill,
-        this.character.getCharacterLevel(this.character.data, skill) + 1,
-      );
+      return true;
     }
-    return await this.character.executeJobNow(
-      job,
-      true,
-      true,
-      this.objectiveId,
+
+    const resourceTypes: StaticDataPageResourceSchema | ApiError =
+      await getAllResourceInformation({
+        skill: skill,
+        max_level: this.character.getCharacterLevel(this.character.data, skill),
+      });
+    if (resourceTypes instanceof ApiError) {
+      return this.character.handleErrors(resourceTypes);
+    }
+
+    let resourceToGather = resourceTypes.data.at(-1).drops[0].code;
+
+    const numToGather = Math.round(
+      this.character.data.inventory_max_items * 0.9,
     );
+    await this.character.gatherNow(numToGather, resourceToGather, false);
+    return await this.character.depositNow(numToGather, resourceToGather);
   }
 
   /**
