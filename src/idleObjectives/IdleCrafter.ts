@@ -62,7 +62,7 @@ export class IdleCrafterObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWithinLevelRange();
+    await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
     // If crafter, trian weapon gear and jewelrycrafting

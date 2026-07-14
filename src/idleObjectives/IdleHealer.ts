@@ -71,7 +71,7 @@ export class IdleHealerObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWithinLevelRange();
+    await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
     // Train skills depending on their role

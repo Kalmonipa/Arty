@@ -39,17 +39,17 @@ export async function completeTasksFarmerAchievement(
  * The aim of this function is to keep all characters within 10 level of the highest level char
  * This lets us recycle older gear so that it doesn't clog up the bank
  */
-export async function checkWithinLevelRange(): Promise<boolean> {
+export async function checkWithinLevelRange(
+  character: Character,
+): Promise<boolean> {
   const allCharacterDetails = await GetCharacterData();
-  this.character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
+  character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
 
-  if (this.character.data.level < this.character.highestCharLevel - 10) {
+  if (character.data.level < character.highestCharLevel - 10) {
     logger.info(
-      `Character level (${this.character.data.level}) is more than 10 levels behind the leader (${this.character.highestCharLevel}). Training ${this.character.highestCharLevel - this.character.data.level} levels`,
+      `Character level (${character.data.level}) is more than 10 levels behind the leader (${character.highestCharLevel}). Training ${character.highestCharLevel - character.data.level} levels`,
     );
-    return await this.character.trainCombatLevelNow(
-      this.character.highestCharLevel - 10,
-    );
+    return await character.trainCombatLevelNow(character.highestCharLevel - 10);
   }
 
   return true;

@@ -90,7 +90,7 @@ export class IdleLabourerObjective extends Objective {
     await this.checkWishlistToFulfill('woodcutting');
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWithinLevelRange();
+    await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.doItemTask(2);

@@ -71,7 +71,7 @@ export class IdleFishermanObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWithinLevelRange();
+    await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
     // Fisherman has an additional check: food must be sufficiently stocked first.

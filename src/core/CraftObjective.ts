@@ -108,10 +108,6 @@ export class CraftObjective extends Objective {
         // ToDo: Make this based on roles not skill level
         if (targetItem.craft?.skill) {
           const skillNeeded = targetItem.craft.skill;
-          let charSkillLevel: number = this.character.getCharacterLevel(
-            this.character.data,
-            skillNeeded,
-          );
 
           const requiredRole = SKILL_ROLE[skillNeeded];
           if (requiredRole && this.character.role !== requiredRole) {

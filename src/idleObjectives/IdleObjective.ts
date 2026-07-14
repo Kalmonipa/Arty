@@ -68,7 +68,7 @@ export class IdleObjective extends Objective {
     await this.checkAndBuyArtifacts();
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWithinLevelRange();
+    await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
     // Alchemist never does tasks — sole responsibility is crafting potions.
