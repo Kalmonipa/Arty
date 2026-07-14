@@ -133,6 +133,7 @@ import { IdleHealerObjective } from '../idleObjectives/IdleHealer.js';
 import { IdleCrafterObjective } from '../idleObjectives/IdleCrafter.js';
 import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
 import { IdleLabourerObjective } from '../idleObjectives/IdleLabourer.js';
+import { IdleFishermanObjective } from '../idleObjectives/IdleFisherman.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -1106,6 +1107,8 @@ export class Character {
         if (this.shouldDoIdleJobs) {
           if (this.role === 'crafter') {
             await this.appendJob(new IdleCrafterObjective(this, this.role))
+          } else if (this.role === 'fisherman') {
+            await this.appendJob(new IdleFishermanObjective(this));
           } else if (this.role === 'labourer') {
             await this.appendJob(new IdleLabourerObjective(this));
           } else if (this.role === 'healer') {
