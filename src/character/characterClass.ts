@@ -1763,9 +1763,7 @@ export class Character {
             Math.min(numInBank, numNeeded),
           );
           return true;
-        } else if (
-          potion.level <= this.getCharacterLevel(this.data, 'alchemy')
-        ) {
+        } else if (this.role === 'healer' || this.role === 'alchemist') {
           logger.debug(`Can't find any ${potion.name}. Crafting`);
           if (await this.craftNow(numNeeded, potion.code)) {
             return await this.equipNow(potion.code, slot, numNeeded);

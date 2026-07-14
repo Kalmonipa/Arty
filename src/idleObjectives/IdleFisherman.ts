@@ -1,32 +1,19 @@
 import {
   actionClaimPendingItems,
-  getAllItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
-import { Role } from '../types/CharacterData.js';
 import {
   GatheringSkill,
   ItemSchema,
-  Skill,
   StaticDataPageResourceSchema,
 } from '../types/types.js';
-import {
-  GetCharacterData,
-  getHighestCharLevel,
-  isGatheringSkill,
-  logger,
-} from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
-import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { Objective } from '../core/Objective.js';
-import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
-import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
-import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import {
   checkWithinLevelRange,
@@ -315,9 +302,6 @@ export class IdleFishermanObjective extends Objective {
 
   /**
    * Increase the level of a skill by 1, or combat level if no skill passed in
-   * @todo Change this so that it only gets a set amount of an item at a time so that the idle task doesn't take a long time.
-   *        I would like to have characters check for events and prioritise events over leveling skills so if we spend ~5 hours
-   *        leveling a skill then we might miss some important events
    * @param skill the skill to train
    * @returns true if successful
    */
