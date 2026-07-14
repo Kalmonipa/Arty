@@ -1104,7 +1104,9 @@ export class Character {
         // ToDo: I'm tempted to separate out the IdleCrafterObjective into specific crafter
         // roles. At the moment they are all the same so no need but I see that changing.
         if (this.shouldDoIdleJobs) {
-          if (this.role === 'labourer') {
+          if (this.role === 'crafter') {
+            await this.appendJob(new IdleCrafterObjective(this, this.role))
+          } else if (this.role === 'labourer') {
             await this.appendJob(new IdleLabourerObjective(this));
           } else if (this.role === 'healer') {
             await this.appendJob(new IdleHealerObjective(this));
