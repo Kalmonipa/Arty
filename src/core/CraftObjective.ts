@@ -34,8 +34,7 @@ export class CraftObjective extends Objective {
     this.shouldEmitMetrics = true;
     this.metricLabel = target.code;
     this.checkBank = checkBank;
-    this.includeInventory =
-      includeInventory !== undefined ? includeInventory : true;
+    this.includeInventory = includeInventory ?? true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -58,6 +57,9 @@ export class CraftObjective extends Objective {
 
   /**
    * @description Craft the item. Character will move to the correct workshop map
+   * @todo If the item to craft/retrieve is wooductting or mining then labourers should do it
+   * If item is alchemy, healer should do it
+   * If item is weapon/gear/jewelry, crafter should do it
    */
   async run(): Promise<boolean> {
     if (this.target.quantity === 0) {
@@ -79,7 +81,6 @@ export class CraftObjective extends Objective {
           logger.error(`Craft failed after ${attempt} attempts`);
           return false;
         }
-        continue;
       } else {
         if (!(await this.checkStatus())) return false;
 

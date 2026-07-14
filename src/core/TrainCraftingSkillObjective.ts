@@ -250,7 +250,7 @@ async function calculateBestCraftingItem(
   let bestItem = 'no_item';
 
   logger.debug(
-    `Example items in craftable list: ${craftableItemList[0].code}, ${craftableItemList[craftableItemList.length - 1].code}`,
+    `Example items in craftable list: ${craftableItemList[0].code}, ${craftableItemList.at(-1).code}`,
   );
 
   for (const item of craftableItemList) {
