@@ -121,7 +121,7 @@ export async function checkAndBuyArtifacts(
     return;
   }
 
-  const charLevel = this.character.getCharacterLevel(character.data);
+  const charLevel = character.getCharacterLevel(character.data);
 
   for (const [, artifacts] of Object.entries(character.artifactsMap)) {
     const eligible = (artifacts as ItemSchema[]).filter(
