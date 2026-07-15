@@ -1,5 +1,9 @@
+import { getAllNpcItems } from '../api_calls/NPC.js';
 import { Character } from '../character/characterClass.js';
+import { ApiError } from '../core/Error.js';
+import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { Role } from '../types/CharacterData.js';
+import { CharacterSchema, ItemSchema } from '../types/types.js';
 import { GetCharacterData, getHighestCharLevel, logger } from '../utils.js';
 import {
   deleteExpiredWishlistRequests,
@@ -106,4 +110,83 @@ export async function checkWithinLevelRange(
   }
 
   return true;
+}
+
+export async function checkAndBuyArtifacts(
+  character: Character,
+): Promise<void> {
+  if (!character.artifactsMap) {
+    logger.warn('checkAndBuyArtifacts: artifactsMap not built, skipping');
+    return;
+  }
+
+  const charLevel = this.character.getCharacterLevel(character.data);
+
+  for (const [, artifacts] of Object.entries(character.artifactsMap)) {
+    const eligible = (artifacts as ItemSchema[]).filter(
+      (a) => a.level <= charLevel,
+    );
+    if (eligible.length === 0) continue;
+
+    const artifact = eligible.reduce((best, a) =>
+      a.level > best.level ? a : best,
+    );
+
+    const equipped =
+      character.getCharacterGearIn('artifact1') === artifact.code ||
+      character.getCharacterGearIn('artifact2') === artifact.code ||
+      character.getCharacterGearIn('artifact3') === artifact.code;
+    const inInv = character.checkQuantityOfItemInInv(artifact.code);
+    const inBank = await character.checkQuantityOfItemInBank(artifact.code);
+
+    if (equipped || inInv + inBank >= 1) continue;
+
+    const npcResult = await getAllNpcItems({ code: artifact.code });
+    if (npcResult instanceof ApiError || npcResult.data.length === 0) {
+      logger.debug(
+        `checkAndBuyArtifacts: no NPC sells ${artifact.code}, skipping`,
+      );
+      continue;
+    }
+
+    const validItems = npcResult.data.filter((item) => item.buy_price != null);
+    if (validItems.length === 0) {
+      logger.debug(
+        `checkAndBuyArtifacts: no valid buy_price for ${artifact.code}, skipping`,
+      );
+      continue;
+    }
+
+    const cheapest = validItems.reduce((a, b) =>
+      a.buy_price! < b.buy_price! ? a : b,
+    );
+    const { buy_price, currency } = cheapest;
+
+    const currencyInInv = character.checkQuantityOfItemInInv(currency);
+    const currencyInBank = await character.checkQuantityOfItemInBank(currency);
+
+    if (currencyInInv + currencyInBank < buy_price!) {
+      logger.debug(
+        `checkAndBuyArtifacts: cannot afford ${artifact.code} (need ${buy_price} ${currency}), skipping`,
+      );
+      continue;
+    }
+
+    const bought = await character.executeJobNow(
+      new TradeObjective(character, 'buy', 1, artifact.code),
+    );
+    if (!bought) {
+      logger.warn(
+        `checkAndBuyArtifacts: failed to buy ${artifact.code}, continuing`,
+      );
+      continue;
+    }
+
+    const deposited = await character.depositNow(1, artifact.code);
+    if (!deposited) {
+      logger.warn(
+        `checkAndBuyArtifacts: failed to deposit ${artifact.code}, continuing`,
+      );
+    }
+  }
 }
