@@ -1,5 +1,6 @@
 import {
   actionClaimPendingItems,
+  getItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
@@ -21,6 +22,12 @@ import {
   completeTasksFarmerAchievement,
 } from './idleUtils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
+import { AcquisitionMethod } from '../wishlist/types.js';
+import {
+  getOpenWishlistRequests,
+  markAsExecuting,
+  markAsFulfilled,
+} from '../wishlist/functions.js';
 
 export class IdleFishermanObjective extends Objective {
   constructor(character: Character) {
@@ -57,6 +64,15 @@ export class IdleFishermanObjective extends Objective {
     if (this.checkIdleJobIsLast()) return true;
 
     await this.checkAndBuyArtifacts();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.checkWishlistToFulfill('fishing');
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.checkWishlistToFulfill('cooking');
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.checkWishlistToFulfill('tasks');
     if (this.checkIdleJobIsLast()) return true;
 
     await checkOnHoldQueue(this.character);
@@ -356,5 +372,57 @@ export class IdleFishermanObjective extends Objective {
     );
     await this.character.gatherNow(numToGather, resourceToGather, false);
     return await this.character.depositNow(numToGather, resourceToGather);
+  }
+
+  /**
+   * @description Checks the wishlist for any requests of a certain type
+   * Fisherman looks at fishing + cooking + tasks
+   * @param acquisitionMethod The way to retrieve the requested item
+   * @returns true if successful, false if encounter some failure along the way
+   * @todo Make this a shared function for all idle objectives
+   */
+  private async checkWishlistToFulfill(
+    acquisitionMethod: AcquisitionMethod,
+  ): Promise<boolean> {
+    const wishlistRequests = await getOpenWishlistRequests(acquisitionMethod);
+
+    if (wishlistRequests.length === 0) {
+      logger.info(`No ${acquisitionMethod} wishlist requests to fulfill`);
+      return true;
+    }
+
+    for (const request of wishlistRequests) {
+      const itemInformation = await getItemInformation(request.item_code);
+      if (itemInformation instanceof ApiError) {
+        logger.warn(`Item information not found for ${request.item_code}`);
+        return false;
+      }
+
+      if (
+        acquisitionMethod !== 'tasks' &&
+        acquisitionMethod !== 'fishing' &&
+        acquisitionMethod !== 'cooking'
+      ) {
+        logger.debug(
+          `${acquisitionMethod} is not part of the fishermans tasks. Skipping`,
+        );
+        continue;
+      }
+
+      if (
+        itemInformation.level <
+        this.character.getCharacterLevel(this.character.data)
+      ) {
+        await markAsExecuting(request.id);
+        await this.character.gatherNow(request.quantity, request.item_code);
+        if (
+          await this.character.depositNow(request.quantity, request.item_code)
+        ) {
+          await markAsFulfilled(request.id);
+        }
+      }
+    }
+
+    return true;
   }
 }
