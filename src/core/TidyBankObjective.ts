@@ -1,7 +1,7 @@
 import { getBankItems } from '../api_calls/Bank.js';
 import { actionDeleteItem, getAllItemInformation } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
-import { CraftSkill, ItemSchema } from '../types/types.js';
+import { CraftSkill, ItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
@@ -51,33 +51,52 @@ export class TidyBankObjective extends Objective {
    * @description Picks a random resource to clean up from the available options. Currently just cooks fish
    */
   async run(): Promise<boolean> {
+    const contentsOfBank = await this.character.getAllBankItems();
+    if (contentsOfBank instanceof ApiError) {
+      this.character.handleErrors(contentsOfBank);
+      return false;
+    }
+
     switch (this.role) {
       case 'alchemist':
         break;
 
       case 'fisherman':
+        await this.cleanUpBags(contentsOfBank);
         return await this.cookFood();
 
       case 'gearcrafter':
-        return await this.recycleExcessEquipment('gearcrafting');
+        return await this.recycleExcessEquipment(
+          'gearcrafting',
+          contentsOfBank,
+        );
 
       case 'jewelrycrafter':
-        return await this.recycleExcessEquipment('jewelrycrafting');
+        return await this.recycleExcessEquipment(
+          'jewelrycrafting',
+          contentsOfBank,
+        );
 
       case 'lumberjack':
         break;
 
       case 'weaponcrafter':
-        return await this.recycleExcessEquipment('weaponcrafting');
+        return await this.recycleExcessEquipment(
+          'weaponcrafting',
+          contentsOfBank,
+        );
 
       case 'crafter':
-        await this.recycleExcessEquipment('gearcrafting');
-        await this.recycleExcessEquipment('jewelrycrafting');
-        return await this.recycleExcessEquipment('weaponcrafting');
+        await this.recycleExcessEquipment('gearcrafting', contentsOfBank);
+        await this.recycleExcessEquipment('jewelrycrafting', contentsOfBank);
+        return await this.recycleExcessEquipment(
+          'weaponcrafting',
+          contentsOfBank,
+        );
 
       case 'miner':
       case 'labourer':
-        return await this.craftBars();
+        return await this.craftBars(contentsOfBank);
 
       default:
         break;
@@ -129,13 +148,9 @@ export class TidyBankObjective extends Objective {
    * @description Finds any raw ore in the bank and crafts it into bars
    * @returns
    */
-  private async craftBars(): Promise<boolean> {
-    const contentsOfBank = await this.character.getAllBankItems();
-    if (contentsOfBank instanceof ApiError) {
-      this.character.handleErrors(contentsOfBank);
-      return false;
-    }
-
+  private async craftBars(
+    contentsOfBank: SimpleItemSchema[],
+  ): Promise<boolean> {
     for (const item of this.rawOreList) {
       const content = contentsOfBank.find((bankItem) => bankItem.code === item);
       if (!content) {
@@ -215,87 +230,13 @@ export class TidyBankObjective extends Objective {
   }
 
   /**
-   * @description Recycle any weapons that we have more than 5 of in the bank
-   */
-  private async recycleExcessWeapons() {
-    const maxNumberNeededInBank = 5;
-    for (const weaponList of Object.values(this.character.weaponMap)) {
-      for (const weapon of weaponList) {
-        if (weapon.level > this.character.data.weaponcrafting_level) {
-          logger.info(`Not high enough level to recycle ${weapon.code}`);
-          break;
-        }
-
-        const numInBank = await this.character.checkQuantityOfItemInBank(
-          weapon.code,
-        );
-        if (numInBank < maxNumberNeededInBank) {
-          logger.info(
-            `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${weapon.code}`,
-          );
-          break;
-        }
-
-        await this.character.recycleItemNow(
-          weapon.code,
-          numInBank - maxNumberNeededInBank,
-        );
-      }
-    }
-    return true;
-  }
-
-  /**
-   * @description Recycle any excess gear if there are more than 5 in the bank
-   */
-  private async recycleExcessGear(): Promise<boolean> {
-    const maxNumberNeededInBank = 5;
-
-    const gearListResponse = await getAllItemInformation({
-      craft_skill: 'gearcrafting',
-      max_level: this.character.data.gearcrafting_level,
-    });
-    if (gearListResponse instanceof ApiError) {
-      this.character.handleErrors(gearListResponse);
-      return false;
-    }
-
-    const contentsOfBank = await getBankItems(undefined, undefined, 100);
-    if (contentsOfBank instanceof ApiError) {
-      this.character.handleErrors(contentsOfBank);
-      return false;
-    }
-
-    for (const gear of gearListResponse.data) {
-      const numInBank = contentsOfBank.data.find(
-        (bankItem) => bankItem.code === gear.code,
-      ).quantity;
-      if (numInBank === undefined) {
-        logger.info(`${gear.code} not found in bank`);
-        break;
-      }
-
-      if (numInBank < maxNumberNeededInBank) {
-        logger.info(
-          `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
-        );
-        break;
-      }
-
-      await this.character.recycleItemNow(
-        gear.code,
-        numInBank - maxNumberNeededInBank,
-      );
-    }
-
-    return true;
-  }
-
-  /**
    * @description Recycle any excess gear if there are more than 5 in the bank.
    * Also recycles all of any item whose level is more than 10 below the lowest character level.
    */
-  private async recycleExcessEquipment(skill: CraftSkill): Promise<boolean> {
+  private async recycleExcessEquipment(
+    skill: CraftSkill,
+    contentsOfBank: SimpleItemSchema[],
+  ): Promise<boolean> {
     const maxNumberNeededInBank = 5;
     const obsoleteThreshold = this.character.lowestCharLevel - 10;
 
@@ -307,8 +248,6 @@ export class TidyBankObjective extends Objective {
       this.character.handleErrors(itemListResponse);
       return false;
     }
-
-    const contentsOfBank = await this.character.getAllBankItems();
 
     for (const gear of itemListResponse.data) {
       const content = contentsOfBank.find(
@@ -363,5 +302,39 @@ export class TidyBankObjective extends Objective {
     }
 
     return true;
+  }
+
+  /**
+   * Uses any gem bags in the bank
+   */
+  private async cleanUpBags(contentsOfBank: SimpleItemSchema[]) {
+    const itemListResponse = await getAllItemInformation({
+      type: 'consumable',
+    });
+    if (itemListResponse instanceof ApiError) {
+      this.character.handleErrors(itemListResponse);
+      return false;
+    }
+
+    for (const item of itemListResponse.data) {
+      if (item.subtype !== 'bag') {
+        logger.debug(`${item.name} is not a bag. Skipping`);
+        continue;
+      }
+
+      const content = contentsOfBank.find(
+        (bankItem) => bankItem.code === item.code,
+      );
+      if (!content) {
+        logger.info(`No ${item.code} found in the bank`);
+        continue;
+      }
+      const numInBank = content.quantity;
+
+      logger.info(`Found ${numInBank}x ${item.name} in the bank`);
+
+      await this.character.withdrawNow(numInBank, item.code);
+      return await this.character.useItem(item.code, numInBank);
+    }
   }
 }
