@@ -270,19 +270,8 @@ export class IdleHealerObjective extends Objective {
   }
 
   /**
-   * Looks at certain achievements to see if we can make progress towards any of them
-   * I have a feeling this might be mostly hardcoding for specific achievements.
-   * @returns true if successful, false if not
-   */
-  private checkAchievementProgress(): boolean {
-    return true;
-  }
-
-  /**
    * Ensure that we have a minimum amount of certain items in the bank
    * - 300 Health potions of varying levels
-   * @todo If there are less than 300 maybe I just craft 300 instead of
-   * 300-(number in the bank)?
    */
   private async topUpPotionsInBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
@@ -299,37 +288,17 @@ export class IdleHealerObjective extends Objective {
     // Craft the best potion each character can actually use, so low-level
     // characters get low tiers and high-level characters get higher ones,
     // without wasting mats on tiers no character is stuck at.
-    const tiersToCraft = new Set<string>();
-    for (const char of this.character.allCharacterDetails ?? []) {
-      let best: ItemSchema | undefined;
-      for (const potion of restorePotions) {
-        if (
-          potion.craft.level <= alchemyLevel &&
-          potion.level <= char.level &&
-          (best === undefined || potion.level > best.level)
-        ) {
-          best = potion;
-        }
-      }
-      if (best) {
-        tiersToCraft.add(best.code);
-      }
-    }
+    const tiersToCraft = await this.findBestPotionsToCraft(
+      restorePotions,
+      alchemyLevel,
+    );
 
     for (const potion of restorePotions) {
       if (!tiersToCraft.has(potion.code)) {
         continue;
       }
-      const numInBank = await this.character.checkQuantityOfItemInBank(
-        potion.code,
-      );
-      if (numInBank < minPotionsToCraft) {
-        logger.info(`Crafting ${minPotionsToCraft - numInBank} ${potion.code}`);
-        await this.character.craftNow(
-          minPotionsToCraft - numInBank,
-          potion.code,
-        );
-      }
+      logger.info(`Crafting ${minPotionsToCraft} ${potion.code}`);
+      await this.character.craftNow(minPotionsToCraft, potion.code);
     }
 
     for (const potion of this.character.utilitiesMap['antipoison']) {
@@ -351,6 +320,35 @@ export class IdleHealerObjective extends Objective {
     }
 
     return true;
+  }
+
+  /**
+   * Figure out the best potion to craft
+   */
+  private async findBestPotionsToCraft(
+    restorePotions: ItemSchema[],
+    alchemyLevel: number,
+  ): Promise<Set<string>> {
+    let tiersToCraft = new Set<string>();
+
+    for (const char of this.character.allCharacterDetails ?? []) {
+      let best: ItemSchema | undefined;
+      for (const potion of restorePotions) {
+        if (
+          potion.craft.level <= alchemyLevel &&
+          potion.level <= char.level &&
+          (best === undefined || potion.level > best.level)
+        ) {
+          best = potion;
+        }
+      }
+
+      if (best) {
+        tiersToCraft.add(best.code);
+      }
+    }
+
+    return tiersToCraft;
   }
 
   /**
@@ -396,8 +394,7 @@ export class IdleHealerObjective extends Objective {
         return this.character.handleErrors(resourceTypes);
       }
 
-      let resourceToGather =
-        resourceTypes.data[resourceTypes.data.length - 1].drops[0].code;
+      let resourceToGather = resourceTypes.data.at(-1).drops[0].code;
 
       const numToGather = Math.round(
         this.character.data.inventory_max_items * 0.9,
