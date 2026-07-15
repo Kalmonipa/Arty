@@ -88,7 +88,7 @@ export class IdleFishermanObjective extends Objective {
     const taskCoinsInBank =
       await this.character.checkQuantityOfItemInBank('tasks_coin');
 
-    if (taskCoinsInBank < 25) {
+    if (taskCoinsInBank < 35) {
       await this.doItemTask(1);
       if (this.checkIdleJobIsLast()) return true;
     }
