@@ -226,12 +226,19 @@ export class IdleHealerObjective extends Objective {
           this.character.getCharacterLevel(this.character.data, 'alchemy') &&
         potion.craft.level <= this.character.highestCharLevel
       ) {
-        const numInBank = await this.character.checkQuantityOfItemInBank(
+        let numInBank = await this.character.checkQuantityOfItemInBank(
           potion.code,
         );
-        if (numInBank < minPotionsToCraft) {
+
+        // We want the healer to keep crafting potions. If someone is using them then
+        // the num in bank will decrease so we should create more
+        while (numInBank < minPotionsToCraft) {
           await this.character.craftNow(
             minPotionsToCraft - numInBank,
+            potion.code,
+          );
+
+          numInBank = await this.character.checkQuantityOfItemInBank(
             potion.code,
           );
         }
