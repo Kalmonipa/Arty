@@ -44,7 +44,11 @@ const createMockCraftableItem = (
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
-  pendingWishlistRequestIds: number[] = [];
+  pendingWishlistRequests: {
+    requestId: number;
+    itemCode: string;
+    quantity: number;
+  }[] = [];
 
   getCharacterLevel = jest.fn(
     (char: CharacterSchema, skillName?: string): number => {
@@ -1057,7 +1061,9 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
             : mockCharacter.data.level,
       );
       // A blocking request is already pending from a prior craft attempt
-      mockCharacter.pendingWishlistRequestIds = [1];
+      mockCharacter.pendingWishlistRequests = [
+        { requestId: 1, itemCode: 'iron_ore', quantity: 5 },
+      ];
 
       const objective = new TrainCraftingSkillObjective(
         mockCharacter as any,

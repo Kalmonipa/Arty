@@ -60,10 +60,18 @@ class MockOnHoldCharacter {
   clearOnHoldRetried = jest.fn();
 }
 
+function refs(...ids: number[]) {
+  return ids.map((requestId) => ({
+    requestId,
+    itemCode: `item_${requestId}`,
+    quantity: requestId,
+  }));
+}
+
 function onHoldEntry(overrides: Partial<any> = {}) {
   return {
     job: { objectiveId: 'craft_5_iron_sword_abcd' },
-    waitingOn: [1, 2],
+    waitingOn: refs(1, 2),
     parkedAt: '2026-07-14T00:00:00.000Z',
     retried: false,
     ...overrides,
@@ -123,7 +131,7 @@ describe('checkOnHoldQueue', () => {
 
   it('resumes a job and cleans up its rows once every request is fulfilled', async () => {
     const character = new MockOnHoldCharacter();
-    const entry = onHoldEntry({ waitingOn: [1, 2] });
+    const entry = onHoldEntry({ waitingOn: refs(1, 2) });
     character.onHold = [entry];
     mockedGetByIds.mockResolvedValue([
       { id: 1, fulfilled: true },
@@ -140,7 +148,7 @@ describe('checkOnHoldQueue', () => {
 
   it('keeps waiting while a request exists but is not yet fulfilled', async () => {
     const character = new MockOnHoldCharacter();
-    character.onHold = [onHoldEntry({ waitingOn: [1, 2] })];
+    character.onHold = [onHoldEntry({ waitingOn: refs(1, 2) })];
     mockedGetByIds.mockResolvedValue([
       { id: 1, fulfilled: true },
       { id: 2, fulfilled: false },
@@ -154,7 +162,7 @@ describe('checkOnHoldQueue', () => {
 
   it('retries once when a request has disappeared', async () => {
     const character = new MockOnHoldCharacter();
-    const entry = onHoldEntry({ waitingOn: [1, 2], retried: false });
+    const entry = onHoldEntry({ waitingOn: refs(1, 2), retried: false });
     character.onHold = [entry];
     mockedGetByIds.mockResolvedValue([{ id: 1, fulfilled: true }] as any); // id 2 gone
 
@@ -169,7 +177,7 @@ describe('checkOnHoldQueue', () => {
 
   it('drops a job whose request disappeared after it was already retried', async () => {
     const character = new MockOnHoldCharacter();
-    const entry = onHoldEntry({ waitingOn: [1, 2], retried: true });
+    const entry = onHoldEntry({ waitingOn: refs(1, 2), retried: true });
     character.onHold = [entry];
     mockedGetByIds.mockResolvedValue([{ id: 1, fulfilled: true }] as any); // id 2 gone
 

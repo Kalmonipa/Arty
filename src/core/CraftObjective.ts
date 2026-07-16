@@ -82,7 +82,11 @@ export class CraftObjective extends Objective {
       quantity,
       characterName: this.character.data.name,
     });
-    this.character.addBlockingWishlistRequest(requestId);
+    this.character.addBlockingWishlistRequest(
+      requestId,
+      craftingItem.code,
+      quantity,
+    );
     this.raisedBlockingRequest = true;
   }
 

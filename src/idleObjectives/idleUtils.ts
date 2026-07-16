@@ -62,13 +62,14 @@ export async function checkOnHoldQueue(character: Character): Promise<void> {
 
   // Snapshot because resume/drop mutate character.onHold
   for (const entry of [...character.onHold]) {
-    const rows = await getWishlistRequestsByIds(entry.waitingOn);
+    const requestIds = entry.waitingOn.map((r) => r.requestId);
+    const rows = await getWishlistRequestsByIds(requestIds);
 
     const allFulfilled =
-      rows.length === entry.waitingOn.length && rows.every((r) => r.fulfilled);
+      rows.length === requestIds.length && rows.every((r) => r.fulfilled);
 
     if (allFulfilled) {
-      for (const id of entry.waitingOn) {
+      for (const id of requestIds) {
         await deleteWishlistRequest(id);
       }
       character.clearOnHoldRetried(entry.job.objectiveId);

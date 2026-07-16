@@ -46,6 +46,7 @@ export default function JobsRouter(char: Character) {
       }
 
       const jobs = char.listObjectivesWithParents();
+      const onHold = char.listOnHoldJobs();
 
       return res.status(201).json({
         message: `${char.data.name} has ${jobs.length} jobs in queue`,
@@ -53,6 +54,7 @@ export default function JobsRouter(char: Character) {
         role: char.role,
         jobs: jobs,
         num_jobs: jobs.length,
+        onHold: onHold,
       });
     } catch (error) {
       return res

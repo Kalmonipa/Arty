@@ -87,7 +87,7 @@ export abstract class Objective {
 
     // Start from a clean slate so only requests raised by this job's run park it
     if (this.parkOnWishlistRequest) {
-      this.character.pendingWishlistRequestIds = [];
+      this.character.pendingWishlistRequests = [];
     }
 
     await this.runSharedPrereqChecks();
@@ -105,10 +105,10 @@ export abstract class Objective {
     // so it resumes once those requests are fulfilled.
     if (
       this.parkOnWishlistRequest &&
-      this.character.pendingWishlistRequestIds.length > 0
+      this.character.pendingWishlistRequests.length > 0
     ) {
       const parked = await this.character.parkJob(this);
-      this.character.pendingWishlistRequestIds = [];
+      this.character.pendingWishlistRequests = [];
       if (parked) {
         return false;
       }

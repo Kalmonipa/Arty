@@ -57,7 +57,9 @@ import {
   ObjectiveStatus,
   SerializedJob,
   OnHoldJob,
+  OnHoldJobInfo,
   SimpleObjectiveInfo,
+  WishlistRequestRef,
 } from '../types/ObjectiveData.js';
 import { FightObjective } from '../core/FightObjective.js';
 import { EquipObjective } from '../core/EquipObjective.js';
@@ -165,10 +167,10 @@ export class Character {
   /** The most parked jobs a character may hold at once */
   maxOnHoldJobs = 3;
   /**
-   * Wishlist request ids raised during the current root job that should cause
-   * the job to be parked when it finishes. Reset before each root job runs.
+   * Wishlist requests raised during the current root job that should cause the
+   * job to be parked when it finishes. Reset before each root job runs.
    */
-  pendingWishlistRequestIds: number[] = [];
+  pendingWishlistRequests: WishlistRequestRef[] = [];
   /**
    * Objective ids of on-hold jobs that have already been retried once, so a
    * re-parked job is dropped (rather than retried again) if it can't be
@@ -430,6 +432,22 @@ export class Character {
       });
     }
     return objectives;
+  }
+
+  /**
+   * @description Lists the jobs parked on the onHold queue, flattened to the same
+   * shape as listObjectivesWithParents plus the requests each job is waiting on.
+   */
+  listOnHoldJobs(): OnHoldJobInfo[] {
+    return this.onHold.map((entry) => ({
+      id: entry.job.objectiveId,
+      status: entry.job.status,
+      progress: entry.job.progress,
+      parentId: entry.job.parentId,
+      childId: entry.job.childId,
+      waitingOn: entry.waitingOn,
+      parkedAt: entry.parkedAt,
+    }));
   }
 
   /**
@@ -973,10 +991,14 @@ export class Character {
    * before it can continue, so the job gets parked when it finishes. A null id
    * (failed request) is ignored.
    */
-  addBlockingWishlistRequest(requestId: number | null): void {
+  addBlockingWishlistRequest(
+    requestId: number | null,
+    itemCode: string,
+    quantity: number,
+  ): void {
     if (requestId == null) return;
-    if (!this.pendingWishlistRequestIds.includes(requestId)) {
-      this.pendingWishlistRequestIds.push(requestId);
+    if (!this.pendingWishlistRequests.some((r) => r.requestId === requestId)) {
+      this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
     }
   }
 
@@ -995,7 +1017,7 @@ export class Character {
       return false;
     }
 
-    const waitingOn = [...this.pendingWishlistRequestIds];
+    const waitingOn = [...this.pendingWishlistRequests];
     job.setOnHold();
 
     this.onHold.push({
@@ -1005,7 +1027,9 @@ export class Character {
       retried: this.onHoldRetriedIds.has(job.objectiveId),
     });
     logger.info(
-      `Parked ${job.objectiveId} on hold, waiting on wishlist request(s) ${waitingOn.join(', ')}`,
+      `Parked ${job.objectiveId} on hold, waiting on wishlist request(s) ${waitingOn
+        .map((r) => `${r.quantity} ${r.itemCode} (#${r.requestId})`)
+        .join(', ')}`,
     );
     await this.saveJobQueue();
     return true;

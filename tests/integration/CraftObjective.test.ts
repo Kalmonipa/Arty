@@ -1009,9 +1009,13 @@ describe('CraftObjective Integration Tests', () => {
       expect(addToWishlist).toHaveBeenCalledTimes(2);
       expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
         101,
+        'ore_a',
+        1,
       );
       expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
         102,
+        'ore_b',
+        1,
       );
       expect(actionCraft).not.toHaveBeenCalled();
     });
