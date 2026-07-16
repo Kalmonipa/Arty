@@ -19,9 +19,9 @@ interface RetryConfig {
 }
 
 const DEFAULT_RETRY: RetryConfig = {
-  maxRetries: 5,
-  baseDelaySeconds: 5,
-  maxDelaySeconds: 60,
+  maxRetries: 10,
+  baseDelaySeconds: 10,
+  maxDelaySeconds: 300,
 };
 
 export interface ApiRequestOptions<T = unknown> {
