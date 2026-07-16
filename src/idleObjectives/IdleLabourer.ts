@@ -189,6 +189,7 @@ export class IdleLabourerObjective extends Objective {
   private async checkWishlistToFulfill(
     acquisitionMethod: AcquisitionMethod,
   ): Promise<boolean> {
+    logger.info(`Checking for ${acquisitionMethod} requests`)
     const wishlistRequests = await getOpenWishlistRequests(acquisitionMethod);
 
     if (wishlistRequests.length === 0) {
