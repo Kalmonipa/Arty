@@ -352,8 +352,6 @@ async function calculateScore(
       );
       score += 150 * numNeeded;
     } else if (ingredSchema.subtype === 'mob') {
-      // ToDo: Change this so that it looks at all mobs that drop it
-      // and find the best mob to fight
       const droppingMonsters = character.monsterData.filter((mob) =>
         mob.drops.some((drop) => drop.code === ingredSchema.code),
       );
@@ -366,9 +364,29 @@ async function calculateScore(
         continue;
       }
 
+      // ToDo: Change this so that it looks at all mobs that drop it
+      // and find the best mob to fight
       const monsterToKill = droppingMonsters[0];
       if (!monsterToKill) {
         score += 1000000;
+        continue;
+      }
+
+      const proposedLoadout = await character.proposeCombatLoadout(
+        monsterToKill.code,
+      );
+
+      const fightSimResult = await character.simulateFightNow(
+        [proposedLoadout],
+        monsterToKill.code,
+        10, // Iterations
+      );
+
+      if (!fightSimResult) {
+        logger.debug(
+          `${character.data.name} cannot kill ${monsterToKill.name}. Won't craft this item`,
+        );
+        score += 100000;
         continue;
       }
 
