@@ -109,6 +109,8 @@ export class TrainCraftingSkillObjective extends Objective {
       // Weaponcrafter ensures we have 2 of every tool first
       if (this.skill === 'weaponcrafting') {
         for (const craftableItem of craftableItemsList) {
+          if (!(await this.checkStatus())) return false;
+
           if (craftableItem.subtype !== 'tool') {
             logger.debug(
               `[train_${this.skill}] Skipping ${craftableItem.code} because it's not a tool`,
@@ -156,6 +158,8 @@ export class TrainCraftingSkillObjective extends Objective {
       }
       // Then move on to crafting 2 of every other item
       for (const craftableItem of craftableItemsList) {
+        if (!(await this.checkStatus())) return false;
+
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
           (bankItem) => craftableItem.code === bankItem.code,
@@ -193,6 +197,8 @@ export class TrainCraftingSkillObjective extends Objective {
           return true;
         }
       }
+
+      if (!(await this.checkStatus())) return false;
 
       // Find item with the best crafting score
       const itemToCraft = await calculateBestCraftingItem(
