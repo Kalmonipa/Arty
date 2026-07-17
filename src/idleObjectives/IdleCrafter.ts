@@ -95,12 +95,12 @@ export class IdleCrafterObjective extends Objective {
         this.character.data,
         'jewelrycrafting',
       );
-      if (gearLevel < combatLevel) {
-        await this.trainSkill('gearcrafting');
-        if (this.checkIdleJobIsLast()) return true;
-      }
       if (weaponLevel < combatLevel) {
         await this.trainSkill('weaponcrafting');
+        if (this.checkIdleJobIsLast()) return true;
+      }
+      if (gearLevel < combatLevel) {
+        await this.trainSkill('gearcrafting');
         if (this.checkIdleJobIsLast()) return true;
       }
       if (jewelryLevel < combatLevel) {
