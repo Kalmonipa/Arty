@@ -26,6 +26,7 @@ import {
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
+  checkWishlistToFulfill,
 } from './idleUtils.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 import {
@@ -33,6 +34,7 @@ import {
   markAsExecuting,
   markAsFulfilled,
 } from '../wishlist/functions.js';
+import { FulfillWishlistRequestObjective } from '../wishlist/objective.js';
 
 export class IdleCrafterObjective extends Objective {
   role: Role;
@@ -74,7 +76,7 @@ export class IdleCrafterObjective extends Objective {
     await checkOnHoldQueue(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.checkWishlistToFulfill('fight');
+    await checkWishlistToFulfill('fight');
     if (this.checkIdleJobIsLast()) return true;
 
     await checkWithinLevelRange(this.character);
@@ -298,52 +300,5 @@ export class IdleCrafterObjective extends Objective {
       true,
       this.objectiveId,
     );
-  }
-
-  /**
-   * @description Checks the wishlist for any requests of a certain type
-   * Labourers primarily look at mining + woodcutting
-   * Crafter looks at weapon/gear/jewelrycrafting
-   * Alchemist looks at alchemy
-   * Fisherman looks at fishing + cooking
-   * @param acquisitionMethod The way to retrieve the requested item
-   * @returns true if successful, false if encounter some failure along the way
-   */
-  private async checkWishlistToFulfill(
-    acquisitionMethod: AcquisitionMethod,
-  ): Promise<boolean> {
-    const wishlistRequests = await getOpenWishlistRequests(acquisitionMethod);
-
-    if (wishlistRequests.length === 0) {
-      logger.info(`No ${acquisitionMethod} wishlist requests to fulfill`);
-      return true;
-    }
-
-    for (const request of wishlistRequests) {
-      const itemInformation = await getItemInformation(request.item_code);
-      if (itemInformation instanceof ApiError) {
-        logger.warn(`Item information not found for ${request.item_code}`);
-        return false;
-      }
-
-      if (acquisitionMethod !== 'fight') {
-        continue;
-      }
-
-      if (
-        itemInformation.level <
-        this.character.getCharacterLevel(this.character.data)
-      ) {
-        await markAsExecuting(request.id);
-        await this.character.gatherNow(request.quantity, request.item_code);
-        if (
-          await this.character.depositNow(request.quantity, request.item_code)
-        ) {
-          await markAsFulfilled(request.id);
-        }
-      }
-    }
-
-    return true;
   }
 }

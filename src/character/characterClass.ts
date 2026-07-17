@@ -136,6 +136,8 @@ import { IdleCrafterObjective } from '../idleObjectives/IdleCrafter.js';
 import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
 import { IdleLabourerObjective } from '../idleObjectives/IdleLabourer.js';
 import { IdleFishermanObjective } from '../idleObjectives/IdleFisherman.js';
+import { FulfillWishlistRequestObjective } from '../wishlist/objective.js';
+import { AcquisitionMethod } from '../wishlist/types.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -617,6 +619,10 @@ export class Character {
       };
     } else if (job instanceof ExpandBankObjective) {
       return {};
+    } else if (job instanceof FulfillWishlistRequestObjective) {
+      return {
+        acquisitionMethod: job.acquisitionMethod,
+      };
     } else if (job instanceof GatherObjective) {
       return {
         target: job.target,
@@ -696,6 +702,13 @@ export class Character {
             this,
             specificData.target as ObjectiveTargets,
           );
+          break;
+        case 'DepositObjective':
+          job = new DepositObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
+          break;
         case 'EvaluateGearObjective':
           job = new EvaluateGearObjective(
             this,
@@ -714,24 +727,24 @@ export class Character {
         case 'ExpandBankObjective':
           job = new ExpandBankObjective(this);
           break;
-        case 'GatherObjective':
-          job = new GatherObjective(
-            this,
-            specificData.target as ObjectiveTargets,
-            specificData.checkBank as boolean,
-            specificData.includeInventory as boolean,
-          );
-          break;
         case 'FightObjective':
           job = new FightObjective(
             this,
             specificData.target as ObjectiveTargets,
           );
           break;
-        case 'DepositObjective':
-          job = new DepositObjective(
+        case 'FulFillWishlistObjective':
+          job = new FulfillWishlistRequestObjective(
+            this,
+            specificData.acquisitionMethod as AcquisitionMethod,
+          );
+          break;
+        case 'GatherObjective':
+          job = new GatherObjective(
             this,
             specificData.target as ObjectiveTargets,
+            specificData.checkBank as boolean,
+            specificData.includeInventory as boolean,
           );
           break;
         case 'WithdrawObjective':

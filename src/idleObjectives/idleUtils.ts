@@ -10,6 +10,8 @@ import {
   getWishlistRequestsByIds,
   deleteWishlistRequest,
 } from '../wishlist/functions.js';
+import { FulfillWishlistRequestObjective } from '../wishlist/objective.js';
+import { AcquisitionMethod } from '../wishlist/types.js';
 
 /**
  * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
@@ -190,4 +192,23 @@ export async function checkAndBuyArtifacts(
       );
     }
   }
+}
+
+/**
+ * @description Checks the wishlist for any requests of a certain type
+ * Labourers primarily look at mining + woodcutting
+ * Crafter looks at weapon/gear/jewelrycrafting
+ * Alchemist looks at alchemy
+ * Fisherman looks at fishing + cooking
+ * @param acquisitionMethod The way to retrieve the requested item
+ * @returns true if successful, false if encounter some failure along the way
+ */
+export async function checkWishlistToFulfill(
+  acquisitionMethod: AcquisitionMethod,
+): Promise<boolean> {
+  const job = new FulfillWishlistRequestObjective(
+    this.character,
+    acquisitionMethod,
+  );
+  return await this.character.executeJobNow(job, true, true, this.objectiveId);
 }
