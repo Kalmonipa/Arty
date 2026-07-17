@@ -68,13 +68,13 @@ export class IdleFishermanObjective extends Objective {
     await checkAndBuyArtifacts(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('fishing');
+    await checkWishlistToFulfill(this.character, 'fishing', this.objectiveId);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('cooking');
+    await checkWishlistToFulfill(this.character, 'cooking', this.objectiveId);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('tasks');
+    await checkWishlistToFulfill(this.character, 'tasks', this.objectiveId);
     if (this.checkIdleJobIsLast()) return true;
 
     await checkOnHoldQueue(this.character);

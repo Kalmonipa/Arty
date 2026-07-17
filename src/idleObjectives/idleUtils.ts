@@ -204,11 +204,10 @@ export async function checkAndBuyArtifacts(
  * @returns true if successful, false if encounter some failure along the way
  */
 export async function checkWishlistToFulfill(
+  character: Character,
   acquisitionMethod: AcquisitionMethod,
+  parentId?: string,
 ): Promise<boolean> {
-  const job = new FulfillWishlistRequestObjective(
-    this.character,
-    acquisitionMethod,
-  );
-  return await this.character.executeJobNow(job, true, true, this.objectiveId);
+  const job = new FulfillWishlistRequestObjective(character, acquisitionMethod);
+  return await character.executeJobNow(job, true, true, parentId);
 }
