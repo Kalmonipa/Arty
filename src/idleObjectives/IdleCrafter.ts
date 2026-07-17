@@ -76,7 +76,7 @@ export class IdleCrafterObjective extends Objective {
     await checkOnHoldQueue(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('fight');
+    await checkWishlistToFulfill(this.character, 'fight', this.objectiveId);
     if (this.checkIdleJobIsLast()) return true;
 
     await checkWithinLevelRange(this.character);

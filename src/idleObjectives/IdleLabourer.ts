@@ -87,10 +87,14 @@ export class IdleLabourerObjective extends Objective {
     await checkAndBuyArtifacts(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('mining');
+    await checkWishlistToFulfill(this.character, 'mining', this.objectiveId);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('woodcutting');
+    await checkWishlistToFulfill(
+      this.character,
+      'woodcutting',
+      this.objectiveId,
+    );
     if (this.checkIdleJobIsLast()) return true;
 
     await checkOnHoldQueue(this.character);
@@ -102,10 +106,14 @@ export class IdleLabourerObjective extends Objective {
     await this.doItemTask(2);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('mining');
+    await checkWishlistToFulfill(this.character, 'mining', this.objectiveId);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill('woodcutting');
+    await checkWishlistToFulfill(
+      this.character,
+      'woodcutting',
+      this.objectiveId,
+    );
     if (this.checkIdleJobIsLast()) return true;
 
     await this.trainSkill('mining');
