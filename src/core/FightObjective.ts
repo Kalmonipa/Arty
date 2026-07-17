@@ -135,6 +135,11 @@ export class FightObjective extends Objective {
         this.target.code,
       );
 
+      if (!shouldFightWithHealthPots) {
+        logger.info(`Fight sim against ${this.target.code} was a failure. Skipping`)
+        return false;
+      }
+
       if (shouldFightWithHealthPots) {
         const fakeSchema = this.character.createFakeCharacterSchema(
           this.character.data,
@@ -162,10 +167,6 @@ export class FightObjective extends Objective {
         } else if (!shouldFightWithoutHealthPots && shouldFightWithHealthPots) {
           await this.character.topUpHealthPots(potionNeeded);
         }
-      }
-
-      if (shouldFightWithHealthPots === false) {
-        return true;
       }
     }
     return true;
