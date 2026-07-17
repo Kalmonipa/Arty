@@ -108,6 +108,9 @@ export class TrainCraftingSkillObjective extends Objective {
 
       // Weaponcrafter ensures we have 2 of every tool first
       if (this.skill === 'weaponcrafting') {
+        // Craft 1 tool at a time just to get them out there for chars to use
+        const numToCraft = 1
+
         for (const craftableItem of craftableItemsList) {
           if (!(await this.checkStatus())) return false;
 
@@ -135,7 +138,7 @@ export class TrainCraftingSkillObjective extends Objective {
             );
             if (
               await this.character.craftNow(
-                1,
+                numToCraft,
                 craftableItem.code,
                 undefined,
                 undefined,
