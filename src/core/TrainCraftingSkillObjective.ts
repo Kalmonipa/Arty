@@ -108,11 +108,11 @@ export class TrainCraftingSkillObjective extends Objective {
 
       // Weaponcrafter ensures we have 2 of every tool first
       if (this.skill === 'weaponcrafting') {
-        // Craft 1 tool at a time just to get them out there for chars to use
-        const numToCraft = 1
-
         for (const craftableItem of craftableItemsList) {
           if (!(await this.checkStatus())) return false;
+
+          // Craft 1 tool at a time just to get them out there for chars to use
+          const numToCraft = 1;
 
           if (craftableItem.subtype !== 'tool') {
             logger.debug(
@@ -125,7 +125,9 @@ export class TrainCraftingSkillObjective extends Objective {
             (bankItem) => craftableItem.code === bankItem.code,
           );
 
-          if (!bankItem || bankItem.quantity < 2) {
+          // Ensure there is at least 1 of each tool in the bank. We might have crafted more
+          // but if they're in use then we'd like to have spares in case someone else needs one
+          if (!bankItem || bankItem.quantity < 1) {
             if (await needsBossDrop(craftableItem)) {
               logger.warn(
                 `Skipping ${craftableItem.code} because it needs a boss drop`,
