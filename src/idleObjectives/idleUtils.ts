@@ -47,10 +47,6 @@ export async function completeTasksFarmerAchievement(
 }
 
 /**
- * The aim of this function is to keep all characters within 10 level of the highest level char
- * This lets us recycle older gear so that it doesn't clog up the bank
- */
-/**
  * @description Housekeeping run during idle jobs: deletes expired wishlist
  * requests, then resumes or drops the character's parked (onHold) jobs.
  *
@@ -72,6 +68,7 @@ export async function checkOnHoldQueue(character: Character): Promise<void> {
 
     if (allFulfilled) {
       for (const id of requestIds) {
+        logger.info(`Clearing fulfilled request with ID ${id}`)
         await deleteWishlistRequest(id);
       }
       character.clearOnHoldRetried(entry.job.objectiveId);
