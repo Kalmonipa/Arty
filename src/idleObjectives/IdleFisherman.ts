@@ -90,6 +90,8 @@ export class IdleFishermanObjective extends Objective {
     // There's no need for skills to get too far ahead of combat level
     await this.trainSkill('fishing');
     if (this.checkIdleJobIsLast()) return true;
+
+    await this.gatherExtraFish();
   }
 
   /**
@@ -122,6 +124,37 @@ export class IdleFishermanObjective extends Objective {
       }
     }
     return true;
+  }
+
+  /**
+   * Gathers an inventory full of the food suitable for the lowest level character
+   * This function is used as a last resort for the fisherman
+   * @returns
+   */
+  private async gatherExtraFish() {
+    for (const fish of this.character.consumablesMap['heal'].filter(
+      (consumable) =>
+        consumable.craft?.skill === 'cooking' &&
+        consumable.craft.items.some((ingredient) =>
+          this.character.fishingDropCodes.has(ingredient.code),
+        ),
+    )) {
+      if (
+        fish.craft.level <
+          this.character.getCharacterLevel(this.character.data, 'fishing') &&
+        fish.craft.level <= this.character.highestCharLevel &&
+        // e.g. Char lvl is 29, we should cook lvl 20 fish so they can use it
+        fish.craft.level >= this.character.lowestCharLevel - 9
+      ) {
+        // Gather an inventory full of the lowest level fish needed
+        await this.character.craftNow(
+          this.character.data.inventory_max_items * 0.95,
+          fish.code,
+        );
+      }
+
+      return true;
+    }
   }
 
   /**

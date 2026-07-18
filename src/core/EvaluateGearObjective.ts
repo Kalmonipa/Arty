@@ -455,7 +455,7 @@ export class EvaluateGearObjective extends Objective {
       // Need to handle this better
       for (let i = artifacts.length - 1; i >= 0; i--) {
         if (this.character.getCharacterGearIn(slot) !== '') {
-          logger.info(`Something already equipped in ${slot}. Skipping`)
+          logger.info(`Something already equipped in ${slot}. Skipping`);
           break;
         }
 
