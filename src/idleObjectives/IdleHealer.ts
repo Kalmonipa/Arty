@@ -190,11 +190,10 @@ export class IdleHealerObjective extends Objective {
 
   /**
    * Ensure that we have a minimum amount of certain items in the bank
-   * - 300 Health potions of varying levels
    */
   private async topUpPotionsInBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
-    const minPotionsToCraft = 300;
+    const minPotionsToCraft = 500;
 
     // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
     // and the ceiling being either the alchemists alchemy level or the highest character level

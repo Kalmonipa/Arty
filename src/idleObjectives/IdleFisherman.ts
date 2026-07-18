@@ -86,18 +86,6 @@ export class IdleFishermanObjective extends Objective {
     await this.topUpBank();
     if (this.checkIdleJobIsLast()) return true;
 
-    // Fisherman has an additional check: food must be sufficiently stocked first.
-    const taskCoinsInBank =
-      await this.character.checkQuantityOfItemInBank('tasks_coin');
-
-    if (taskCoinsInBank < 35) {
-      await this.doItemTask(1);
-      if (this.checkIdleJobIsLast()) return true;
-    }
-
-    await this.topUpBank();
-    if (this.checkIdleJobIsLast()) return true;
-
     // If the skill gets 5 levels ahead of their combat level then they won't train the skill any further
     // There's no need for skills to get too far ahead of combat level
     await this.trainSkill('fishing');
@@ -188,11 +176,10 @@ export class IdleFishermanObjective extends Objective {
 
   /**
    * Ensure that we have a minimum amount of certain items in the bank
-   * - 500 Food of varying levels
    */
   private async topUpBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
-    const minimumFoodInBank = 500;
+    const minimumFoodInBank = 1000;
 
     for (const fish of this.character.consumablesMap['heal'].filter(
       (consumable) =>
@@ -223,19 +210,6 @@ export class IdleFishermanObjective extends Objective {
     }
 
     return true;
-  }
-
-  /**
-   * Completes an item task
-   * @returns true if successful, false if not
-   */
-  private async doItemTask(num?: number): Promise<boolean> {
-    return await this.character.executeJobNow(
-      new ItemTaskObjective(this.character, num ?? 1),
-      true,
-      true,
-      this.objectiveId,
-    );
   }
 
   /**
