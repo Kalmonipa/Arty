@@ -161,16 +161,19 @@ export class TrainCraftingSkillObjective extends Objective {
           }
         }
       }
-      // Then move on to crafting 2 of every other item
+      // Then move on to crafting 1 of every other item
       for (const craftableItem of craftableItemsList) {
         if (!(await this.checkStatus())) return false;
+
+        // Craft 1 of each equipment to get the out there for chars to use
+        let numToCraft = 1
 
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
           (bankItem) => craftableItem.code === bankItem.code,
         );
 
-        if (!bankItem || bankItem.quantity < 2) {
+        if (!bankItem || bankItem.quantity < 1) {
           if (await needsBossDrop(craftableItem)) {
             logger.warn(
               `Skipping ${craftableItem.code} because it needs a boss drop`,
@@ -205,7 +208,8 @@ export class TrainCraftingSkillObjective extends Objective {
 
       if (!(await this.checkStatus())) return false;
 
-      // Find item with the best crafting score
+      // If there is each piece of equipment in the bank then we move on to finding the 
+      // most efficient item to craft to level up the skill
       const itemToCraft = await calculateBestCraftingItem(
         this.character,
         craftableItemsList,
