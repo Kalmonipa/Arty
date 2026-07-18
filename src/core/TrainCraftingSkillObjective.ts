@@ -112,7 +112,7 @@ export class TrainCraftingSkillObjective extends Objective {
           if (!(await this.checkStatus())) return false;
 
           // Craft 1 tool at a time just to get them out there for chars to use
-          const numToCraft = 1;
+          numToCraft = 1;
 
           if (craftableItem.subtype !== 'tool') {
             logger.debug(
@@ -166,7 +166,7 @@ export class TrainCraftingSkillObjective extends Objective {
         if (!(await this.checkStatus())) return false;
 
         // Craft 1 of each equipment to get the out there for chars to use
-        let numToCraft = 1
+        numToCraft = 1
 
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
