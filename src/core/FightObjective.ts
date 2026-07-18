@@ -136,7 +136,9 @@ export class FightObjective extends Objective {
       );
 
       if (!shouldFightWithHealthPots) {
-        logger.info(`Fight sim against ${this.target.code} was a failure. Skipping`)
+        logger.info(
+          `Fight sim against ${this.target.code} was a failure. Skipping`,
+        );
         return false;
       }
 
