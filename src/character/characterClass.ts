@@ -733,7 +733,7 @@ export class Character {
             specificData.target as ObjectiveTargets,
           );
           break;
-        case 'FulFillWishlistObjective':
+        case 'FulfillWishlistRequestObjective':
           job = new FulfillWishlistRequestObjective(
             this,
             specificData.acquisitionMethod as AcquisitionMethod,
