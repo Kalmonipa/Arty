@@ -193,6 +193,7 @@ export class ItemTaskObjective extends Objective {
               code: itemInformation.code,
               quantity: this.character.data.task_total,
             });
+            return false;
           } else {
             // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
             // This happens sometimes with fish when our cooking level is high
