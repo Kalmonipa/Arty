@@ -132,6 +132,7 @@ export class IdleFishermanObjective extends Objective {
    * @returns
    */
   private async gatherExtraFish() {
+    logger.info(`Gathering extra fish to top up the bank`);
     for (const fish of this.character.consumablesMap['heal'].filter(
       (consumable) =>
         consumable.craft?.skill === 'cooking' &&
@@ -139,6 +140,7 @@ export class IdleFishermanObjective extends Objective {
           this.character.fishingDropCodes.has(ingredient.code),
         ),
     )) {
+      logger.info(`Checking if ${fish.code} is a candidate`);
       if (
         fish.craft.level <
           this.character.getCharacterLevel(this.character.data, 'fishing') &&
@@ -146,14 +148,13 @@ export class IdleFishermanObjective extends Objective {
         // e.g. Char lvl is 29, we should cook lvl 20 fish so they can use it
         fish.craft.level >= this.character.lowestCharLevel - 9
       ) {
-        // Gather an inventory full of the lowest level fish needed
-        await this.character.craftNow(
+        const numToCraft = Math.round(
           this.character.data.inventory_max_items * 0.95,
-          fish.code,
         );
+        logger.info(`Crafting ${numToCraft}x ${fish.name}`);
+        // Gather an inventory full of the lowest level fish needed
+        await this.character.craftNow(numToCraft, fish.code);
       }
-
-      return true;
     }
   }
 
