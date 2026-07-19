@@ -64,7 +64,6 @@ export class TrainCraftingSkillObjective extends Objective {
       case 'mining':
         numToCraft = 10;
         break;
-      case 'weaponcrafting':
       case 'gearcrafting':
         numToCraft = 2;
         break;
