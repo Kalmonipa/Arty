@@ -163,11 +163,11 @@ export class TrainCraftingSkillObjective extends Objective {
         if (!(await this.checkStatus())) return false;
 
         if (craftableItem.subtype === 'tool') {
-            logger.debug(
-              `[train_${this.skill}] Skipping ${craftableItem.code} because it is a tool`,
-            );
-            continue;
-          }
+          logger.debug(
+            `[train_${this.skill}] Skipping ${craftableItem.code} because it is a tool`,
+          );
+          continue;
+        }
 
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(

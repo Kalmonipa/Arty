@@ -52,6 +52,8 @@ export class TrainCombatObjective extends Objective {
       let fightSuccessful = false;
 
       for (let ind = mobs.data.length - 1; ind >= 0; ind--) {
+        if (!(await this.checkStatus())) return false;
+
         const mob = mobs.data[ind];
 
         const proposedLoadout = await this.character.proposeCombatLoadout(
