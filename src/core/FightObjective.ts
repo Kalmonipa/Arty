@@ -113,7 +113,7 @@ export class FightObjective extends Objective {
       ].toReversed()) {
         if (
           potion.craft.level <=
-            this.character.getCharacterLevel(this.character.data)
+          this.character.getCharacterLevel(this.character.data)
         ) {
           potionNeeded = potion.code;
           logger.debug(`Chose to equip ${potion.code}`);

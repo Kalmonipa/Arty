@@ -45,7 +45,6 @@ export class CraftObjective extends Objective {
    * (the default) a missing ingredient just fails the craft, as before.
    */
   blockOnMissing: boolean;
-  private raisedBlockingRequest = false;
 
   constructor(
     character: Character,
@@ -64,30 +63,6 @@ export class CraftObjective extends Objective {
     this.checkBank = checkBank;
     this.includeInventory = includeInventory ?? true;
     this.blockOnMissing = blockOnMissing ?? false;
-  }
-
-  /**
-   * @description Adds a missing ingredient to the wishlist and records it as a
-   * blocking request so the root job gets parked until it's fulfilled.
-   */
-  private async requestIngredientFromWishlist(
-    craftingItem: SimpleItemSchema,
-    quantity: number,
-  ): Promise<void> {
-    logger.info(
-      `${this.character.data.name} can't obtain ${quantity} ${craftingItem.code}; adding to wishlist`,
-    );
-    const requestId = await addToWishlist({
-      itemCode: craftingItem.code,
-      quantity,
-      characterName: this.character.data.name,
-    });
-    this.character.addBlockingWishlistRequest(
-      requestId,
-      craftingItem.code,
-      quantity,
-    );
-    this.raisedBlockingRequest = true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -382,10 +357,10 @@ export class CraftObjective extends Objective {
               `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
             );
             if (this.blockOnMissing) {
-              await this.requestIngredientFromWishlist(
-                craftingItem,
-                totalIngredNeededToCraft,
-              );
+              await this.requestIngredientFromWishlist({
+                code: craftingItem.code,
+                quantity: totalIngredNeededToCraft,
+              });
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
@@ -413,10 +388,10 @@ export class CraftObjective extends Objective {
               `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
             );
             if (this.blockOnMissing) {
-              await this.requestIngredientFromWishlist(
-                craftingItem,
-                totalIngredNeededToCraft,
-              );
+              await this.requestIngredientFromWishlist({
+                code: craftingItem.code,
+                quantity: totalIngredNeededToCraft,
+              });
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
@@ -440,10 +415,10 @@ export class CraftObjective extends Objective {
               `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
             );
             if (this.blockOnMissing) {
-              await this.requestIngredientFromWishlist(
-                craftingItem,
-                totalIngredNeededToCraft,
-              );
+              await this.requestIngredientFromWishlist({
+                code: craftingItem.code,
+                quantity: totalIngredNeededToCraft,
+              });
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);

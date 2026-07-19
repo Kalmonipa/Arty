@@ -6,6 +6,9 @@ import { Character } from '../character/characterClass.js';
 import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { Role } from '../types/CharacterData.js';
+import { addToWishlist } from '../wishlist/functions.js';
+import { AcquisitionMethod, WishlistRequest } from '../wishlist/types.js';
 
 export class ItemTaskObjective extends Objective {
   type = 'items' as const;
@@ -173,24 +176,43 @@ export class ItemTaskObjective extends Objective {
           logger.debug(
             `${taskInfo.code} is a gather resource. Gathering ${numToGather}`,
           );
-          // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
-          // This happens sometimes with fish when our cooking level is high
-          // but fishing might be too low to actually gather the required ingredient
+
+          const itemInformation = await getItemInformation(
+            this.character.data.task,
+          );
+          if (itemInformation instanceof ApiError) {
+            logger.warn(`Item info not found for ${this.character.data.task}`);
+            return false;
+          }
+          // ToDo: Make this into a reusable function that encompasses all roles and their responsibilities
           if (
-            !(await this.character.gatherNow(
-              numToGather,
-              this.character.data.task,
-              true,
-              true,
-            ))
+            itemInformation.subtype !== 'fishing' &&
+            this.character.role === 'fisherman'
           ) {
-            if (attempt >= this.maxRetries) {
-              this.character.removeItemFromItemsToKeep(
+            await this.requestIngredientFromWishlist({
+              code: itemInformation.code,
+              quantity: this.character.data.task_total,
+            });
+          } else {
+            // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
+            // This happens sometimes with fish when our cooking level is high
+            // but fishing might be too low to actually gather the required ingredient
+            if (
+              !(await this.character.gatherNow(
+                numToGather,
                 this.character.data.task,
-              );
-              return false;
-            } else {
-              break;
+                true,
+                true,
+              ))
+            ) {
+              if (attempt >= this.maxRetries) {
+                this.character.removeItemFromItemsToKeep(
+                  this.character.data.task,
+                );
+                return false;
+              } else {
+                break;
+              }
             }
           }
         }

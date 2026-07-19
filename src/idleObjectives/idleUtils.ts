@@ -68,7 +68,7 @@ export async function checkOnHoldQueue(character: Character): Promise<void> {
 
     if (allFulfilled) {
       for (const id of requestIds) {
-        logger.info(`Clearing fulfilled request with ID ${id}`)
+        logger.info(`Clearing fulfilled request with ID ${id}`);
         await deleteWishlistRequest(id);
       }
       character.clearOnHoldRetried(entry.job.objectiveId);

@@ -9,7 +9,8 @@ import {
 } from '../metrics.js';
 import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
-import { TaskType } from '../types/types.js';
+import { SimpleItemSchema, TaskType } from '../types/types.js';
+import { addToWishlist } from '../wishlist/functions.js';
 
 export abstract class Objective {
   character: Character;
@@ -29,6 +30,8 @@ export abstract class Objective {
    * requests bubble up to the owning job.
    */
   parkOnWishlistRequest: boolean = false;
+  raisedBlockingRequest = false;
+
   protected log: typeof logger;
   /** Set to true in subclasses that represent meaningful work worth tracking */
   protected shouldEmitMetrics: boolean = false;
@@ -420,5 +423,28 @@ export abstract class Objective {
     }
 
     return true;
+  }
+
+  /**
+   * @description Adds a missing ingredient to the wishlist and records it as a
+   * blocking request so the root job gets parked until it's fulfilled.
+   */
+  async requestIngredientFromWishlist(
+    craftingItem: SimpleItemSchema,
+  ): Promise<void> {
+    logger.info(
+      `${this.character.data.name} can't obtain ${craftingItem.quantity} ${craftingItem.code}; adding to wishlist`,
+    );
+    const requestId = await addToWishlist({
+      itemCode: craftingItem.code,
+      quantity: craftingItem.quantity,
+      characterName: this.character.data.name,
+    });
+    this.character.addBlockingWishlistRequest(
+      requestId,
+      craftingItem.code,
+      craftingItem.quantity,
+    );
+    this.raisedBlockingRequest = true;
   }
 }

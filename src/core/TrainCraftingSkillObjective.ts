@@ -64,6 +64,7 @@ export class TrainCraftingSkillObjective extends Objective {
       case 'mining':
         numToCraft = 10;
         break;
+      case 'weaponcrafting':
       case 'gearcrafting':
         numToCraft = 2;
         break;
@@ -110,9 +111,6 @@ export class TrainCraftingSkillObjective extends Objective {
         for (const craftableItem of craftableItemsList) {
           if (!(await this.checkStatus())) return false;
 
-          // Craft 1 tool at a time just to get them out there for chars to use
-          numToCraft = 1;
-
           if (craftableItem.subtype !== 'tool') {
             logger.debug(
               `[train_${this.skill}] Skipping ${craftableItem.code} because it's not a tool`,
@@ -139,7 +137,7 @@ export class TrainCraftingSkillObjective extends Objective {
             );
             if (
               await this.character.craftNow(
-                numToCraft,
+                1,
                 craftableItem.code,
                 undefined,
                 undefined,
@@ -147,7 +145,7 @@ export class TrainCraftingSkillObjective extends Objective {
               )
             ) {
               // Only deposit if the craft was successful
-              await this.character.depositNow(numToCraft, craftableItem.code);
+              await this.character.depositNow(1, craftableItem.code);
             }
           }
 
@@ -163,9 +161,6 @@ export class TrainCraftingSkillObjective extends Objective {
       // Then move on to crafting 1 of every other item
       for (const craftableItem of craftableItemsList) {
         if (!(await this.checkStatus())) return false;
-
-        // Craft 1 of each equipment to get the out there for chars to use
-        numToCraft = 1
 
         logger.debug(`Checking ${craftableItem.code} count in bank`);
         const bankItem = allBankItems.find(
@@ -207,7 +202,7 @@ export class TrainCraftingSkillObjective extends Objective {
 
       if (!(await this.checkStatus())) return false;
 
-      // If there is each piece of equipment in the bank then we move on to finding the 
+      // If there is each piece of equipment in the bank then we move on to finding the
       // most efficient item to craft to level up the skill
       const itemToCraft = await calculateBestCraftingItem(
         this.character,
