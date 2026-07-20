@@ -12,7 +12,7 @@ const RATE_LIMITED = 429;
 interface RetryConfig {
   /** Number of times to retry a 429 before giving up. */
   maxRetries: number;
-  /** Delay before the first retry, in seconds; doubles each attempt. */
+  /** Upper bound of the first retry's jitter window, in seconds; doubles each attempt. */
   baseDelaySeconds: number;
   /** Cap on a single backoff delay, in seconds. */
   maxDelaySeconds: number;
@@ -20,8 +20,8 @@ interface RetryConfig {
 
 const DEFAULT_RETRY: RetryConfig = {
   maxRetries: 10,
-  baseDelaySeconds: 10,
-  maxDelaySeconds: 300,
+  baseDelaySeconds: 1,
+  maxDelaySeconds: 60,
 };
 
 export interface ApiRequestOptions<T = unknown> {
@@ -63,14 +63,19 @@ function hasCooldown(body: unknown): body is CooldownBody {
   return typeof cooldown?.remaining_seconds === 'number';
 }
 
-/** Exponential backoff with up to +100% jitter, capped at maxDelaySeconds. */
+/**
+ * Full-jitter backoff: pick a delay uniformly from [0, window], where the
+ * window grows exponentially per attempt and is capped at maxDelaySeconds.
+ * Randomising across the whole window (rather than adding jitter on top of a
+ * fixed floor) decorrelates retries from the account's other characters, so a
+ * shared-budget 429 storm disperses instead of retrying in lockstep.
+ */
 function backoffSeconds(attempt: number, retry: RetryConfig): number {
-  const exponential = Math.min(
+  const window = Math.min(
     retry.baseDelaySeconds * 2 ** attempt,
     retry.maxDelaySeconds,
   );
-  const jitter = Math.random() * exponential;
-  return Math.round(exponential + jitter);
+  return Math.round(Math.random() * window);
 }
 
 /**
