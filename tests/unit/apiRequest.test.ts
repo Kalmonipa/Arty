@@ -189,28 +189,84 @@ describe('apiRequest', () => {
       expect((result as ApiError).error.code).toBe(429);
     });
 
-    it('backs off for increasing durations (exponential)', async () => {
+    const rateLimitDelays = (sleep: ReturnType<typeof makeSleep>): number[] =>
+      sleep.mock.calls
+        .filter(([, reason]) => reason === 'rate limit')
+        .map(([seconds]) => seconds);
+
+    it('grows the jitter window exponentially each attempt', async () => {
       jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      // Max jitter makes each delay equal to the full window for that attempt.
+      jest.spyOn(Math, 'random').mockReturnValue(1);
       const sleep = makeSleep();
 
       await apiRequest(
         {
           url: 'https://api/action/fight',
           method: 'POST',
-          retry: { maxRetries: 3, baseDelaySeconds: 2, maxDelaySeconds: 60 },
+          retry: { maxRetries: 4, baseDelaySeconds: 1, maxDelaySeconds: 60 },
         },
         { sleep },
       );
 
-      const delays = sleep.mock.calls
-        .filter(([, reason]) => reason === 'rate limit')
-        .map(([seconds]) => seconds);
-      // Each delay should be at least the previous (monotonic, exponential base).
-      for (let i = 1; i < delays.length; i++) {
-        expect(delays[i]).toBeGreaterThanOrEqual(delays[i - 1]);
+      expect(rateLimitDelays(sleep)).toEqual([1, 2, 4, 8]);
+    });
+
+    it('uses full jitter, so a delay can be as low as 0', async () => {
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce(jsonResponse(429, {}))
+        .mockResolvedValueOnce(jsonResponse(200, { data: {} }));
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        {
+          url: 'https://api/action/fight',
+          method: 'POST',
+          retry: { baseDelaySeconds: 10 },
+        },
+        { sleep },
+      );
+
+      expect(rateLimitDelays(sleep)[0]).toBe(0);
+    });
+
+    it('never sleeps longer than the cap, even at maximum jitter', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(1);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        {
+          url: 'https://api/action/fight',
+          method: 'POST',
+          retry: { maxRetries: 8, baseDelaySeconds: 10, maxDelaySeconds: 60 },
+        },
+        { sleep },
+      );
+
+      const delays = rateLimitDelays(sleep);
+      for (const delay of delays) {
+        expect(delay).toBeLessThanOrEqual(60);
       }
-      // First delay should be at least the base.
-      expect(delays[0]).toBeGreaterThanOrEqual(2);
+      expect(Math.max(...delays)).toBe(60);
+    });
+
+    it('defaults to base 1s, a 60s cap, and 10 retries', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(1);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        { url: 'https://api/action/fight', method: 'POST' },
+        { sleep },
+      );
+
+      const delays = rateLimitDelays(sleep);
+      expect(delays).toHaveLength(10);
+      expect(delays[0]).toBe(1);
+      expect(Math.max(...delays)).toBe(60);
     });
   });
 });
