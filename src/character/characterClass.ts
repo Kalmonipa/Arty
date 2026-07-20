@@ -3053,10 +3053,13 @@ export class Character {
     );
   }
 
-  async proposeCombatLoadout(targetMob: string): Promise<FakeCharacterSchema> {
+  async proposeCombatLoadout(
+    targetMob: string,
+    cache?: BankCache,
+  ): Promise<FakeCharacterSchema> {
     const job = new EvaluateGearObjective(this, 'combat', targetMob);
     const charLevel = this.getCharacterLevel(this.data);
-    return await job.proposeCombatLoadout(charLevel, targetMob);
+    return await job.proposeCombatLoadout(charLevel, targetMob, cache);
   }
 
   /**

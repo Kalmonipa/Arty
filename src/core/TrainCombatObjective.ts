@@ -2,6 +2,7 @@ import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
+import { BankCache } from './BankCache.js';
 import { Objective } from './Objective.js';
 
 /**
@@ -48,6 +49,10 @@ export class TrainCombatObjective extends Objective {
         return false;
       }
 
+      // One bank snapshot shared across every candidate-mob loadout simulation
+      // this iteration; the bank is not mutated until we commit to a fight.
+      const bankCache = await BankCache.create(this.character);
+
       let foundSuitableMob = false;
       let fightSuccessful = false;
 
@@ -58,6 +63,7 @@ export class TrainCombatObjective extends Objective {
 
         const proposedLoadout = await this.character.proposeCombatLoadout(
           mob.code,
+          bankCache,
         );
 
         const fightSimResult = await this.character.simulateFightNow(

@@ -11,6 +11,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 
 // Import the mocked functions
 import { getAllMonsterInformation } from '../../src/api_calls/Monsters.js';
+import { BankCache } from '../../src/core/BankCache.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -24,9 +25,13 @@ class SimpleMockCharacter {
     return true;
   });
 
-  proposeCombatLoadout = jest.fn(async (mobCode: string): Promise<any> => {
-    return { level: this.data.level, weapon_slot: `weapon_for_${mobCode}` };
-  });
+  proposeCombatLoadout = jest.fn(
+    async (mobCode: string, _cache?: BankCache): Promise<any> => {
+      return { level: this.data.level, weapon_slot: `weapon_for_${mobCode}` };
+    },
+  );
+
+  getAllBankItems = jest.fn(async () => []);
 
   fightNow = jest.fn(async (): Promise<boolean> => {
     // Simulate level progression
@@ -231,6 +236,25 @@ describe('TrainCombatObjective Integration Tests', () => {
       });
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
       expect(mockCharacter.fightNow).toHaveBeenCalled();
+    });
+
+    it('builds a bank snapshot and passes it to every proposeCombatLoadout call', async () => {
+      mockCharacter.data.level = 10;
+      mockCharacter.getCharacterLevel.mockReturnValue(10);
+      mockCharacter.fightNow.mockImplementation(async () => {
+        mockCharacter.data.level = 15;
+        mockCharacter.getCharacterLevel.mockReturnValue(15);
+        return true;
+      });
+
+      await trainCombatObjective.run();
+
+      expect(mockCharacter.getAllBankItems).toHaveBeenCalled();
+      const loadoutCalls = mockCharacter.proposeCombatLoadout.mock.calls;
+      expect(loadoutCalls.length).toBeGreaterThan(0);
+      for (const call of loadoutCalls) {
+        expect(call[1]).toBeInstanceOf(BankCache);
+      }
     });
 
     it('should find and fight suitable mobs in descending order', async () => {
@@ -618,9 +642,11 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
         'blue_slime',
+        expect.any(BankCache),
       );
       expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
         'red_slime',
+        expect.any(BankCache),
       );
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
         [{ level: 10, weapon_slot: 'weapon_for_blue_slime' }],
