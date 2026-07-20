@@ -263,7 +263,10 @@ export class EvaluateGearObjective extends Objective {
   async selectCombatLoadout(
     charLevel: number,
     targetMob: string,
+    cache?: BankCache,
   ): Promise<Partial<FakeCharacterSchema>> {
+    this.bankCache = cache ?? (await BankCache.create(this.character));
+
     const chosen = await this.chooseCombatGear(charLevel, targetMob);
     if (chosen instanceof ApiError) {
       logger.warn(
@@ -282,8 +285,13 @@ export class EvaluateGearObjective extends Objective {
   async proposeCombatLoadout(
     charLevel: number,
     targetMob: string,
+    cache?: BankCache,
   ): Promise<FakeCharacterSchema> {
-    const selected = await this.selectCombatLoadout(charLevel, targetMob);
+    const selected = await this.selectCombatLoadout(
+      charLevel,
+      targetMob,
+      cache,
+    );
     const base = this.character.createFakeCharacterSchema(this.character.data);
     return { ...base, ...selected };
   }

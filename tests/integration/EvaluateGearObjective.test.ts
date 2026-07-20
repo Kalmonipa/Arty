@@ -1556,5 +1556,38 @@ describe('EvaluateGearObjective Integration Tests', () => {
         expect(call[1]).toBeInstanceOf(BankCache);
       }
     });
+
+    it('proposeCombatLoadout reuses a provided bank cache without building its own', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+      const cache = await BankCache.create(mockCharacter as any);
+      mockCharacter.getAllBankItems.mockClear();
+
+      await objective.proposeCombatLoadout(10, 'red_slime', cache);
+
+      expect(mockCharacter.getAllBankItems).not.toHaveBeenCalled();
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalled();
+      for (const call of mockCharacter.checkQuantityOfItemInBank.mock.calls) {
+        expect(call[1]).toBe(cache);
+      }
+    });
+
+    it('proposeCombatLoadout builds its own snapshot when none is provided', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.proposeCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.getAllBankItems).toHaveBeenCalledTimes(1);
+      for (const call of mockCharacter.checkQuantityOfItemInBank.mock.calls) {
+        expect(call[1]).toBeInstanceOf(BankCache);
+      }
+    });
   });
 });
