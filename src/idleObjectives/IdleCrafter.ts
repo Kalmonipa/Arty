@@ -158,9 +158,6 @@ export class IdleCrafterObjective extends Objective {
       }
     }
 
-    // As a last resort, level up combat level
-    await this.trainSkill();
-
     return true;
   }
 

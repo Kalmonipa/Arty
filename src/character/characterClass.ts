@@ -50,6 +50,7 @@ import * as path from 'node:path';
 import { CraftObjective } from '../core/CraftObjective.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
+import type { BankCache } from '../core/BankCache.js';
 import { GatherObjective } from '../core/GatherObjective.js';
 import { Objective } from '../core/Objective.js';
 import {
@@ -1511,7 +1512,14 @@ export class Character {
    * @description Check bank for a specific item
    * @returns the amount found in the bank
    */
-  async checkQuantityOfItemInBank(contentCode: string): Promise<number> {
+  async checkQuantityOfItemInBank(
+    contentCode: string,
+    cache?: BankCache,
+  ): Promise<number> {
+    if (cache) {
+      return cache.quantityOf(contentCode);
+    }
+
     let numFound = 0;
     const bankItem = await getBankItems(contentCode);
     if (bankItem instanceof ApiError) {

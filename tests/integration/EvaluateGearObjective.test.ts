@@ -10,6 +10,7 @@ import {
   CharacterSchema,
 } from '../../src/types/types.js';
 import { GearEffects, WeaponFlavours } from '../../src/types/ItemData.js';
+import { BankCache } from '../../src/core/BankCache.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Monsters', () => ({
@@ -374,15 +375,25 @@ class SimpleMockCharacter {
     return item ? item.quantity : 0;
   });
 
-  checkQuantityOfItemInBank = jest.fn(async (code: string): Promise<number> => {
-    const bankItems: { [key: string]: number } = {
-      fire_sword: 1,
-      res_fire_shield: 1,
-      health_potion: 50,
-      antidote: 20,
-    };
-    return bankItems[code] || 0;
-  });
+  bankItems: { [key: string]: number } = {
+    fire_sword: 1,
+    res_fire_shield: 1,
+    health_potion: 50,
+    antidote: 20,
+  };
+
+  checkQuantityOfItemInBank = jest.fn(
+    async (code: string, _cache?: BankCache): Promise<number> => {
+      return this.bankItems[code] || 0;
+    },
+  );
+
+  getAllBankItems = jest.fn(async () =>
+    Object.entries(this.bankItems).map(([code, quantity]) => ({
+      code,
+      quantity,
+    })),
+  );
 
   withdrawNow = jest.fn(
     async (quantity: number, code: string): Promise<boolean> => {
@@ -929,6 +940,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // selectWeapon checks bank and then equipNow handles the withdrawal
       expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
         'fire_sword',
+        expect.any(BankCache),
       );
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'fire_sword',
@@ -1525,6 +1537,24 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(schema.shield_slot).toBe('res_fire_shield');
       expect(schema.artifact1_slot).toBe('novice_guide');
       expect(schema.level).toBe(mockCharacter.data.level);
+    });
+  });
+
+  describe('Bank caching during gear evaluation', () => {
+    it('builds a single bank snapshot and reads bank quantities from it', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(mockCharacter.getAllBankItems).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalled();
+      for (const call of mockCharacter.checkQuantityOfItemInBank.mock.calls) {
+        expect(call[1]).toBeInstanceOf(BankCache);
+      }
     });
   });
 });

@@ -12,6 +12,7 @@ import {
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { ApiError } from './Error.js';
+import { BankCache } from './BankCache.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
 import { MinEquippedUtilities } from '../constants.js';
 
@@ -24,6 +25,7 @@ export class EvaluateGearObjective extends Objective {
   activityType: WeaponFlavours;
   targetMob?: string;
   targetResource?: string;
+  private bankCache?: BankCache;
 
   constructor(
     character: Character,
@@ -48,6 +50,8 @@ export class EvaluateGearObjective extends Objective {
    * @description Check current gear and equip anything that we're missing
    */
   async run(): Promise<boolean> {
+    this.bankCache = await BankCache.create(this.character);
+
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (!(await this.checkStatus())) return false;
 
@@ -376,8 +380,10 @@ export class EvaluateGearObjective extends Objective {
         if (this.character.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
           return await this.character.equipNow(weapons[ind].code, 'weapon');
         } else if (
-          (await this.character.checkQuantityOfItemInBank(weapons[ind].code)) >
-          0
+          (await this.character.checkQuantityOfItemInBank(
+            weapons[ind].code,
+            this.bankCache,
+          )) > 0
         ) {
           return await this.character.equipNow(weapons[ind].code, 'weapon');
         } else {
@@ -484,10 +490,13 @@ export class EvaluateGearObjective extends Objective {
         }
 
         if (
-          (await this.character.checkQuantityOfItemInBank(artifacts[i].code)) >
-          0
+          (await this.character.checkQuantityOfItemInBank(
+            artifacts[i].code,
+            this.bankCache,
+          )) > 0
         ) {
           await this.character.withdrawNow(1, artifacts[i].code);
+          this.bankCache?.remove(artifacts[i].code, 1);
           await this.character.equipNow(artifacts[i].code, slot);
           slotFilled = true;
           break;
@@ -590,6 +599,7 @@ export class EvaluateGearObjective extends Objective {
           if (numHeld === 0) {
             numHeld = await this.character.checkQuantityOfItemInBank(
               map[ind].code,
+              this.bankCache,
             );
           }
 
