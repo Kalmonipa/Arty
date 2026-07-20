@@ -77,10 +77,28 @@ export class FulfillWishlistRequestObjective extends Objective {
         this.character.getCharacterLevel(this.character.data)
       ) {
         await markAsExecuting(request.id);
-        await this.character.gatherNow(request.quantity, request.item_code);
-        if (
-          await this.character.depositNow(request.quantity, request.item_code)
-        ) {
+
+        // Calculate how many inventories full the gather job will be
+        // This is to prevent gathering more than the inventory cap and the char endlessly gathers
+        const numGatherIterations = Math.ceil(
+          request.quantity / this.character.data.inventory_max_items,
+        );
+
+        let iterations = 0;
+        let successfull = false;
+        while (iterations < numGatherIterations) {
+          const numToGather = Math.min(
+            request.quantity,
+            Math.round(this.character.data.inventory_max_items * 0.95),
+          );
+          await this.character.gatherNow(numToGather, request.item_code);
+          successfull = await this.character.depositNow(
+            numToGather,
+            request.item_code,
+          );
+          iterations++;
+        }
+        if (successfull) {
           await markAsFulfilled(request.id);
         }
       }
