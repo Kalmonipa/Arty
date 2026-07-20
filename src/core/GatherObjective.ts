@@ -330,6 +330,8 @@ export class GatherObjective extends Objective {
     } else {
       let numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
 
+      this.character.itemsToKeep.push(this.target.code);
+
       // We want to compare total progress with the target quantity
       while (this.progress < target.quantity) {
         logger.info(
