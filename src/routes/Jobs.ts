@@ -188,6 +188,44 @@ export default function JobsRouter(char: Character) {
     }
   });
 
+  /**
+   * @description Drops (discards) an on-hold job by its objectiveId, freeing an
+   * on-hold slot. The job is not resumed or recorded; it is removed entirely.
+   */
+  router.post(
+    '/on-hold/drop/:objectiveId',
+    async (req: Request, res: Response) => {
+      try {
+        const objId = req.params.objectiveId;
+
+        if (char === undefined || !char) {
+          return res
+            .status(500)
+            .json({ error: 'Character instance not available.' });
+        }
+
+        const dropped = await char.dropOnHoldJobById(objId);
+        if (!dropped) {
+          return res.status(404).json({
+            message: `On-hold job ${objId} not found`,
+            character: char.data.name,
+            onHold: char.listOnHoldJobs(),
+          });
+        }
+
+        return res.status(200).json({
+          message: `Dropped on-hold job ${objId}`,
+          character: char.data.name,
+          onHold: char.listOnHoldJobs(),
+        });
+      } catch (error) {
+        return res
+          .status(500)
+          .json({ error: error.message || 'Internal server error.' });
+      }
+    },
+  );
+
   router.post('/pause', async (_: Request, res: Response) => {
     try {
       if (char === undefined || !char) {

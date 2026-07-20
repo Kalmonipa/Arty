@@ -1079,6 +1079,19 @@ export class Character {
     await this.saveJobQueue();
   }
 
+  /**
+   * @description Drops an onHold entry by its objectiveId. Returns true if a
+   * matching entry was found and dropped, false otherwise.
+   */
+  async dropOnHoldJobById(objectiveId: string): Promise<boolean> {
+    const entry = this.onHold.find((e) => e.job.objectiveId === objectiveId);
+    if (!entry) {
+      return false;
+    }
+    await this.dropOnHoldJob(entry);
+    return true;
+  }
+
   /** Marks an on-hold job as having used its one retry */
   markOnHoldRetried(objectiveId: string): void {
     this.onHoldRetriedIds.add(objectiveId);
