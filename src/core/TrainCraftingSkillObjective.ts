@@ -223,7 +223,7 @@ export class TrainCraftingSkillObjective extends Objective {
 
       if (
         await this.character.craftNow(
-          numToCraft,
+          5,
           itemToCraft.code,
           undefined,
           undefined,
@@ -231,7 +231,7 @@ export class TrainCraftingSkillObjective extends Objective {
         )
       ) {
         // Only deposit if the craft was successful
-        await this.character.depositNow(numToCraft, itemToCraft.code);
+        await this.character.depositNow(5, itemToCraft.code);
       }
 
       // Recycle excess gear to get materials
