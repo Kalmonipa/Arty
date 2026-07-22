@@ -1,18 +1,16 @@
 import {
   actionClaimPendingItems,
-  getItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { getAllNpcItems } from '../api_calls/NPC.js';
-import { MAX_SKILL_LEVEL } from '../constants.js';
-import { Role } from '../types/CharacterData.js';
-import { ItemSchema, Skill } from '../types/types.js';
 import {
-  GetCharacterData,
-  getHighestCharLevel,
-  isGatheringSkill,
-  logger,
-} from '../utils.js';
+  Gearcrafting,
+  Jewelrycrafting,
+  MAX_SKILL_LEVEL,
+  Weaponcrafting,
+} from '../constants.js';
+import { Role } from '../types/CharacterData.js';
+import { Skill } from '../types/types.js';
+import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
@@ -20,7 +18,6 @@ import { Objective } from '../core/Objective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
-import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,
@@ -28,13 +25,6 @@ import {
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
 } from './idleUtils.js';
-import { AcquisitionMethod } from '../wishlist/types.js';
-import {
-  getOpenWishlistRequests,
-  markAsExecuting,
-  markAsFulfilled,
-} from '../wishlist/functions.js';
-import { FulfillWishlistRequestObjective } from '../wishlist/objective.js';
 
 export class IdleCrafterObjective extends Objective {
   role: Role;
@@ -87,26 +77,32 @@ export class IdleCrafterObjective extends Objective {
       const combatLevel = this.character.getCharacterLevel(this.character.data);
       const weaponLevel = this.character.getCharacterLevel(
         this.character.data,
-        'weaponcrafting',
+        Weaponcrafting,
       );
       const gearLevel = this.character.getCharacterLevel(
         this.character.data,
-        'gearcrafting',
+        Gearcrafting,
       );
       const jewelryLevel = this.character.getCharacterLevel(
         this.character.data,
-        'jewelrycrafting',
+        Jewelrycrafting,
       );
       if (weaponLevel < combatLevel) {
-        await this.trainSkill('weaponcrafting');
+        if (!this.checkForJobInOnHoldQueue(Weaponcrafting)) {
+          await this.trainSkill(Weaponcrafting);
+        }
         if (this.checkIdleJobIsLast()) return true;
       }
       if (gearLevel < combatLevel) {
-        await this.trainSkill('gearcrafting');
+        if (!this.checkForJobInOnHoldQueue(Gearcrafting)) {
+          await this.trainSkill(Gearcrafting);
+        }
         if (this.checkIdleJobIsLast()) return true;
       }
       if (jewelryLevel < combatLevel) {
-        await this.trainSkill('jewelrycrafting');
+        if (!this.checkForJobInOnHoldQueue(Jewelrycrafting)) {
+          await this.trainSkill(Jewelrycrafting);
+        }
         if (this.checkIdleJobIsLast()) return true;
       }
     } else {
@@ -117,23 +113,23 @@ export class IdleCrafterObjective extends Objective {
         case 'weaponcrafter':
           relevantSkillLevel = this.character.getCharacterLevel(
             this.character.data,
-            'weaponcrafting',
+            Weaponcrafting,
           );
-          relevantSkillToTrain = 'weaponcrafting';
+          relevantSkillToTrain = Weaponcrafting;
           break;
         case 'gearcrafter':
           relevantSkillLevel = this.character.getCharacterLevel(
             this.character.data,
-            'gearcrafting',
+            Gearcrafting,
           );
-          relevantSkillToTrain = 'gearcrafting';
+          relevantSkillToTrain = Gearcrafting;
           break;
         case 'jewelrycrafter':
           relevantSkillLevel = this.character.getCharacterLevel(
             this.character.data,
-            'jewelrycrafting',
+            Jewelrycrafting,
           );
-          relevantSkillToTrain = 'jewelrycrafting';
+          relevantSkillToTrain = Jewelrycrafting;
           break;
       }
       const combatLevel = this.character.getCharacterLevel(this.character.data);
@@ -157,9 +153,6 @@ export class IdleCrafterObjective extends Objective {
         if (this.checkIdleJobIsLast()) return true;
       }
     }
-
-    // As a last resort, level up combat level
-    await this.trainSkill();
 
     return true;
   }

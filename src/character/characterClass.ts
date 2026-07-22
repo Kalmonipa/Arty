@@ -112,7 +112,9 @@ import {
   CharRole,
   DesiredFoodCount,
   FishMerchant,
+  Gearcrafting,
   HelmetSlot,
+  Jewelrycrafting,
   LegArmorSlot,
   MaxEquippedUtilities,
   MinEquippedUtilities,
@@ -124,6 +126,7 @@ import {
   ShieldSlot,
   Utility1Slot,
   Utility2Slot,
+  Weaponcrafting,
   WeaponSlot,
 } from '../constants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
@@ -1451,13 +1454,13 @@ export class Character {
         return char.cooking_level;
       case 'fishing':
         return char.fishing_level;
-      case 'gearcrafting':
+      case Gearcrafting:
         return char.gearcrafting_level;
-      case 'jewelrycrafting':
+      case Jewelrycrafting:
         return char.jewelrycrafting_level;
       case 'mining':
         return char.mining_level;
-      case 'weaponcrafting':
+      case Weaponcrafting:
         return char.weaponcrafting_level;
       case 'woodcutting':
         return char.woodcutting_level;

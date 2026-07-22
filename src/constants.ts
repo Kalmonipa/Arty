@@ -52,7 +52,6 @@ export const HerbalMerchant = 'herbal_merchant';
 export const NomadicMerchant = 'nomadic_merchant';
 export const TimberMerchant = 'timber_merchant';
 
-// ToDo: do the remaining slots
 export const WeaponSlot = 'weapon_slot';
 export const RuneSlot = 'rune_slot';
 export const ShieldSlot = 'shield_slot';
@@ -69,3 +68,10 @@ export const Artifact2Slot = 'artifact2_slot';
 export const Artifact3Slot = 'artifact3_slot';
 export const Utility1Slot = 'utility1_slot';
 export const Utility2Slot = 'utility2_slot';
+
+/**
+ * Skills
+ */
+export const Weaponcrafting = 'weaponcrafting';
+export const Gearcrafting = 'gearcrafting';
+export const Jewelrycrafting = 'jewelrycrafting';

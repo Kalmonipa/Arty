@@ -9,7 +9,7 @@ import {
 } from '../metrics.js';
 import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
-import { SimpleItemSchema, TaskType } from '../types/types.js';
+import { SimpleItemSchema, Skill, TaskType } from '../types/types.js';
 import { addToWishlist } from '../wishlist/functions.js';
 
 export abstract class Objective {
@@ -446,5 +446,19 @@ export abstract class Objective {
       craftingItem.quantity,
     );
     this.raisedBlockingRequest = true;
+  }
+
+  /**
+   * Returns true if there is an instance of the specified job in the on hold queue
+   */
+  checkForJobInOnHoldQueue(jobType: Skill): boolean {
+    if (
+      this.character.onHold.some((job) => job.job.objectiveId.includes(jobType))
+    ) {
+      logger.info(`Train ${jobType} job already on hold. Skipping`);
+      return true;
+    } else {
+      return false;
+    }
   }
 }
