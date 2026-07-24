@@ -48,6 +48,8 @@ export class IdleCrafterObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
+    let startTime = Date.now();
+
     await completeTasksFarmerAchievement(this.character, this.role);
     if (this.checkIdleJobIsLast()) return true;
 
@@ -72,7 +74,7 @@ export class IdleCrafterObjective extends Objective {
     await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    // If crafter, trian weapon gear and jewelrycrafting
+    // If crafter, train weapon gear and jewelrycrafting
     if (this.role === 'crafter') {
       const combatLevel = this.character.getCharacterLevel(this.character.data);
       const weaponLevel = this.character.getCharacterLevel(
@@ -152,6 +154,17 @@ export class IdleCrafterObjective extends Objective {
         }
         if (this.checkIdleJobIsLast()) return true;
       }
+    }
+
+    // If the idle job was started more than 10 minutes ago, we want to end it and let the next idle job run
+    if (Date.now() - startTime > 10 * 60 * 1000) {
+      logger.info(
+        `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
+      );
+      return true;
+    } else {
+      // If the idle job hasn't really triggered any other jobs, we want to do a monster task to keep the character busy
+      await this.doMonsterTask(1);
     }
 
     return true;

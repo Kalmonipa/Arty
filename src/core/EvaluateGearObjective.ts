@@ -65,7 +65,7 @@ export class EvaluateGearObjective extends Objective {
               this.activityType,
             );
 
-      // Just check the weapon if we're doing a gathering task
+      // Gathering gear has no retriable failure mode, so evaluate once and finish
       if (this.activityType !== 'combat') {
         await this.checkGatheringWeapon(this.activityType, charLevel);
         await this.checkGatheringEquipment();
@@ -74,10 +74,18 @@ export class EvaluateGearObjective extends Objective {
           this.character.getCharacterLevel(this.character.data),
         );
         return true;
-      } else {
-        return await this.evaluateCombatGear(charLevel, this.targetMob);
       }
+
+      if (await this.evaluateCombatGear(charLevel, this.targetMob)) {
+        return true;
+      }
+
+      logger.warn(
+        `Combat gear up attempt ${attempt}/${this.maxRetries} failed`,
+      );
     }
+
+    return false;
   }
 
   // @todo Equip the best prospecting or wisdom gear
@@ -460,6 +468,7 @@ export class EvaluateGearObjective extends Objective {
             logger.info(
               `Drop rate for ${targetResource}: 1/${drop.rate} — equipping ${targetEffect} artifacts`,
             );
+            // @todo Equip the best prospecting or wisdom artifacts for gathering activities
           }
         }
       }
