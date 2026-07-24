@@ -1,22 +1,9 @@
-import { actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
-import { getAllMonsterInformation } from '../api_calls/Monsters.js';
-import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { WeaponFlavours } from '../types/ItemData.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
-import {
-  StaticDataPageMonsterSchema,
-  ItemSchema,
-  MapSchema,
-  SimpleItemSchema,
-  GatheringSkill,
-} from '../types/types.js';
-import { isGatheringSkill, logger } from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {
-  addToWishlist,
   getOpenWishlistRequests,
   markAsExecuting,
   markAsFulfilled,

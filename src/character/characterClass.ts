@@ -87,6 +87,7 @@ import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from '../core/FightSimulator.js';
 import { IdleObjective } from '../idleObjectives/IdleObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { deleteWishlistRequest } from '../wishlist/functions.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
 import { ExpandBankObjective } from '../core/BankExpansion.js';
@@ -1031,6 +1032,12 @@ export class Character {
       logger.warn(
         `onHold queue full (${this.maxOnHoldJobs}); not parking ${job.objectiveId}`,
       );
+      // The job already created its wishlist requests; since it won't be parked,
+      // nothing will ever consume them, so roll them back rather than leaving
+      // orphaned rows that only expiry can clean up.
+      await this.deleteUnreferencedWishlistRequests(
+        this.pendingWishlistRequests,
+      );
       return false;
     }
 
@@ -1079,7 +1086,27 @@ export class Character {
   async dropOnHoldJob(entry: OnHoldJob): Promise<void> {
     this.onHold = this.onHold.filter((e) => e !== entry);
     this.onHoldRetriedIds.delete(entry.job.objectiveId);
+    await this.deleteUnreferencedWishlistRequests(entry.waitingOn);
     await this.saveJobQueue();
+  }
+
+  /**
+   * @description Deletes the given wishlist requests, skipping any still
+   * referenced by an on-hold job. Requests can be shared between jobs (an open
+   * request is reused rather than duplicated), so we only remove rows nothing is
+   * still waiting on. Callers must remove their own entry from `onHold` first.
+   */
+  private async deleteUnreferencedWishlistRequests(
+    refs: WishlistRequestRef[],
+  ): Promise<void> {
+    const stillReferenced = new Set(
+      this.onHold.flatMap((e) => e.waitingOn.map((r) => r.requestId)),
+    );
+    for (const ref of refs) {
+      if (!stillReferenced.has(ref.requestId)) {
+        await deleteWishlistRequest(ref.requestId);
+      }
+    }
   }
 
   /**
