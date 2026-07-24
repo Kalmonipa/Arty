@@ -30,6 +30,7 @@ import {
 } from './idleUtils.js';
 import { GatherObjective } from '../core/GatherObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
+import { BankCache } from '../core/BankCache.js';
 
 export class IdleHealerObjective extends Objective {
   role: Role;
@@ -59,6 +60,9 @@ export class IdleHealerObjective extends Objective {
     if (this.checkIdleJobIsLast()) return true;
 
     await this.depositGoldIntoBank();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.topUpTeleportPotionsInBank();
     if (this.checkIdleJobIsLast()) return true;
 
     await this.topUpPotionsInBank();
@@ -274,6 +278,36 @@ export class IdleHealerObjective extends Objective {
     }
 
     return tiersToCraft;
+  }
+
+  /**
+   * @todo Create a TopUpBank objective that handles this
+   * @returns
+   */
+  private async topUpTeleportPotionsInBank(): Promise<boolean> {
+    const minPotionsToCraft = 50;
+    const alchemyLevel = this.character.getCharacterLevel(
+      this.character.data,
+      'alchemy',
+    );
+
+    const bankContents = await BankCache.create(this.character);
+
+    const teleportPotions = this.character.consumablesMap['teleport'];
+
+    for (const potion of teleportPotions) {
+      const numInBank = bankContents.quantityOf(potion.code);
+
+      if (potion.level <= alchemyLevel && numInBank < minPotionsToCraft) {
+        logger.info(`Crafting ${minPotionsToCraft - numInBank} ${potion.code}`);
+        await this.character.craftNow(
+          minPotionsToCraft - numInBank,
+          potion.code,
+        );
+      }
+    }
+
+    return true;
   }
 
   /**
