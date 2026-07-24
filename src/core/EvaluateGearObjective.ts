@@ -68,6 +68,7 @@ export class EvaluateGearObjective extends Objective {
       // Just check the weapon if we're doing a gathering task
       if (this.activityType !== 'combat') {
         await this.checkGatheringWeapon(this.activityType, charLevel);
+        await this.checkGatheringEquipment();
         await this.checkGatheringArtifacts(
           this.targetResource,
           this.character.getCharacterLevel(this.character.data),
@@ -77,6 +78,11 @@ export class EvaluateGearObjective extends Objective {
         return await this.evaluateCombatGear(charLevel, this.targetMob);
       }
     }
+  }
+
+  // @todo Equip the best prospecting or wisdom gear
+  private async checkGatheringEquipment() {
+    return true;
   }
 
   private async selectForSlotWithResistancePriority(
