@@ -67,12 +67,15 @@ export class EvaluateGearObjective extends Objective {
 
       // Gathering gear has no retriable failure mode, so evaluate once and finish
       if (this.activityType !== 'combat') {
-        await this.checkGatheringWeapon(this.activityType, charLevel);
-        await this.checkGatheringEquipment();
-        await this.checkGatheringArtifacts(
-          this.targetResource,
-          this.character.getCharacterLevel(this.character.data),
+        const overallLevel = this.character.getCharacterLevel(
+          this.character.data,
         );
+        const gatheringStat = await this.determineGatheringStat(
+          this.targetResource,
+        );
+        await this.checkGatheringWeapon(this.activityType, charLevel);
+        await this.checkGatheringEquipment(gatheringStat, overallLevel);
+        await this.checkGatheringArtifacts(gatheringStat, overallLevel);
         return true;
       }
 
@@ -88,9 +91,165 @@ export class EvaluateGearObjective extends Objective {
     return false;
   }
 
-  // @todo Equip the best prospecting or wisdom gear
-  private async checkGatheringEquipment() {
-    return true;
+  /**
+   * @description Equips the best available wisdom or prospecting gear for each
+   * armor/accessory slot
+   */
+  private async checkGatheringEquipment(
+    stat: 'prospecting' | 'wisdom',
+    charLevel: number,
+  ): Promise<void> {
+    const slotMaps: [ItemSlot, ItemSchema[] | undefined][] = [
+      ['helmet', this.character.helmetMap?.[stat]],
+      ['body_armor', this.character.armorMap?.[stat]],
+      ['leg_armor', this.character.legsArmorMap?.[stat]],
+      ['boots', this.character.bootsMap?.[stat]],
+      ['amulet', this.character.amuletMap?.[stat]],
+      ['shield', this.character.shieldMap?.[stat]],
+      ['ring1', this.character.ringsMap?.[stat]],
+      ['ring2', this.character.ringsMap?.[stat]],
+    ];
+
+    // Tracks how many of each item code earlier slots have claimed this pass,
+    // so a single-copy item isn't picked for two slots (e.g. both rings).
+    const allocated = new Map<string, number>();
+
+    for (const [slot, map] of slotMaps) {
+      const best = await this.selectBestStatGear(
+        slot,
+        map ?? [],
+        stat,
+        charLevel,
+        allocated,
+      );
+
+      if (!best) {
+        logger.debug(`No ${stat} gear available for ${slot}, leaving as is`);
+        continue;
+      }
+
+      if (this.character.getCharacterGearIn(slot) === best.code) {
+        logger.debug(`Best ${stat} ${slot} (${best.code}) already equipped`);
+        continue;
+      }
+
+      allocated.set(best.code, (allocated.get(best.code) ?? 0) + 1);
+
+      if (best.fromBank) {
+        await this.character.withdrawNow(1, best.code);
+        this.bankCache?.remove(best.code, 1);
+      }
+      logger.debug(`Equipping ${best.code} into ${slot} for ${stat}`);
+      await this.character.equipNow(best.code, slot);
+    }
+  }
+
+  /**
+   * @description Picks the item with the highest target-stat value for a slot
+   * Returns undefined when nothing usable provides the stat.
+   */
+  private async selectBestStatGear(
+    slot: ItemSlot,
+    map: ItemSchema[],
+    stat: 'prospecting' | 'wisdom',
+    charLevel: number,
+    allocated: Map<string, number>,
+  ): Promise<{ code: string; fromBank: boolean } | undefined> {
+    let best: { code: string; fromBank: boolean; value: number } | undefined;
+
+    for (const item of map) {
+      if (item.level > charLevel) {
+        continue;
+      }
+
+      const statValue =
+        item.effects?.find((effect) => effect.code === stat)?.value ?? 0;
+      if (best && statValue <= best.value) {
+        continue;
+      }
+
+      const currentlyEquippedGear =
+        this.character.getCharacterGearIn(slot) === item.code;
+      let fromBank = false;
+
+      if (!currentlyEquippedGear) {
+        let numHeld = this.character.checkQuantityOfItemInInv(item.code);
+        if (numHeld === 0) {
+          numHeld = await this.character.checkQuantityOfItemInBank(
+            item.code,
+            this.bankCache,
+          );
+          fromBank = true;
+        }
+
+        const available = numHeld - (allocated.get(item.code) ?? 0);
+        if (available <= 0) {
+          continue;
+        }
+      }
+
+      best = { code: item.code, fromBank, value: statValue };
+    }
+
+    if (!best) {
+      return undefined;
+    }
+    return { code: best.code, fromBank: best.fromBank };
+  }
+
+  /**
+   * @description Decides whether gathering gear should target prospecting or
+   * wisdom, based on the drop rate of targetResource (prospecting if rate > 1).
+   * Falls back to wisdom if no targetResource, on API error, or if the resource
+   * or drop cannot be found.
+   */
+  private async determineGatheringStat(
+    targetResource: string | undefined,
+  ): Promise<'prospecting' | 'wisdom'> {
+    if (!targetResource) {
+      return 'wisdom';
+    }
+
+    const resources = await getAllResourceInformation({ drop: targetResource });
+    if (resources instanceof ApiError) {
+      logger.warn(
+        `Failed to fetch resource info for ${targetResource}, defaulting to wisdom`,
+      );
+      return 'wisdom';
+    }
+
+    let resource: ResourceSchema | undefined;
+    for (let i = resources.data.length - 1; i >= 0; i--) {
+      const r = resources.data[i];
+      if (
+        r.level <=
+        this.character.getCharacterLevel(this.character.data, r.skill)
+      ) {
+        resource = r;
+        break;
+      }
+    }
+
+    if (!resource) {
+      logger.warn(
+        `No accessible resource found for ${targetResource}, defaulting to wisdom`,
+      );
+      return 'wisdom';
+    }
+
+    const drop = resource.drops.find((d) => d.code === targetResource);
+    if (!drop) {
+      logger.warn(
+        `${targetResource} not found in resource drops, defaulting to wisdom`,
+      );
+      return 'wisdom';
+    }
+
+    const targetEffect = drop.rate > 1 ? 'prospecting' : 'wisdom';
+    logger.info(
+      `Drop rate for ${targetResource}: 1/${drop.rate} — targeting ${targetEffect} gear`,
+    );
+    return targetEffect;
   }
 
   private async selectForSlotWithResistancePriority(
@@ -417,61 +576,16 @@ export class EvaluateGearObjective extends Objective {
   }
 
   /**
-   * @description Selects the best prospecting or wisdom artifacts for gathering activities.
-   * Checks drop rate of targetResource to decide between prospecting (rate > 1) or wisdom (rate === 1).
-   * Falls back to wisdom artifacts if no targetResource, on API error, or if resource not found.
+   * @description Selects the best prospecting or wisdom artifacts for gathering
+   * activities, using the stat resolved by determineGatheringStat.
    */
   private async checkGatheringArtifacts(
-    targetResource: string | undefined,
+    targetEffect: 'prospecting' | 'wisdom',
     charLevel: number,
   ): Promise<void> {
     if (!this.character.artifactsMap) {
       logger.warn('artifactsMap not built, skipping artifact evaluation');
       return;
-    }
-
-    let targetEffect: 'prospecting' | 'wisdom' = 'wisdom';
-
-    if (targetResource) {
-      const resources = await getAllResourceInformation({
-        drop: targetResource,
-      });
-      if (resources instanceof ApiError) {
-        logger.warn(
-          `Failed to fetch resource info for ${targetResource}, defaulting to wisdom artifacts`,
-        );
-      } else {
-        let resource: ResourceSchema | undefined;
-        for (let i = resources.data.length - 1; i >= 0; i--) {
-          const r = resources.data[i];
-          if (
-            r.level <=
-            this.character.getCharacterLevel(this.character.data, r.skill)
-          ) {
-            resource = r;
-            break;
-          }
-        }
-
-        if (!resource) {
-          logger.warn(
-            `No accessible resource found for ${targetResource}, defaulting to wisdom artifacts`,
-          );
-        } else {
-          const drop = resource.drops.find((d) => d.code === targetResource);
-          if (!drop) {
-            logger.warn(
-              `${targetResource} not found in resource drops, defaulting to wisdom artifacts`,
-            );
-          } else {
-            targetEffect = drop.rate > 1 ? 'prospecting' : 'wisdom';
-            logger.info(
-              `Drop rate for ${targetResource}: 1/${drop.rate} — equipping ${targetEffect} artifacts`,
-            );
-            // @todo Equip the best prospecting or wisdom artifacts for gathering activities
-          }
-        }
-      }
     }
 
     const artifactSlots: ItemSlot[] = ['artifact1', 'artifact2', 'artifact3'];

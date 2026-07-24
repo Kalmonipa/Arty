@@ -1590,4 +1590,189 @@ describe('EvaluateGearObjective Integration Tests', () => {
       }
     });
   });
+
+  describe('checkGatheringEquipment', () => {
+    const statGear = (
+      code: string,
+      level: number,
+      stat: GearEffects,
+      value: number,
+    ): ItemSchema => ({
+      code,
+      name: code,
+      level,
+      type: 'armor',
+      subtype: 'helmet',
+      description: '',
+      craft: null,
+      tradeable: true,
+      conditions: [],
+      effects: [{ code: stat, value, description: `${stat} effect` }],
+    });
+
+    const prospectingResource = {
+      data: [
+        {
+          name: 'Iron Rock',
+          code: 'iron_rock',
+          skill: 'mining' as const,
+          level: 5,
+          drops: [
+            { code: 'iron_ore', rate: 4, min_quantity: 1, max_quantity: 1 },
+          ],
+        },
+      ],
+      pages: 1,
+      page: 1,
+      size: 50,
+      total: 1,
+    };
+
+    it('equips the highest-value wisdom item available for a slot', async () => {
+      mockCharacter.helmetMap.wisdom = [
+        statGear('cheap_wisdom_helmet', 5, 'wisdom', 5),
+        statGear('great_wisdom_helmet', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.cheap_wisdom_helmet = 1;
+      mockCharacter.bankItems.great_wisdom_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'great_wisdom_helmet',
+        'helmet',
+      );
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        'cheap_wisdom_helmet',
+        expect.anything(),
+      );
+    });
+
+    it('leaves a slot untouched when no wisdom or prospecting gear exists', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'helmet',
+      );
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'body_armor',
+      );
+    });
+
+    it('withdraws a bank item before equipping it', async () => {
+      mockCharacter.helmetMap.wisdom = [
+        statGear('great_wisdom_helmet', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.great_wisdom_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(
+        1,
+        'great_wisdom_helmet',
+      );
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'great_wisdom_helmet',
+        'helmet',
+      );
+    });
+
+    it('keeps the equipped item when it has the highest value', async () => {
+      mockCharacter.data.helmet_slot = 'equipped_wisdom_helmet';
+      mockCharacter.helmetMap.wisdom = [
+        statGear('equipped_wisdom_helmet', 5, 'wisdom', 20),
+        statGear('bank_wisdom_helmet', 8, 'wisdom', 10),
+      ];
+      mockCharacter.bankItems.bank_wisdom_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'helmet',
+      );
+    });
+
+    it('replaces the equipped item when a higher-value item is available', async () => {
+      mockCharacter.data.helmet_slot = 'weak_equipped_helmet';
+      mockCharacter.helmetMap.wisdom = [
+        statGear('weak_equipped_helmet', 5, 'wisdom', 5),
+        statGear('strong_bank_helmet', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.strong_bank_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'strong_bank_helmet',
+        'helmet',
+      );
+    });
+
+    it('does not assign a single-copy wisdom ring to both ring slots', async () => {
+      mockCharacter.ringsMap.wisdom = [
+        statGear('wisdom_ring', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.wisdom_ring = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith('wisdom_ring', 'ring1');
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        'wisdom_ring',
+        'ring2',
+      );
+    });
+
+    it('selects prospecting gear when the target resource drop rate is below 100%', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(prospectingResource);
+      mockCharacter.armorMap.prospecting = [
+        statGear('prospecting_coat', 8, 'prospecting', 15),
+      ];
+      mockCharacter.bankItems.prospecting_coat = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'prospecting_coat',
+        'body_armor',
+      );
+    });
+  });
 });
