@@ -22,6 +22,7 @@ import { register } from './metrics.js';
 import { db } from './db.js';
 import EventRouter from './events/routes.js';
 import WishlistRouter from './wishlist/routes.js';
+import { reclaimExecutingWishlistRequests } from './wishlist/functions.js';
 
 async function main() {
   await sleep(getRandomInt(0, 10), 'init_jitter', false);
@@ -43,6 +44,14 @@ async function main() {
     process.exit(1);
   } else {
     logger.info('Database connection successful!');
+  }
+
+  // A fresh process has nothing in flight, so any request still flagged
+  // executing was stranded by an interrupted fulfilment; release it so it can be
+  // picked up again rather than blocking jobs waiting on it.
+  const reclaimed = await reclaimExecutingWishlistRequests();
+  if (reclaimed > 0) {
+    logger.info(`Reclaimed ${reclaimed} stranded executing wishlist request(s)`);
   }
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {

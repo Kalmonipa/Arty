@@ -221,6 +221,50 @@ export async function markAsFulfilled(id: number): Promise<boolean> {
 }
 
 /**
+ * Clears the executing flag on a request whose fulfilment didn't complete, so a
+ * later idle cycle can pick it up again. Without this a failed or interrupted
+ * attempt would strand the row (executing stays true, so it's never re-offered
+ * and never fulfilled).
+ * @param id The wishlist row id
+ * @returns true if a row was updated, false otherwise
+ */
+export async function markAsNotExecuting(id: number): Promise<boolean> {
+  logger.debug(`Clearing executing flag on request ${id}`);
+  const query = `UPDATE wishlist SET executing = false WHERE id = $1;`;
+
+  try {
+    const result = await db.query(query, [id]);
+    return (result.rowCount ?? 0) > 0;
+  } catch (err) {
+    logger.error(`Failed to clear executing flag on request ${id}: ${err}`);
+    return false;
+  }
+}
+
+/**
+ * Clears the executing flag on every unfulfilled request. Run once at startup:
+ * a fresh process has nothing genuinely in flight, so any row left executing was
+ * stranded by an interrupted fulfilment (crash, restart, or error) and must be
+ * made available again.
+ * @returns the number of rows reset
+ */
+export async function reclaimExecutingWishlistRequests(): Promise<number> {
+  const query = `
+    UPDATE wishlist
+    SET executing = false
+    WHERE executing = true AND fulfilled = false;
+  `;
+
+  try {
+    const result = await db.query(query);
+    return result.rowCount ?? 0;
+  } catch (err) {
+    logger.error(`Failed to reclaim executing wishlist requests: ${err}`);
+    return 0;
+  }
+}
+
+/**
  * Fetches wishlist rows by their ids. Used to check the status of the requests
  * an onHold job is waiting on.
  * @param ids The wishlist row ids

@@ -12,6 +12,8 @@ import {
   getOpenWishlistRequests,
   getWishlistRequestsByIds,
   deleteExpiredWishlistRequests,
+  markAsNotExecuting,
+  reclaimExecutingWishlistRequests,
 } from '../../src/wishlist/functions.js';
 
 const mockedQuery = db.query as jest.MockedFunction<typeof db.query>;
@@ -119,6 +121,40 @@ describe('wishlist functions', () => {
       const sql = mockedQuery.mock.calls[0][0] as string;
       expect(sql).toMatch(/DELETE FROM wishlist/i);
       expect(sql).toMatch(/expiration_date < NOW\(\)/i);
+    });
+  });
+
+  describe('markAsNotExecuting', () => {
+    it('clears the executing flag for the given id', async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 1 } as any);
+
+      const ok = await markAsNotExecuting(340);
+
+      expect(ok).toBe(true);
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/SET executing = false/i);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([340]);
+    });
+  });
+
+  describe('reclaimExecutingWishlistRequests', () => {
+    it('resets unfulfilled executing rows and returns the count', async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 26 } as any);
+
+      const reclaimed = await reclaimExecutingWishlistRequests();
+
+      expect(reclaimed).toBe(26);
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/SET\s+executing = false/i);
+      expect(sql).toMatch(/executing = true AND fulfilled = false/i);
+    });
+
+    it('returns 0 when the update fails', async () => {
+      mockedQuery.mockRejectedValue(new Error('db down'));
+
+      const reclaimed = await reclaimExecutingWishlistRequests();
+
+      expect(reclaimed).toBe(0);
     });
   });
 });

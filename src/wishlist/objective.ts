@@ -7,6 +7,7 @@ import {
   getOpenWishlistRequests,
   markAsExecuting,
   markAsFulfilled,
+  markAsNotExecuting,
 } from '../wishlist/functions.js';
 import { AcquisitionMethod } from './types.js';
 
@@ -71,22 +72,30 @@ export class FulfillWishlistRequestObjective extends Objective {
           request.quantity / this.character.data.inventory_max_items,
         );
 
-        let iterations = 0;
         let successfull = false;
-        while (iterations < numGatherIterations) {
-          const numToGather = Math.min(
-            request.quantity,
-            Math.round(this.character.data.inventory_max_items * 0.95),
-          );
-          await this.character.gatherNow(numToGather, request.item_code);
-          successfull = await this.character.depositNow(
-            numToGather,
-            request.item_code,
-          );
-          iterations++;
-        }
-        if (successfull) {
-          await markAsFulfilled(request.id);
+        try {
+          let iterations = 0;
+          while (iterations < numGatherIterations) {
+            const numToGather = Math.min(
+              request.quantity,
+              Math.round(this.character.data.inventory_max_items * 0.95),
+            );
+            await this.character.gatherNow(numToGather, request.item_code);
+            successfull = await this.character.depositNow(
+              numToGather,
+              request.item_code,
+            );
+            iterations++;
+          }
+        } finally {
+          // Release the request either way: fulfilled if it completed, otherwise
+          // cleared of the executing flag so a later cycle can retry it rather
+          // than leaving it stranded and blocking any job waiting on it.
+          if (successfull) {
+            await markAsFulfilled(request.id);
+          } else {
+            await markAsNotExecuting(request.id);
+          }
         }
       }
     }
