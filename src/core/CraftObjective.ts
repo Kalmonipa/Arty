@@ -87,7 +87,7 @@ export class CraftObjective extends Objective {
    * @description Craft the item. Character will move to the correct workshop map
    */
   async run(): Promise<boolean> {
-    if (this.target.quantity === 0) {
+    if (this.target.quantity === 0 || this.progress >= this.target.quantity) {
       logger.info(
         `Already have the requested amount (${this.target.quantity}) of ${this.target.code}. Completing job`,
       );
