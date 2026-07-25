@@ -55,7 +55,8 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
         itemInformation.level <
         this.character.getCharacterLevel(this.character.data)
       ) {
-        logger.info(`Executing request ${request.id} for ${request.quantity}x ${request.item_code}`)
+        logger.info(`Executing request #${request.id} for ${request.quantity}x ${request.item_code}`)
+        logger.info(`Request info: acquisition method: ${request.acquisition_method}, requestor: ${request.character}`)
         const job = new FulfillWishlistRequestObjective(
           this.character,
           request,
