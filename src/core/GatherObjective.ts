@@ -241,7 +241,14 @@ export class GatherObjective extends Objective {
           return true;
         }
       } else if (resourceDetails.craft && resourceDetails.code !== 'sap') {
-        if (!(await this.character.craftNow(quantity, resourceDetails.code, false, false))) {
+        if (
+          !(await this.character.craftNow(
+            quantity,
+            resourceDetails.code,
+            false,
+            false,
+          ))
+        ) {
           continue;
         } else {
           return true;

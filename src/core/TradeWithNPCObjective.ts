@@ -161,6 +161,9 @@ export class TradeObjective extends Objective {
               code: this.currency,
               quantity: this.quantity * buyPrice,
             }),
+            true,
+            true,
+            this.objectiveId,
           );
         }
       }
