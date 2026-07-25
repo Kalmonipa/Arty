@@ -159,8 +159,8 @@ export class TidyBankObjective extends Objective {
         break;
       }
       const numInBank = content.quantity;
-      const numToKeep = 500
-      const numToCraftWith = Math.max(numInBank - numToKeep, 0)
+      const numToKeep = 500;
+      const numToCraftWith = Math.max(numInBank - numToKeep, 0);
 
       if (numInBank === undefined) {
         logger.info(`${item} not found in bank`);
@@ -182,7 +182,10 @@ export class TidyBankObjective extends Objective {
           numToCraftWith / itemToCraftSchema.craft.items[0].quantity,
         );
 
-        return await this.character.craftNow(numToCraft, itemToCraftSchema.code);
+        return await this.character.craftNow(
+          numToCraft,
+          itemToCraftSchema.code,
+        );
       }
     }
     logger.info(`Found no ore in the bank to clean up`);

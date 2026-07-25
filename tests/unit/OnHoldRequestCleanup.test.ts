@@ -88,7 +88,9 @@ describe('on-hold wishlist request cleanup', () => {
 
     it('does not delete a pending request already referenced by an on-hold job', async () => {
       character.maxOnHoldJobs = 1;
-      character.onHold = [onHoldEntry('existing_job', [ref(357, 'iron_bar', 30)])];
+      character.onHold = [
+        onHoldEntry('existing_job', [ref(357, 'iron_bar', 30)]),
+      ];
       character.pendingWishlistRequests = [ref(357, 'iron_bar', 30)];
 
       const parked = await character.parkJob({

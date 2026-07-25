@@ -51,7 +51,9 @@ async function main() {
   // picked up again rather than blocking jobs waiting on it.
   const reclaimed = await reclaimExecutingWishlistRequests();
   if (reclaimed > 0) {
-    logger.info(`Reclaimed ${reclaimed} stranded executing wishlist request(s)`);
+    logger.info(
+      `Reclaimed ${reclaimed} stranded executing wishlist request(s)`,
+    );
   }
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {

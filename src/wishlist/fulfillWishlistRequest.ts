@@ -1,102 +1,71 @@
-import { getItemInformation } from '../api_calls/Items.js';
-import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
-import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {
-  getOpenWishlistRequests,
   markAsExecuting,
   markAsFulfilled,
   markAsNotExecuting,
 } from './functions.js';
-import { AcquisitionMethod } from './types.js';
+import { WishlistRow } from './types.js';
 
+/**
+ * Fulfills the request that gets passed in. Some preliminary checks should have been
+ * done via identifyValidWishlistRequests to ensure the character level is high enough
+ * etc
+ */
 export class FulfillWishlistRequestObjective extends Objective {
-  acquisitionMethod: AcquisitionMethod;
+  request: WishlistRow;
 
-  constructor(character: Character, acquisitionMethod: AcquisitionMethod) {
-    super(character, `fulfill_${acquisitionMethod}_requests`, 'not_started');
+  constructor(character: Character, request: WishlistRow) {
+    super(
+      character,
+      `fulfill_${request.acquisition_method}_request_${request.id}`,
+      'not_started',
+    );
     this.character = character;
     this.jobFlavour = 'FulfillWishlistRequest';
     this.shouldEmitMetrics = true;
-    this.metricLabel = `fulfill_${acquisitionMethod}_requests`;
-    this.acquisitionMethod = acquisitionMethod;
+    this.metricLabel = `fulfill_${request.acquisition_method}_request_${request.id}`;
+    this.request = request;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
     return true;
   }
 
-  /**
-   * Checks the wishlist for any wishlist requests of the type specified
-   * and fulfills them if able
-   */
   async run(): Promise<boolean> {
     if (!(await this.checkStatus())) return false;
 
-    /**
-     * @description Checks the wishlist for any requests of a certain type
-     * Labourers primarily look at mining + woodcutting
-     * Crafter looks at weapon/gear/jewelrycrafting
-     * Alchemist looks at alchemy
-     * Fisherman looks at fishing + cooking
-     * @param acquisitionMethod The way to retrieve the requested item
-     * @returns true if successful, false if encounter some failure along the way
-     */
+    await markAsExecuting(this.request.id);
 
-    const wishlistRequests = await getOpenWishlistRequests(
-      this.acquisitionMethod,
+    // Calculate how many inventories full the gather job will be
+    // This is to prevent gathering more than the inventory cap and the char endlessly gathers
+    const numGatherIterations = Math.ceil(
+      this.request.quantity / this.character.data.inventory_max_items,
     );
 
-    if (wishlistRequests.length === 0) {
-      logger.info(`No ${this.acquisitionMethod} wishlist requests to fulfill`);
-      return true;
-    }
-
-    for (const request of wishlistRequests) {
-      const itemInformation = await getItemInformation(request.item_code);
-      if (itemInformation instanceof ApiError) {
-        logger.warn(`Item information not found for ${request.item_code}`);
-        return false;
-      }
-
-      if (
-        itemInformation.level <
-        this.character.getCharacterLevel(this.character.data)
-      ) {
-        await markAsExecuting(request.id);
-
-        // Calculate how many inventories full the gather job will be
-        // This is to prevent gathering more than the inventory cap and the char endlessly gathers
-        const numGatherIterations = Math.ceil(
-          request.quantity / this.character.data.inventory_max_items,
+    let successfull = false;
+    try {
+      let iterations = 0;
+      while (iterations < numGatherIterations) {
+        const numToGather = Math.min(
+          this.request.quantity,
+          Math.round(this.character.data.inventory_max_items * 0.9),
         );
-
-        let successfull = false;
-        try {
-          let iterations = 0;
-          while (iterations < numGatherIterations) {
-            const numToGather = Math.min(
-              request.quantity,
-              Math.round(this.character.data.inventory_max_items * 0.9),
-            );
-            await this.character.gatherNow(numToGather, request.item_code);
-            successfull = await this.character.depositNow(
-              numToGather,
-              request.item_code,
-            );
-            iterations++;
-          }
-        } finally {
-          // Release the request either way: fulfilled if it completed, otherwise
-          // cleared of the executing flag so a later cycle can retry it rather
-          // than leaving it stranded and blocking any job waiting on it.
-          if (successfull) {
-            await markAsFulfilled(request.id);
-          } else {
-            await markAsNotExecuting(request.id);
-          }
-        }
+        await this.character.gatherNow(numToGather, this.request.item_code);
+        successfull = await this.character.depositNow(
+          numToGather,
+          this.request.item_code,
+        );
+        iterations++;
+      }
+    } finally {
+      // Release the request either way: fulfilled if it completed, otherwise
+      // cleared of the executing flag so a later cycle can retry it rather
+      // than leaving it stranded and blocking any job waiting on it.
+      if (successfull) {
+        await markAsFulfilled(this.request.id);
+      } else {
+        await markAsNotExecuting(this.request.id);
       }
     }
 

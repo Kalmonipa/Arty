@@ -12,6 +12,7 @@ import {
 } from '../wishlist/functions.js';
 import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
+import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
 
 /**
  * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
@@ -205,6 +206,6 @@ export async function checkWishlistToFulfill(
   acquisitionMethod: AcquisitionMethod,
   parentId?: string,
 ): Promise<boolean> {
-  const job = new FulfillWishlistRequestObjective(character, acquisitionMethod);
+  const job = new IdentifyValidWishlistRequestsObjective(character, acquisitionMethod);
   return await character.executeJobNow(job, true, true, parentId);
 }

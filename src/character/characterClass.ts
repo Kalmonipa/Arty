@@ -142,7 +142,8 @@ import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
 import { IdleLabourerObjective } from '../idleObjectives/IdleLabourer.js';
 import { IdleFishermanObjective } from '../idleObjectives/IdleFisherman.js';
 import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.js';
-import { AcquisitionMethod } from '../wishlist/types.js';
+import { AcquisitionMethod, WishlistRow } from '../wishlist/types.js';
+import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -624,9 +625,13 @@ export class Character {
       };
     } else if (job instanceof ExpandBankObjective) {
       return {};
-    } else if (job instanceof FulfillWishlistRequestObjective) {
+    } else if (job instanceof IdentifyValidWishlistRequestsObjective) {
       return {
         acquisitionMethod: job.acquisitionMethod,
+      };
+    } else if (job instanceof FulfillWishlistRequestObjective) {
+      return {
+        request: job.request,
       };
     } else if (job instanceof GatherObjective) {
       return {
@@ -740,6 +745,12 @@ export class Character {
           break;
         case 'FulfillWishlistRequestObjective':
           job = new FulfillWishlistRequestObjective(
+            this,
+            specificData.request as WishlistRow,
+          );
+          break;
+        case 'IdentifyValidWishlistRequestsObjective':
+          job = new IdentifyValidWishlistRequestsObjective(
             this,
             specificData.acquisitionMethod as AcquisitionMethod,
           );

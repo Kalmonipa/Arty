@@ -19,6 +19,7 @@ import {
 } from '../../src/wishlist/functions.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
+import { IdentifyValidWishlistRequestsObjective } from '../../src/wishlist/identifyValidWishlistRequests.js';
 
 const mockedOpen = getOpenWishlistRequests as jest.MockedFunction<
   typeof getOpenWishlistRequests
@@ -33,9 +34,9 @@ const mockedGetItem = getItemInformation as jest.MockedFunction<
   typeof getItemInformation
 >;
 
-describe('FulfillWishlistRequestObjective request release', () => {
+describe('IdentifyValidWishlistRequestsObjective request release', () => {
   let character: Character;
-  let job: FulfillWishlistRequestObjective;
+  let job: IdentifyValidWishlistRequestsObjective;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -48,7 +49,7 @@ describe('FulfillWishlistRequestObjective request release', () => {
       { id: 340, item_code: 'steel_bar', quantity: 5 } as any,
     ]);
 
-    job = new FulfillWishlistRequestObjective(character, 'mining');
+    job = new IdentifyValidWishlistRequestsObjective(character, 'mining');
   });
 
   it('marks the request fulfilled when the deposit succeeds', async () => {

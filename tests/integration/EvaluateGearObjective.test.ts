@@ -1743,7 +1743,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       );
       await objective.run();
 
-      expect(mockCharacter.equipNow).toHaveBeenCalledWith('wisdom_ring', 'ring1');
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'wisdom_ring',
+        'ring1',
+      );
       expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
         'wisdom_ring',
         'ring2',
