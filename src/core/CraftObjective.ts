@@ -28,6 +28,12 @@ const SKILL_ROLE: Partial<Record<Skill, Role>> = {
 
 /**
  * @description Crafts the requested amount of the item
+ * There are 2 ways this class can be used.
+ * 1. Calculates the remaining amount we need, after getting the current amount from
+ * inventory and bank. Set checkBank & includeInventory to true for this method
+ * 2. Takes in the remaining amount we need, ignoring bank and inventory. Set checkBank
+ * & includeInventory to false for this method
+ * It can also be used in a mix of both if you really desire it
  * @todo
  * - Empty inventory before starting, except for the item or any ingredients
  *
