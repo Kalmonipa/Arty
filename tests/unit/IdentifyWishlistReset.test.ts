@@ -11,7 +11,6 @@ jest.mock('../../src/api_calls/Items.js', () => ({
 }));
 
 import { Character } from '../../src/character/characterClass.js';
-import { FulfillWishlistRequestObjective } from '../../src/wishlist/fulfillWishlistRequest.js';
 import {
   getOpenWishlistRequests,
   markAsFulfilled,

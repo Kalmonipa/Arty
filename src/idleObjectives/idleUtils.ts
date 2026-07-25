@@ -3,14 +3,13 @@ import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { Role } from '../types/CharacterData.js';
-import { CharacterSchema, ItemSchema } from '../types/types.js';
+import { ItemSchema } from '../types/types.js';
 import { GetCharacterData, getHighestCharLevel, logger } from '../utils.js';
 import {
   deleteExpiredWishlistRequests,
   getWishlistRequestsByIds,
   deleteWishlistRequest,
 } from '../wishlist/functions.js';
-import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
 
