@@ -3704,6 +3704,8 @@ export class Character {
         return false;
       case 462:
         return this.executeJobNow(new ExpandBankObjective(this));
+      case 483: // The character does not have enough HP to uneqip this item
+        return await this.recoverHealth();
       case 484: // The character cannot equip more than 100 utilities in the same slot.
         return false;
       case 486: // An action is already in progress for this character.
