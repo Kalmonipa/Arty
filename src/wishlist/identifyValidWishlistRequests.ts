@@ -61,7 +61,7 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
           this.character,
           request,
         );
-        await this.character.executeJobNow(job);
+        await this.character.executeJobNow(job, true, true, this.objectiveId);
       }
     }
 
