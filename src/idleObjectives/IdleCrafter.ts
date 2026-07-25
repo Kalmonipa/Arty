@@ -162,7 +162,6 @@ export class IdleCrafterObjective extends Objective {
       }
     }
 
-    // If the idle job was started more than 10 minutes ago, we want to end it and let the next idle job run
     if (Date.now() - startTime > 10 * 60 * 1000) {
       logger.info(
         `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,

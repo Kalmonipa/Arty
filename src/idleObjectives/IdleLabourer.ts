@@ -105,15 +105,13 @@ export class IdleLabourerObjective extends Objective {
     await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    // If the idle job was started more than 10 minutes ago, we want to end it and let the next idle job run
     if (Date.now() - startTime > 10 * 60 * 1000) {
+      logger.info(
+        `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
+      );
+      return true;
+    } else {
       await this.doItemTask(1);
-      if (this.checkIdleJobIsLast()) return true;
-
-      await this.trainSkill('mining');
-      if (this.checkIdleJobIsLast()) return true;
-
-      await this.trainSkill('woodcutting');
       if (this.checkIdleJobIsLast()) return true;
     }
   }
