@@ -13,6 +13,7 @@ import { getAllMaps } from '../api_calls/Maps.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { Objective } from './Objective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
+import { TasksCoin } from '../constants.js';
 
 /**
  * @description Objective to buy or sell goods from/to a trader. Automatically finds
@@ -113,7 +114,7 @@ export class TradeObjective extends Objective {
 
         if (numInBank >= currencyNeeded) {
           await this.character.withdrawNow(currencyNeeded, this.currency);
-        } else if (this.currency === 'tasks_coin') {
+        } else if (this.currency === TasksCoin) {
           let taskAttempts = 0;
           const maxTaskAttempts = 20;
 

@@ -6,6 +6,7 @@ import {
   Gearcrafting,
   Jewelrycrafting,
   MAX_SKILL_LEVEL,
+  TasksCoin,
   Weaponcrafting,
 } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
@@ -25,6 +26,7 @@ import {
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
 } from './idleUtils.js';
+import { actionTasksExchange } from '../api_calls/Tasks.js';
 
 export class IdleCrafterObjective extends Objective {
   role: Role;
@@ -50,7 +52,11 @@ export class IdleCrafterObjective extends Objective {
   async run(): Promise<boolean> {
     let startTime = Date.now();
 
+    // ToDo: Maybe we don't need this if we enable gambling
     await completeTasksFarmerAchievement(this.character, this.role);
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.gambleTaskCoins();
     if (this.checkIdleJobIsLast()) return true;
 
     await this.character.tidyUpBank(this.character.role);
@@ -147,7 +153,7 @@ export class IdleCrafterObjective extends Objective {
       if (relevantSkillLevel >= combatLevel) {
         // Only do tasks if the bank is low on task coins.
         const taskCoinsInBank =
-          await this.character.checkQuantityOfItemInBank('tasks_coin');
+          await this.character.checkQuantityOfItemInBank(TasksCoin);
 
         if (taskCoinsInBank < 10) {
           await this.doMonsterTask(1);
@@ -231,6 +237,48 @@ export class IdleCrafterObjective extends Objective {
       true,
       this.objectiveId,
     );
+  }
+
+  /**
+   * If we have excess (>maxCoinsInBank) task coins in the bank, gamble the excess to get rewards
+   * @returns True if successful
+   */
+  private async gambleTaskCoins(): Promise<boolean> {
+    // The number of task coins needed to exchange. Pretty sure this won't change but who knows
+    const costToExchange = 6;
+    // Arbitrary number for now. Might adjust as I see fit
+    const maxCoinsInBank = 50;
+    const coinsInBank =
+      await this.character.checkQuantityOfItemInBank(TasksCoin);
+
+    if (coinsInBank < maxCoinsInBank) {
+      logger.info(
+        `${coinsInBank}/${maxCoinsInBank} task coins in bank. Not gambling any`,
+      );
+      return true;
+    }
+
+    const numExchangesToMake = Math.floor(coinsInBank / costToExchange);
+    const coinsToSpend = numExchangesToMake * costToExchange;
+
+    await this.character.withdrawNow(coinsToSpend, TasksCoin);
+
+    const taskMasterLocations = await this.character.getAvailableTaskMasters();
+    const nearestMap = this.character.evaluateClosestMap(taskMasterLocations);
+
+    await this.character.move(nearestMap);
+
+    for (let iteration = 0; iteration < numExchangesToMake; iteration++) {
+      const exchangeResult = await actionTasksExchange(this.character.data);
+      if (exchangeResult instanceof ApiError) {
+        logger.error(
+          `Failed to exchange coins at map ${nearestMap.map_id} (x: ${nearestMap.x}, y: ${nearestMap.y})`,
+        );
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**

@@ -205,6 +205,9 @@ export async function checkWishlistToFulfill(
   acquisitionMethod: AcquisitionMethod,
   parentId?: string,
 ): Promise<boolean> {
-  const job = new IdentifyValidWishlistRequestsObjective(character, acquisitionMethod);
+  const job = new IdentifyValidWishlistRequestsObjective(
+    character,
+    acquisitionMethod,
+  );
   return await character.executeJobNow(job, true, true, parentId);
 }

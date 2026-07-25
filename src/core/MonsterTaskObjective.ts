@@ -2,6 +2,7 @@ import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { DepositObjective } from './DepositObjective.js';
 import { Objective } from './Objective.js';
+import { TasksCoin } from '../constants.js';
 
 export class MonsterTaskObjective extends Objective {
   type = 'monster' as const;
@@ -60,10 +61,10 @@ export class MonsterTaskObjective extends Objective {
       result = await this.handInTask('monsters');
     }
 
-    const numCoinsInInv = this.character.checkQuantityOfItemInInv('tasks_coin');
+    const numCoinsInInv = this.character.checkQuantityOfItemInInv(TasksCoin);
     await this.character.executeJobNow(
       new DepositObjective(this.character, {
-        code: 'tasks_coin',
+        code: TasksCoin,
         quantity: numCoinsInInv,
       }),
       true,

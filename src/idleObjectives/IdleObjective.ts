@@ -4,7 +4,7 @@ import {
   getPendingItems,
 } from '../api_calls/Items.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
-import { MAX_SKILL_LEVEL } from '../constants.js';
+import { MAX_SKILL_LEVEL, TasksCoin } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
@@ -74,7 +74,7 @@ export class IdleObjective extends Objective {
     // Fisherman has an additional check: food must be sufficiently stocked first.
     if (this.role !== 'alchemist') {
       const taskCoinsInBank =
-        await this.character.checkQuantityOfItemInBank('tasks_coin');
+        await this.character.checkQuantityOfItemInBank(TasksCoin);
 
       if (taskCoinsInBank < 100) {
         let shouldDoTasks = true;

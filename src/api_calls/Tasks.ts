@@ -1,5 +1,6 @@
 import { ApiError } from '../core/Error.js';
 import {
+  ActionTaskExchangeMyNameActionTaskExchangePostResult,
   CharacterSchema,
   RewardDataResponseSchema,
   SimpleItemSchema,
@@ -110,6 +111,34 @@ export async function actionTasksTrade(
     onSuccess: (result) => {
       logger.info(
         `Successfully traded ${result.data.trade.quantity} ${result.data.trade.code} to the task master`,
+      );
+    },
+  });
+}
+
+export async function actionTasksExchange(
+  character: CharacterSchema,
+): Promise<ApiError | RewardDataResponseSchema> {
+  return apiRequest<RewardDataResponseSchema>({
+    url: new URL(`${ApiUrl}/my/${character.name}/action/task/exchange`),
+    method: 'POST',
+    errorMessages: {
+      422: 'Request could not be processed due to an invalid payload.',
+      478: 'Missing required item(s).',
+      486: 'An action is already in progress for this character.',
+      497: 'The characters inventory is full.',
+      498: 'Character not found.',
+      499: 'Character is in cooldown',
+      598: 'Tasks Master not found on this map.',
+    },
+    fallbackMessage: 'Unknown error from /action/task/exchange',
+    onSuccess: (result) => {
+      let itemRewards: string;
+      result.data.rewards.items.forEach((rewards) => {
+        itemRewards.concat(`${rewards.quantity}x ${rewards.code}, `);
+      });
+      logger.info(
+        `Successfully exchanged task coins for ${result.data.rewards.gold} gold and ${itemRewards}`,
       );
     },
   });

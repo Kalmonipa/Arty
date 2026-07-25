@@ -11,6 +11,7 @@ import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { SimpleItemSchema, Skill, TaskType } from '../types/types.js';
 import { addToWishlist } from '../wishlist/functions.js';
+import { TasksCoin } from '../constants.js';
 
 export abstract class Objective {
   character: Character;
@@ -339,8 +340,8 @@ export abstract class Objective {
    * @description Withdraws a task coin, moves to the task master and cancels the current task
    */
   async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
-    if (this.character.checkQuantityOfItemInInv('tasks_coin') < 1) {
-      if (!(await this.character.withdrawNow(1, 'tasks_coin'))) {
+    if (this.character.checkQuantityOfItemInInv(TasksCoin) < 1) {
+      if (!(await this.character.withdrawNow(1, TasksCoin))) {
         return false;
       }
     }

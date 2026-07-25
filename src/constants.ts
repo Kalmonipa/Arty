@@ -69,6 +69,8 @@ export const Artifact3Slot = 'artifact3_slot';
 export const Utility1Slot = 'utility1_slot';
 export const Utility2Slot = 'utility2_slot';
 
+export const TasksCoin = 'tasks_coin';
+
 /**
  * Skills
  */

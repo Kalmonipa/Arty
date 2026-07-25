@@ -9,6 +9,7 @@ import { Objective } from './Objective.js';
 import { Role } from '../types/CharacterData.js';
 import { addToWishlist } from '../wishlist/functions.js';
 import { AcquisitionMethod, WishlistRequest } from '../wishlist/types.js';
+import { TasksCoin } from '../constants.js';
 
 export class ItemTaskObjective extends Objective {
   type = 'items' as const;
@@ -38,11 +39,11 @@ export class ItemTaskObjective extends Objective {
 
       if (result) {
         const numCoinsInInv =
-          this.character.checkQuantityOfItemInInv('tasks_coin');
+          this.character.checkQuantityOfItemInInv(TasksCoin);
 
         await this.character.executeJobNow(
           new DepositObjective(this.character, {
-            code: 'tasks_coin',
+            code: TasksCoin,
             quantity: numCoinsInInv,
           }),
           true,
@@ -83,9 +84,7 @@ export class ItemTaskObjective extends Objective {
         this.character.data.task === 'magical_plank' ||
         this.character.data.task === 'strangold_bar'
       ) {
-        if (
-          (await this.character.checkQuantityOfItemInBank('tasks_coin')) > 0
-        ) {
+        if ((await this.character.checkQuantityOfItemInBank(TasksCoin)) > 0) {
           logger.info(
             `${this.character.data.task} is an item we want to keep. Cancelling task`,
           );

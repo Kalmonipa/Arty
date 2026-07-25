@@ -3700,6 +3700,27 @@ export class Character {
   }
 
   /**
+   * @description Gets the available task masters. Filters out any that are locked by achievements
+   */
+  async getAvailableTaskMasters(): Promise<MapSchema[]> {
+    const maps = this.findMaps({ content_type: 'tasks_master' });
+
+    // Filter maps dynamically based on whether the character can satisfy their
+    // access conditions (achievements, held items, affordable gold/item costs).
+    const availableMaps: MapSchema[] = [];
+    for (const map of maps) {
+      if (
+        map.access.type === 'standard' ||
+        (await this.canSatisfyConditions(map.access.conditions))
+      ) {
+        availableMaps.push(map);
+      }
+    }
+
+    return availableMaps;
+  }
+
+  /**
    * @description handles the various errors that we may get back from API calls
    * @returns a boolean stating whether we should retry or not
    */
