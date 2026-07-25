@@ -71,6 +71,8 @@ export class IdleLabourerObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
+    let startTime = Date.now();
+
     await completeTasksFarmerAchievement(this.character, this.role);
     if (this.checkIdleJobIsLast()) return true;
 
@@ -103,24 +105,17 @@ export class IdleLabourerObjective extends Objective {
     await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.doItemTask(2);
-    if (this.checkIdleJobIsLast()) return true;
+    // If the idle job was started more than 10 minutes ago, we want to end it and let the next idle job run
+    if (Date.now() - startTime > 10 * 60 * 1000) {
+      await this.doItemTask(1);
+      if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill(this.character, 'mining', this.objectiveId);
-    if (this.checkIdleJobIsLast()) return true;
+      await this.trainSkill('mining');
+      if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill(
-      this.character,
-      'woodcutting',
-      this.objectiveId,
-    );
-    if (this.checkIdleJobIsLast()) return true;
-
-    await this.trainSkill('mining');
-    if (this.checkIdleJobIsLast()) return true;
-
-    await this.trainSkill('woodcutting');
-    if (this.checkIdleJobIsLast()) return true;
+      await this.trainSkill('woodcutting');
+      if (this.checkIdleJobIsLast()) return true;
+    }
   }
 
   /**
