@@ -8,7 +8,7 @@ import {
   markAsExecuting,
   markAsFulfilled,
   markAsNotExecuting,
-} from '../wishlist/functions.js';
+} from './functions.js';
 import { AcquisitionMethod } from './types.js';
 
 export class FulfillWishlistRequestObjective extends Objective {
@@ -78,7 +78,7 @@ export class FulfillWishlistRequestObjective extends Objective {
           while (iterations < numGatherIterations) {
             const numToGather = Math.min(
               request.quantity,
-              Math.round(this.character.data.inventory_max_items * 0.95),
+              Math.round(this.character.data.inventory_max_items * 0.9),
             );
             await this.character.gatherNow(numToGather, request.item_code);
             successfull = await this.character.depositNow(

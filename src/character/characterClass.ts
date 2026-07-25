@@ -141,7 +141,7 @@ import { IdleCrafterObjective } from '../idleObjectives/IdleCrafter.js';
 import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
 import { IdleLabourerObjective } from '../idleObjectives/IdleLabourer.js';
 import { IdleFishermanObjective } from '../idleObjectives/IdleFisherman.js';
-import { FulfillWishlistRequestObjective } from '../wishlist/objective.js';
+import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 
 /**

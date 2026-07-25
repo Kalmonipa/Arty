@@ -10,7 +10,7 @@ import {
   getWishlistRequestsByIds,
   deleteWishlistRequest,
 } from '../wishlist/functions.js';
-import { FulfillWishlistRequestObjective } from '../wishlist/objective.js';
+import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 
 /**
