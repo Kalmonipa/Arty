@@ -146,6 +146,7 @@ export class TidyBankObjective extends Objective {
 
   /**
    * @description Finds any raw ore in the bank and crafts it into bars
+   * Keeps 500 of the raw resource in case we need it, crafts the rest into bars
    * @returns
    */
   private async craftBars(
@@ -158,6 +159,8 @@ export class TidyBankObjective extends Objective {
         break;
       }
       const numInBank = content.quantity;
+      const numToKeep = 500
+      const numToCraftWith = Math.max(numInBank - numToKeep, 0)
 
       if (numInBank === undefined) {
         logger.info(`${item} not found in bank`);
@@ -176,7 +179,7 @@ export class TidyBankObjective extends Objective {
         }
 
         const numToCraft = Math.floor(
-          numInBank / itemToCraftSchema.craft.items[0].quantity,
+          numToCraftWith / itemToCraftSchema.craft.items[0].quantity,
         );
 
         return await this.character.craftNow(numToCraft, itemToCraftSchema.code);
