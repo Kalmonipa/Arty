@@ -179,7 +179,7 @@ export class TidyBankObjective extends Objective {
           numInBank / itemToCraftSchema.craft.items[0].quantity,
         );
 
-        return await this.character.craftNow(numToCraft, item);
+        return await this.character.craftNow(numToCraft, itemToCraftSchema.code);
       }
     }
     logger.info(`Found no ore in the bank to clean up`);
