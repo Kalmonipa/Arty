@@ -189,7 +189,7 @@ export async function listOpenWishlistRequests(filter?: {
  * @returns true if a row was updated, false otherwise
  */
 export async function markAsExecuting(id: number): Promise<boolean> {
-  logger.debug(`Marking request ${id} as executing`);
+  logger.info(`Marking request ${id} as executing`);
   const query = `UPDATE wishlist SET executing = true WHERE id = $1;`;
 
   try {
