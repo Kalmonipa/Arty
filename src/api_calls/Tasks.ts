@@ -133,7 +133,7 @@ export async function actionTasksExchange(
     },
     fallbackMessage: 'Unknown error from /action/task/exchange',
     onSuccess: (result) => {
-      let itemRewards: string;
+      let itemRewards: string = '';
       result.data.rewards.items.forEach((rewards) => {
         itemRewards.concat(`${rewards.quantity}x ${rewards.code}, `);
       });
