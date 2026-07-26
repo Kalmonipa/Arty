@@ -270,6 +270,7 @@ export class IdleCrafterObjective extends Objective {
     for (let iteration = 0; iteration < numExchangesToMake; iteration++) {
       const exchangeResult = await actionTasksExchange(this.character.data);
       if (exchangeResult instanceof ApiError) {
+        logger.error(exchangeResult.error.message)
         logger.error(
           `Failed to exchange coins at map ${nearestMap.map_id} (x: ${nearestMap.x}, y: ${nearestMap.y})`,
         );

@@ -235,6 +235,7 @@ export async function actionWithdrawItem(
       478: 'Missing item or insufficient quantity.',
       486: 'An action is already in progress for this character.',
       497: "The character's inventory is full.",
+      598: "Bank not found on this map."
     },
     fallbackMessage: 'Unknown error from /action/withdraw/item',
     onSuccess: () => {
