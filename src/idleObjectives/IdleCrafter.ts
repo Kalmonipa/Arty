@@ -15,7 +15,6 @@ import { Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
-import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { Objective } from '../core/Objective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
@@ -154,7 +153,7 @@ export class IdleCrafterObjective extends Objective {
       // We only want to do monster tasks if our crafter skills are at or above our combat level
       if (relevantSkillLevel >= combatLevel) {
         if (await this.isLowOnTaskCoins()) {
-          await doMonsterTask(1);
+          await doMonsterTask(this.character, this, 1);
         }
         if (this.checkIdleJobIsLast()) return true;
       }
@@ -167,7 +166,7 @@ export class IdleCrafterObjective extends Objective {
       return true;
     } else if (await this.isLowOnTaskCoins()) {
       // If the idle job hasn't really triggered any other jobs, we want to do a monster task
-      await doMonsterTask(1);
+      await doMonsterTask(this.character, this, 1);
     }
 
     return true;

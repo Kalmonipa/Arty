@@ -14,6 +14,7 @@ import { AcquisitionMethod } from '../wishlist/types.js';
 import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
+import { Objective } from '../core/Objective.js';
 
 /**
  * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
@@ -236,12 +237,16 @@ export async function checkWishlistToFulfill(
  * Completes an item task
  * @returns true if successful, false if not
  */
-export async function doMonsterTask(num?: number): Promise<boolean> {
-  return await this.character.executeJobNow(
-    new MonsterTaskObjective(this.character, num ?? 1),
+export async function doMonsterTask(
+  character: Character,
+  parentObj?: Objective,
+  num?: number,
+): Promise<boolean> {
+  return await character.executeJobNow(
+    new MonsterTaskObjective(character, num ?? 1),
     true,
     true,
-    this.objectiveId,
+    parentObj?.objectiveId,
   );
 }
 
@@ -249,11 +254,15 @@ export async function doMonsterTask(num?: number): Promise<boolean> {
  * Completes an item task
  * @returns true if successful, false if not
  */
-export async function doItemTask(num?: number): Promise<boolean> {
-  return await this.character.executeJobNow(
-    new ItemTaskObjective(this.character, num ?? 1),
+export async function doItemTask(
+  character: Character,
+  parentObj?: Objective,
+  num?: number,
+): Promise<boolean> {
+  return await character.executeJobNow(
+    new ItemTaskObjective(character, num ?? 1),
     true,
     true,
-    this.objectiveId,
+    parentObj?.objectiveId,
   );
 }

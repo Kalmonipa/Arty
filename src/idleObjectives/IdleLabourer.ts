@@ -114,12 +114,12 @@ export class IdleLabourerObjective extends Objective {
       logger.info(
         `Combat level is more than 5 levels below highest character level. Doing monster task to train combat`,
       );
-      await doMonsterTask(1);
+      await doMonsterTask(this.character, this, 1);
     } else {
       logger.info(
         `Combat level is within 5 levels of highest character level. Doing item task`,
       );
-      await doItemTask(1);
+      await doItemTask(this.character, this, 1);
       if (this.checkIdleJobIsLast()) return true;
     }
   }
