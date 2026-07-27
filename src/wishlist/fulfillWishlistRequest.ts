@@ -1,7 +1,7 @@
 import { Character } from '../character/characterClass.js';
 import { Objective } from '../core/Objective.js';
 import {
-  markAsExecuting,
+  claimWishlistRequest,
   markAsFulfilled,
   markAsNotExecuting,
 } from './functions.js';
@@ -35,7 +35,14 @@ export class FulfillWishlistRequestObjective extends Objective {
   async run(): Promise<boolean> {
     if (!(await this.checkStatus())) return false;
 
-    await markAsExecuting(this.request.id);
+    const characterName = this.character.data.name;
+
+    // The request was open when the wishlist was last read, but that may have
+    // been a while ago (or another character may have taken it since), so the
+    // claim decides whether this character actually works on it.
+    if (!(await claimWishlistRequest(this.request.id, characterName))) {
+      return false;
+    }
 
     // Calculate how many inventories full the gather job will be
     // This is to prevent gathering more than the inventory cap and the char endlessly gathers
@@ -63,9 +70,9 @@ export class FulfillWishlistRequestObjective extends Objective {
       // cleared of the executing flag so a later cycle can retry it rather
       // than leaving it stranded and blocking any job waiting on it.
       if (successfull) {
-        await markAsFulfilled(this.request.id);
+        await markAsFulfilled(this.request.id, characterName);
       } else {
-        await markAsNotExecuting(this.request.id);
+        await markAsNotExecuting(this.request.id, characterName);
       }
     }
 

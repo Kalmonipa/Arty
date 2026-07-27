@@ -5,6 +5,9 @@ import { ItemSchema } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { AcquisitionMethod, WishlistRequest, WishlistRow } from './types.js';
 
+/** How long a claim can sit untouched before another process may reclaim it */
+const STALE_CLAIM_HOURS = 24;
+
 /**
  * @description Works out the acquisition method based on the requested item info
  */
@@ -122,7 +125,7 @@ export async function getOpenWishlistRequests(
     SELECT id, item_code, quantity, character,
            min_level, max_level, expiration_date,
            cost, currency, acquisition_method,
-           executing, fulfilled, created_at
+           executing, executing_by, claimed_at, fulfilled, created_at
     FROM wishlist
     WHERE acquisition_method = $1
       AND executing = false
@@ -167,7 +170,7 @@ export async function listOpenWishlistRequests(filter?: {
     SELECT id, item_code, quantity, character,
            min_level, max_level, expiration_date,
            cost, currency, acquisition_method,
-           executing, fulfilled, created_at
+           executing, executing_by, claimed_at, fulfilled, created_at
     FROM wishlist
     WHERE ${conditions.join(' AND ')}
     ORDER BY created_at ASC;
@@ -183,36 +186,64 @@ export async function listOpenWishlistRequests(filter?: {
 }
 
 /**
- * Marks a wishlist request as executing so other characters skip it while it's
- * being worked on.
+ * Claims a wishlist request for a character so the others skip it while it's
+ * being worked on. Each character runs in its own process against the shared
+ * table, so the claim has to be the atomic check — a row read as open earlier in
+ * the cycle may have been taken since. The update only succeeds while the row is
+ * still open, and the returned boolean says whether this character won it.
  * @param id The wishlist row id
- * @returns true if a row was updated, false otherwise
+ * @param characterName The character claiming the request
+ * @returns true if the claim was won, false if the row is taken, done or gone
  */
-export async function markAsExecuting(id: number): Promise<boolean> {
-  logger.info(`Marking request ${id} as executing`);
-  const query = `UPDATE wishlist SET executing = true WHERE id = $1;`;
+export async function claimWishlistRequest(
+  id: number,
+  characterName: string,
+): Promise<boolean> {
+  const query = `
+    UPDATE wishlist
+    SET executing = true, executing_by = $2, claimed_at = NOW()
+    WHERE id = $1 AND executing = false AND fulfilled = false
+    RETURNING id;
+  `;
 
   try {
-    const result = await db.query(query, [id]);
-    return (result.rowCount ?? 0) > 0;
+    const result = await db.query(query, [id, characterName]);
+    const claimed = (result.rowCount ?? 0) > 0;
+    if (claimed) {
+      logger.info(`Claimed request ${id} for ${characterName}`);
+    } else {
+      logger.info(
+        `Could not claim request ${id} for ${characterName}; another character got there first`,
+      );
+    }
+    return claimed;
   } catch (err) {
-    logger.error(`Failed to mark wishlist request ${id} as executing: ${err}`);
+    logger.error(`Failed to claim wishlist request ${id}: ${err}`);
     return false;
   }
 }
 
 /**
- * Marks a wishlist request as fulfilled and clears its executing flag so its
- * row is left in a clean, final state.
+ * Marks a wishlist request as fulfilled and releases the claim so its row is
+ * left in a clean, final state. Scoped to the claim holder so a character can't
+ * close off a request another one is working on.
  * @param id The wishlist row id
+ * @param characterName The character that claimed the request
  * @returns true if a row was updated, false otherwise
  */
-export async function markAsFulfilled(id: number): Promise<boolean> {
+export async function markAsFulfilled(
+  id: number,
+  characterName: string,
+): Promise<boolean> {
   logger.debug(`Marking request ${id} as fulfilled`);
-  const query = `UPDATE wishlist SET fulfilled = true, executing = false WHERE id = $1;`;
+  const query = `
+    UPDATE wishlist
+    SET fulfilled = true, executing = false, executing_by = NULL, claimed_at = NULL
+    WHERE id = $1 AND executing_by = $2;
+  `;
 
   try {
-    const result = await db.query(query, [id]);
+    const result = await db.query(query, [id, characterName]);
     return (result.rowCount ?? 0) > 0;
   } catch (err) {
     logger.error(`Failed to mark wishlist request ${id} as fulfilled: ${err}`);
@@ -221,42 +252,65 @@ export async function markAsFulfilled(id: number): Promise<boolean> {
 }
 
 /**
- * Clears the executing flag on a request whose fulfilment didn't complete, so a
- * later idle cycle can pick it up again. Without this a failed or interrupted
- * attempt would strand the row (executing stays true, so it's never re-offered
- * and never fulfilled).
+ * Releases a claim whose fulfilment didn't complete, so a later idle cycle can
+ * pick it up again. Without this a failed or interrupted attempt would strand
+ * the row (executing stays true, so it's never re-offered and never fulfilled).
+ * Scoped to the claim holder so a character can't release someone else's claim.
  * @param id The wishlist row id
+ * @param characterName The character that claimed the request
  * @returns true if a row was updated, false otherwise
  */
-export async function markAsNotExecuting(id: number): Promise<boolean> {
-  logger.debug(`Clearing executing flag on request ${id}`);
-  const query = `UPDATE wishlist SET executing = false WHERE id = $1;`;
+export async function markAsNotExecuting(
+  id: number,
+  characterName: string,
+): Promise<boolean> {
+  logger.debug(`Releasing ${characterName}'s claim on request ${id}`);
+  const query = `
+    UPDATE wishlist
+    SET executing = false, executing_by = NULL, claimed_at = NULL
+    WHERE id = $1 AND executing_by = $2;
+  `;
 
   try {
-    const result = await db.query(query, [id]);
+    const result = await db.query(query, [id, characterName]);
     return (result.rowCount ?? 0) > 0;
   } catch (err) {
-    logger.error(`Failed to clear executing flag on request ${id}: ${err}`);
+    logger.error(`Failed to release the claim on request ${id}: ${err}`);
     return false;
   }
 }
 
 /**
- * Clears the executing flag on every unfulfilled request. Run once at startup:
- * a fresh process has nothing genuinely in flight, so any row left executing was
+ * Releases the claims this character was holding. Run once at startup: a fresh
+ * process has nothing of its own in flight, so any row it still holds was
  * stranded by an interrupted fulfilment (crash, restart, or error) and must be
  * made available again.
+ *
+ * Only this character's rows are touched — every character runs its own process
+ * against the shared table, so releasing all of them would pull requests out
+ * from under the characters actively working them. The lease clause is the
+ * backstop for a character that never comes back; it's set well beyond any
+ * realistic fulfilment so a live claim is never stolen. Rows with no owner
+ * predate claim tracking.
+ * @param characterName The character whose claims should be released
  * @returns the number of rows reset
  */
-export async function reclaimExecutingWishlistRequests(): Promise<number> {
+export async function reclaimExecutingWishlistRequests(
+  characterName: string,
+): Promise<number> {
   const query = `
     UPDATE wishlist
-    SET executing = false
-    WHERE executing = true AND fulfilled = false;
+    SET executing = false, executing_by = NULL, claimed_at = NULL
+    WHERE executing = true AND fulfilled = false
+      AND (
+        executing_by = $1
+        OR executing_by IS NULL
+        OR claimed_at < NOW() - INTERVAL '${STALE_CLAIM_HOURS} hours'
+      );
   `;
 
   try {
-    const result = await db.query(query);
+    const result = await db.query(query, [characterName]);
     return result.rowCount ?? 0;
   } catch (err) {
     logger.error(`Failed to reclaim executing wishlist requests: ${err}`);
@@ -281,7 +335,7 @@ export async function getWishlistRequestsByIds(
     SELECT id, item_code, quantity, character,
            min_level, max_level, expiration_date,
            cost, currency, acquisition_method,
-           executing, fulfilled, created_at
+           executing, executing_by, claimed_at, fulfilled, created_at
     FROM wishlist
     WHERE id = ANY($1);
   `;

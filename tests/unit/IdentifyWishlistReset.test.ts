@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 
 jest.mock('../../src/wishlist/functions.js', () => ({
   getOpenWishlistRequests: jest.fn(),
-  markAsExecuting: jest.fn(async () => true),
+  claimWishlistRequest: jest.fn(async () => true),
   markAsFulfilled: jest.fn(async () => true),
   markAsNotExecuting: jest.fn(async () => true),
 }));
@@ -12,6 +12,7 @@ jest.mock('../../src/api_calls/Items.js', () => ({
 
 import { Character } from '../../src/character/characterClass.js';
 import {
+  claimWishlistRequest,
   getOpenWishlistRequests,
   markAsFulfilled,
   markAsNotExecuting,
@@ -32,6 +33,9 @@ const mockedNotExecuting = markAsNotExecuting as jest.MockedFunction<
 const mockedGetItem = getItemInformation as jest.MockedFunction<
   typeof getItemInformation
 >;
+const mockedClaim = claimWishlistRequest as jest.MockedFunction<
+  typeof claimWishlistRequest
+>;
 
 describe('IdentifyValidWishlistRequestsObjective request release', () => {
   let character: Character;
@@ -39,6 +43,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedClaim.mockResolvedValue(true);
     character = new Character({ ...mockCharacterData });
     jest.spyOn(character, 'getCharacterLevel').mockReturnValue(40);
     character.gatherNow = jest.fn(async () => true) as any;
@@ -56,7 +61,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
 
     await job.run();
 
-    expect(mockedFulfilled).toHaveBeenCalledWith(340);
+    expect(mockedFulfilled).toHaveBeenCalledWith(340, character.data.name);
     expect(mockedNotExecuting).not.toHaveBeenCalled();
   });
 
@@ -66,7 +71,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
     await job.run();
 
     expect(mockedFulfilled).not.toHaveBeenCalled();
-    expect(mockedNotExecuting).toHaveBeenCalledWith(340);
+    expect(mockedNotExecuting).toHaveBeenCalledWith(340, character.data.name);
   });
 
   it('clears the executing flag when gathering throws mid-attempt', async () => {
@@ -78,6 +83,26 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
     await expect(job.run()).rejects.toThrow('character died');
 
     expect(mockedFulfilled).not.toHaveBeenCalled();
-    expect(mockedNotExecuting).toHaveBeenCalledWith(340);
+    expect(mockedNotExecuting).toHaveBeenCalledWith(340, character.data.name);
+  });
+
+  it('claims the request for this character before working on it', async () => {
+    character.depositNow = jest.fn(async () => true) as any;
+
+    await job.run();
+
+    expect(mockedClaim).toHaveBeenCalledWith(340, character.data.name);
+  });
+
+  it('does no work when another character already holds the request', async () => {
+    mockedClaim.mockResolvedValue(false);
+    character.depositNow = jest.fn(async () => true) as any;
+
+    await job.run();
+
+    expect(character.gatherNow).not.toHaveBeenCalled();
+    expect(character.depositNow).not.toHaveBeenCalled();
+    expect(mockedFulfilled).not.toHaveBeenCalled();
+    expect(mockedNotExecuting).not.toHaveBeenCalled();
   });
 });

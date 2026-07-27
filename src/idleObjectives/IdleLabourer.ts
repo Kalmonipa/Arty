@@ -36,11 +36,6 @@ import {
   checkWishlistToFulfill,
 } from './idleUtils.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
-import {
-  getOpenWishlistRequests,
-  markAsExecuting,
-  markAsFulfilled,
-} from '../wishlist/functions.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 
 /**

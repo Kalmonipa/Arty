@@ -25,11 +25,6 @@ import {
 } from './idleUtils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
-import {
-  getOpenWishlistRequests,
-  markAsExecuting,
-  markAsFulfilled,
-} from '../wishlist/functions.js';
 
 export class IdleFishermanObjective extends Objective {
   constructor(character: Character) {

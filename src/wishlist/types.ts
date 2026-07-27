@@ -22,6 +22,8 @@ export interface WishlistRow {
   currency: string | null;
   acquisition_method: AcquisitionMethod | null;
   executing: boolean;
+  executing_by: string | null;
+  claimed_at: Date | null;
   fulfilled: boolean;
   created_at: Date;
 }

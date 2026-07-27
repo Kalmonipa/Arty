@@ -46,10 +46,10 @@ async function main() {
     logger.info('Database connection successful!');
   }
 
-  // A fresh process has nothing in flight, so any request still flagged
-  // executing was stranded by an interrupted fulfilment; release it so it can be
-  // picked up again rather than blocking jobs waiting on it.
-  const reclaimed = await reclaimExecutingWishlistRequests();
+  // A fresh process has nothing of its own in flight, so any request this
+  // character still holds was stranded by an interrupted fulfilment; release it
+  // so it can be picked up again rather than blocking jobs waiting on it.
+  const reclaimed = await reclaimExecutingWishlistRequests(CharName);
   if (reclaimed > 0) {
     logger.info(
       `Reclaimed ${reclaimed} stranded executing wishlist request(s)`,
