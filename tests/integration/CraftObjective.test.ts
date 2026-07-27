@@ -796,6 +796,63 @@ describe('CraftObjective Integration Tests', () => {
     });
   });
 
+  describe('Resuming after a restart', () => {
+    // A resumed job re-enters run() from the top with its persisted progress,
+    // so it has to work out what's left rather than starting the order again.
+    beforeEach(() => {
+      mockCharacter.role = 'crafter';
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30;
+            case 'feather':
+              return 10;
+            default:
+              return 0;
+          }
+        },
+      );
+    });
+
+    it('crafts only what is outstanding, not the whole order again', async () => {
+      craftObjective.progress = 3;
+
+      const result = await craftObjective.run();
+
+      expect(result).toBe(true);
+      expect(actionCraft).toHaveBeenCalledWith(expect.anything(), {
+        code: 'iron_sword',
+        quantity: 2,
+      });
+      expect(craftObjective.progress).toBe(5);
+    });
+
+    it('withdraws the finished items so the caller can see them', async () => {
+      // Batches were deposited before the restart, so the job is done but the
+      // items are in the bank and the caller checks the inventory.
+      craftObjective.progress = 5;
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
+
+      const result = await craftObjective.run();
+
+      expect(result).toBe(true);
+      expect(actionCraft).not.toHaveBeenCalled();
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_sword');
+    });
+
+    it('does not withdraw when the items are already carried', async () => {
+      craftObjective.progress = 5;
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(5);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
+
+      const result = await craftObjective.run();
+
+      expect(result).toBe(true);
+      expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Batch processing', () => {
     it('should handle single batch when inventory space is sufficient', async () => {
       // Arrange

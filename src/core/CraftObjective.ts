@@ -95,8 +95,11 @@ export class CraftObjective extends Objective {
   async run(): Promise<boolean> {
     if (this.target.quantity === 0 || this.progress >= this.target.quantity) {
       logger.info(
-        `Already have the requested amount (${this.target.quantity}) of ${this.target.code}. Completing job`,
+        `Already crafted the requested amount (${this.target.quantity}) of ${this.target.code}. Completing job`,
       );
+      // Batches are banked as they're crafted, so the order may be finished
+      // while the items are still in the bank. The caller checks what's carried.
+      await this.carryFinishedItems();
       return true;
     }
 
@@ -147,8 +150,12 @@ export class CraftObjective extends Objective {
         // One craft consumes a single set of ingredients and yields
         // craft.quantity output items, so the number of crafts needed is the
         // requested item count divided by the per-craft yield (rounded up).
+        // A job resumed after a restart re-enters here carrying the progress it
+        // made before, so only the outstanding items are crafted — otherwise it
+        // would re-gather the ingredients and craft the whole order again.
         const outputPerCraft = targetItem.craft.quantity ?? 1;
-        const craftsNeeded = Math.ceil(this.target.quantity / outputPerCraft);
+        const outstanding = this.target.quantity - this.progress;
+        const craftsNeeded = Math.ceil(outstanding / outputPerCraft);
 
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
         // If not enough inv space, split it into 2 jobs, craft half as much at once
@@ -177,6 +184,7 @@ export class CraftObjective extends Objective {
             logger.info(
               `Successfully crafted ${this.progress} ${this.target.code}`,
             );
+            await this.carryFinishedItems();
             return true;
           }
 
@@ -281,21 +289,46 @@ export class CraftObjective extends Objective {
             );
           }
         }
-        if (
-          this.numBatches > 1 &&
-          this.progress < this.character.data.inventory_max_items
-        ) {
-          logger.debug(
-            `Withdrawing all ${this.progress} ${this.target.code} from bank`,
-          );
-          await this.character.withdrawNow(this.progress, this.target.code);
-        }
+        await this.carryFinishedItems();
 
         return true;
       }
     }
 
     return false;
+  }
+
+  /**
+   * @description Brings the finished items back out of the bank. Multi-batch
+   * crafts deposit each batch as they go, so without this the caller — which
+   * checks what the character is carrying — sees none of them and orders the
+   * craft all over again.
+   */
+  private async carryFinishedItems(): Promise<void> {
+    const carried = this.character.checkQuantityOfItemInInv(this.target.code);
+    const shortfall = this.target.quantity - carried;
+
+    if (shortfall <= 0) {
+      return;
+    }
+
+    if (shortfall >= this.character.data.inventory_max_items) {
+      logger.debug(
+        `Leaving ${this.target.code} in the bank; ${shortfall} won't fit in the inventory`,
+      );
+      return;
+    }
+
+    const banked = await this.character.checkQuantityOfItemInBank(
+      this.target.code,
+    );
+    if (banked <= 0) {
+      return;
+    }
+
+    const toWithdraw = Math.min(shortfall, banked);
+    logger.debug(`Withdrawing ${toWithdraw} ${this.target.code} from bank`);
+    await this.character.withdrawNow(toWithdraw, this.target.code);
   }
 
   private async gatherIngredients(
