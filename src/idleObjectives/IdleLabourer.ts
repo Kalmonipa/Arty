@@ -34,6 +34,8 @@ import {
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
+  doMonsterTask,
+  doItemTask,
 } from './idleUtils.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
@@ -105,8 +107,19 @@ export class IdleLabourerObjective extends Objective {
         `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
       );
       return true;
+    } else if (
+      this.character.getCharacterLevel(this.character.data) <
+      this.character.highestCharLevel - 5
+    ) {
+      logger.info(
+        `Combat level is more than 5 levels below highest character level. Doing monster task to train combat`,
+      );
+      await doMonsterTask(1);
     } else {
-      await this.doItemTask(1);
+      logger.info(
+        `Combat level is within 5 levels of highest character level. Doing item task`,
+      );
+      await doItemTask(1);
       if (this.checkIdleJobIsLast()) return true;
     }
   }
@@ -127,19 +140,6 @@ export class IdleLabourerObjective extends Objective {
       return true;
     }
     return false;
-  }
-
-  /**
-   * Completes an item task
-   * @returns true if successful, false if not
-   */
-  private async doItemTask(num?: number): Promise<boolean> {
-    return await this.character.executeJobNow(
-      new ItemTaskObjective(this.character, num ?? 1),
-      true,
-      true,
-      this.objectiveId,
-    );
   }
 
   /**

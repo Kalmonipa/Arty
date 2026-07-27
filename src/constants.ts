@@ -28,6 +28,20 @@ export const CRITICAL_MODIFIER = 0.5;
 export const MIN_TASK_COINS_IN_BANK = 25;
 
 /**
+ * How long a monster task is allowed to take before it's worth cancelling for a
+ * new one. Every monster task pays the same 3-5 coins whatever the target or the
+ * quantity, so the only thing that varies is the time it costs — and that ranges
+ * from under an hour to over eight.
+ */
+export const MAX_MONSTER_TASK_SECONDS = 2 * 60 * 60;
+/** Each cancel costs a task coin, so don't chase a good draw forever */
+export const MAX_TASK_REROLLS = 3;
+/** Leave enough coins that rerolling can't strand us without any */
+export const MIN_TASK_COINS_TO_REROLL = 10;
+/** Fights to simulate when estimating how long a task will take */
+export const TASK_ESTIMATE_SIM_ITERATIONS = 10;
+
+/**
  * Max default number of slots
  */
 export const MaxInventorySlots = 20;

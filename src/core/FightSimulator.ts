@@ -14,6 +14,10 @@ export class FightSimulator extends Objective {
   targetMobCode: string;
   iterations: number;
   debugLogs: boolean = true;
+  /** Average turns across the winning simulations; 0 if none were won */
+  averageTurns: number = 0;
+  /** Percentage of simulations won */
+  winRate: number = 0;
 
   constructor(
     character: Character,
@@ -55,6 +59,8 @@ export class FightSimulator extends Objective {
       fightSimResponse.data.wins > 0
         ? totalTurns / fightSimResponse.data.wins
         : 0;
+    this.averageTurns = averageTurns;
+    this.winRate = fightSimResponse.data.winrate;
 
     logger.info(
       `Fight sim showed a ${fightSimResponse.data.winrate}% win rate (${fightSimResponse.data.wins}/${this.iterations}) with ${averageTurns} avg turns per fight`,

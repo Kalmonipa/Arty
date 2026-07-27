@@ -240,6 +240,18 @@ export function isGatheringSkill(value: string): value is GatheringSkill {
 }
 
 /**
+ * @description The cooldown a fight incurs. It's driven by how long the fight
+ * runs, not by damage dealt or taken, so a tougher monster costs proportionally
+ * more time per kill.
+ * @param turns how many turns the fight takes
+ * @param haste the character's haste stat, as a percentage reduction
+ * @returns the cooldown in seconds, never below the game's 5s floor
+ */
+export function estimateFightCooldown(turns: number, haste: number): number {
+  return Math.max(5, turns * 2 * (1 - haste / 100));
+}
+
+/**
  * @description checks to see if we're working with a crafting skill
  * @param value the skill to check
  * @returns true if the provided skill is a crafting skill

@@ -26,6 +26,7 @@ import {
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
+  doMonsterTask,
 } from './idleUtils.js';
 import { actionTasksExchange } from '../api_calls/Tasks.js';
 
@@ -153,7 +154,7 @@ export class IdleCrafterObjective extends Objective {
       // We only want to do monster tasks if our crafter skills are at or above our combat level
       if (relevantSkillLevel >= combatLevel) {
         if (await this.isLowOnTaskCoins()) {
-          await this.doMonsterTask(1);
+          await doMonsterTask(1);
         }
         if (this.checkIdleJobIsLast()) return true;
       }
@@ -166,7 +167,7 @@ export class IdleCrafterObjective extends Objective {
       return true;
     } else if (await this.isLowOnTaskCoins()) {
       // If the idle job hasn't really triggered any other jobs, we want to do a monster task
-      await this.doMonsterTask(1);
+      await doMonsterTask(1);
     }
 
     return true;
@@ -238,19 +239,6 @@ export class IdleCrafterObjective extends Objective {
       }
     }
     return true;
-  }
-
-  /**
-   * Completes an item task
-   * @returns true if successful, false if not
-   */
-  private async doMonsterTask(num?: number): Promise<boolean> {
-    return await this.character.executeJobNow(
-      new MonsterTaskObjective(this.character, num ?? 1),
-      true,
-      true,
-      this.objectiveId,
-    );
   }
 
   /**
