@@ -23,6 +23,11 @@ export const MAX_SKILL_LEVEL = 50;
 export const CRITICAL_MODIFIER = 0.5;
 
 /**
+ * Bank stock of task coins to keep.
+ */
+export const MIN_TASK_COINS_IN_BANK = 25;
+
+/**
  * Max default number of slots
  */
 export const MaxInventorySlots = 20;

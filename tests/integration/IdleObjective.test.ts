@@ -25,6 +25,7 @@ const createMockArtifact = (
   code: string,
   level: number,
   effectType: GearEffects,
+  effectValue: number = 20,
 ): ItemSchema => ({
   code,
   name: code,
@@ -36,7 +37,11 @@ const createMockArtifact = (
   tradeable: true,
   conditions: [],
   effects: [
-    { code: effectType, value: 20, description: `${effectType} effect` },
+    {
+      code: effectType,
+      value: effectValue,
+      description: `${effectType} effect`,
+    },
   ],
 });
 
@@ -342,6 +347,122 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
 
     // Attempted deposit for both effects
     expect(mockCharacter.depositNow).toHaveBeenCalledTimes(2);
+  });
+
+  // An artifact's level says nothing about how much of the effect it gives:
+  // perfect_pearl (+100 prospecting) and lich_race_trophy (+50) are both level 20.
+  describe('choosing between candidates for the same effect', () => {
+    beforeEach(() => {
+      mockCharacter.data = { ...mockCharacterData, level: 31 };
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'small_pearls' ? 40 : 0),
+      );
+    });
+
+    it('buys the strongest artifact for the effect, not the highest level', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('novice_guide', 10, 'prospecting', 25),
+          createMockArtifact('lich_race_trophy', 20, 'prospecting', 50),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(getAllNpcItems).toHaveBeenCalledWith({ code: 'perfect_pearl' });
+      expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'perfect_pearl');
+    });
+
+    it('falls back to the next best candidate when the best is unaffordable', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('lich_race_trophy', 20, 'prospecting', 50),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockImplementation(async (params: any) =>
+        params.code === 'perfect_pearl'
+          ? makeNpcResult([{ buy_price: 999, currency: 'small_pearls' }])
+          : makeNpcResult([{ buy_price: 10, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.depositNow).toHaveBeenCalledWith(
+        1,
+        'lich_race_trophy',
+      );
+    });
+
+    it('stops after buying one artifact for an effect', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('lich_race_trophy', 20, 'prospecting', 50),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(1);
+    });
+
+    // Larry's equipped novice_guide grants prospecting +25, so "owns something
+    // for this effect" must not block buying a stronger one.
+    it('still upgrades when only a weaker artifact for the effect is owned', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('novice_guide', 10, 'prospecting', 25),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      mockCharacter.getCharacterGearIn.mockImplementation((slot: string) =>
+        slot === 'artifact1' ? 'novice_guide' : '',
+      );
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'perfect_pearl');
+    });
+
+    it('buys nothing when the strongest candidate is already owned', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('novice_guide', 10, 'prospecting', 25),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      mockCharacter.getCharacterGearIn.mockImplementation((slot: string) =>
+        slot === 'artifact1' ? 'perfect_pearl' : '',
+      );
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+    });
   });
 });
 

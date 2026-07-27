@@ -6,6 +6,7 @@ import {
   Gearcrafting,
   Jewelrycrafting,
   MAX_SKILL_LEVEL,
+  MIN_TASK_COINS_IN_BANK,
   TasksCoin,
   Weaponcrafting,
 } from '../constants.js';
@@ -151,11 +152,7 @@ export class IdleCrafterObjective extends Objective {
 
       // We only want to do monster tasks if our crafter skills are at or above our combat level
       if (relevantSkillLevel >= combatLevel) {
-        // Only do tasks if the bank is low on task coins.
-        const taskCoinsInBank =
-          await this.character.checkQuantityOfItemInBank(TasksCoin);
-
-        if (taskCoinsInBank < 10) {
+        if (await this.isLowOnTaskCoins()) {
           await this.doMonsterTask(1);
         }
         if (this.checkIdleJobIsLast()) return true;
@@ -167,11 +164,29 @@ export class IdleCrafterObjective extends Objective {
         `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
       );
       return true;
-    } else {
-      // If the idle job hasn't really triggered any other jobs, we want to do a monster task to keep the character busy
+    } else if (await this.isLowOnTaskCoins()) {
+      // If the idle job hasn't really triggered any other jobs, we want to do a monster task
       await this.doMonsterTask(1);
     }
 
+    return true;
+  }
+
+  /**
+   * @description Task coins are only worth farming while the bank is short of
+   * them; past that, a monster task is hours of fighting for a currency we
+   * already have plenty of.
+   */
+  private async isLowOnTaskCoins(): Promise<boolean> {
+    const taskCoinsInBank =
+      await this.character.checkQuantityOfItemInBank(TasksCoin);
+
+    if (taskCoinsInBank >= MIN_TASK_COINS_IN_BANK) {
+      logger.debug(
+        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MIN_TASK_COINS_IN_BANK}). Not doing a monster task`,
+      );
+      return false;
+    }
     return true;
   }
 
@@ -246,7 +261,7 @@ export class IdleCrafterObjective extends Objective {
     // The number of task coins needed to exchange. Pretty sure this won't change but who knows
     const costToExchange = 6;
     // Arbitrary number for now. Might adjust as I see fit
-    const maxCoinsInBank = 50;
+    const maxCoinsInBank = MIN_TASK_COINS_IN_BANK + costToExchange;
     const coinsInBank =
       await this.character.checkQuantityOfItemInBank(TasksCoin);
 
