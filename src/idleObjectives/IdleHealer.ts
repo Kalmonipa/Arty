@@ -27,6 +27,7 @@ import {
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
+  checkWishlistToFulfill,
 } from './idleUtils.js';
 import { GatherObjective } from '../core/GatherObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
@@ -60,6 +61,9 @@ export class IdleHealerObjective extends Objective {
     if (this.checkIdleJobIsLast()) return true;
 
     await this.depositGoldIntoBank();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await checkWishlistToFulfill(this.character, 'alchemy', this.objectiveId);
     if (this.checkIdleJobIsLast()) return true;
 
     await this.topUpTeleportPotionsInBank();
