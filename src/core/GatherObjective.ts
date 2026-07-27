@@ -323,6 +323,15 @@ export class GatherObjective extends Objective {
     return true;
   }
 
+  /**
+   * @description Farms a mob for one of its drops. `target.quantity` is the
+   * shortfall run() worked out, but progress is measured the same way as
+   * gatherItemLoop does — the stock actually held against the job's target — so
+   * it lines up with what the character is carrying instead of counting only
+   * the drops from this run.
+   * @param target The drop to farm; its code decides which mob to fight
+   * @returns true once the target is met, false if a fight failed or the job stopped
+   */
   async gatherMobDrop(target: SimpleItemSchema) {
     const mobInfo: StaticDataPageMonsterSchema | ApiError =
       await getAllMonsterInformation({
@@ -335,15 +344,26 @@ export class GatherObjective extends Objective {
       logger.error(`Found no mobs for drop ${target.code}`);
       return false;
     } else {
-      let numHeld = this.character.checkQuantityOfItemInInv(this.target.code);
+      const baselineInventory = this.includeInventory
+        ? 0
+        : this.character.checkQuantityOfItemInInv(this.target.code);
 
       this.character.itemsToKeep.push(this.target.code);
 
-      // We want to compare total progress with the target quantity
-      while (this.progress < target.quantity) {
+      while (this.progress < this.target.quantity) {
+        const held =
+          this.character.checkQuantityOfItemInInv(this.target.code) -
+          baselineInventory;
+        const banked = this.checkBank
+          ? await this.character.checkQuantityOfItemInBank(this.target.code)
+          : 0;
+        this.progress = held + banked;
+
         logger.info(
           `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
         );
+
+        if (this.progress >= this.target.quantity) break;
 
         logger.info(`Mob info for ${mobInfo.data.length} mobs`);
 
@@ -351,14 +371,6 @@ export class GatherObjective extends Objective {
         if (!(await this.character.fightNow(10, mobInfo.data[0].code))) {
           logger.debug(`Fight attempt against ${mobInfo.data[0].code} failed`);
           return false;
-        }
-
-        const newNumHeld = this.character.checkQuantityOfItemInInv(
-          this.target.code,
-        );
-        if (newNumHeld > numHeld) {
-          this.progress += newNumHeld - numHeld;
-          numHeld = newNumHeld;
         }
 
         if (!(await this.checkStatus())) return false;

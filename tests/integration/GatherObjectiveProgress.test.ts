@@ -10,6 +10,7 @@ import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 
 import { getItemInformation } from '../../src/api_calls/Items.js';
+import { getAllMonsterInformation } from '../../src/api_calls/Monsters.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
 import { actionGather } from '../../src/api_calls/Actions.js';
 
@@ -102,6 +103,9 @@ class MockCharacter {
     async (_code: string): Promise<number> => 0,
   );
 
+  itemsToKeep: string[] = [];
+  fightNow = jest.fn(async (): Promise<boolean> => true);
+
   evaluateDepositItemsInBank = jest.fn(async (): Promise<void> => {});
   saveJobQueue = jest.fn(async (): Promise<void> => {});
   evaluateGear = jest.fn(async (): Promise<void> => {});
@@ -179,6 +183,87 @@ describe('GatherObjective progress reflects actual held stock', () => {
     expect(actionGather).toHaveBeenCalledTimes(20);
     // Throttled: read at iterations 0,5,10,15,20 rather than once per gather.
     expect(character.checkQuantityOfItemInBank).toHaveBeenCalledTimes(5);
+  });
+
+  describe('mob drops', () => {
+    const mockedMonsters = getAllMonsterInformation as jest.MockedFunction<
+      typeof getAllMonsterInformation
+    >;
+
+    beforeEach(() => {
+      mockedMonsters.mockResolvedValue({
+        data: [{ code: 'skeleton' }],
+        total: 1,
+        page: 1,
+        pages: 1,
+        size: 50,
+      } as any);
+    });
+
+    /** Each call stands in for a batch of fights that drops `dropped` items */
+    const fightsDropping = (objective: GatherObjective, dropped: number) => {
+      const progressPerFight: number[] = [];
+      character.fightNow.mockImplementation(async () => {
+        progressPerFight.push(objective.progress);
+        character.addItemToInventory('skeleton_bone', dropped);
+        return true;
+      });
+      return progressPerFight;
+    };
+
+    it('counts stock held before the job started toward the target', async () => {
+      character.addItemToInventory('skeleton_bone', 16);
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 20 };
+      const objective = new GatherObjective(character as any, target);
+      const progressPerFight = fightsDropping(objective, 1);
+
+      // run() works out the shortfall and asks for that many
+      await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 4 });
+
+      expect(progressPerFight[0]).toBe(16);
+      expect(objective.progress).toBe(20);
+    });
+
+    it('stops once the target is met rather than farming the shortfall again', async () => {
+      character.addItemToInventory('skeleton_bone', 16);
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 20 };
+      const objective = new GatherObjective(character as any, target);
+      fightsDropping(objective, 1);
+
+      await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 4 });
+
+      expect(character.fightNow).toHaveBeenCalledTimes(4);
+      expect(character.checkQuantityOfItemInInv('skeleton_bone')).toBe(20);
+    });
+
+    it('ignores stock already held when includeInventory is false', async () => {
+      character.addItemToInventory('skeleton_bone', 16);
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 5 };
+      const objective = new GatherObjective(
+        character as any,
+        target,
+        false,
+        false,
+      );
+      fightsDropping(objective, 1);
+
+      await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 5 });
+
+      expect(character.fightNow).toHaveBeenCalledTimes(5);
+      expect(character.checkQuantityOfItemInInv('skeleton_bone')).toBe(21);
+    });
+
+    it('counts banked stock toward the target when the bank is in scope', async () => {
+      character.checkQuantityOfItemInBank.mockResolvedValue(18);
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 20 };
+      const objective = new GatherObjective(character as any, target, true);
+      fightsDropping(objective, 1);
+
+      await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 2 });
+
+      expect(character.fightNow).toHaveBeenCalledTimes(2);
+      expect(objective.progress).toBe(20);
+    });
   });
 
   it('threads itemsToKeep through gather() into the in-loop deposit call', async () => {
