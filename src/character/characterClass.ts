@@ -3337,6 +3337,9 @@ export class Character {
   async recycleItemNow(itemCode: string, quantity: number) {
     return await this.executeJobNow(
       new RecycleObjective(this, { code: itemCode, quantity: quantity }),
+      true,
+      true,
+      this.currentExecutingJob?.objectiveId
     );
   }
 
