@@ -549,7 +549,13 @@ export class EvaluateGearObjective extends Objective {
     activityType: WeaponFlavours,
     charLevel: number,
   ): Promise<boolean> {
-    const weapons = this.character.weaponMap[activityType];
+    const weapons = this.character.weaponMap?.[activityType];
+    if (!weapons) {
+      logger.warn(
+        `No weapons mapped for ${activityType}, skipping weapon check`,
+      );
+      return false;
+    }
 
     for (let ind = weapons.length - 1; ind >= 0; ind--) {
       if (weapons[ind].level <= charLevel) {

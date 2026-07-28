@@ -572,4 +572,98 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       // Should gather 5 more (10 - 5 = 5)
     });
   });
+
+  describe('Flat rate side drops', () => {
+    const algaeNodes = [
+      {
+        name: 'Gudgeon Fishing Spot',
+        code: 'gudgeon_spot',
+        skill: 'fishing' as const,
+        level: 1,
+        drops: [{ code: 'algae', rate: 10, min_quantity: 1, max_quantity: 1 }],
+      },
+      {
+        name: 'Salmon Fishing Spot',
+        code: 'salmon_spot',
+        skill: 'fishing' as const,
+        level: 40,
+        drops: [{ code: 'algae', rate: 10, min_quantity: 1, max_quantity: 1 }],
+      },
+    ];
+
+    const arrangeAlgaeGather = (
+      fishingLevel: number,
+      fleetWeaponcrafting: number,
+    ) => {
+      mockCharacter.data.fishing_level = fishingLevel;
+      (mockCharacter as any).role = 'healer';
+      (mockCharacter as any).highestWeaponcraftingLevel = fleetWeaponcrafting;
+
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue({
+        ...mockIronOreData,
+        code: 'algae',
+        name: 'Algae',
+        level: 1,
+        subtype: 'fishing',
+      } as ItemSchema);
+
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue({
+        data: algaeNodes,
+        total: algaeNodes.length,
+        page: 1,
+        pages: 1,
+        size: 50,
+      } as any);
+
+      (
+        actionGather as jest.MockedFunction<typeof actionGather>
+      ).mockImplementation(async () => {
+        mockCharacter.addItemToInventory('algae', 1);
+        return {
+          data: {
+            character: mockCharacter.data,
+            cooldown: {
+              total_seconds: 1,
+              remaining_seconds: 0,
+              started_at: new Date().toISOString(),
+              expiration: new Date(Date.now() + 1000).toISOString(),
+              reason: 'gathering',
+            },
+            details: { xp: 0, items: [{ code: 'algae', quantity: 1 }] },
+          },
+        } as any;
+      });
+
+      return new GatherObjective(mockCharacter as any, {
+        code: 'algae',
+        quantity: 2,
+      });
+    };
+
+    it('gathers algae from the cheapest node once fishing outruns fleet weaponcrafting', async () => {
+      const objective = arrangeAlgaeGather(43, 24);
+
+      await objective.run();
+
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+        content_code: 'gudgeon_spot',
+      });
+    });
+
+    it('gathers algae from the highest usable node while fishing is still behind', async () => {
+      const objective = arrangeAlgaeGather(40, 44);
+
+      await objective.run();
+
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+        content_code: 'salmon_spot',
+      });
+    });
+  });
 });

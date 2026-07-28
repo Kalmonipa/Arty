@@ -315,6 +315,24 @@ describe('GatherObjective progress reflects actual held stock', () => {
       expect(character.itemsToKeep).toEqual([]);
     });
 
+    it('does not evaluate gathering gear for a drop that comes from a mob', async () => {
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue({
+        ...mockIronOreItem,
+        code: 'skeleton_bone',
+        name: 'Skeleton Bone',
+        subtype: 'mob',
+      });
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 1 };
+      const objective = new GatherObjective(character as any, target);
+      fightsDropping(objective, 1);
+
+      await objective.gather(1, 'skeleton_bone');
+
+      expect(character.evaluateGear).not.toHaveBeenCalled();
+    });
+
     it('leaves a drop an outer job is already keeping in the list', async () => {
       character.itemsToKeep.push('skeleton_bone');
       const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 1 };

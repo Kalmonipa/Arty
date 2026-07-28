@@ -1186,6 +1186,15 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(result).toBe(true);
     });
 
+    it('should not throw when no weapons are mapped for the activity type', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mob' as WeaponFlavours,
+      );
+
+      await expect(objective.run()).resolves.toBe(true);
+    });
+
     it('should handle different gathering activity types', async () => {
       const activityTypes: WeaponFlavours[] = [
         'mining',

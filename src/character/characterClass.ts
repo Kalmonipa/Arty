@@ -37,6 +37,7 @@ import {
   buildListOf,
   buildListOfWeapons,
   getHighestCharLevel,
+  getHighestWeaponcraftingLevel,
   getLowestAlchemyLevel,
   getLowestCharLevel,
   getLowestFishingLevel,
@@ -291,6 +292,11 @@ export class Character {
   lowestFishingLevel: number;
   lowestMiningLevel: number;
   lowestWoodcuttingLevel: number;
+  /**
+   * The best weaponcrafting level in the village. Every gathering tool is crafted at
+   * weaponcrafting, so this caps how good a tool any character can be given
+   */
+  highestWeaponcraftingLevel: number;
 
   hasVoidStonePickaxe: boolean = false;
   hasRune: boolean = false;
@@ -374,6 +380,8 @@ export class Character {
     this.lowestMiningLevel = getLowestMiningLevel(allCharacterDetails);
     this.lowestWoodcuttingLevel =
       getLowestWoodcuttingLevel(allCharacterDetails);
+    this.highestWeaponcraftingLevel =
+      getHighestWeaponcraftingLevel(allCharacterDetails);
 
     this.role = CharRole;
 
