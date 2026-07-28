@@ -206,6 +206,20 @@ describe('Character - event backoff', () => {
       expect(character.eventBackoffs.size).toBe(0);
     });
 
+    it('loadJobQueue leaves itemsToKeep usable when the field predates the save format', async () => {
+      mockReadFile.mockResolvedValue(
+        JSON.stringify({
+          characterName: 'TestCharacter',
+          timestamp: '2025-11-01T10:54:54.471Z',
+          jobs: [],
+        }) as any,
+      );
+
+      await character.loadJobQueue();
+
+      expect(character.itemsToKeep).toEqual([]);
+    });
+
     it('roundtrips multiple event backoffs through save and load', async () => {
       character.recordEventFailure('corrupted_ogre');
       character.recordEventFailure('corrupted_ogre');

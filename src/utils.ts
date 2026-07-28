@@ -231,6 +231,13 @@ export function isSkill(value: string): value is CraftSkill | GatheringSkill {
 }
 
 /**
+ * @description How much of a given effect an item grants, 0 if it doesn't grant any
+ */
+export function effectValueOf(item: ItemSchema, effect: string): number {
+  return item.effects?.find((e) => e.code === effect)?.value ?? 0;
+}
+
+/**
  * @description checks to see if we're working with a gathering skill
  * @param value the skill to check
  * @returns true if the provided skill is a gathering skill

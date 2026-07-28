@@ -3,8 +3,13 @@ import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { Role } from '../types/CharacterData.js';
-import { ItemSchema } from '../types/types.js';
-import { GetCharacterData, getHighestCharLevel, logger } from '../utils.js';
+import { ItemSchema, ItemSlot } from '../types/types.js';
+import {
+  effectValueOf,
+  GetCharacterData,
+  getHighestCharLevel,
+  logger,
+} from '../utils.js';
 import {
   deleteExpiredWishlistRequests,
   getWishlistRequestsByIds,
@@ -115,12 +120,43 @@ export async function checkWithinLevelRange(
   return true;
 }
 
+const ArtifactSlots: ItemSlot[] = ['artifact1', 'artifact2', 'artifact3'];
+
 /**
- * @description Buys one artifact per effect the character doesn't already have
- * covered. Candidates for an effect are tried strongest-first: an artifact's
- * level says nothing about how much of the effect it grants (perfect_pearl gives
- * +100 prospecting and lich_race_trophy +50, both at level 20), and an
- * unaffordable candidate must not hide the ones behind it.
+ * @description Puts an artifact the character already owns into a free artifact
+ * slot, pulling it out of the bank first when it isn't being carried.
+ * @returns false when there was no free slot or a step failed, so callers can
+ * fall back to banking the item
+ */
+async function equipOwnedArtifact(
+  character: Character,
+  code: string,
+  heldInInventory: boolean,
+): Promise<boolean> {
+  const freeSlot = ArtifactSlots.find(
+    (slot) => character.getCharacterGearIn(slot) === '',
+  );
+  if (!freeSlot) {
+    logger.debug(`No free artifact slot for ${code}, leaving it in the bank`);
+    return false;
+  }
+
+  if (!heldInInventory && !(await character.withdrawNow(1, code))) {
+    logger.warn(`Failed to withdraw ${code} to equip it`);
+    return false;
+  }
+
+  logger.info(`Equipping ${code} into ${freeSlot}`);
+  return await character.equipNow(code, freeSlot);
+}
+
+/**
+ * @description Makes sure each effect the character can benefit from is covered
+ * by an equipped artifact, buying one when they don't own it yet. Candidates for
+ * an effect are tried strongest-first: an artifact's level says nothing about how
+ * much of the effect it grants (perfect_pearl gives +100 prospecting and
+ * lich_race_trophy +50, both at level 20), and an unaffordable candidate must not
+ * hide the ones behind it.
  */
 export async function checkAndBuyArtifacts(
   character: Character,
@@ -142,15 +178,22 @@ export async function checkAndBuyArtifacts(
       );
 
     for (const artifact of candidates) {
-      const equipped =
-        character.getCharacterGearIn('artifact1') === artifact.code ||
-        character.getCharacterGearIn('artifact2') === artifact.code ||
-        character.getCharacterGearIn('artifact3') === artifact.code;
+      const equipped = ArtifactSlots.some(
+        (slot) => character.getCharacterGearIn(slot) === artifact.code,
+      );
+
+      // Already worn, so this effect is covered
+      if (equipped) break;
+
       const inInv = character.checkQuantityOfItemInInv(artifact.code);
       const inBank = await character.checkQuantityOfItemInBank(artifact.code);
 
-      // Something already covers this effect, so nothing more to buy for it
-      if (equipped || inInv + inBank >= 1) break;
+      // Owning a copy is no use while it sits in the bank, so equip it rather
+      // than treating the effect as covered and moving on
+      if (inInv + inBank >= 1) {
+        await equipOwnedArtifact(character, artifact.code, inInv >= 1);
+        break;
+      }
 
       const npcResult = await getAllNpcItems({ code: artifact.code });
       if (npcResult instanceof ApiError || npcResult.data.length === 0) {
@@ -196,20 +239,17 @@ export async function checkAndBuyArtifacts(
         continue;
       }
 
-      const deposited = await character.depositNow(1, artifact.code);
-      if (!deposited) {
-        logger.warn(
-          `checkAndBuyArtifacts: failed to deposit ${artifact.code}, continuing`,
-        );
+      if (!(await equipOwnedArtifact(character, artifact.code, true))) {
+        const deposited = await character.depositNow(1, artifact.code);
+        if (!deposited) {
+          logger.warn(
+            `checkAndBuyArtifacts: failed to deposit ${artifact.code}, continuing`,
+          );
+        }
       }
       break;
     }
   }
-}
-
-/** How much of a given effect an item grants, 0 if it doesn't grant it at all */
-function effectValueOf(item: ItemSchema, effect: string): number {
-  return item.effects?.find((e) => e.code === effect)?.value ?? 0;
 }
 
 /**

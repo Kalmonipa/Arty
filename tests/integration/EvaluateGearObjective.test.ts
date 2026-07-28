@@ -128,6 +128,7 @@ const createMockArtifact = (
   name: string,
   level: number,
   effectType: GearEffects,
+  effectValue: number = 20,
 ): ItemSchema => ({
   code,
   name,
@@ -139,7 +140,11 @@ const createMockArtifact = (
   tradeable: true,
   conditions: [],
   effects: [
-    { code: effectType, value: 20, description: `${effectType} effect` },
+    {
+      code: effectType,
+      value: effectValue,
+      description: `${effectType} effect`,
+    },
   ],
 });
 
@@ -1455,6 +1460,175 @@ describe('EvaluateGearObjective Integration Tests', () => {
         'perfect_pearl',
         expect.anything(),
       );
+    });
+
+    // An artifact's level says nothing about how much of the effect it grants:
+    // perfect_pearl (+100 prospecting) and lich_race_trophy (+50) are both level 20.
+    describe('upgrading an occupied slot', () => {
+      const mineIronOre = async () => {
+        (
+          getAllResourceInformation as jest.MockedFunction<
+            typeof getAllResourceInformation
+          >
+        ).mockResolvedValue(mockProspectingResource);
+        await new EvaluateGearObjective(
+          mockCharacter as any,
+          'mining',
+          undefined,
+          'iron_ore',
+        ).run();
+      };
+
+      beforeEach(() => {
+        mockCharacter.data.level = 31;
+      });
+
+      it('replaces a weaker same-effect artifact with a stronger one', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'novice_guide',
+              'Novice Guide',
+              10,
+              'prospecting',
+              25,
+            ),
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.data.artifact1_slot = 'novice_guide';
+        mockCharacter.bankItems.perfect_pearl = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+          'perfect_pearl',
+          'artifact1',
+        );
+      });
+
+      it('ranks candidates by effect value rather than array order', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+            createMockArtifact(
+              'lich_race_trophy',
+              'Lich Trophy',
+              20,
+              'prospecting',
+              50,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.bankItems.perfect_pearl = 1;
+        mockCharacter.bankItems.lich_race_trophy = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+          'perfect_pearl',
+          'artifact1',
+        );
+        expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+          'lich_race_trophy',
+          'artifact1',
+        );
+      });
+
+      it('leaves an equally strong artifact in place so repeat passes do not churn', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'lucky_charm',
+              'Lucky Charm',
+              5,
+              'prospecting',
+              50,
+            ),
+            createMockArtifact(
+              'lich_race_trophy',
+              'Lich Trophy',
+              20,
+              'prospecting',
+              50,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.data.artifact1_slot = 'lucky_charm';
+        mockCharacter.bankItems.lich_race_trophy = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+          'lich_race_trophy',
+          'artifact1',
+        );
+      });
+
+      it('fills a free slot rather than displacing an artifact for the other stat', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+          ],
+          wisdom: [
+            createMockArtifact('wisdom_stone', 'Wisdom Stone', 5, 'wisdom', 20),
+          ],
+        };
+        mockCharacter.data.artifact1_slot = 'wisdom_stone';
+        mockCharacter.bankItems.perfect_pearl = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+          'perfect_pearl',
+          'artifact2',
+        );
+        expect(mockCharacter.data.artifact1_slot).toBe('wisdom_stone');
+      });
+
+      it('does not put the only copy of an artifact into more than one slot', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.bankItems.perfect_pearl = 1;
+
+        await mineIronOre();
+
+        const pearlEquips = (
+          mockCharacter.equipNow as jest.Mock
+        ).mock.calls.filter(([code]: [string]) => code === 'perfect_pearl');
+        expect(pearlEquips).toHaveLength(1);
+      });
     });
   });
 

@@ -1,4 +1,4 @@
-import { logger } from '../utils.js';
+import { effectValueOf, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
@@ -591,57 +591,78 @@ export class EvaluateGearObjective extends Objective {
     const artifactSlots: ItemSlot[] = ['artifact1', 'artifact2', 'artifact3'];
     const artifacts = this.character.artifactsMap[targetEffect] ?? [];
 
+    const candidates = artifacts
+      .filter((artifact) => artifact.level <= charLevel)
+      .sort(
+        (a, b) =>
+          effectValueOf(b, targetEffect) - effectValueOf(a, targetEffect) ||
+          b.level - a.level,
+      );
+
+    const alreadyWearing = new Set<string>();
+
     for (const slot of artifactSlots) {
+      const equippedCode = this.character.getCharacterGearIn(slot);
+      const equipped = artifacts.find(
+        (artifact) => artifact.code === equippedCode,
+      );
+
+      // A slot holding an artifact for the other gathering stat is left alone
+      if (equippedCode !== '' && !equipped) {
+        logger.debug(
+          `${equippedCode} in ${slot} is not a ${targetEffect} artifact. Leaving it`,
+        );
+        continue;
+      }
+
+      const equippedValue = equipped
+        ? effectValueOf(equipped, targetEffect)
+        : 0;
       let slotFilled = false;
 
-      // ToDo: Currently this will try to equip the same item in all 3 slots.
-      // Need to handle this better
-      for (let i = artifacts.length - 1; i >= 0; i--) {
-        if (this.character.getCharacterGearIn(slot) !== '') {
-          logger.info(`Something already equipped in ${slot}. Skipping`);
+      for (const candidate of candidates) {
+        if (effectValueOf(candidate, targetEffect) <= equippedValue) {
           break;
         }
 
-        if (artifacts[i].level > charLevel) {
+        if (alreadyWearing.has(candidate.code)) {
+          continue;
+        }
+
+        if (this.character.getEquippedSlot(candidate.code)) {
           logger.debug(
-            `${artifacts[i].code} is too high level (${artifacts[i].level}) for ${this.character.data.name} (${charLevel})`,
+            `${candidate.code} already equipped elsewhere. Skipping`,
           );
           continue;
         }
 
-        if (this.character.getEquippedSlot(artifacts[i].code)) {
-          logger.debug(`${artifacts[i].code} already equipped. Skipping`);
-          break;
-        }
-
-        if (this.character.getCharacterGearIn(slot) === artifacts[i].code) {
-          logger.debug(`${artifacts[i].code} already equipped in ${slot}`);
-          slotFilled = true;
-          break;
-        }
-
-        if (this.character.checkQuantityOfItemInInv(artifacts[i].code) > 0) {
-          await this.character.equipNow(artifacts[i].code, slot);
-          slotFilled = true;
-          break;
-        }
-
-        if (
-          (await this.character.checkQuantityOfItemInBank(
-            artifacts[i].code,
+        const inInv = this.character.checkQuantityOfItemInInv(candidate.code);
+        if (inInv === 0) {
+          const inBank = await this.character.checkQuantityOfItemInBank(
+            candidate.code,
             this.bankCache,
-          )) > 0
-        ) {
-          await this.character.withdrawNow(1, artifacts[i].code);
-          this.bankCache?.remove(artifacts[i].code, 1);
-          await this.character.equipNow(artifacts[i].code, slot);
-          slotFilled = true;
-          break;
+          );
+          if (inBank === 0) {
+            continue;
+          }
+
+          await this.character.withdrawNow(1, candidate.code);
+          this.bankCache?.remove(candidate.code, 1);
         }
+
+        logger.debug(
+          `Equipping ${candidate.code} into ${slot} for ${targetEffect}`,
+        );
+        await this.character.equipNow(candidate.code, slot);
+        alreadyWearing.add(candidate.code);
+        slotFilled = true;
+        break;
       }
 
       if (!slotFilled) {
-        logger.debug(`No ${targetEffect} artifact available for ${slot}`);
+        logger.debug(
+          `No ${targetEffect} artifact upgrade available for ${slot}`,
+        );
       }
     }
   }

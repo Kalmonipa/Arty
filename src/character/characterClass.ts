@@ -551,7 +551,7 @@ export class Character {
 
       this.enableEvents = jobQueueData.enableEvents;
       this.shouldDoIdleJobs = jobQueueData.enableIdleJobs;
-      this.itemsToKeep = jobQueueData.itemsToKeep;
+      this.itemsToKeep = jobQueueData.itemsToKeep ?? [];
       if (jobQueueData.fishMerchantTradeDate != null) {
         this.fishMerchantTradeDate = jobQueueData.fishMerchantTradeDate;
       }

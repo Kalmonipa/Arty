@@ -95,6 +95,10 @@ class MockCharacter {
 
   depositNow = jest.fn(async (): Promise<boolean> => true);
 
+  withdrawNow = jest.fn(async (): Promise<boolean> => true);
+
+  equipNow = jest.fn(async (): Promise<boolean> => true);
+
   craftNow = jest.fn(
     async (_quantity: number, _code: string): Promise<boolean> => true,
   );
@@ -145,7 +149,7 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
   });
 
-  it('skips artifact already in inventory', async () => {
+  it('equips an artifact already held in inventory instead of buying another', async () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
@@ -156,9 +160,14 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     await (objective as any).checkAndBuyArtifacts();
 
     expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
   });
 
-  it('skips artifact already in bank', async () => {
+  it('withdraws an artifact sitting in the bank and equips it', async () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
@@ -169,6 +178,47 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     await (objective as any).checkAndBuyArtifacts();
 
     expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+    expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(1, 'hp_stone');
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
+  });
+
+  it('equips a banked artifact into the first free slot, not an occupied one', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation((slot: string) =>
+      slot === 'artifact3' ? '' : 'some_other_artifact',
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'hp_stone' ? 1 : 0),
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact3',
+    );
+  });
+
+  it('leaves a banked artifact alone when every artifact slot is occupied', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation(
+      () => 'some_other_artifact',
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'hp_stone' ? 1 : 0),
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    expect(mockCharacter.equipNow).not.toHaveBeenCalled();
   });
 
   it('skips when getAllNpcItems returns an ApiError', async () => {
@@ -229,7 +279,7 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
   });
 
-  it('buys and deposits artifact when affordable and not owned', async () => {
+  it('buys and equips artifact when affordable and not owned', async () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
     } as any;
@@ -244,6 +294,31 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     await (objective as any).checkAndBuyArtifacts();
 
     expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(1);
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
+    expect(mockCharacter.depositNow).not.toHaveBeenCalled();
+  });
+
+  it('banks a bought artifact when there is no free slot to equip it into', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation(
+      () => 'some_other_artifact',
+    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 200 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.equipNow).not.toHaveBeenCalled();
     expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'hp_stone');
   });
 
@@ -279,7 +354,10 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     await (objective as any).checkAndBuyArtifacts();
 
     expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(1);
-    expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'hp_stone');
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
   });
 
   it('selects the highest-level artifact at or below character level', async () => {
@@ -301,7 +379,10 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     await (objective as any).checkAndBuyArtifacts();
 
     expect(getAllNpcItems).toHaveBeenCalledWith({ code: 'hp_stone_8' });
-    expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'hp_stone_8');
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone_8',
+      'artifact1',
+    );
   });
 
   it('continues to next effect when TradeObjective fails', async () => {
@@ -323,15 +404,18 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     await (objective as any).checkAndBuyArtifacts();
 
     expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(2);
-    // Only deposits for the successful buy
-    expect(mockCharacter.depositNow).toHaveBeenCalledTimes(1);
+    // Only equips for the successful buy
+    expect(mockCharacter.equipNow).toHaveBeenCalledTimes(1);
   });
 
-  it('continues to next effect when depositNow fails', async () => {
+  it('continues to next effect when the fallback depositNow fails', async () => {
     mockCharacter.artifactsMap = {
       hp: [createMockArtifact('hp_stone', 5, 'hp')],
       wisdom: [createMockArtifact('wisdom_gem', 5, 'wisdom')],
     } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation(
+      () => 'some_other_artifact',
+    );
     (
       getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
     ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
@@ -376,7 +460,10 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
       await (objective as any).checkAndBuyArtifacts();
 
       expect(getAllNpcItems).toHaveBeenCalledWith({ code: 'perfect_pearl' });
-      expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'perfect_pearl');
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'perfect_pearl',
+        'artifact1',
+      );
     });
 
     it('falls back to the next best candidate when the best is unaffordable', async () => {
@@ -396,9 +483,9 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
 
       await (objective as any).checkAndBuyArtifacts();
 
-      expect(mockCharacter.depositNow).toHaveBeenCalledWith(
-        1,
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'lich_race_trophy',
+        'artifact1',
       );
     });
 
@@ -440,7 +527,10 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
 
       await (objective as any).checkAndBuyArtifacts();
 
-      expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'perfect_pearl');
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'perfect_pearl',
+        'artifact2',
+      );
     });
 
     it('buys nothing when the strongest candidate is already owned', async () => {

@@ -198,6 +198,9 @@ export class IdleHealerObjective extends Objective {
 
   /**
    * Ensure that we have a minimum amount of certain items in the bank
+   * @todo The healer should gather fish from the lowest level node, unless their fishing level is lower than
+   * the crafters weaponcrafting skill, essentially keeping them in tandem. High fishing only benefits if
+   * they have higher level gear so no need to overlevel fishing.
    */
   private async topUpPotionsInBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank

@@ -104,6 +104,16 @@ class MockCharacter {
   );
 
   itemsToKeep: string[] = [];
+
+  addItemToItemsToKeep = jest.fn((code: string): void => {
+    if (!this.itemsToKeep.includes(code)) this.itemsToKeep.push(code);
+  });
+
+  removeItemFromItemsToKeep = jest.fn((code: string): void => {
+    const index = this.itemsToKeep.indexOf(code);
+    if (index !== -1) this.itemsToKeep.splice(index, 1);
+  });
+
   fightNow = jest.fn(async (): Promise<boolean> => true);
 
   evaluateDepositItemsInBank = jest.fn(async (): Promise<void> => {});
@@ -263,6 +273,57 @@ describe('GatherObjective progress reflects actual held stock', () => {
 
       expect(character.fightNow).toHaveBeenCalledTimes(2);
       expect(objective.progress).toBe(20);
+    });
+
+    it('keeps the drop while farming and stops keeping it once the target is met', async () => {
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 2 };
+      const objective = new GatherObjective(character as any, target);
+      const keptDuringFight: boolean[] = [];
+      character.fightNow.mockImplementation(async () => {
+        keptDuringFight.push(character.itemsToKeep.includes('skeleton_bone'));
+        character.addItemToInventory('skeleton_bone', 1);
+        return true;
+      });
+
+      await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 2 });
+
+      expect(keptDuringFight).toEqual([true, true]);
+      expect(character.itemsToKeep).toEqual([]);
+    });
+
+    it('stops keeping the drop when a fight fails', async () => {
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 2 };
+      const objective = new GatherObjective(character as any, target);
+      character.fightNow.mockResolvedValue(false);
+
+      await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 2 });
+
+      expect(character.itemsToKeep).toEqual([]);
+    });
+
+    it('farming the same drop repeatedly leaves no duplicate entries', async () => {
+      for (let run = 1; run <= 3; run++) {
+        const objective = new GatherObjective(character as any, {
+          code: 'skeleton_bone',
+          quantity: run,
+        });
+        fightsDropping(objective, 1);
+
+        await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 1 });
+      }
+
+      expect(character.itemsToKeep).toEqual([]);
+    });
+
+    it('leaves a drop an outer job is already keeping in the list', async () => {
+      character.itemsToKeep.push('skeleton_bone');
+      const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 1 };
+      const objective = new GatherObjective(character as any, target);
+      fightsDropping(objective, 1);
+
+      await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 1 });
+
+      expect(character.itemsToKeep).toEqual(['skeleton_bone']);
     });
   });
 

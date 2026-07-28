@@ -149,59 +149,11 @@ export class GatherObjective extends Objective {
         }
         continue;
       } else {
-        // If we reach level 50 in a gathering skill, we should buy a voidstone tool if we haven't already
-        // ToDo: Finish this wishlist stuff
-        if (isGatheringSkill(resourceDetails.subtype)) {
-          if (
-            resourceDetails.subtype === 'mining' &&
-            this.character.data.mining_level === 50
-          ) {
-            let isAcquired: boolean = this.character.hasVoidStonePickaxe;
-            // if (!this.character.hasVoidStonePickaxe) {
-            //   isAcquired = await this.checkAcquisitionsTable('voidstone_pickaxe')
-            // }
-
-            if (!this.character.hasVoidStonePickaxe) {
-              logger.info(`Adding 1 voidstone pickaxe to the wishlist`);
-              // ToDo: Put 'voidstone_pickaxe' into the wishlist
-            } else {
-              logger.debug(
-                `Already have 1 voidstone pickaxe. Not purchasing another`,
-              );
-            }
-          } else if (
-            resourceDetails.subtype === 'woodcutting' &&
-            this.character.data.woodcutting_level === 50
-          ) {
-            logger.info(`Buying 1 voidstone axe and updating acquisitions DB`);
-            // Update DB with purchase
-            // Store variable in memory so we don't have to do DB queries all the time
-          } else if (
-            resourceDetails.subtype === 'alchemy' &&
-            this.character.data.alchemy_level === 50
-          ) {
-            logger.info(
-              `Buying 1 voidstone glove and updating acquisitions DB`,
-            );
-            // Store variable in memory so we don't have to do DB queries all the time
-            // Update DB with purchase
-          } else if (
-            resourceDetails.subtype === 'fishing' &&
-            this.character.data.fishing_level === 50
-          ) {
-            logger.info(
-              `Buying 1 voidstone fishing rod and updating acquisitions DB`,
-            );
-            // Store variable in memory so we don't have to do DB queries all the time
-            // Update DB with purchase
-          }
-
-          await this.character.evaluateGear(
-            resourceDetails.subtype as WeaponFlavours,
-            undefined,
-            code,
-          );
-        }
+        await this.character.evaluateGear(
+          resourceDetails.subtype as WeaponFlavours,
+          undefined,
+          code,
+        );
       }
 
       // Evaluate our inventory space before we start collecting items
@@ -348,36 +300,49 @@ export class GatherObjective extends Objective {
         ? 0
         : this.character.checkQuantityOfItemInInv(this.target.code);
 
-      this.character.itemsToKeep.push(this.target.code);
+      // An outer job may already be keeping this drop, in which case it owns the
+      // entry and we must leave it behind when we're done
+      const keptByOuterJob = !!this.character.itemsToKeep?.includes(
+        this.target.code,
+      );
+      this.character.addItemToItemsToKeep(this.target.code);
 
-      while (this.progress < this.target.quantity) {
-        const held =
-          this.character.checkQuantityOfItemInInv(this.target.code) -
-          baselineInventory;
-        const banked = this.checkBank
-          ? await this.character.checkQuantityOfItemInBank(this.target.code)
-          : 0;
-        this.progress = held + banked;
+      try {
+        while (this.progress < this.target.quantity) {
+          const held =
+            this.character.checkQuantityOfItemInInv(this.target.code) -
+            baselineInventory;
+          const banked = this.checkBank
+            ? await this.character.checkQuantityOfItemInBank(this.target.code)
+            : 0;
+          this.progress = held + banked;
 
-        logger.info(
-          `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
-        );
+          logger.info(
+            `Gathered ${this.progress}/${this.target.quantity} ${this.target.code}`,
+          );
 
-        if (this.progress >= this.target.quantity) break;
+          if (this.progress >= this.target.quantity) break;
 
-        logger.info(`Mob info for ${mobInfo.data.length} mobs`);
+          logger.info(`Mob info for ${mobInfo.data.length} mobs`);
 
-        // ToDo: make this check all mobs in case multiple drop the item
-        if (!(await this.character.fightNow(10, mobInfo.data[0].code))) {
-          logger.debug(`Fight attempt against ${mobInfo.data[0].code} failed`);
-          return false;
+          // ToDo: make this check all mobs in case multiple drop the item
+          if (!(await this.character.fightNow(10, mobInfo.data[0].code))) {
+            logger.debug(
+              `Fight attempt against ${mobInfo.data[0].code} failed`,
+            );
+            return false;
+          }
+
+          if (!(await this.checkStatus())) return false;
+
+          await this.character.saveJobQueue();
         }
-
-        if (!(await this.checkStatus())) return false;
-
-        await this.character.saveJobQueue();
+        return true;
+      } finally {
+        if (!keptByOuterJob) {
+          this.character.removeItemFromItemsToKeep(this.target.code);
+        }
       }
-      return true;
     }
   }
 
