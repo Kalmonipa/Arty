@@ -28,7 +28,7 @@ const SKILL_ROLE: Partial<Record<Skill, Role>> = {
 
 /**
  * @description Crafts the requested amount of the item
- * There are 2 ways this class can be used.
+ * There are 2 ways this class should be used.
  * 1. Calculates the remaining amount we need, after getting the current amount from
  * inventory and bank. Set checkBank & includeInventory to true for this method
  * 2. Takes in the remaining amount we need, ignoring bank and inventory. Set checkBank
@@ -104,7 +104,7 @@ export class CraftObjective extends Objective {
     }
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      logger.info(`Craft attempt ${attempt}/${this.maxRetries}`);
+      logger.debug(`Craft attempt ${attempt}/${this.maxRetries}`);
 
       const targetItem = await getItemInformation(this.target.code);
 
@@ -126,8 +126,10 @@ export class CraftObjective extends Objective {
           return false;
         }
 
-        // Check if the character has the skill level required to craft
-        // ToDo: Make this based on roles not skill level
+        /**
+         * Check all the skills required and wishlist any that don't belong to the crafter
+         * After this we loop through again and do the ones that the crafter can do
+         */
         if (targetItem.craft?.skill) {
           const skillNeeded = targetItem.craft.skill;
 

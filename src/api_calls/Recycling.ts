@@ -8,7 +8,7 @@ export async function actionRecycle(
   character: CharacterSchema,
   itemCode: string,
   quantity: number,
-  enhanced: boolean
+  enhanced: boolean,
 ): Promise<RecyclingResponseSchema | ApiError> {
   const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/recycling`);
 
@@ -20,7 +20,7 @@ export async function actionRecycle(
     body: {
       code: itemCode,
       quantity: quantity,
-      enhanced: enhanced
+      enhanced: enhanced,
     },
     errorMessages: {
       404: 'Item not found.',
@@ -32,7 +32,7 @@ export async function actionRecycle(
     fallbackMessage: 'Unknown error from /action/recycle',
     onSuccess: (result) => {
       if (enhanced) {
-        logger.info(`Enhanced recycling was used`)
+        logger.info(`Enhanced recycling was used`);
       }
       for (const item of result.data.details.items) {
         logger.info(

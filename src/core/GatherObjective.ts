@@ -149,11 +149,14 @@ export class GatherObjective extends Objective {
         }
         continue;
       } else {
-        await this.character.evaluateGear(
-          resourceDetails.subtype as WeaponFlavours,
-          undefined,
-          code,
-        );
+        let activityType: WeaponFlavours;
+        if (resourceDetails.subtype === 'mob') {
+          activityType = 'combat';
+        } else {
+          logger.debug(`Casting ${resourceDetails.subtype} as WeaponFlavours type`)
+          activityType = resourceDetails.subtype as WeaponFlavours;
+        }
+        await this.character.evaluateGear(activityType, undefined, code);
       }
 
       // Evaluate our inventory space before we start collecting items
