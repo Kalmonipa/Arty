@@ -11,8 +11,12 @@ import { actionRecycle } from '../api_calls/Recycling.js';
  */
 export class RecycleObjective extends Objective {
   target: ObjectiveTargets; // ToDo: USe SimpleItemSchema
+  /**
+   * Enabled enhanced recycling which rewards 30% more materials. Defaults to true
+   */
+  enhanced: boolean
 
-  constructor(character: Character, target: ObjectiveTargets) {
+  constructor(character: Character, target: ObjectiveTargets, enhanced?: boolean) {
     super(
       character,
       `recycle_${target.quantity}_${target.code}`,
@@ -22,6 +26,7 @@ export class RecycleObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'Recycle';
     this.target = target;
+    this.enhanced = enhanced ?? true
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -73,6 +78,7 @@ export class RecycleObjective extends Objective {
         this.character.data,
         this.target.code,
         this.target.quantity,
+        this.enhanced
       );
       if (recycleResult instanceof ApiError) {
         logger.info(recycleResult.message);
