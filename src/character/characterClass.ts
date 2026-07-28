@@ -3347,7 +3347,7 @@ export class Character {
       new RecycleObjective(this, { code: itemCode, quantity: quantity }),
       true,
       true,
-      this.currentExecutingJob?.objectiveId
+      this.currentExecutingJob?.objectiveId,
     );
   }
 

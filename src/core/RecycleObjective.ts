@@ -14,9 +14,13 @@ export class RecycleObjective extends Objective {
   /**
    * Enabled enhanced recycling which rewards 30% more materials. Defaults to true
    */
-  enhanced: boolean
+  enhanced: boolean;
 
-  constructor(character: Character, target: ObjectiveTargets, enhanced?: boolean) {
+  constructor(
+    character: Character,
+    target: ObjectiveTargets,
+    enhanced?: boolean,
+  ) {
     super(
       character,
       `recycle_${target.quantity}_${target.code}`,
@@ -26,7 +30,7 @@ export class RecycleObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'Recycle';
     this.target = target;
-    this.enhanced = enhanced ?? true
+    this.enhanced = enhanced ?? true;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -78,7 +82,7 @@ export class RecycleObjective extends Objective {
         this.character.data,
         this.target.code,
         this.target.quantity,
-        this.enhanced
+        this.enhanced,
       );
       if (recycleResult instanceof ApiError) {
         logger.info(recycleResult.message);
