@@ -9,13 +9,13 @@ import {
   ItemSchema,
   MapSchema,
   SimpleItemSchema,
-  GatheringSkill,
 } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { addToWishlist } from '../wishlist/functions.js';
+import { selectResourceNode } from './resourceNodeSelection.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -148,7 +148,7 @@ export class GatherObjective extends Objective {
           return false;
         }
         continue;
-      } else {
+      } else if (isGatheringSkill(resourceDetails.subtype)) {
         await this.character.evaluateGear(
           resourceDetails.subtype as WeaponFlavours,
           undefined,
@@ -367,29 +367,14 @@ export class GatherObjective extends Objective {
       return this.character.handleErrors(resources);
     }
 
-    // skillNeeded is used for the wishlist if we can't find something that
-    // the current character can gather
-    let skillNeeded: GatheringSkill;
-    // levelNeeded is used for the wishlist to tell the char checking the wishlist
-    // what level they need of the required skill to fulfill it
-    let levelNeeded: number;
-
     logger.debug(`Finding best resource to gather`);
-    const resource = (() => {
-      for (let i = resources.data.length - 1; i >= 0; i--) {
-        const resource = resources.data[i];
-        skillNeeded = resource.skill;
-        levelNeeded = resource.level;
-        if (
-          resource.level <=
-          this.character.getCharacterLevel(this.character.data, resource.skill)
-        ) {
-          return resource;
-        }
-      }
-
-      return undefined;
-    })();
+    // skillNeeded and levelNeeded tell the wishlist what the character checking it
+    // needs to fulfil the request when we can't gather the resource ourselves
+    const { resource, skillNeeded, levelNeeded } = selectResourceNode(
+      resources.data,
+      this.character,
+      code,
+    );
 
     if (!resource) {
       logger.warn(

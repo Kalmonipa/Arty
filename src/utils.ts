@@ -397,3 +397,10 @@ export function getLowestWoodcuttingLevel(
     prev.woodcutting_level < curr.woodcutting_level ? prev : curr,
   ).woodcutting_level;
 }
+export function getHighestWeaponcraftingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.weaponcrafting_level > curr.weaponcrafting_level ? prev : curr,
+  ).weaponcrafting_level;
+}
