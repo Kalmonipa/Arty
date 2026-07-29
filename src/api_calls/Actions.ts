@@ -40,6 +40,16 @@ export async function actionCraft(
       598: 'Workshop not found on this map.',
     },
     fallbackMessage: 'Unknown error from /action/crafting',
+    onSuccess: (result) => {
+      let itemsReceived: string = '';
+      result.data.details.items.forEach((item) =>
+        itemsReceived.concat(`${item.quantity}x ${item.code} `),
+      );
+
+      logger.info(
+        `Received ${result.data.details.xp} xp and ${itemsReceived}`,
+      );
+    },
   });
 }
 

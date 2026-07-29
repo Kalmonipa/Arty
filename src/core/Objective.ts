@@ -453,10 +453,10 @@ export abstract class Objective {
    * Returns true if there is an instance of the specified job in the on hold queue
    */
   checkForJobInOnHoldQueue(jobType: Skill): boolean {
-    const numCurrentJobsInQueue = this.character.onHold.filter((job) => job.job.objectiveId.includes(jobType)).length
-    if (
-      numCurrentJobsInQueue > 2
-    ) {
+    const numCurrentJobsInQueue = this.character.onHold.filter((job) =>
+      job.job.objectiveId.includes(jobType),
+    ).length;
+    if (numCurrentJobsInQueue > 2) {
       logger.info(`2 train ${jobType} jobs already on hold. Skipping`);
       return true;
     } else {

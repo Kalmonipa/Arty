@@ -149,7 +149,6 @@ export class CraftObjective extends Objective {
           }
         }
 
-
         // One craft consumes a single set of ingredients and provides
         // craft.quantity output items, so the number of crafts needed is the
         // requested item count divided by the results per-craft (rounded up).
@@ -299,7 +298,7 @@ export class CraftObjective extends Objective {
   }
 
   /**
-   * @description Grabs all the crafted items out of the bank. Stops the caller from 
+   * @description Grabs all the crafted items out of the bank. Stops the caller from
    * restarting the craft request thinking that nothing exists
    */
   private async carryFinishedItems(): Promise<void> {
