@@ -25,8 +25,6 @@ import WishlistRouter from './wishlist/routes.js';
 import { reclaimExecutingWishlistRequests } from './wishlist/functions.js';
 
 async function main() {
-  await sleep(getRandomInt(0, 10), 'init_jitter', false);
-
   let charDetails: CharacterSchema[] = await GetCharacterData();
 
   const char = new Character(
