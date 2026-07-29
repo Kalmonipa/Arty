@@ -46,9 +46,7 @@ export async function actionCraft(
         itemsReceived.concat(`${item.quantity}x ${item.code} `),
       );
 
-      logger.info(
-        `Received ${result.data.details.xp} xp and ${itemsReceived}`,
-      );
+      logger.info(`Received ${result.data.details.xp} xp and ${itemsReceived}`);
     },
   });
 }

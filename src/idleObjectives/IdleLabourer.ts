@@ -36,6 +36,7 @@ import {
   checkWishlistToFulfill,
   doMonsterTask,
   doItemTask,
+  shuffle,
 } from './idleUtils.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
@@ -86,12 +87,21 @@ export class IdleLabourerObjective extends Objective {
     await checkAndBuyArtifacts(this.character);
     if (this.checkIdleJobIsLast()) return true;
 
-    await checkWishlistToFulfill(this.character, 'mining', this.objectiveId);
+    // Woodcutting wishlist requests aren't getting done so I figured shuffling
+    // the order in which the labourers fulfill the requests should help that
+    const wishlistTypes: AcquisitionMethod[] = ['mining', 'woodcutting'];
+    const shufflesWishlistRequests = shuffle(wishlistTypes);
+
+    await checkWishlistToFulfill(
+      this.character,
+      shufflesWishlistRequests[0],
+      this.objectiveId,
+    );
     if (this.checkIdleJobIsLast()) return true;
 
     await checkWishlistToFulfill(
       this.character,
-      'woodcutting',
+      shufflesWishlistRequests[1],
       this.objectiveId,
     );
     if (this.checkIdleJobIsLast()) return true;
