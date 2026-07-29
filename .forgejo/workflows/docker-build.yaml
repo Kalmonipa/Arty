@@ -57,7 +57,7 @@ jobs:
 
           HOST="${{ secrets.DEPLOY_HOST }}"
           USER="${{ secrets.DEPLOY_USER }}"
-          PORT="${{ vars.DEPLOY_PORT }}"
+          PORT="${{ secrets.DEPLOY_PORT }}"
           PORT="${PORT:-22}"
 
           if [ -z "$HOST" ] || [ -z "$USER" ]; then
