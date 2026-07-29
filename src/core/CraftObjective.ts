@@ -127,7 +127,7 @@ export class CraftObjective extends Objective {
         }
 
         /**
-         * Check all the skills required and wishlist any that don't belong to the crafter
+         * ToDo: Check all the skills required and wishlist any that don't belong to the crafter
          * After this we loop through again and do the ones that the crafter can do
          */
         if (targetItem.craft?.skill) {
@@ -149,12 +149,10 @@ export class CraftObjective extends Objective {
           }
         }
 
-        // One craft consumes a single set of ingredients and yields
+
+        // One craft consumes a single set of ingredients and provides
         // craft.quantity output items, so the number of crafts needed is the
-        // requested item count divided by the per-craft yield (rounded up).
-        // A job resumed after a restart re-enters here carrying the progress it
-        // made before, so only the outstanding items are crafted — otherwise it
-        // would re-gather the ingredients and craft the whole order again.
+        // requested item count divided by the results per-craft (rounded up).
         const outputPerCraft = targetItem.craft.quantity ?? 1;
         const outstanding = this.target.quantity - this.progress;
         const craftsNeeded = Math.ceil(outstanding / outputPerCraft);
@@ -301,10 +299,8 @@ export class CraftObjective extends Objective {
   }
 
   /**
-   * @description Brings the finished items back out of the bank. Multi-batch
-   * crafts deposit each batch as they go, so without this the caller — which
-   * checks what the character is carrying — sees none of them and orders the
-   * craft all over again.
+   * @description Grabs all the crafted items out of the bank. Stops the caller from 
+   * restarting the craft request thinking that nothing exists
    */
   private async carryFinishedItems(): Promise<void> {
     const carried = this.character.checkQuantityOfItemInInv(this.target.code);
