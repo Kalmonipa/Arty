@@ -51,6 +51,9 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_tag.outputs.tag }}
+      - name: Get containers
+        run: |
+          docker ps
       - name: Deploy to server
         run: |
           set -euo pipefail
