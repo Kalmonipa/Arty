@@ -1,21 +1,16 @@
 import {
   actionClaimPendingItems,
-  getItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import {
   GatheringSkill,
-  ItemSchema,
   StaticDataPageResourceSchema,
 } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
-import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { Objective } from '../core/Objective.js';
-import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,
@@ -24,7 +19,6 @@ import {
   checkWishlistToFulfill,
 } from './idleUtils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { AcquisitionMethod } from '../wishlist/types.js';
 
 export class IdleFishermanObjective extends Objective {
   constructor(character: Character) {
@@ -45,6 +39,8 @@ export class IdleFishermanObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<boolean> {
+    let startTime = Date.now();
+
     await completeTasksFarmerAchievement(this.character, 'fisherman');
     if (this.checkIdleJobIsLast()) return true;
 
@@ -86,7 +82,15 @@ export class IdleFishermanObjective extends Objective {
     await this.trainSkill('fishing');
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.gatherExtraFish();
+    if (Date.now() - startTime > 10 * 60 * 1000) {
+      logger.info(
+        `Idle job has been running for more than 10 minutes. Ending it to see if there's something we need to do`,
+      );
+      return true;
+    } else {
+      // If the idle job hasn't really triggered any other jobs, we want to top up some fish
+      await this.gatherExtraFish();
+    }
   }
 
   /**
