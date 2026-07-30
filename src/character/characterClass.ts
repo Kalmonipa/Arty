@@ -2283,8 +2283,6 @@ export class Character {
 
       const contentLocation = this.evaluateClosestMap(maps);
 
-      logger.debug(``);
-
       await this.move(contentLocation);
 
       const keep = [...new Set([...(itemsToKeep ?? []), ...this.itemsToKeep])];

@@ -126,9 +126,9 @@ export class MonsterTaskObjective extends Objective {
 
   /**
    * @description Swaps out a task that would cost more fighting time than it's
-   * worth. Reward is flat across monster tasks, so a task against a slow monster
-   * is the same handful of coins for several times the effort. Cancelling costs a
-   * coin, so the rerolls are capped and stop while there are still coins left.
+   * worth. A task against a slow monster is the same handful of coins for
+   * several times the effort. Cancelling costs a coin, so the rerolls are capped
+   * and stop while there are still coins left.
    */
   private async rerollTasksThatCostTooMuch(): Promise<void> {
     for (let reroll = 0; reroll <= MAX_TASK_REROLLS; reroll++) {

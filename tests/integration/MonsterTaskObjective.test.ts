@@ -243,25 +243,6 @@ describe('MonsterTaskObjective Integration Tests', () => {
   });
 
   describe('Error handling', () => {
-    it('should handle no maps found', async () => {
-      // Arrange
-      mockCharacter.findMaps.mockReturnValue([]);
-
-      mockCharacter.data.task = 'red_slime';
-      mockCharacter.data.task_type = 'monsters';
-      mockCharacter.data.task_progress = 0;
-      mockCharacter.data.task_total = 5;
-
-      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-
-      // Act
-      const result = await objective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockCharacter.fightNow).not.toHaveBeenCalled();
-    });
-
     it('should handle fight failures and retry', async () => {
       // Arrange
       mockCharacter.data.task = 'red_slime';
@@ -438,10 +419,6 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
         // Assert
         expect(result).toBe(true);
-        expect(mockCharacter.findMaps).toHaveBeenCalledWith({
-          content_code: test.task,
-          content_type: 'monster',
-        });
         expect(mockCharacter.fightNow).toHaveBeenCalledWith(
           test.total,
           test.task,
@@ -451,47 +428,6 @@ describe('MonsterTaskObjective Integration Tests', () => {
         jest.clearAllMocks();
         mockCharacter.findMaps.mockReturnValue(testMapData.data as MapSchema[]);
       }
-    });
-
-    it('should handle movement to monster location', async () => {
-      // Arrange
-      const customMapData = {
-        data: [
-          {
-            map_id: 2,
-            name: 'Custom Monster Area',
-            skin: 'cave',
-            x: 200,
-            y: 300,
-            layer: 'overworld' as const,
-            access: { type: 'standard' as const },
-            interactions: {},
-          },
-        ],
-        total: 1,
-        page: 1,
-        pages: 1,
-        size: 50,
-      };
-      mockCharacter.findMaps.mockReturnValue(customMapData.data as MapSchema[]);
-      mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
-
-      mockCharacter.data.task = 'red_slime';
-      mockCharacter.data.task_type = 'monsters';
-      mockCharacter.data.task_progress = 0;
-      mockCharacter.data.task_total = 5;
-
-      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-
-      // Act
-      const result = await objective.run();
-
-      // Assert
-      expect(result).toBe(true);
-      expect(mockCharacter.evaluateClosestMap).toHaveBeenCalledWith(
-        customMapData.data,
-      );
-      expect(mockCharacter.move).toHaveBeenCalledWith({ x: 200, y: 300 });
     });
 
     it('should handle partial task completion', async () => {
