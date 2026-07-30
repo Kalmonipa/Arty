@@ -44,6 +44,8 @@ export class IdleFishermanObjective extends Objective {
     await completeTasksFarmerAchievement(this.character, 'fisherman');
     if (this.checkIdleJobIsLast()) return true;
 
+    await this.fulfillAchievements();
+
     await this.character.tidyUpBank(this.character.role);
     if (this.checkIdleJobIsLast()) return true;
 
@@ -123,6 +125,10 @@ export class IdleFishermanObjective extends Objective {
       }
     }
     return true;
+  }
+
+  private async fulfillAchievements(): Promise<void> {
+    const achievementsToCheck = ['gourmet_chef', 'cooking_achievement'];
   }
 
   /**

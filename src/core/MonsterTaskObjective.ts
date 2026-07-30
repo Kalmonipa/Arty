@@ -103,18 +103,18 @@ export class MonsterTaskObjective extends Objective {
 
     await this.rerollTasksThatCostTooMuch();
 
-    const maps = this.character.findMaps({
-      content_code: this.character.data.task,
-      content_type: 'monster',
-    });
-    if (maps.length === 0) {
-      logger.error(`Cannot find the task target. This shouldn't happen ??`);
-      return false;
-    }
+    // const maps = this.character.findMaps({
+    //   content_code: this.character.data.task,
+    //   content_type: 'monster',
+    // });
+    // if (maps.length === 0) {
+    //   logger.error(`Cannot find the task target. This shouldn't happen ??`);
+    //   return false;
+    // }
 
-    const contentLocation = this.character.evaluateClosestMap(maps);
+    // const contentLocation = this.character.evaluateClosestMap(maps);
 
-    await this.character.move(contentLocation);
+    // await this.character.move(contentLocation);
 
     const result = await this.character.fightNow(
       this.character.data.task_total - this.character.data.task_progress,
