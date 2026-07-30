@@ -112,13 +112,6 @@ export class TidyBankObjective extends Objective {
   private async cookFood(): Promise<boolean> {
     logger.info(`Starting to cook uncooked food in bank`);
     for (const item of this.rawFoodList) {
-      // ToDo: Find some better way to do keep gudgeon if we've levelled past it.
-      // I think it would be better to sell it if chars are >20 combat level
-      if (item === 'gudgeon' && this.character.lowestCharLevel > 20) {
-        logger.info(`Skipping gudgeon as lowest char level is > 20`);
-        continue;
-      }
-
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
 
       if (numInBank === undefined) {
@@ -135,6 +128,14 @@ export class TidyBankObjective extends Objective {
           'cooking',
         );
         if (!itemToCraftSchema) {
+          continue;
+        }
+
+        // If the item is more than 20 levels below the lowest character level, skip it
+        if (this.character.lowestCharLevel - itemToCraftSchema.level > 20) {
+          logger.info(
+            `Skipping ${item} as lowest char level is > 20 levels above it`,
+          );
           continue;
         }
 
