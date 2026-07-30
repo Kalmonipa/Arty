@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../objectives/Character.js';
+import { Character } from '../character/characterClass.js';
 
 export default function JobsRouter(char: Character) {
   const router = Router();
@@ -9,9 +9,9 @@ export default function JobsRouter(char: Character) {
    * @param char
    * @returns {string[]}
    */
-  router.get('/list/all', async (req: Request, res: Response) => {
+  router.get('/list/all', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -37,21 +37,24 @@ export default function JobsRouter(char: Character) {
    * @param char
    * @returns {Array<{id: string, parentId?: string, childId?: string, status: string}>}
    */
-  router.get('/list/with-parents', async (req: Request, res: Response) => {
+  router.get('/list/with-parents', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
       }
 
       const jobs = char.listObjectivesWithParents();
+      const onHold = char.listOnHoldJobs();
 
       return res.status(201).json({
         message: `${char.data.name} has ${jobs.length} jobs in queue`,
         character: char.data.name,
+        role: char.role,
         jobs: jobs,
         num_jobs: jobs.length,
+        onHold: onHold,
       });
     } catch (error) {
       return res
@@ -69,7 +72,7 @@ export default function JobsRouter(char: Character) {
     try {
       const rootJobId = req.params.rootJobId;
 
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -96,9 +99,9 @@ export default function JobsRouter(char: Character) {
    * @param char
    * @returns {string[]} Array of cancelled job IDs
    */
-  router.get('/cancelled', async (req: Request, res: Response) => {
+  router.get('/cancelled', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -122,9 +125,9 @@ export default function JobsRouter(char: Character) {
   /**
    * @description Manually saves the current job queue to disk
    */
-  router.post('/save', async (req: Request, res: Response) => {
+  router.post('/save', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -153,14 +156,14 @@ export default function JobsRouter(char: Character) {
     try {
       const objId = req.params.objectiveId;
 
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
       }
 
       // Check if the job exists
-      const obj = char.jobList.find((obj) => objId === obj.objectiveId);
+      const obj = char.jobList.some((obj) => objId === obj.objectiveId);
       if (!obj) {
         return res.status(404).json({
           message: `Objective ${objId} not found`,
@@ -185,9 +188,47 @@ export default function JobsRouter(char: Character) {
     }
   });
 
-  router.post('/pause', async (req: Request, res: Response) => {
+  /**
+   * @description Drops (discards) an on-hold job by its objectiveId, freeing an
+   * on-hold slot. The job is not resumed or recorded; it is removed entirely.
+   */
+  router.post(
+    '/on-hold/drop/:objectiveId',
+    async (req: Request, res: Response) => {
+      try {
+        const objId = req.params.objectiveId;
+
+        if (char === undefined || !char) {
+          return res
+            .status(500)
+            .json({ error: 'Character instance not available.' });
+        }
+
+        const dropped = await char.dropOnHoldJobById(objId);
+        if (!dropped) {
+          return res.status(404).json({
+            message: `On-hold job ${objId} not found`,
+            character: char.data.name,
+            onHold: char.listOnHoldJobs(),
+          });
+        }
+
+        return res.status(200).json({
+          message: `Dropped on-hold job ${objId}`,
+          character: char.data.name,
+          onHold: char.listOnHoldJobs(),
+        });
+      } catch (error) {
+        return res
+          .status(500)
+          .json({ error: error.message || 'Internal server error.' });
+      }
+    },
+  );
+
+  router.post('/pause', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -207,9 +248,9 @@ export default function JobsRouter(char: Character) {
     }
   });
 
-  router.post('/resume', async (req: Request, res: Response) => {
+  router.post('/resume', async (_: Request, res: Response) => {
     try {
-      if (typeof char === 'undefined' || !char) {
+      if (char === undefined || !char) {
         return res
           .status(500)
           .json({ error: 'Character instance not available.' });
@@ -221,6 +262,22 @@ export default function JobsRouter(char: Character) {
         message: `Resumed job ${char.currentExecutingJob.objectiveId} for ${char.data.name}`,
         character: char.data.name,
         jobs: char.listObjectives(),
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  router.post('/toggle-idle', async (_: Request, res: Response) => {
+    try {
+      const oldState = char.shouldDoIdleJobs;
+      char.shouldDoIdleJobs = !char.shouldDoIdleJobs;
+
+      return res.status(200).json({
+        message: `Toggled idle jobs from ${oldState} to ${char.shouldDoIdleJobs}`,
+        character: char.data.name,
       });
     } catch (error) {
       return res

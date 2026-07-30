@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { ItemTaskObjective } from '../../src/objectives/ItemTaskObjective.js';
+import { ItemTaskObjective } from '../../src/core/ItemTaskObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Items', () => ({
@@ -76,18 +76,11 @@ class SimpleMockCharacter {
     },
   );
 
+  findMaps = jest.fn((): MapSchema[] => []);
+
   executeJobNow = jest.fn(async (): Promise<boolean> => {
     return true;
   });
-
-  // startNewTask is a method of the Objective class, not Character
-  // We'll mock it on the Objective instance instead
-
-  // handInTask is a method of the Objective class, not Character
-  // We'll mock it on the Objective instance instead
-
-  // moveToTaskMaster is a method of the Objective class, not Character
-  // We'll mock it on the Objective instance instead
 
   craftNow = jest.fn(
     async (quantity: number, itemCode: string): Promise<boolean> => {
@@ -104,6 +97,30 @@ class SimpleMockCharacter {
       return true;
     },
   );
+
+  removeItemFromItemsToKeep = jest.fn((): void => {
+    // Mock implementation
+  });
+
+  addItemToItemsToKeep = jest.fn((): void => {
+    // Nothing here
+  });
+
+  tradeWithTasksMaster = jest.fn(
+    async (itemCode: string, numToGather: number): Promise<boolean> => {
+      this.removeItemFromInventory(itemCode, numToGather);
+      this.data.task_progress += numToGather;
+      return true;
+    },
+  );
+
+  completeTask = jest.fn(async (): Promise<boolean> => {
+    this.data.task = '';
+    this.data.task_type = '';
+    this.data.task_progress = 0;
+    this.data.task_total = 0;
+    return true;
+  });
 
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
@@ -253,19 +270,21 @@ describe('ItemTaskObjective Integration Tests', () => {
     (
       actionCancelTask as jest.MockedFunction<typeof actionCancelTask>
     ).mockResolvedValue({
-      character: {
-        ...mockCharacterData,
-        task: '',
-        task_type: '',
-        task_progress: 0,
-        task_total: 0,
-      },
-      cooldown: {
-        total_seconds: 5,
-        remaining_seconds: 5,
-        started_at: '2025-10-01T16:52:35.196Z',
-        expiration: '2025-10-01T16:52:40.196Z',
-        reason: 'task' as const,
+      data: {
+        character: {
+          ...mockCharacterData,
+          task: '',
+          task_type: '',
+          task_progress: 0,
+          task_total: 0,
+        },
+        cooldown: {
+          total_seconds: 5,
+          remaining_seconds: 5,
+          started_at: '2025-10-01T16:52:35.196Z',
+          expiration: '2025-10-01T16:52:40.196Z',
+          reason: 'task' as const,
+        },
       },
     });
     (
@@ -504,19 +523,15 @@ describe('ItemTaskObjective Integration Tests', () => {
       expect(getItemInformation).toHaveBeenCalledTimes(3); // maxRetries = 3
     });
 
-    it('should handle actionTasksTrade API errors and retry', async () => {
-      // Arrange
-      const apiError = new ApiError({ code: 500, message: 'Server error' });
-      (actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>)
-        .mockResolvedValueOnce(apiError)
-        .mockResolvedValueOnce(mockTaskTradeResponse);
-
+    it('should complete successfully when trade items are available', async () => {
+      // Arrange - tradeWithTasksMaster is mocked at the character level so
+      // actionTasksTrade error handling belongs in Character tests, not here.
+      // This test just verifies ItemTaskObjective completes successfully.
       mockCharacter.data.task = 'iron_ore';
       mockCharacter.data.task_type = 'items';
       mockCharacter.data.task_progress = 0;
       mockCharacter.data.task_total = 5;
       mockCharacter.addItemToInventory('iron_ore', 5);
-      mockCharacter.handleErrors.mockResolvedValue(true);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
 
@@ -525,8 +540,6 @@ describe('ItemTaskObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-      expect(actionTasksTrade).toHaveBeenCalledTimes(2);
     });
 
     it('should handle crafting failures and cancel task', async () => {
@@ -628,23 +641,11 @@ describe('ItemTaskObjective Integration Tests', () => {
       expect(result).toBeDefined();
     });
 
-    it('should handle missing character data in task trade response', async () => {
-      // Arrange
-      const responseWithoutCharacter = {
-        data: {
-          // Missing character data
-          cooldown: {
-            total_seconds: 5,
-            remaining_seconds: 5,
-            started_at: '2025-10-01T16:52:35.196Z',
-            expiration: '2025-10-01T16:52:40.196Z',
-            reason: 'task_trade' as const,
-          },
-        },
-      };
-      (
-        actionTasksTrade as jest.MockedFunction<typeof actionTasksTrade>
-      ).mockResolvedValue(responseWithoutCharacter as any);
+    it('should return false when tradeWithTasksMaster fails', async () => {
+      // Arrange - missing character data in the trade response is handled inside
+      // Character.tradeWithTasksMaster, which belongs in Character tests.
+      // Here we verify ItemTaskObjective returns false when the trade call fails.
+      mockCharacter.tradeWithTasksMaster.mockResolvedValue(false);
 
       mockCharacter.data.task = 'iron_ore';
       mockCharacter.data.task_type = 'items';
@@ -658,8 +659,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false); // Should return false due to missing character data
-      // The fix should prevent infinite loops by breaking out of the while loop
+      expect(result).toBe(false);
     });
 
     it('should handle multiple task completions', async () => {
@@ -711,8 +711,10 @@ describe('ItemTaskObjective Integration Tests', () => {
   });
 
   describe('Task management', () => {
-    it('should move to task master before trading', async () => {
-      // Arrange
+    it('should call handInTask after all items are collected', async () => {
+      // Arrange - moveToTaskMaster is called inside Character.tradeWithTasksMaster,
+      // not directly by ItemTaskObjective, so it belongs in Character tests.
+      // This test verifies that ItemTaskObjective calls handInTask once the task is done.
       mockCharacter.data.task = 'iron_ore';
       mockCharacter.data.task_type = 'items';
       mockCharacter.data.task_progress = 0;
@@ -721,17 +723,16 @@ describe('ItemTaskObjective Integration Tests', () => {
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
 
-      // Mock the Objective's moveToTaskMaster method
-      const moveToTaskMasterSpy = jest
-        .spyOn(objective, 'moveToTaskMaster')
-        .mockResolvedValue(undefined);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(true);
 
       // Act
       const result = await objective.run();
 
       // Assert
       expect(result).toBe(true);
-      expect(moveToTaskMasterSpy).toHaveBeenCalledWith('items');
+      expect(handInTaskSpy).toHaveBeenCalledWith('items');
     });
 
     it('should save job queue after each task', async () => {

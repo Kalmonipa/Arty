@@ -1,0 +1,233 @@
+import { getItemInformation } from '../api_calls/Items.js';
+import { actionTasksTrade } from '../api_calls/Tasks.js';
+import { ItemSchema, TaskTradeResponseSchema } from '../types/types.js';
+import { logger } from '../utils.js';
+import { Character } from '../character/characterClass.js';
+import { DepositObjective } from './DepositObjective.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+import { Role } from '../types/CharacterData.js';
+import { addToWishlist } from '../wishlist/functions.js';
+import { AcquisitionMethod, WishlistRequest } from '../wishlist/types.js';
+import { TasksCoin } from '../constants.js';
+
+export class ItemTaskObjective extends Objective {
+  type = 'items' as const;
+  quantity: number;
+
+  constructor(character: Character, quantity: number) {
+    super(character, `task_${quantity}_items`, 'not_started');
+
+    this.character = character;
+    this.jobFlavour = 'ItemTask';
+    this.quantity = quantity;
+    this.shouldEmitMetrics = true;
+  }
+
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
+  }
+
+  async run(): Promise<boolean> {
+    let result = false;
+
+    while (this.progress < this.quantity) {
+      if (!(await this.checkStatus())) return false;
+
+      logger.info(`Completed ${this.progress}/${this.quantity} tasks`);
+      result = await this.doTask();
+
+      if (result) {
+        const numCoinsInInv =
+          this.character.checkQuantityOfItemInInv(TasksCoin);
+
+        await this.character.executeJobNow(
+          new DepositObjective(this.character, {
+            code: TasksCoin,
+            quantity: numCoinsInInv,
+          }),
+          true,
+          true,
+          this.objectiveId,
+        );
+      }
+
+      this.progress++;
+    }
+
+    return result;
+  }
+
+  /**
+   * Executes the task loop
+   * @returns true if successful, false if not
+   */
+  async doTask(): Promise<boolean> {
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.info(`Item task attempt ${attempt}/${this.maxRetries}`);
+
+      if (!(await this.checkStatus())) return false;
+
+      if (!this.character.data.task || this.character.data.task === '') {
+        await this.startNewTask('items');
+      } else {
+        logger.info(
+          `Continuing task to collect ${this.character.data.task_total} ${this.character.data.task}. Collected ${this.character.data.task_progress} so far`,
+        );
+      }
+
+      this.character.addItemToItemsToKeep(this.character.data.task);
+
+      if (
+        this.character.data.task === 'strange_ore' ||
+        this.character.data.task === 'magic_wood' ||
+        this.character.data.task === 'magical_plank' ||
+        this.character.data.task === 'strangold_bar'
+      ) {
+        if ((await this.character.checkQuantityOfItemInBank(TasksCoin)) > 0) {
+          logger.info(
+            `${this.character.data.task} is an item we want to keep. Cancelling task`,
+          );
+          this.character.removeItemFromItemsToKeep(this.character.data.task);
+          await this.cancelCurrentTask('items');
+          continue;
+        } else {
+          logger.info(
+            `Not enough task coins to cancel. Continuing to collect ${this.character.data.task}`,
+          );
+        }
+      }
+
+      // get information on the requested item
+      const taskInfo: ApiError | ItemSchema = await getItemInformation(
+        this.character.data.task,
+      );
+      if (taskInfo instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(taskInfo);
+        if (!shouldRetry || attempt === this.maxRetries) {
+          logger.error(`Item task failed after ${attempt} attempts`);
+          return false;
+        }
+        continue;
+      }
+
+      // Process the task collection loop
+      while (
+        this.character.data.task_progress < this.character.data.task_total
+      ) {
+        if (!(await this.checkStatus())) return false;
+
+        // Gather the remaining items for the task, or fill up the remaining inv space
+        const numToGather = Math.min(
+          this.character.data.task_total - this.character.data.task_progress,
+          Math.ceil(this.character.data.inventory_max_items * 0.9),
+        );
+
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          this.character.data.task,
+        );
+
+        if (numInBank > 0) {
+          await this.character.withdrawNow(
+            Math.min(numInBank, numToGather),
+            this.character.data.task,
+          );
+        }
+
+        const numGathered = this.character.checkQuantityOfItemInInv(
+          this.character.data.task,
+        );
+
+        if (numToGather <= numGathered) {
+          if (
+            !(await this.character.tradeWithTasksMaster(
+              this.character.data.task,
+              numToGather,
+            ))
+          ) {
+            this.character.removeItemFromItemsToKeep(this.character.data.task);
+            return false;
+          }
+        } else if (taskInfo.craft) {
+          logger.debug(
+            `${taskInfo.code} is a crafted item. Crafting ${numToGather}`,
+          );
+          if (
+            !(await this.character.craftNow(
+              numToGather,
+              this.character.data.task,
+            ))
+          ) {
+            if (attempt >= this.maxRetries) {
+              this.character.removeItemFromItemsToKeep(
+                this.character.data.task,
+              );
+              logger.warn(
+                `Cancelling ${this.character.data.task} collection task`,
+              );
+              await this.cancelCurrentTask('items');
+              return false;
+            } else {
+              break;
+            }
+          }
+        } else {
+          logger.debug(
+            `${taskInfo.code} is a gather resource. Gathering ${numToGather}`,
+          );
+
+          const itemInformation = await getItemInformation(
+            this.character.data.task,
+          );
+          if (itemInformation instanceof ApiError) {
+            logger.warn(`Item info not found for ${this.character.data.task}`);
+            return false;
+          }
+          // ToDo: Make this into a reusable function that encompasses all roles and their responsibilities
+          if (
+            itemInformation.subtype !== 'fishing' &&
+            this.character.role === 'fisherman'
+          ) {
+            await this.requestIngredientFromWishlist({
+              code: itemInformation.code,
+              quantity: this.character.data.task_total,
+            });
+            return false;
+          } else {
+            // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
+            // This happens sometimes with fish when our cooking level is high
+            // but fishing might be too low to actually gather the required ingredient
+            if (
+              !(await this.character.gatherNow(
+                numToGather,
+                this.character.data.task,
+                true,
+                true,
+              ))
+            ) {
+              if (attempt >= this.maxRetries) {
+                this.character.removeItemFromItemsToKeep(
+                  this.character.data.task,
+                );
+                return false;
+              } else {
+                break;
+              }
+            }
+          }
+        }
+
+        await this.character.saveJobQueue();
+      }
+
+      if (
+        this.character.data.task_total === this.character.data.task_progress
+      ) {
+        this.character.removeItemFromItemsToKeep(this.character.data.task);
+        await this.handInTask('items');
+        return true;
+      }
+    }
+    return false;
+  }
+}

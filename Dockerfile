@@ -12,7 +12,6 @@ COPY tsconfig.json ./
 RUN npm run build &&\
  mkdir -p /app/logs &&\
  mkdir -p /app/data &&\
- touch /app/logs/arty.log &&\
  chown -R node:node /app
 
 USER node

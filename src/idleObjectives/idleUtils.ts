@@ -1,0 +1,328 @@
+import { getAllNpcItems } from '../api_calls/NPC.js';
+import { Character } from '../character/characterClass.js';
+import { ApiError } from '../core/Error.js';
+import { TradeObjective } from '../core/TradeWithNPCObjective.js';
+import { Role } from '../types/CharacterData.js';
+import { ItemSchema, ItemSlot } from '../types/types.js';
+import {
+  effectValueOf,
+  GetCharacterData,
+  getHighestCharLevel,
+  logger,
+} from '../utils.js';
+import {
+  deleteExpiredWishlistRequests,
+  getWishlistRequestsByIds,
+  deleteWishlistRequest,
+} from '../wishlist/functions.js';
+import { AcquisitionMethod } from '../wishlist/types.js';
+import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
+import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
+import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
+import { Objective } from '../core/Objective.js';
+
+/**
+ * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
+ * This function will ensure that we prioritise doing tasks to get it.
+ */
+export async function completeTasksFarmerAchievement(
+  character: Character,
+  role: Role,
+) {
+  if (
+    character.completedAchievements.find(
+      (achievement) => achievement.code === 'tasks_farmer',
+    )
+  ) {
+    return true;
+  } else {
+    logger.debug(
+      `tasks_farmer achievement not completed. Doing tasks to contribute`,
+    );
+
+    if (
+      role === 'crafter' ||
+      role === 'gearcrafter' ||
+      role === 'jewelrycrafter' ||
+      role === 'weaponcrafter'
+    ) {
+      await character.doMonsterTask(2);
+    } else {
+      await character.doItemsTask(2);
+    }
+  }
+  return true;
+}
+
+/**
+ * @description Housekeeping run during idle jobs: deletes expired wishlist
+ * requests, then resumes or drops the character's parked (onHold) jobs.
+ *
+ * For each parked job: if every request it's waiting on is fulfilled, its rows
+ * are cleaned up and the job is re-enqueued (it restarts and picks up the items
+ * now in the bank). If any request has expired or disappeared, the job is
+ * retried once, then dropped if it still can't be fulfilled.
+ */
+export async function checkOnHoldQueue(character: Character): Promise<void> {
+  await deleteExpiredWishlistRequests();
+
+  // Snapshot because resume/drop mutate character.onHold
+  for (const entry of [...character.onHold]) {
+    const requestIds = entry.waitingOn.map((r) => r.requestId);
+    const rows = await getWishlistRequestsByIds(requestIds);
+
+    const allFulfilled =
+      rows.length === requestIds.length && rows.every((r) => r.fulfilled);
+
+    if (allFulfilled) {
+      for (const id of requestIds) {
+        logger.info(`Clearing fulfilled request with ID ${id}`);
+        await deleteWishlistRequest(id);
+      }
+      character.clearOnHoldRetried(entry.job.objectiveId);
+      await character.resumeOnHoldJob(entry);
+      continue;
+    }
+
+    // A row is gone (expired and cleaned up, or deleted) — it can't be fulfilled
+    const someRequestsGone = rows.length < entry.waitingOn.length;
+    if (someRequestsGone) {
+      if (!entry.retried) {
+        logger.info(
+          `On-hold job ${entry.job.objectiveId} has an unfulfillable request; retrying once`,
+        );
+        character.markOnHoldRetried(entry.job.objectiveId);
+        await character.resumeOnHoldJob(entry);
+      } else {
+        logger.warn(
+          `Dropping on-hold job ${entry.job.objectiveId}; requests could not be fulfilled`,
+        );
+        await character.dropOnHoldJob(entry);
+      }
+    }
+    // Otherwise every request still exists but isn't fulfilled yet — keep waiting
+  }
+}
+
+export async function checkWithinLevelRange(
+  character: Character,
+): Promise<boolean> {
+  const allCharacterDetails = await GetCharacterData();
+  character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
+
+  if (character.data.level < character.highestCharLevel - 10) {
+    logger.info(
+      `Character level (${character.data.level}) is more than 10 levels behind the leader (${character.highestCharLevel}). Training ${character.highestCharLevel - character.data.level} levels`,
+    );
+    return await character.trainCombatLevelNow(character.highestCharLevel - 10);
+  }
+
+  return true;
+}
+
+const ArtifactSlots: ItemSlot[] = ['artifact1', 'artifact2', 'artifact3'];
+
+/**
+ * @description Puts an artifact the character already owns into a free artifact
+ * slot, pulling it out of the bank first when it isn't being carried.
+ * @returns false when there was no free slot or a step failed, so callers can
+ * fall back to banking the item
+ */
+async function equipOwnedArtifact(
+  character: Character,
+  code: string,
+  heldInInventory: boolean,
+): Promise<boolean> {
+  const freeSlot = ArtifactSlots.find(
+    (slot) => character.getCharacterGearIn(slot) === '',
+  );
+  if (!freeSlot) {
+    logger.debug(`No free artifact slot for ${code}, leaving it in the bank`);
+    return false;
+  }
+
+  if (!heldInInventory && !(await character.withdrawNow(1, code))) {
+    logger.warn(`Failed to withdraw ${code} to equip it`);
+    return false;
+  }
+
+  logger.info(`Equipping ${code} into ${freeSlot}`);
+  return await character.equipNow(code, freeSlot);
+}
+
+/**
+ * @description Makes sure each effect the character can benefit from is covered
+ * by an equipped artifact, buying one when they don't own it yet. Candidates for
+ * an effect are tried strongest-first: an artifact's level says nothing about how
+ * much of the effect it grants (perfect_pearl gives +100 prospecting and
+ * lich_race_trophy +50, both at level 20), and an unaffordable candidate must not
+ * hide the ones behind it.
+ */
+export async function checkAndBuyArtifacts(
+  character: Character,
+): Promise<void> {
+  if (!character.artifactsMap) {
+    logger.warn('checkAndBuyArtifacts: artifactsMap not built, skipping');
+    return;
+  }
+
+  const charLevel = character.getCharacterLevel(character.data);
+
+  for (const [effect, artifacts] of Object.entries(character.artifactsMap)) {
+    const candidates = (artifacts as ItemSchema[])
+      .filter((a) => a.level <= charLevel)
+      .sort(
+        (a, b) =>
+          effectValueOf(b, effect) - effectValueOf(a, effect) ||
+          b.level - a.level,
+      );
+
+    for (const artifact of candidates) {
+      const equipped = ArtifactSlots.some(
+        (slot) => character.getCharacterGearIn(slot) === artifact.code,
+      );
+
+      // Already worn, so this effect is covered
+      if (equipped) break;
+
+      const inInv = character.checkQuantityOfItemInInv(artifact.code);
+      const inBank = await character.checkQuantityOfItemInBank(artifact.code);
+
+      // Owning a copy is no use while it sits in the bank, so equip it rather
+      // than treating the effect as covered and moving on
+      if (inInv + inBank >= 1) {
+        await equipOwnedArtifact(character, artifact.code, inInv >= 1);
+        break;
+      }
+
+      const npcResult = await getAllNpcItems({ code: artifact.code });
+      if (npcResult instanceof ApiError || npcResult.data.length === 0) {
+        logger.debug(
+          `checkAndBuyArtifacts: no NPC sells ${artifact.code}, trying next`,
+        );
+        continue;
+      }
+
+      const validItems = npcResult.data.filter(
+        (item) => item.buy_price != null,
+      );
+      if (validItems.length === 0) {
+        logger.debug(
+          `checkAndBuyArtifacts: no valid buy_price for ${artifact.code}, trying next`,
+        );
+        continue;
+      }
+
+      const cheapest = validItems.reduce((a, b) =>
+        a.buy_price! < b.buy_price! ? a : b,
+      );
+      const { buy_price, currency } = cheapest;
+
+      const currencyInInv = character.checkQuantityOfItemInInv(currency);
+      const currencyInBank =
+        await character.checkQuantityOfItemInBank(currency);
+
+      if (currencyInInv + currencyInBank < buy_price!) {
+        logger.debug(
+          `checkAndBuyArtifacts: cannot afford ${artifact.code} (need ${buy_price} ${currency}), trying next`,
+        );
+        continue;
+      }
+
+      const bought = await character.executeJobNow(
+        new TradeObjective(character, 'buy', 1, artifact.code),
+      );
+      if (!bought) {
+        logger.warn(
+          `checkAndBuyArtifacts: failed to buy ${artifact.code}, trying next`,
+        );
+        continue;
+      }
+
+      if (!(await equipOwnedArtifact(character, artifact.code, true))) {
+        const deposited = await character.depositNow(1, artifact.code);
+        if (!deposited) {
+          logger.warn(
+            `checkAndBuyArtifacts: failed to deposit ${artifact.code}, continuing`,
+          );
+        }
+      }
+      break;
+    }
+  }
+}
+
+/**
+ * @description Checks the wishlist for any requests of a certain type
+ * Labourers primarily look at mining + woodcutting
+ * Crafter looks at weapon/gear/jewelrycrafting
+ * Alchemist looks at alchemy
+ * Fisherman looks at fishing + cooking
+ * @param acquisitionMethod The way to retrieve the requested item
+ * @returns true if successful, false if encounter some failure along the way
+ */
+export async function checkWishlistToFulfill(
+  character: Character,
+  acquisitionMethod: AcquisitionMethod,
+  parentId?: string,
+): Promise<boolean> {
+  const job = new IdentifyValidWishlistRequestsObjective(
+    character,
+    acquisitionMethod,
+  );
+  return await character.executeJobNow(job, true, true, parentId);
+}
+
+/**
+ * Completes an item task
+ * @returns true if successful, false if not
+ */
+export async function doMonsterTask(
+  character: Character,
+  parentObj?: Objective,
+  num?: number,
+): Promise<boolean> {
+  return await character.executeJobNow(
+    new MonsterTaskObjective(character, num ?? 1),
+    true,
+    true,
+    parentObj?.objectiveId,
+  );
+}
+
+/**
+ * Completes an item task
+ * @returns true if successful, false if not
+ */
+export async function doItemTask(
+  character: Character,
+  parentObj?: Objective,
+  num?: number,
+): Promise<boolean> {
+  return await character.executeJobNow(
+    new ItemTaskObjective(character, num ?? 1),
+    true,
+    true,
+    parentObj?.objectiveId,
+  );
+}
+
+export function shuffle(array: AcquisitionMethod[]): AcquisitionMethod[] {
+  const shuffledArray: AcquisitionMethod[] = [...array];
+  let currentIndex = shuffledArray.length;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [shuffledArray[currentIndex], shuffledArray[randomIndex]] = [
+      shuffledArray[randomIndex],
+      shuffledArray[currentIndex],
+    ];
+  }
+
+  return shuffledArray;
+}

@@ -10,19 +10,19 @@ import { CharacterSchema } from '../src/types/types.js';
 const characters = [
   {
     name: 'LongLegLarry',
-    skin: 'men1',
+    skin: 'vip_founder',
   },
   {
     name: 'JumpyJimmy',
-    skin: 'men3',
+    skin: 'goblin',
   },
   {
     name: 'ZippyZoe',
-    skin: 'women2',
+    skin: 'necromancer',
   },
   {
     name: 'TimidTom',
-    skin: 'men2',
+    skin: 'marauder',
   },
   {
     name: 'BouncyBella',
@@ -31,7 +31,7 @@ const characters = [
 ];
 
 // Set the API_URL if you want to use another endpoint (i.e. the test server)
-const API_BASE_URL = 'https://api.artifactsmmo.com';
+const API_BASE_URL = 'https://api.artifactsmmo.com/';
 
 interface CreateCharacterRequest {
   name: string;
@@ -71,7 +71,6 @@ async function createCharacter(
     }
 
     console.log(`Successfully created character: ${name}`);
-    console.log(`Response:`, JSON.stringify(responseData, null, 2));
 
     return {
       success: true,

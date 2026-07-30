@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { TrainCombatObjective } from '../../src/objectives/TrainCombatObjective.js';
+import { TrainCombatObjective } from '../../src/core/TrainCombatObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Monsters', () => ({
@@ -11,6 +11,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 
 // Import the mocked functions
 import { getAllMonsterInformation } from '../../src/api_calls/Monsters.js';
+import { BankCache } from '../../src/core/BankCache.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -23,6 +24,14 @@ class SimpleMockCharacter {
   simulateFightNow = jest.fn(async (): Promise<boolean> => {
     return true;
   });
+
+  proposeCombatLoadout = jest.fn(
+    async (mobCode: string, _cache?: BankCache): Promise<any> => {
+      return { level: this.data.level, weapon_slot: `weapon_for_${mobCode}` };
+    },
+  );
+
+  getAllBankItems = jest.fn(async () => []);
 
   fightNow = jest.fn(async (): Promise<boolean> => {
     // Simulate level progression
@@ -139,6 +148,7 @@ const mockMonsterData = {
   ],
   total: 2,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -226,6 +236,25 @@ describe('TrainCombatObjective Integration Tests', () => {
       });
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
       expect(mockCharacter.fightNow).toHaveBeenCalled();
+    });
+
+    it('builds a bank snapshot and passes it to every proposeCombatLoadout call', async () => {
+      mockCharacter.data.level = 10;
+      mockCharacter.getCharacterLevel.mockReturnValue(10);
+      mockCharacter.fightNow.mockImplementation(async () => {
+        mockCharacter.data.level = 15;
+        mockCharacter.getCharacterLevel.mockReturnValue(15);
+        return true;
+      });
+
+      await trainCombatObjective.run();
+
+      expect(mockCharacter.getAllBankItems).toHaveBeenCalled();
+      const loadoutCalls = mockCharacter.proposeCombatLoadout.mock.calls;
+      expect(loadoutCalls.length).toBeGreaterThan(0);
+      for (const call of loadoutCalls) {
+        expect(call[1]).toBeInstanceOf(BankCache);
+      }
     });
 
     it('should find and fight suitable mobs in descending order', async () => {
@@ -326,6 +355,7 @@ describe('TrainCombatObjective Integration Tests', () => {
         data: [],
         total: 0,
         page: 1,
+        pages: 1,
         size: 50,
       };
       (
@@ -557,6 +587,7 @@ describe('TrainCombatObjective Integration Tests', () => {
         ],
         total: 1,
         page: 1,
+        pages: 1,
         size: 50,
       };
       mockCharacter.data.level = 10; // Start below target level
@@ -589,6 +620,54 @@ describe('TrainCombatObjective Integration Tests', () => {
         expect.any(Array),
         'ogre',
       );
+    });
+  });
+
+  describe('In-memory gear evaluation during search', () => {
+    it('proposes a loadout per candidate and does not equip until a sim passes', async () => {
+      mockCharacter.data.level = 10;
+      mockCharacter.getCharacterLevel.mockReturnValue(10);
+
+      // Candidates iterate from the end: blue_slime first (loses), then red_slime (wins)
+      mockCharacter.simulateFightNow
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true);
+      mockCharacter.fightNow.mockImplementation(async () => {
+        mockCharacter.data.level = 15;
+        mockCharacter.getCharacterLevel.mockReturnValue(15);
+        return true;
+      });
+
+      await trainCombatObjective.run();
+
+      expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
+        'blue_slime',
+        expect.any(BankCache),
+      );
+      expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
+        'red_slime',
+        expect.any(BankCache),
+      );
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
+        [{ level: 10, weapon_slot: 'weapon_for_blue_slime' }],
+        'blue_slime',
+      );
+      expect(mockCharacter.evaluateGear).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.evaluateGear).toHaveBeenCalledWith(
+        'combat',
+        'red_slime',
+      );
+    });
+
+    it('never equips when no candidate simulation passes', async () => {
+      mockCharacter.data.level = 10;
+      mockCharacter.getCharacterLevel.mockReturnValue(10);
+      mockCharacter.simulateFightNow.mockResolvedValue(false);
+
+      await trainCombatObjective.run();
+
+      expect(mockCharacter.evaluateGear).not.toHaveBeenCalled();
+      expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
-import { CraftObjective } from '../../src/objectives/CraftObjective.js';
+import { CraftObjective } from '../../src/core/CraftObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Actions', () => ({
@@ -15,18 +15,20 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(),
+jest.mock('../../src/wishlist/functions', () => ({
+  addToWishlist: jest.fn(),
 }));
 
 // Import the mocked functions
 import { actionCraft } from '../../src/api_calls/Actions.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { getMaps } from '../../src/api_calls/Maps.js';
+import { addToWishlist } from '../../src/wishlist/functions.js';
+import { Role } from '../../src/types/CharacterData.js';
 
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
+  role?: Role;
 
   itemsToKeep = [];
 
@@ -80,9 +82,10 @@ class SimpleMockCharacter {
   );
 
   move = jest.fn(
-    async (destination: { x: number; y: number }): Promise<void> => {
+    async (destination: { x: number; y: number }): Promise<boolean> => {
       this.data.x = destination.x;
       this.data.y = destination.y;
+      return true;
     },
   );
 
@@ -90,6 +93,10 @@ class SimpleMockCharacter {
     (maps: MapSchema[]): { x: number; y: number } => {
       return { x: maps[0].x, y: maps[0].y };
     },
+  );
+
+  findMaps = jest.fn(
+    (): MapSchema[] => mockWorkshopMapData.data as MapSchema[],
   );
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
@@ -102,6 +109,14 @@ class SimpleMockCharacter {
 
   removeItemFromItemsToKeep = jest.fn((): void => {
     // Mock implementation
+  });
+
+  removeItemListfromItemsToKeep = jest.fn((): void => {
+    // Mock implementation
+  });
+
+  addItemToItemsToKeep = jest.fn((): void => {
+    // Nothing here
   });
 
   addItemToInventory = (code: string, quantity: number): void => {
@@ -137,6 +152,12 @@ class SimpleMockCharacter {
   isCancelled = jest.fn((): boolean => {
     return false;
   });
+
+  getCharacterLevel = jest.fn((): number => {
+    return 10;
+  });
+
+  addBlockingWishlistRequest = jest.fn();
 }
 
 // Mock response data
@@ -188,6 +209,7 @@ const mockWorkshopMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -203,7 +225,7 @@ const mockCraftableItemData: ItemSchema = {
     {
       code: 'level',
       operator: 'gt',
-      value: '9',
+      value: 9,
     },
   ],
   effects: [
@@ -274,6 +296,29 @@ const mockFeatherItemData: ItemSchema = {
   effects: [],
 };
 
+const mockMultiOutputItemData: ItemSchema = {
+  name: 'Small Health Potion',
+  code: 'small_health_potion',
+  level: 5,
+  type: 'utility',
+  subtype: 'potion',
+  description: 'A compact potion that restores a bit of health.',
+  conditions: [],
+  effects: [],
+  craft: {
+    skill: 'alchemy',
+    level: 5,
+    items: [
+      {
+        code: 'sunflower',
+        quantity: 3,
+      },
+    ],
+    quantity: 2,
+  },
+  tradeable: true,
+};
+
 const mockMobDropData: ItemSchema = {
   name: 'Cowhide',
   code: 'cowhide',
@@ -312,8 +357,8 @@ describe('CraftObjective Integration Tests', () => {
     craftObjective = new CraftObjective(mockCharacter as any, target);
 
     // Set up default mock responses
-    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-      mockWorkshopMapData,
+    mockCharacter.findMaps.mockReturnValue(
+      mockWorkshopMapData.data as MapSchema[],
     );
     (actionCraft as jest.MockedFunction<typeof actionCraft>).mockResolvedValue(
       mockCraftResponse,
@@ -374,6 +419,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should successfully craft items when all ingredients are available', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       mockCharacter.addItemToInventory('iron_bar', 30);
       mockCharacter.addItemToInventory('feather', 10);
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
@@ -396,7 +442,7 @@ describe('CraftObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(getMaps).toHaveBeenCalledWith({
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
         content_code: 'weaponcrafting',
         content_type: 'workshop',
       });
@@ -408,6 +454,68 @@ describe('CraftObjective Integration Tests', () => {
         }),
         { code: 'iron_sword', quantity: 5 },
       );
+    });
+
+    it('should craft half as many times for recipes that yield 2 per craft', async () => {
+      // Arrange — small_health_potion yields 2 per craft, so 8 potions = 4 crafts
+      mockCharacter.role = 'healer';
+      const potionTarget = { code: 'small_health_potion', quantity: 8 };
+      const potionObjective = new CraftObjective(
+        mockCharacter as any,
+        potionTarget,
+      );
+      mockCharacter.data.inventory_max_items = 100;
+
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockMultiOutputItemData);
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'sunflower' ? 12 : 0),
+      );
+
+      // Act
+      const result = await potionObjective.run();
+
+      // Assert — 4 crafts (not 8), each consuming 3 sunflower = 12 total
+      expect(result).toBe(true);
+      expect(potionObjective.numCraftsPerBatch).toBe(4);
+      expect(actionCraft).toHaveBeenCalledTimes(1);
+      expect(actionCraft).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'TestCharacter' }),
+        { code: 'small_health_potion', quantity: 4 },
+      );
+      expect(potionObjective.progress).toBe(8);
+    });
+
+    it('should round crafts up when target is not a multiple of the yield', async () => {
+      // Arrange — 5 potions at 2 per craft needs 3 crafts (yields 6)
+      mockCharacter.role = 'healer';
+      const potionTarget = { code: 'small_health_potion', quantity: 5 };
+      const potionObjective = new CraftObjective(
+        mockCharacter as any,
+        potionTarget,
+      );
+      mockCharacter.data.inventory_max_items = 100;
+
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockMultiOutputItemData);
+
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'sunflower' ? 9 : 0),
+      );
+
+      // Act
+      const result = await potionObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(actionCraft).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'TestCharacter' }),
+        { code: 'small_health_potion', quantity: 3 },
+      );
+      expect(potionObjective.progress).toBe(6);
     });
 
     it('should handle items with no craft information', async () => {
@@ -422,6 +530,7 @@ describe('CraftObjective Integration Tests', () => {
   describe('Ingredient gathering', () => {
     it('should withdraw ingredients from bank when available', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
         (code: string) => {
           switch (code) {
@@ -462,6 +571,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should gather ingredients when not in bank', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       // Track inventory state - after gathering, we should have the required amount
       let ironBarInInv = 10;
       let featherInInv = 0;
@@ -507,6 +617,7 @@ describe('CraftObjective Integration Tests', () => {
         'iron_bar',
         true,
         false,
+        false,
       );
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
         10,
@@ -518,6 +629,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should craft sub-ingredients when they are craftable', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const craftableIngredientData = {
         ...mockIngredientItemData,
         craft: {
@@ -591,6 +703,7 @@ describe('CraftObjective Integration Tests', () => {
         'iron_bar',
         true,
         false,
+        false,
       );
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
         10,
@@ -602,6 +715,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should handle mob drop ingredients', async () => {
       // Arrange - Create a recipe that uses cowhide as an ingredient
+      mockCharacter.role = 'crafter';
       const mockCraftableItemWithMobDrop: ItemSchema = {
         ...mockCraftableItemData,
         craft: {
@@ -682,9 +796,67 @@ describe('CraftObjective Integration Tests', () => {
     });
   });
 
+  describe('Resuming after a restart', () => {
+    // A resumed job re-enters run() from the top with its persisted progress,
+    // so it has to work out what's left rather than starting the order again.
+    beforeEach(() => {
+      mockCharacter.role = 'crafter';
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30;
+            case 'feather':
+              return 10;
+            default:
+              return 0;
+          }
+        },
+      );
+    });
+
+    it('crafts only what is outstanding, not the whole order again', async () => {
+      craftObjective.progress = 3;
+
+      const result = await craftObjective.run();
+
+      expect(result).toBe(true);
+      expect(actionCraft).toHaveBeenCalledWith(expect.anything(), {
+        code: 'iron_sword',
+        quantity: 2,
+      });
+      expect(craftObjective.progress).toBe(5);
+    });
+
+    it('withdraws the finished items so the caller can see them', async () => {
+      // Batches were deposited before the restart, so the job is done but the
+      // items are in the bank and the caller checks the inventory.
+      craftObjective.progress = 5;
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
+
+      const result = await craftObjective.run();
+
+      expect(result).toBe(true);
+      expect(actionCraft).not.toHaveBeenCalled();
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_sword');
+    });
+
+    it('does not withdraw when the items are already carried', async () => {
+      craftObjective.progress = 5;
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(5);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
+
+      const result = await craftObjective.run();
+
+      expect(result).toBe(true);
+      expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Batch processing', () => {
     it('should handle single batch when inventory space is sufficient', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       // Set a high inventory limit to avoid batching
       mockCharacter.data.inventory_max_items = 100;
 
@@ -709,11 +881,12 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(craftObjective.numBatches).toBe(1);
-      expect(craftObjective.numItemsPerBatch).toBe(5);
+      expect(craftObjective.numCraftsPerBatch).toBe(5);
     });
 
     it('should handle batch calculation for reasonable quantities', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const reasonableTarget = { code: 'iron_sword', quantity: 5 }; // Smaller quantity to avoid recursion
       const reasonableCraftObjective = new CraftObjective(
         mockCharacter as any,
@@ -743,13 +916,225 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(reasonableCraftObjective.numBatches).toBeGreaterThanOrEqual(1);
-      expect(reasonableCraftObjective.numItemsPerBatch).toBeGreaterThan(0);
+      expect(reasonableCraftObjective.numCraftsPerBatch).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Role gating', () => {
+    it('wishlists and returns false when the character role does not match the craft skill', async () => {
+      // Arrange — iron_sword needs weaponcrafting, but this character is a healer.
+      // Returning false stops the caller proceeding as if the item now exists.
+      mockCharacter.role = 'healer';
+
+      // Act
+      const result = await craftObjective.run();
+
+      // Assert
+      expect(result).toBe(false);
+      expect(addToWishlist).toHaveBeenCalledWith({
+        itemCode: 'iron_sword',
+        quantity: 5,
+        characterName: 'TestCharacter',
+        acquisitionMethod: 'weaponcrafting',
+      });
+      expect(actionCraft).not.toHaveBeenCalled();
+    });
+
+    it('crafts without posting to the wishlist when the role matches the craft skill', async () => {
+      // Arrange — iron_sword needs weaponcrafting, and this is a crafter
+      mockCharacter.role = 'crafter';
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) =>
+          code === 'iron_bar' ? 30 : code === 'feather' ? 10 : 0,
+      );
+
+      // Act
+      const result = await craftObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(actionCraft).toHaveBeenCalled();
+    });
+
+    it('does not gate on role for craft skills with no assigned role', async () => {
+      // Arrange — cooking has no dedicated role, so any role may craft it
+      mockCharacter.role = 'crafter';
+      const cookedTarget = { code: 'cooked_gudgeon', quantity: 1 };
+      const cookedObjective = new CraftObjective(
+        mockCharacter as any,
+        cookedTarget,
+      );
+      const cookingItem: ItemSchema = {
+        name: 'Cooked Gudgeon',
+        code: 'cooked_gudgeon',
+        level: 1,
+        type: 'consumable',
+        subtype: 'food',
+        description: 'A cooked fish.',
+        conditions: [],
+        effects: [],
+        craft: {
+          skill: 'cooking',
+          level: 1,
+          items: [{ code: 'gudgeon', quantity: 1 }],
+          quantity: 1,
+        },
+        tradeable: true,
+      };
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(cookingItem);
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'gudgeon' ? 10 : 0),
+      );
+
+      // Act
+      const result = await cookedObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(actionCraft).toHaveBeenCalled();
+    });
+  });
+
+  describe('blockOnMissing', () => {
+    const mockCustomItem: ItemSchema = {
+      name: 'Custom Item',
+      code: 'custom_item',
+      level: 10,
+      type: 'weapon',
+      subtype: '',
+      description: '',
+      conditions: [],
+      effects: [],
+      craft: {
+        skill: 'weaponcrafting',
+        level: 10,
+        items: [
+          { code: 'ore_a', quantity: 1 },
+          { code: 'ore_b', quantity: 1 },
+        ],
+        quantity: 1,
+      },
+      tradeable: true,
+    };
+    const gatherableOre = (code: string): ItemSchema => ({
+      name: code,
+      code,
+      level: 10,
+      type: 'resource',
+      subtype: 'mining',
+      description: '',
+      conditions: [],
+      effects: [],
+      craft: null,
+      tradeable: true,
+    });
+
+    it('wishlists every unobtainable ingredient, keeps going, and fails so it can be parked', async () => {
+      // Arrange
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'custom_item') return Promise.resolve(mockCustomItem);
+        return Promise.resolve(gatherableOre(code));
+      });
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.gatherNow.mockResolvedValue(false); // can't gather either ore
+      (addToWishlist as jest.MockedFunction<typeof addToWishlist>)
+        .mockResolvedValueOnce(101)
+        .mockResolvedValueOnce(102);
+
+      const objective = new CraftObjective(
+        mockCharacter as any,
+        { code: 'custom_item', quantity: 1 },
+        undefined,
+        undefined,
+        true, // blockOnMissing
+      );
+
+      // Act
+      const result = await objective.run();
+
+      // Assert — both ingredients requested (didn't bail on the first), job fails
+      expect(result).toBe(false);
+      expect(addToWishlist).toHaveBeenCalledTimes(2);
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
+        101,
+        'ore_a',
+        1,
+      );
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
+        102,
+        'ore_b',
+        1,
+      );
+      expect(actionCraft).not.toHaveBeenCalled();
+    });
+
+    it('does not wishlist ingredients when blockOnMissing is false (default)', async () => {
+      // Arrange
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'custom_item') return Promise.resolve(mockCustomItem);
+        return Promise.resolve(gatherableOre(code));
+      });
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.gatherNow.mockResolvedValue(false);
+
+      const objective = new CraftObjective(mockCharacter as any, {
+        code: 'custom_item',
+        quantity: 1,
+      });
+
+      // Act
+      const result = await objective.run();
+
+      // Assert — bails on the first missing ingredient, no wishlist
+      expect(result).toBe(false);
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(mockCharacter.addBlockingWishlistRequest).not.toHaveBeenCalled();
     });
   });
 
   describe('Error handling', () => {
+    it('does not attempt to craft when moving to the workshop fails', async () => {
+      // Arrange — ingredients present, but the workshop is unreachable (move returns false).
+      mockCharacter.role = 'crafter';
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          switch (code) {
+            case 'iron_bar':
+              return 30;
+            case 'feather':
+              return 10;
+            default:
+              return 0;
+          }
+        },
+      );
+      mockCharacter.move.mockResolvedValue(false);
+
+      // Act
+      const result = await craftObjective.run();
+
+      // Assert — must not craft at the wrong tile (which would yield a misleading 598)
+      expect(result).toBe(false);
+      expect(actionCraft).not.toHaveBeenCalled();
+    });
+
     it('should handle API errors and retry', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const apiError = new ApiError({ code: 500, message: 'Server error' });
       (actionCraft as jest.MockedFunction<typeof actionCraft>)
         .mockResolvedValueOnce(apiError)
@@ -785,6 +1170,7 @@ describe('CraftObjective Integration Tests', () => {
 
     it('should return false when max retries exceeded', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const apiError = new ApiError({ code: 500, message: 'Server error' });
       (
         actionCraft as jest.MockedFunction<typeof actionCraft>
@@ -835,46 +1221,10 @@ describe('CraftObjective Integration Tests', () => {
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
     });
 
-    it('should handle getMaps API error', async () => {
-      // Arrange
-      const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        apiError,
-      );
-      mockCharacter.handleErrors.mockResolvedValue(false);
-      // Mock having enough ingredients for crafting
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
-        (code: string) => {
-          switch (code) {
-            case 'iron_bar':
-              return 30; // Have enough for 5 swords
-            case 'feather':
-              return 10; // Have enough for 5 swords
-            case 'iron_sword':
-              return 0;
-            default:
-              return 0;
-          }
-        },
-      );
-      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
-
-      // Act
-      const result = await craftObjective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-    });
-
     it('should handle no workshop maps found', async () => {
       // Arrange
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue({
-        data: [],
-        total: 0,
-        page: 1,
-        size: 50,
-      });
+      mockCharacter.role = 'crafter';
+      mockCharacter.findMaps.mockReturnValue([]);
       // Mock having enough ingredients for crafting
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
         (code: string) => {
@@ -896,12 +1246,13 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true); // Should return true but log error
+      expect(result).toBe(false); // Should return false but log error
       expect(actionCraft).not.toHaveBeenCalled();
     });
 
     it('should handle missing character data in response', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const responseWithoutCharacter = {
         data: {
           // Missing character data
@@ -939,6 +1290,7 @@ describe('CraftObjective Integration Tests', () => {
   describe('Cancellation handling', () => {
     it('should return false when objective is cancelled during execution', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       mockCharacter.isCancelled.mockReturnValue(true);
       // Mock having enough ingredients for crafting
       mockCharacter.checkQuantityOfItemInInv.mockImplementation(
@@ -979,6 +1331,7 @@ describe('CraftObjective Integration Tests', () => {
   describe('Movement and location', () => {
     it('should move to workshop location before crafting', async () => {
       // Arrange
+      mockCharacter.role = 'crafter';
       const customWorkshopMap = {
         data: [
           {
@@ -994,10 +1347,11 @@ describe('CraftObjective Integration Tests', () => {
         ],
         total: 1,
         page: 1,
+        pages: 1,
         size: 50,
       };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        customWorkshopMap,
+      mockCharacter.findMaps.mockReturnValue(
+        customWorkshopMap.data as MapSchema[],
       );
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
       // Mock having enough ingredients for crafting

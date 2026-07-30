@@ -1,15 +1,22 @@
 import { jest } from '@jest/globals';
-import { Character } from '../../src/objectives/Character.js';
+import { Character } from '../../src/character/characterClass.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ItemSchema, SimpleEffectSchema } from '../../src/types/types.js';
+import {
+  CharacterSchema,
+  ItemSchema,
+  SimpleEffectSchema,
+} from '../../src/types/types.js';
 
 // Mock the necessary modules
 jest.mock('../../src/api_calls/Items', () => ({
   actionEquipItem: jest.fn(),
+  actionUse: jest.fn(),
+  getItemInformation: jest.fn(),
+  getAllItemInformation: jest.fn(),
 }));
 
-jest.mock('../../src/objectives/CraftObjective', () => ({
+jest.mock('../../src/core/CraftObjective', () => ({
   CraftObjective: jest.fn(),
 }));
 
@@ -66,7 +73,6 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       boost_res_water: [],
     };
 
-    character.maxEquippedUtilities = 100;
     character.data.utility2_slot_quantity = 0;
     character.data.utility2_slot = '';
 
@@ -96,11 +102,9 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       return item ? item.quantity : 0;
     }) as jest.MockedFunction<(code: string) => number>;
 
-    character.checkQuantityOfItemInBank = jest.fn(
-      async (): Promise<number> => {
-        return 0; // Default to 0, can be overridden in tests
-      },
-    ) as jest.MockedFunction<(code: string) => Promise<number>>;
+    character.checkQuantityOfItemInBank = jest.fn(async (): Promise<number> => {
+      return 0; // Default to 0, can be overridden in tests
+    }) as jest.MockedFunction<(code: string) => Promise<number>>;
 
     character.withdrawNow = jest.fn(
       async (quantity: number, code: string): Promise<boolean> => {
@@ -126,11 +130,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         return true;
       },
     ) as jest.MockedFunction<
-      (
-        code: string,
-        slot: string,
-        quantity?: number,
-      ) => Promise<boolean>
+      (code: string, slot: string, quantity?: number) => Promise<boolean>
     >;
 
     character.craftNow = jest.fn(
@@ -143,12 +143,16 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       (quantity: number, code: string) => Promise<boolean>
     >;
 
-    character.getCharacterLevel = jest.fn((skillName?: string): number => {
-      if (skillName === 'alchemy') {
-        return character.data.alchemy_level;
-      }
-      return character.data.level;
-    }) as jest.MockedFunction<(skillName?: string) => number>;
+    character.getCharacterLevel = jest.fn(
+      (char: CharacterSchema, skillName?: string): number => {
+        if (skillName === 'alchemy') {
+          return char.alchemy_level;
+        }
+        return char.level;
+      },
+    ) as jest.MockedFunction<
+      (char?: CharacterSchema, skillName?: string) => number
+    >;
 
     // Expose helper function for tests
     (character as any).addItemToInventory = addItemToInventory;
@@ -432,9 +436,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       // Create utilities map with only restore utilities
       character.utilitiesMap = {
         antipoison: [],
-        restore: [
-          createMockUtility('health_potion', 'Health Potion', 1, 0),
-        ],
+        restore: [createMockUtility('health_potion', 'Health Potion', 1, 0)],
         boost_dmg_air: [],
         boost_dmg_earth: [],
         boost_dmg_fire: [],
@@ -586,7 +588,6 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         description: 'Poison effect',
       };
       character.data.utility2_slot_quantity = 50;
-      character.maxEquippedUtilities = 100;
       (character as any).addItemToInventory('weak_antidote', 100);
 
       // Act

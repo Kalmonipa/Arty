@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
-import { DepositObjective } from '../../src/objectives/DepositObjective.js';
+import { DepositObjective } from '../../src/core/DepositObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { MapSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Actions', () => ({
@@ -91,6 +91,49 @@ class SimpleMockCharacter {
       }
     }
   };
+
+  getAvailableBanks = jest.fn(
+    async (): Promise<MapSchema[]> => [
+      {
+        map_id: 334,
+        name: 'City',
+        skin: 'forest_bank1',
+        x: 4,
+        y: 1,
+        layer: 'overworld',
+        access: {
+          type: 'standard',
+          conditions: [],
+        },
+        interactions: {
+          content: {
+            type: 'bank',
+            code: 'bank',
+          },
+          transition: null,
+        },
+      },
+      {
+        map_id: 955,
+        name: 'Forest',
+        skin: 'forest_bank2',
+        x: 7,
+        y: 13,
+        layer: 'overworld',
+        access: {
+          type: 'standard',
+          conditions: [],
+        },
+        interactions: {
+          content: {
+            type: 'bank',
+            code: 'bank',
+          },
+          transition: null,
+        },
+      },
+    ],
+  );
 }
 
 // Mock response data
@@ -174,6 +217,7 @@ const mockBankMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -233,8 +277,8 @@ describe('DepositObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(getMaps).toHaveBeenCalledWith({ content_type: 'bank' });
-      expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
+      expect(mockCharacter.getAvailableBanks).toHaveBeenCalled();
+      expect(mockCharacter.move).toHaveBeenCalledWith({ x: 4, y: 1 });
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -364,39 +408,6 @@ describe('DepositObjective Integration Tests', () => {
       expect(actionDepositItems).toHaveBeenCalledTimes(3); // maxRetries = 3
     });
 
-    it('should handle bank not found error', async () => {
-      // Arrange
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue({
-        data: [],
-        total: 0,
-        page: 1,
-        size: 50,
-      });
-
-      // Act
-      const result = await depositObjective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(actionDepositItems).not.toHaveBeenCalled();
-    });
-
-    it('should handle getMaps API error', async () => {
-      // Arrange
-      const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        apiError,
-      );
-      mockCharacter.handleErrors.mockResolvedValue(false);
-
-      // Act
-      const result = await depositObjective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-    });
-
     it('should handle missing character data in response', async () => {
       // Arrange
       const responseWithoutCharacter = {
@@ -507,27 +518,6 @@ describe('DepositObjective Integration Tests', () => {
 
   describe('Movement and location', () => {
     it('should move to bank location before depositing', async () => {
-      // Arrange
-      const customBankMap = {
-        data: [
-          {
-            map_id: 2,
-            name: 'Custom Bank',
-            skin: 'bank',
-            x: 200,
-            y: 300,
-            layer: 'overworld' as const,
-            access: { type: 'standard' as const },
-            interactions: {},
-          },
-        ],
-        total: 1,
-        page: 1,
-        size: 50,
-      };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        customBankMap,
-      );
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
       mockCharacter.executeJobNow.mockResolvedValue(true);
 
@@ -536,9 +526,7 @@ describe('DepositObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.evaluateClosestMap).toHaveBeenCalledWith(
-        customBankMap.data,
-      );
+      expect(mockCharacter.evaluateClosestMap).toHaveBeenCalled();
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 200, y: 300 });
     });
   });

@@ -8,10 +8,13 @@ on:
 env:
   REGISTRY: forgejo.kalmonipa.net
   IMAGE_NAME: kalmonipa/arty
-  DOCKER_HOST: tcp://dind:2375
+  DOCKER_HOST: unix:///var/run/docker.sock
+  DEPLOY_STACK: Arty
   API_TOKEN: some-test-token
   CHARACTER_NAME: some-character
   ROLE: some-role
+  DB_HOST: some-host
+  DB_PASSWORD: some-pass
 
 jobs:
   build-and-push:
@@ -48,6 +51,42 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_tag.outputs.tag }}
-      - name: Clean up Docker images
+      - name: Get containers
         run: |
-          docker image prune -af --filter "until=2h"
+          docker ps
+      - name: Deploy to server
+        run: |
+          set -euo pipefail
+
+          HOST="${{ secrets.DEPLOY_HOST }}"
+          USER="${{ secrets.DEPLOY_USER }}"
+          PORT="${{ secrets.DEPLOY_PORT }}"
+          PORT="${PORT:-22}"
+
+          if [ -z "$HOST" ] || [ -z "$USER" ]; then
+            echo "ERROR: DEPLOY_HOST and DEPLOY_USER secrets must be set"
+            exit 1
+          fi
+
+          command -v ssh >/dev/null || {
+            apt-get update -qq && apt-get install -y -qq openssh-client
+          }
+
+          # Without this a routing problem surfaces as a long SSH hang rather
+          # than a clear failure.
+          if ! timeout 5 bash -c "cat < /dev/null > /dev/tcp/$HOST/$PORT"; then
+            echo "ERROR: cannot reach $HOST:$PORT from the runner"
+            exit 1
+          fi
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # authorized_keys forces the deploy command, so this argument is
+          # ignored and the stack cannot be chosen from here.
+          ssh -i ~/.ssh/deploy_key -p "$PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "$USER@$HOST" "deploy ${{ env.DEPLOY_STACK }}"

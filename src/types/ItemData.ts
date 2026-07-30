@@ -1,6 +1,6 @@
 import { GatheringSkill } from './types.js';
 
-export type ConsumableEffects = 'heal' | 'teleport_x' | 'teleport_y';
+export type ConsumableEffects = 'heal' | 'teleport';
 
 export type GearEffects =
   | 'critical_strike'

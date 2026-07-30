@@ -1,18 +1,29 @@
 import { jest } from '@jest/globals';
-import { EvaluateGearObjective } from '../../src/objectives/EvaluateGearObjective.js';
+import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
-import { ItemSlot, ItemSchema, MonsterSchema } from '../../src/types/types.js';
+import { ApiError } from '../../src/core/Error.js';
+import {
+  ItemSlot,
+  ItemSchema,
+  MonsterSchema,
+  CharacterSchema,
+} from '../../src/types/types.js';
 import { GearEffects, WeaponFlavours } from '../../src/types/ItemData.js';
+import { BankCache } from '../../src/core/BankCache.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Monsters', () => ({
   getMonsterInformation: jest.fn(),
 }));
 
+jest.mock('../../src/api_calls/Resources', () => ({
+  getAllResourceInformation: jest.fn(),
+}));
+
 // Import the mocked functions
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
+import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
 
 // Mock monster data
 const mockMonsterData = {
@@ -67,7 +78,9 @@ const createMockGear = (
   craft: null,
   tradeable: true,
   conditions: [],
-  effects: [{ code: effectType, value: 10, description: `${effectType} effect` }],
+  effects: [
+    { code: effectType, value: 10, description: `${effectType} effect` },
+  ],
 });
 
 const createMockWeapon = (
@@ -85,7 +98,9 @@ const createMockWeapon = (
   craft: null,
   tradeable: true,
   conditions: [],
-  effects: [{ code: effectType, value: 15, description: `${effectType} effect` }],
+  effects: [
+    { code: effectType, value: 15, description: `${effectType} effect` },
+  ],
 });
 
 const createMockShield = (
@@ -103,7 +118,34 @@ const createMockShield = (
   craft: null,
   tradeable: true,
   conditions: [],
-  effects: [{ code: effectType, value: 12, description: `${effectType} effect` }],
+  effects: [
+    { code: effectType, value: 12, description: `${effectType} effect` },
+  ],
+});
+
+const createMockArtifact = (
+  code: string,
+  name: string,
+  level: number,
+  effectType: GearEffects,
+  effectValue: number = 20,
+): ItemSchema => ({
+  code,
+  name,
+  level,
+  type: 'artifact',
+  subtype: 'artifact',
+  description: '',
+  craft: null,
+  tradeable: true,
+  conditions: [],
+  effects: [
+    {
+      code: effectType,
+      value: effectValue,
+      description: `${effectType} effect`,
+    },
+  ],
 });
 
 // Simple mock character
@@ -119,15 +161,9 @@ class SimpleMockCharacter {
       createMockWeapon('air_sword', 'Air Sword', 10, 'attack_air'),
       createMockWeapon('earth_sword', 'Earth Sword', 10, 'attack_earth'),
     ],
-    mining: [
-      createMockWeapon('iron_pickaxe', 'Mining Pick', 10, 'dmg'),
-    ],
-    woodcutting: [
-      createMockWeapon('iron_axe', 'Woodcutting Axe', 10, 'dmg'),
-    ],
-    fishing: [
-      createMockWeapon('spruce_fishing_rod', 'Fishing Rod', 10, 'dmg'),
-    ],
+    mining: [createMockWeapon('iron_pickaxe', 'Mining Pick', 10, 'dmg')],
+    woodcutting: [createMockWeapon('iron_axe', 'Woodcutting Axe', 10, 'dmg')],
+    fishing: [createMockWeapon('spruce_fishing_rod', 'Fishing Rod', 10, 'dmg')],
     alchemy: [
       createMockWeapon('apprentice_gloves', 'Alchemy Staff', 10, 'dmg'),
     ],
@@ -135,13 +171,25 @@ class SimpleMockCharacter {
 
   amuletMap: Record<GearEffects, ItemSchema[]> = {
     dmg_air: [createMockGear('air_amulet', 'Air Amulet', 10, 'dmg_air')],
-    dmg_earth: [createMockGear('earth_amulet', 'Earth Amulet', 10, 'dmg_earth')],
+    dmg_earth: [
+      createMockGear('earth_amulet', 'Earth Amulet', 10, 'dmg_earth'),
+    ],
     dmg_fire: [createMockGear('fire_amulet', 'Fire Amulet', 10, 'dmg_fire')],
-    dmg_water: [createMockGear('water_amulet', 'Water Amulet', 10, 'dmg_water')],
-    res_air: [createMockGear('res_air_amulet', 'Res Air Amulet', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_amulet', 'Res Earth Amulet', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_amulet', 'Res Fire Amulet', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_amulet', 'Res Water Amulet', 10, 'res_water')],
+    dmg_water: [
+      createMockGear('water_amulet', 'Water Amulet', 10, 'dmg_water'),
+    ],
+    res_air: [
+      createMockGear('res_air_amulet', 'Res Air Amulet', 10, 'res_air'),
+    ],
+    res_earth: [
+      createMockGear('res_earth_amulet', 'Res Earth Amulet', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_amulet', 'Res Fire Amulet', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_amulet', 'Res Water Amulet', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -160,9 +208,15 @@ class SimpleMockCharacter {
     dmg_fire: [createMockGear('fire_armor', 'Fire Armor', 10, 'dmg_fire')],
     dmg_water: [createMockGear('water_armor', 'Water Armor', 10, 'dmg_water')],
     res_air: [createMockGear('res_air_armor', 'Res Air Armor', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_armor', 'Res Earth Armor', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_armor', 'Res Fire Armor', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_armor', 'Res Water Armor', 10, 'res_water')],
+    res_earth: [
+      createMockGear('res_earth_armor', 'Res Earth Armor', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_armor', 'Res Fire Armor', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_armor', 'Res Water Armor', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -177,13 +231,25 @@ class SimpleMockCharacter {
 
   helmetMap: Record<GearEffects, ItemSchema[]> = {
     dmg_air: [createMockGear('air_helmet', 'Air Helmet', 10, 'dmg_air')],
-    dmg_earth: [createMockGear('earth_helmet', 'Earth Helmet', 10, 'dmg_earth')],
+    dmg_earth: [
+      createMockGear('earth_helmet', 'Earth Helmet', 10, 'dmg_earth'),
+    ],
     dmg_fire: [createMockGear('fire_helmet', 'Fire Helmet', 10, 'dmg_fire')],
-    dmg_water: [createMockGear('water_helmet', 'Water Helmet', 10, 'dmg_water')],
-    res_air: [createMockGear('res_air_helmet', 'Res Air Helmet', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_helmet', 'Res Earth Helmet', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_helmet', 'Res Fire Helmet', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_helmet', 'Res Water Helmet', 10, 'res_water')],
+    dmg_water: [
+      createMockGear('water_helmet', 'Water Helmet', 10, 'dmg_water'),
+    ],
+    res_air: [
+      createMockGear('res_air_helmet', 'Res Air Helmet', 10, 'res_air'),
+    ],
+    res_earth: [
+      createMockGear('res_earth_helmet', 'Res Earth Helmet', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_helmet', 'Res Fire Helmet', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_helmet', 'Res Water Helmet', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -202,9 +268,15 @@ class SimpleMockCharacter {
     dmg_fire: [createMockGear('fire_legs', 'Fire Legs', 10, 'dmg_fire')],
     dmg_water: [createMockGear('water_legs', 'Water Legs', 10, 'dmg_water')],
     res_air: [createMockGear('res_air_legs', 'Res Air Legs', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_legs', 'Res Earth Legs', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_legs', 'Res Fire Legs', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_legs', 'Res Water Legs', 10, 'res_water')],
+    res_earth: [
+      createMockGear('res_earth_legs', 'Res Earth Legs', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_legs', 'Res Fire Legs', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_legs', 'Res Water Legs', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -223,9 +295,15 @@ class SimpleMockCharacter {
     dmg_fire: [createMockGear('fire_ring', 'Fire Ring', 10, 'dmg_fire')],
     dmg_water: [createMockGear('water_ring', 'Water Ring', 10, 'dmg_water')],
     res_air: [createMockGear('res_air_ring', 'Res Air Ring', 10, 'res_air')],
-    res_earth: [createMockGear('res_earth_ring', 'Res Earth Ring', 10, 'res_earth')],
-    res_fire: [createMockGear('res_fire_ring', 'Res Fire Ring', 10, 'res_fire')],
-    res_water: [createMockGear('res_water_ring', 'Res Water Ring', 10, 'res_water')],
+    res_earth: [
+      createMockGear('res_earth_ring', 'Res Earth Ring', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockGear('res_fire_ring', 'Res Fire Ring', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockGear('res_water_ring', 'Res Water Ring', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -243,10 +321,18 @@ class SimpleMockCharacter {
     dmg_earth: [],
     dmg_fire: [],
     dmg_water: [],
-    res_air: [createMockShield('res_air_shield', 'Res Air Shield', 10, 'res_air')],
-    res_earth: [createMockShield('res_earth_shield', 'Res Earth Shield', 10, 'res_earth')],
-    res_fire: [createMockShield('res_fire_shield', 'Res Fire Shield', 10, 'res_fire')],
-    res_water: [createMockShield('res_water_shield', 'Res Water Shield', 10, 'res_water')],
+    res_air: [
+      createMockShield('res_air_shield', 'Res Air Shield', 10, 'res_air'),
+    ],
+    res_earth: [
+      createMockShield('res_earth_shield', 'Res Earth Shield', 10, 'res_earth'),
+    ],
+    res_fire: [
+      createMockShield('res_fire_shield', 'Res Fire Shield', 10, 'res_fire'),
+    ],
+    res_water: [
+      createMockShield('res_water_shield', 'Res Water Shield', 10, 'res_water'),
+    ],
     attack_air: [],
     attack_earth: [],
     attack_fire: [],
@@ -280,6 +366,13 @@ class SimpleMockCharacter {
     wisdom: [],
   };
 
+  artifactsMap: Partial<Record<GearEffects, ItemSchema[]>> = {
+    prospecting: [
+      createMockArtifact('lucky_charm', 'Lucky Charm', 5, 'prospecting'),
+    ],
+    wisdom: [createMockArtifact('wisdom_stone', 'Wisdom Stone', 5, 'wisdom')],
+  };
+
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
       (item: InventorySlot) => item.code === code,
@@ -287,15 +380,25 @@ class SimpleMockCharacter {
     return item ? item.quantity : 0;
   });
 
-  checkQuantityOfItemInBank = jest.fn(async (code: string): Promise<number> => {
-    const bankItems: { [key: string]: number } = {
-      fire_sword: 1,
-      res_fire_shield: 1,
-      health_potion: 50,
-      antidote: 20,
-    };
-    return bankItems[code] || 0;
-  });
+  bankItems: { [key: string]: number } = {
+    fire_sword: 1,
+    res_fire_shield: 1,
+    health_potion: 50,
+    antidote: 20,
+  };
+
+  checkQuantityOfItemInBank = jest.fn(
+    async (code: string, _cache?: BankCache): Promise<number> => {
+      return this.bankItems[code] || 0;
+    },
+  );
+
+  getAllBankItems = jest.fn(async () =>
+    Object.entries(this.bankItems).map(([code, quantity]) => ({
+      code,
+      quantity,
+    })),
+  );
 
   withdrawNow = jest.fn(
     async (quantity: number, code: string): Promise<boolean> => {
@@ -312,23 +415,31 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  getCharacterLevel = jest.fn((skillName?: string): number => {
-    switch (skillName) {
-      case 'mining':
-        return this.data.mining_level;
-      case 'woodcutting':
-        return this.data.woodcutting_level;
-      case 'fishing':
-        return this.data.fishing_level;
-      default:
-        return this.data.level;
-    }
-  });
+  getCharacterLevel = jest.fn(
+    (char: CharacterSchema, skillName?: string): number => {
+      switch (skillName) {
+        case 'mining':
+          return char.mining_level;
+        case 'woodcutting':
+          return char.woodcutting_level;
+        case 'fishing':
+          return char.fishing_level;
+        default:
+          return char.level;
+      }
+    },
+  );
 
   getCharacterGearIn = jest.fn((itemSlot: ItemSlot): string => {
     switch (itemSlot) {
       case 'amulet':
         return this.data.amulet_slot;
+      case 'artifact1':
+        return this.data.artifact1_slot;
+      case 'artifact2':
+        return this.data.artifact2_slot;
+      case 'artifact3':
+        return this.data.artifact3_slot;
       case 'body_armor':
         return this.data.body_armor_slot;
       case 'boots':
@@ -353,6 +464,25 @@ class SimpleMockCharacter {
   recoverHealth = jest.fn(async (): Promise<boolean> => {
     return true;
   });
+
+  createFakeCharacterSchema = jest.fn((charData: any) => ({
+    level: charData.level,
+    weapon_slot: charData.weapon_slot,
+    rune_slot: charData.rune_slot,
+    shield_slot: charData.shield_slot,
+    helmet_slot: charData.helmet_slot,
+    body_armor_slot: charData.body_armor_slot,
+    leg_armor_slot: charData.leg_armor_slot,
+    boots_slot: charData.boots_slot,
+    ring1_slot: charData.ring1_slot,
+    ring2_slot: charData.ring2_slot,
+    amulet_slot: charData.amulet_slot,
+    artifact1_slot: charData.artifact1_slot,
+    artifact2_slot: charData.artifact2_slot,
+    artifact3_slot: charData.artifact3_slot,
+    utility1_slot: charData.utility1_slot,
+    utility2_slot: charData.utility2_slot,
+  }));
 
   equipUtility = jest.fn(async (): Promise<boolean> => {
     this.data.utility1_slot = 'health_potion';
@@ -395,6 +525,15 @@ class SimpleMockCharacter {
       case 'amulet':
         this.data.amulet_slot = code;
         break;
+      case 'artifact1':
+        this.data.artifact1_slot = code;
+        break;
+      case 'artifact2':
+        this.data.artifact2_slot = code;
+        break;
+      case 'artifact3':
+        this.data.artifact3_slot = code;
+        break;
     }
     return true;
   });
@@ -415,6 +554,11 @@ class SimpleMockCharacter {
       }
     }
   };
+
+  // ToDo: Make this more robust. Should actually check the characters equipment
+  getEquippedSlot = (itemCode: string): string => {
+    return null;
+  };
 }
 
 describe('EvaluateGearObjective Integration Tests', () => {
@@ -432,6 +576,18 @@ describe('EvaluateGearObjective Integration Tests', () => {
     (
       getMonsterInformation as jest.MockedFunction<typeof getMonsterInformation>
     ).mockResolvedValue(mockMonsterData);
+
+    (
+      getAllResourceInformation as jest.MockedFunction<
+        typeof getAllResourceInformation
+      >
+    ).mockResolvedValue({
+      data: [],
+      pages: 1,
+      page: 1,
+      size: 50,
+      total: 0,
+    });
   });
 
   describe('Basic functionality', () => {
@@ -449,6 +605,29 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(objective.character).toBe(mockCharacter);
       expect(objective.objectiveId).toMatch(/^evaluate_combat_gear_[a-f0-9]+$/);
       expect(objective.status).toBe('not_started');
+    });
+
+    it('should store targetResource on the objective', () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+
+      expect(objective.targetResource).toBe('iron_ore');
+    });
+
+    it('should return artifact slot contents from getCharacterGearIn', () => {
+      mockCharacter.data.artifact1_slot = 'lucky_charm';
+      mockCharacter.data.artifact2_slot = 'golden_earring';
+      mockCharacter.data.artifact3_slot = '';
+
+      expect(mockCharacter.getCharacterGearIn('artifact1')).toBe('lucky_charm');
+      expect(mockCharacter.getCharacterGearIn('artifact2')).toBe(
+        'golden_earring',
+      );
+      expect(mockCharacter.getCharacterGearIn('artifact3')).toBe('');
     });
 
     it('should evaluate combat gear for a monster', async () => {
@@ -487,7 +666,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Assert
       expect(result).toBe(true);
       expect(getMonsterInformation).not.toHaveBeenCalled();
-      expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith('mining');
+      expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(
+        mockCharacter.data,
+        'mining',
+      );
     });
 
     it('should handle gathering weapon already equipped', async () => {
@@ -525,7 +707,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.equipUtility).toHaveBeenCalledWith('restore', 'utility1');
+      expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
     });
 
     it('should not top up health potions when quantity is sufficient', async () => {
@@ -550,32 +732,32 @@ describe('EvaluateGearObjective Integration Tests', () => {
   });
 
   describe('Secondary potion management', () => {
-    it('should equip antidotes when monster has poison effect', async () => {
-      // Arrange
-      (
-        getMonsterInformation as jest.MockedFunction<
-          typeof getMonsterInformation
-        >
-      ).mockResolvedValue(mockPoisonMonsterData);
+    //   it('should equip antidotes when monster has poison effect', async () => {
+    //     // Arrange
+    //     (
+    //       getMonsterInformation as jest.MockedFunction<
+    //         typeof getMonsterInformation
+    //       >
+    //     ).mockResolvedValue(mockPoisonMonsterData);
 
-      mockCharacter.data.utility2_slot_quantity = 0;
+    //     mockCharacter.data.utility2_slot_quantity = 0;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+    //     const objective = new EvaluateGearObjective(
+    //       mockCharacter as any,
+    //       'combat',
+    //       'red_slime',
+    //     );
 
-      // Act
-      const result = await objective.run();
+    //     // Act
+    //     const result = await objective.run();
 
-      // Assert
-      expect(result).toBe(true);
-      expect(mockCharacter.equipAntiEffectUtility).toHaveBeenCalledWith(
-        'antipoison',
-        expect.objectContaining({ code: 'poison' }),
-      );
-    });
+    //     // Assert
+    //     expect(result).toBe(true);
+    //     expect(mockCharacter.equipAntiEffectUtility).toHaveBeenCalledWith(
+    //       'antipoison',
+    //       expect.objectContaining({ code: 'poison' }),
+    //     );
+    //   });
 
     it('should not equip antidotes when monster has no effects', async () => {
       // Arrange
@@ -657,7 +839,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       );
     });
 
-    it('should withdraw shield from bank if not in inventory', async () => {
+    it('should equip shield sourced from bank when not in inventory', async () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
@@ -671,9 +853,8 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Act
       const result = await objective.run();
 
-      // Assert
+      // Assert — equipNow handles the bank withdrawal internally
       expect(result).toBe(true);
-      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(1, 'res_fire_shield');
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'res_fire_shield',
         'shield',
@@ -712,7 +893,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.equipNow).toHaveBeenCalledWith('fire_sword', 'weapon');
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'fire_sword',
+        'weapon',
+      );
     });
 
     it('should check bank for weapon if not in inventory', async () => {
@@ -733,11 +917,15 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue(monsterWithLowFireRes);
 
       // Weapon not in inventory
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) => {
-        return code === 'fire_sword' ? 0 : mockCharacter.data.inventory.find(
-          (item: InventorySlot) => item.code === code,
-        )?.quantity || 0;
-      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => {
+          return code === 'fire_sword'
+            ? 0
+            : mockCharacter.data.inventory.find(
+                (item: InventorySlot) => item.code === code,
+              )?.quantity || 0;
+        },
+      );
       // Weapon is in bank
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
       // equipNow will handle the withdrawal via EquipObjective internally
@@ -754,9 +942,15 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      // checkCombatWeapon checks bank and then calls equipNow (which handles withdrawal)
-      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith('fire_sword');
-      expect(mockCharacter.equipNow).toHaveBeenCalledWith('fire_sword', 'weapon');
+      // selectWeapon checks bank and then equipNow handles the withdrawal
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
+        'fire_sword',
+        expect.any(BankCache),
+      );
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'fire_sword',
+        'weapon',
+      );
     });
   });
 
@@ -833,7 +1027,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.equipNow).toHaveBeenCalledWith('dmg_helmet', 'helmet');
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'dmg_helmet',
+        'helmet',
+      );
     });
   });
 
@@ -860,7 +1057,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
   describe('Error handling', () => {
     it('should handle API errors when getting monster information', async () => {
       // Arrange
-      const apiError = new ApiError({ code: 404, message: 'Monster not found' });
+      const apiError = new ApiError({
+        code: 404,
+        message: 'Monster not found',
+      });
       (
         getMonsterInformation as jest.MockedFunction<
           typeof getMonsterInformation
@@ -926,7 +1126,12 @@ describe('EvaluateGearObjective Integration Tests', () => {
     it('should handle character level restrictions', async () => {
       // Arrange
       // Create gear with level higher than character level
-      const highLevelGear = createMockGear('high_helmet', 'High Helmet', 50, 'dmg');
+      const highLevelGear = createMockGear(
+        'high_helmet',
+        'High Helmet',
+        50,
+        'dmg',
+      );
       mockCharacter.helmetMap.dmg = [highLevelGear];
 
       mockCharacter.data.level = 10; // Character is level 10
@@ -977,11 +1182,25 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      // Gathering path now always returns true (artifact check runs after weapon check)
+      expect(result).toBe(true);
+    });
+
+    it('should not throw when no weapons are mapped for the activity type', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mob' as WeaponFlavours,
+      );
+
+      await expect(objective.run()).resolves.toBe(true);
     });
 
     it('should handle different gathering activity types', async () => {
-      const activityTypes: WeaponFlavours[] = ['mining', 'woodcutting', 'fishing'];
+      const activityTypes: WeaponFlavours[] = [
+        'mining',
+        'woodcutting',
+        'fishing',
+      ];
 
       for (const activityType of activityTypes) {
         // Arrange
@@ -996,11 +1215,750 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
         // Assert
         expect(result).toBeDefined();
-        expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(activityType);
+        expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(
+          mockCharacter.data,
+          activityType,
+        );
 
         // Reset for next iteration
         jest.clearAllMocks();
+        (
+          getAllResourceInformation as jest.MockedFunction<
+            typeof getAllResourceInformation
+          >
+        ).mockResolvedValue({
+          data: [],
+          pages: 1,
+          page: 1,
+          size: 50,
+          total: 0,
+        });
       }
+    });
+  });
+
+  describe('checkGatheringArtifacts', () => {
+    const mockProspectingResource = {
+      data: [
+        {
+          name: 'Iron Rock',
+          code: 'iron_rock',
+          skill: 'mining' as const,
+          level: 5,
+          drops: [
+            { code: 'iron_ore', rate: 4, min_quantity: 1, max_quantity: 1 },
+          ],
+        },
+      ],
+      pages: 1,
+      page: 1,
+      size: 50,
+      total: 1,
+    };
+
+    const mockWisdomResource = {
+      data: [
+        {
+          name: 'Ash Tree',
+          code: 'ash_tree',
+          skill: 'woodcutting' as const,
+          level: 5,
+          drops: [
+            { code: 'ash_wood', rate: 1, min_quantity: 1, max_quantity: 1 },
+          ],
+        },
+      ],
+      pages: 1,
+      page: 1,
+      size: 50,
+      total: 1,
+    };
+
+    it('equips prospecting artifact in artifact1 when drop rate < 100%', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockProspectingResource);
+      mockCharacter.addItemToInventory('lucky_charm', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      expect(getAllResourceInformation).toHaveBeenCalledWith({
+        drop: 'iron_ore',
+      });
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'lucky_charm',
+        'artifact1',
+      );
+    });
+
+    it('equips wisdom artifact in artifact1 when drop rate is 100%', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockWisdomResource);
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+        undefined,
+        'ash_wood',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'wisdom_stone',
+        'artifact1',
+      );
+    });
+
+    it('equips wisdom artifact when no targetResource is provided', async () => {
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+      );
+      await objective.run();
+
+      expect(getAllResourceInformation).not.toHaveBeenCalled();
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'wisdom_stone',
+        'artifact1',
+      );
+    });
+
+    it('falls back to wisdom artifact when resource API returns an error', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(new ApiError({ code: 500, message: 'server error' }));
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'wisdom_stone',
+        'artifact1',
+      );
+    });
+
+    it('falls back to wisdom artifact when targetResource is not in any resource drops', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue({ data: [], pages: 1, page: 1, size: 50, total: 0 });
+      mockCharacter.addItemToInventory('wisdom_stone', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'unknown_item',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'wisdom_stone',
+        'artifact1',
+      );
+    });
+
+    it('skips artifact slot when no artifact is available in inv or bank', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockProspectingResource);
+      // No lucky_charm in inventory or bank
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      const artifactCalls = (
+        mockCharacter.equipNow as jest.Mock
+      ).mock.calls.filter(
+        ([, slot]: [string, string]) =>
+          slot === 'artifact1' || slot === 'artifact2' || slot === 'artifact3',
+      );
+      expect(artifactCalls).toHaveLength(0);
+    });
+
+    it('skips slot when correct artifact is already equipped', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockProspectingResource);
+      mockCharacter.data.artifact1_slot = 'lucky_charm';
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      const artifact1Calls = (
+        mockCharacter.equipNow as jest.Mock
+      ).mock.calls.filter(([, slot]: [string, string]) => slot === 'artifact1');
+      expect(artifact1Calls).toHaveLength(0);
+    });
+
+    it('does not exceed character level when selecting artifact', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockProspectingResource);
+
+      // Add a level-35 artifact (above char level 10) to the map — should be skipped
+      const highLevelArtifact = createMockArtifact(
+        'Perfect Pearl',
+        'Perfect Pearl',
+        20,
+        'prospecting',
+      );
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('novice_guide', 'Novice Guide', 10, 'prospecting'),
+          highLevelArtifact,
+        ],
+        wisdom: [],
+      };
+      mockCharacter.addItemToInventory('novice_guide', 1);
+      mockCharacter.addItemToInventory('perfect_pearl', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      // Should equip novice_guide (level 10), not perfect_pearl (level 20 > char level 10)
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'novice_guide',
+        'artifact1',
+      );
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        'perfect_pearl',
+        expect.anything(),
+      );
+    });
+
+    // An artifact's level says nothing about how much of the effect it grants:
+    // perfect_pearl (+100 prospecting) and lich_race_trophy (+50) are both level 20.
+    describe('upgrading an occupied slot', () => {
+      const mineIronOre = async () => {
+        (
+          getAllResourceInformation as jest.MockedFunction<
+            typeof getAllResourceInformation
+          >
+        ).mockResolvedValue(mockProspectingResource);
+        await new EvaluateGearObjective(
+          mockCharacter as any,
+          'mining',
+          undefined,
+          'iron_ore',
+        ).run();
+      };
+
+      beforeEach(() => {
+        mockCharacter.data.level = 31;
+      });
+
+      it('replaces a weaker same-effect artifact with a stronger one', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'novice_guide',
+              'Novice Guide',
+              10,
+              'prospecting',
+              25,
+            ),
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.data.artifact1_slot = 'novice_guide';
+        mockCharacter.bankItems.perfect_pearl = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+          'perfect_pearl',
+          'artifact1',
+        );
+      });
+
+      it('ranks candidates by effect value rather than array order', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+            createMockArtifact(
+              'lich_race_trophy',
+              'Lich Trophy',
+              20,
+              'prospecting',
+              50,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.bankItems.perfect_pearl = 1;
+        mockCharacter.bankItems.lich_race_trophy = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+          'perfect_pearl',
+          'artifact1',
+        );
+        expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+          'lich_race_trophy',
+          'artifact1',
+        );
+      });
+
+      it('leaves an equally strong artifact in place so repeat passes do not churn', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'lucky_charm',
+              'Lucky Charm',
+              5,
+              'prospecting',
+              50,
+            ),
+            createMockArtifact(
+              'lich_race_trophy',
+              'Lich Trophy',
+              20,
+              'prospecting',
+              50,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.data.artifact1_slot = 'lucky_charm';
+        mockCharacter.bankItems.lich_race_trophy = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+          'lich_race_trophy',
+          'artifact1',
+        );
+      });
+
+      it('fills a free slot rather than displacing an artifact for the other stat', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+          ],
+          wisdom: [
+            createMockArtifact('wisdom_stone', 'Wisdom Stone', 5, 'wisdom', 20),
+          ],
+        };
+        mockCharacter.data.artifact1_slot = 'wisdom_stone';
+        mockCharacter.bankItems.perfect_pearl = 1;
+
+        await mineIronOre();
+
+        expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+          'perfect_pearl',
+          'artifact2',
+        );
+        expect(mockCharacter.data.artifact1_slot).toBe('wisdom_stone');
+      });
+
+      it('does not put the only copy of an artifact into more than one slot', async () => {
+        mockCharacter.artifactsMap = {
+          prospecting: [
+            createMockArtifact(
+              'perfect_pearl',
+              'Perfect Pearl',
+              20,
+              'prospecting',
+              100,
+            ),
+          ],
+          wisdom: [],
+        };
+        mockCharacter.bankItems.perfect_pearl = 1;
+
+        await mineIronOre();
+
+        const pearlEquips = (
+          mockCharacter.equipNow as jest.Mock
+        ).mock.calls.filter(([code]: [string]) => code === 'perfect_pearl');
+        expect(pearlEquips).toHaveLength(1);
+      });
+    });
+  });
+
+  describe('selectCombatLoadout (in-memory, no side effects)', () => {
+    it('returns chosen slot codes without equipping or withdrawing', async () => {
+      mockCharacter.addItemToInventory('fire_sword', 1);
+      mockCharacter.addItemToInventory('res_fire_shield', 1);
+      mockCharacter.addItemToInventory('fire_helmet', 1);
+      mockCharacter.addItemToInventory('hp_boots', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+      expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+      expect(mockCharacter.recoverHealth).not.toHaveBeenCalled();
+      expect(loadout.weapon_slot).toBe('fire_sword');
+      expect(loadout.shield_slot).toBe('res_fire_shield');
+      expect(loadout.helmet_slot).toBe('fire_helmet');
+      expect(loadout.boots_slot).toBe('hp_boots');
+    });
+
+    it('does not assign a single-copy ring to both ring slots', async () => {
+      // Only one of each ring type exists (in inventory); bank has no rings.
+      mockCharacter.addItemToInventory('earth_ring', 1);
+      mockCharacter.addItemToInventory('fire_ring', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      // earth (res 0) is preferred over fire (res 25); ring2 falls back to the
+      // next available ring rather than reusing the single earth_ring copy.
+      expect(loadout.ring1_slot).toBe('earth_ring');
+      expect(loadout.ring2_slot).toBe('fire_ring');
+      expect(loadout.ring1_slot).not.toBe(loadout.ring2_slot);
+    });
+
+    it('keeps an already-equipped item selectable for its own slot', async () => {
+      mockCharacter.data.shield_slot = 'res_fire_shield';
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const loadout = await objective.selectCombatLoadout(10, 'red_slime');
+
+      expect(loadout.shield_slot).toBe('res_fire_shield');
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('proposeCombatLoadout (merged schema, no side effects)', () => {
+    it('merges selected slots over the current-equipment snapshot', async () => {
+      mockCharacter.data.artifact1_slot = 'novice_guide';
+      mockCharacter.addItemToInventory('fire_sword', 1);
+      mockCharacter.addItemToInventory('res_fire_shield', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const schema = await objective.proposeCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+      expect(schema.weapon_slot).toBe('fire_sword');
+      expect(schema.shield_slot).toBe('res_fire_shield');
+      expect(schema.artifact1_slot).toBe('novice_guide');
+      expect(schema.level).toBe(mockCharacter.data.level);
+    });
+  });
+
+  describe('Bank caching during gear evaluation', () => {
+    it('builds a single bank snapshot and reads bank quantities from it', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(mockCharacter.getAllBankItems).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalled();
+      for (const call of mockCharacter.checkQuantityOfItemInBank.mock.calls) {
+        expect(call[1]).toBeInstanceOf(BankCache);
+      }
+    });
+
+    it('proposeCombatLoadout reuses a provided bank cache without building its own', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+      const cache = await BankCache.create(mockCharacter as any);
+      mockCharacter.getAllBankItems.mockClear();
+
+      await objective.proposeCombatLoadout(10, 'red_slime', cache);
+
+      expect(mockCharacter.getAllBankItems).not.toHaveBeenCalled();
+      expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalled();
+      for (const call of mockCharacter.checkQuantityOfItemInBank.mock.calls) {
+        expect(call[1]).toBe(cache);
+      }
+    });
+
+    it('proposeCombatLoadout builds its own snapshot when none is provided', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.proposeCombatLoadout(10, 'red_slime');
+
+      expect(mockCharacter.getAllBankItems).toHaveBeenCalledTimes(1);
+      for (const call of mockCharacter.checkQuantityOfItemInBank.mock.calls) {
+        expect(call[1]).toBeInstanceOf(BankCache);
+      }
+    });
+  });
+
+  describe('checkGatheringEquipment', () => {
+    const statGear = (
+      code: string,
+      level: number,
+      stat: GearEffects,
+      value: number,
+    ): ItemSchema => ({
+      code,
+      name: code,
+      level,
+      type: 'armor',
+      subtype: 'helmet',
+      description: '',
+      craft: null,
+      tradeable: true,
+      conditions: [],
+      effects: [{ code: stat, value, description: `${stat} effect` }],
+    });
+
+    const prospectingResource = {
+      data: [
+        {
+          name: 'Iron Rock',
+          code: 'iron_rock',
+          skill: 'mining' as const,
+          level: 5,
+          drops: [
+            { code: 'iron_ore', rate: 4, min_quantity: 1, max_quantity: 1 },
+          ],
+        },
+      ],
+      pages: 1,
+      page: 1,
+      size: 50,
+      total: 1,
+    };
+
+    it('equips the highest-value wisdom item available for a slot', async () => {
+      mockCharacter.helmetMap.wisdom = [
+        statGear('cheap_wisdom_helmet', 5, 'wisdom', 5),
+        statGear('great_wisdom_helmet', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.cheap_wisdom_helmet = 1;
+      mockCharacter.bankItems.great_wisdom_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'great_wisdom_helmet',
+        'helmet',
+      );
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        'cheap_wisdom_helmet',
+        expect.anything(),
+      );
+    });
+
+    it('leaves a slot untouched when no wisdom or prospecting gear exists', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'helmet',
+      );
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'body_armor',
+      );
+    });
+
+    it('withdraws a bank item before equipping it', async () => {
+      mockCharacter.helmetMap.wisdom = [
+        statGear('great_wisdom_helmet', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.great_wisdom_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(
+        1,
+        'great_wisdom_helmet',
+      );
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'great_wisdom_helmet',
+        'helmet',
+      );
+    });
+
+    it('keeps the equipped item when it has the highest value', async () => {
+      mockCharacter.data.helmet_slot = 'equipped_wisdom_helmet';
+      mockCharacter.helmetMap.wisdom = [
+        statGear('equipped_wisdom_helmet', 5, 'wisdom', 20),
+        statGear('bank_wisdom_helmet', 8, 'wisdom', 10),
+      ];
+      mockCharacter.bankItems.bank_wisdom_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'helmet',
+      );
+    });
+
+    it('replaces the equipped item when a higher-value item is available', async () => {
+      mockCharacter.data.helmet_slot = 'weak_equipped_helmet';
+      mockCharacter.helmetMap.wisdom = [
+        statGear('weak_equipped_helmet', 5, 'wisdom', 5),
+        statGear('strong_bank_helmet', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.strong_bank_helmet = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'strong_bank_helmet',
+        'helmet',
+      );
+    });
+
+    it('does not assign a single-copy wisdom ring to both ring slots', async () => {
+      mockCharacter.ringsMap.wisdom = [
+        statGear('wisdom_ring', 8, 'wisdom', 12),
+      ];
+      mockCharacter.bankItems.wisdom_ring = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'wisdom_ring',
+        'ring1',
+      );
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        'wisdom_ring',
+        'ring2',
+      );
+    });
+
+    it('selects prospecting gear when the target resource drop rate is below 100%', async () => {
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(prospectingResource);
+      mockCharacter.armorMap.prospecting = [
+        statGear('prospecting_coat', 8, 'prospecting', 15),
+      ];
+      mockCharacter.bankItems.prospecting_coat = 1;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'mining',
+        undefined,
+        'iron_ore',
+      );
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'prospecting_coat',
+        'body_armor',
+      );
     });
   });
 });

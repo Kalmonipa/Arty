@@ -1,0 +1,360 @@
+import {
+  actionClaimPendingItems,
+  getPendingItems,
+} from '../api_calls/Items.js';
+import {
+  Gearcrafting,
+  Jewelrycrafting,
+  MAX_SKILL_LEVEL,
+  MIN_TASK_COINS_IN_BANK,
+  TasksCoin,
+  Weaponcrafting,
+} from '../constants.js';
+import { Role } from '../types/CharacterData.js';
+import { Skill } from '../types/types.js';
+import { isGatheringSkill, logger } from '../utils.js';
+import { Character } from '../character/characterClass.js';
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
+import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import {
+  checkWithinLevelRange,
+  checkOnHoldQueue,
+  completeTasksFarmerAchievement,
+  checkAndBuyArtifacts,
+  checkWishlistToFulfill,
+  doMonsterTask,
+} from './idleUtils.js';
+import { actionTasksExchange } from '../api_calls/Tasks.js';
+
+export class IdleCrafterObjective extends Objective {
+  role: Role;
+
+  constructor(character: Character, role: Role) {
+    super(character, `idle_${role}_objective`, 'not_started');
+
+    this.character = character;
+    this.jobFlavour = 'Idle';
+    this.role = role;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = role;
+  }
+
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
+  }
+
+  /**
+   * @description Goes through the list of tasks and does some clean up stuff
+   * The type of task varies depending on the role of the character
+   */
+  async run(): Promise<boolean> {
+    let startTime = Date.now();
+
+    // ToDo: Maybe we don't need this if we enable gambling
+    await completeTasksFarmerAchievement(this.character, this.role);
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.gambleTaskCoins();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.character.tidyUpBank(this.character.role);
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.depositGoldIntoBank();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.claimPendingItems();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await checkAndBuyArtifacts(this.character);
+    if (this.checkIdleJobIsLast()) return true;
+
+    await checkOnHoldQueue(this.character);
+    if (this.checkIdleJobIsLast()) return true;
+
+    await checkWishlistToFulfill(this.character, 'fight', this.objectiveId);
+    if (this.checkIdleJobIsLast()) return true;
+
+    await checkWithinLevelRange(this.character);
+    if (this.checkIdleJobIsLast()) return true;
+
+    // If crafter, train weapon gear and jewelrycrafting
+    if (this.role === 'crafter') {
+      const combatLevel = this.character.getCharacterLevel(this.character.data);
+      const weaponLevel = this.character.getCharacterLevel(
+        this.character.data,
+        Weaponcrafting,
+      );
+      const gearLevel = this.character.getCharacterLevel(
+        this.character.data,
+        Gearcrafting,
+      );
+      const jewelryLevel = this.character.getCharacterLevel(
+        this.character.data,
+        Jewelrycrafting,
+      );
+      if (weaponLevel < combatLevel) {
+        if (!this.checkForJobInOnHoldQueue(Weaponcrafting)) {
+          await this.trainSkill(Weaponcrafting);
+        }
+        if (this.checkIdleJobIsLast()) return true;
+      }
+      if (gearLevel < combatLevel) {
+        if (!this.checkForJobInOnHoldQueue(Gearcrafting)) {
+          await this.trainSkill(Gearcrafting);
+        }
+        if (this.checkIdleJobIsLast()) return true;
+      }
+      if (jewelryLevel < combatLevel) {
+        if (!this.checkForJobInOnHoldQueue(Jewelrycrafting)) {
+          await this.trainSkill(Jewelrycrafting);
+        }
+        if (this.checkIdleJobIsLast()) return true;
+      }
+    } else {
+      // Get the relevant skill level based on which role the char is
+      let relevantSkillLevel: number;
+      let relevantSkillToTrain: Skill;
+      switch (this.role) {
+        case 'weaponcrafter':
+          relevantSkillLevel = this.character.getCharacterLevel(
+            this.character.data,
+            Weaponcrafting,
+          );
+          relevantSkillToTrain = Weaponcrafting;
+          break;
+        case 'gearcrafter':
+          relevantSkillLevel = this.character.getCharacterLevel(
+            this.character.data,
+            Gearcrafting,
+          );
+          relevantSkillToTrain = Gearcrafting;
+          break;
+        case 'jewelrycrafter':
+          relevantSkillLevel = this.character.getCharacterLevel(
+            this.character.data,
+            Jewelrycrafting,
+          );
+          relevantSkillToTrain = Jewelrycrafting;
+          break;
+      }
+      const combatLevel = this.character.getCharacterLevel(this.character.data);
+
+      // Crafting skills should aim to be at the combat level
+
+      if (relevantSkillLevel < combatLevel) {
+        await this.trainSkill(relevantSkillToTrain);
+        if (this.checkIdleJobIsLast()) return true;
+      }
+
+      // We only want to do monster tasks if our crafter skills are at or above our combat level
+      if (relevantSkillLevel >= combatLevel) {
+        if (await this.isLowOnTaskCoins()) {
+          await doMonsterTask(this.character, this, 1);
+        }
+        if (this.checkIdleJobIsLast()) return true;
+      }
+    }
+
+    if (Date.now() - startTime > 10 * 60 * 1000) {
+      logger.info(
+        `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
+      );
+      return true;
+    } else if (await this.isLowOnTaskCoins()) {
+      // If the idle job hasn't really triggered any other jobs, we want to do a monster task
+      await doMonsterTask(this.character, this, 1);
+    }
+
+    return true;
+  }
+
+  /**
+   * @description Task coins are only worth farming while the bank is short of
+   * them; past that, a monster task is hours of fighting for a currency we
+   * already have plenty of.
+   */
+  private async isLowOnTaskCoins(): Promise<boolean> {
+    const taskCoinsInBank =
+      await this.character.checkQuantityOfItemInBank(TasksCoin);
+
+    if (taskCoinsInBank >= MIN_TASK_COINS_IN_BANK) {
+      logger.debug(
+        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MIN_TASK_COINS_IN_BANK}). Not doing a monster task`,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * @description Helper function to check if there are any new jobs added to the queue
+   * @returns true if there are other jobs in the queue, false if not
+   */
+  private checkIdleJobIsLast() {
+    const jobs = this.character.jobList ?? [];
+    const idleJobIndex = jobs.findIndex((job: Objective) =>
+      job.objectiveId.startsWith('idle_'),
+    );
+    if (idleJobIndex === -1) {
+      return false;
+    }
+    if (idleJobIndex !== jobs.length - 1) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Checks for pending items and claims any that need claiming
+   */
+  private async claimPendingItems(): Promise<boolean> {
+    const pendingItems = await getPendingItems();
+
+    if (pendingItems instanceof ApiError) {
+      return this.character.handleErrors(pendingItems);
+    }
+
+    const unclaimed = pendingItems.data.filter((item) => !item.claimed_at);
+
+    if (unclaimed.length === 0) {
+      logger.info(`No pending items to claim`);
+      return true;
+    }
+
+    for (const pendingItem of unclaimed) {
+      logger.info(
+        `Claiming item ${pendingItem.description} from ${pendingItem.source}`,
+      );
+      const claimResponse = await actionClaimPendingItems(
+        this.character.data,
+        pendingItem.id,
+      );
+      if (claimResponse instanceof ApiError) {
+        await this.character.handleErrors(claimResponse);
+      }
+    }
+    return true;
+  }
+
+  /**
+   * If we have excess (>maxCoinsInBank) task coins in the bank, gamble the excess to get rewards
+   * @returns True if successful
+   */
+  private async gambleTaskCoins(): Promise<boolean> {
+    // The number of task coins needed to exchange. Pretty sure this won't change but who knows
+    const costToExchange = 6;
+    // Arbitrary number for now. Might adjust as I see fit
+    const maxCoinsInBank = MIN_TASK_COINS_IN_BANK + costToExchange;
+    const coinsInBank =
+      await this.character.checkQuantityOfItemInBank(TasksCoin);
+
+    if (coinsInBank < maxCoinsInBank) {
+      logger.info(
+        `${coinsInBank}/${maxCoinsInBank} task coins in bank. Not gambling any`,
+      );
+      return true;
+    }
+
+    const numExchangesToMake = Math.floor(coinsInBank / costToExchange);
+    const coinsToSpend = numExchangesToMake * costToExchange;
+
+    await this.character.withdrawNow(coinsToSpend, TasksCoin);
+
+    const taskMasterLocations = await this.character.getAvailableTaskMasters();
+    const nearestMap = this.character.evaluateClosestMap(taskMasterLocations);
+
+    await this.character.move(nearestMap);
+
+    for (let iteration = 0; iteration < numExchangesToMake; iteration++) {
+      const exchangeResult = await actionTasksExchange(this.character.data);
+      if (exchangeResult instanceof ApiError) {
+        logger.error(exchangeResult.error.message);
+        logger.error(
+          `Failed to exchange coins at map ${nearestMap.map_id} (x: ${nearestMap.x}, y: ${nearestMap.y})`,
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Increase the level of a skill by 1, or combat level if no skill passed in
+   * @todo Change this so that it only gets a set amount of an item at a time so that the idle task doesn't take a long time.
+   *        I would like to have characters check for events and prioritise events over leveling skills so if we spend ~5 hours
+   *        leveling a skill then we might miss some important events
+   * @param skill the skill to train
+   * @returns true if successful
+   */
+  private async trainSkill(skill?: Skill): Promise<boolean> {
+    let job: Objective;
+    const skillLevel = this.character.getCharacterLevel(
+      this.character.data,
+      skill,
+    );
+    // Crafting skills should stay relatively close to combat level. Gathering skills can go further above
+    const maxLevelGap = [
+      'weaponcrafting',
+      'gearcrafting',
+      'jewelrycrafting',
+    ].includes(skill)
+      ? 0
+      : 5;
+
+    if (skillLevel === MAX_SKILL_LEVEL) {
+      logger.info(
+        `Max ${skill || 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+      );
+      return true;
+    } else if (
+      skillLevel >=
+      this.character.getCharacterLevel(this.character.data) + maxLevelGap
+    ) {
+      logger.info(
+        `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel(this.character.data)}). Not training ${skill}`,
+      );
+      return true;
+    }
+
+    // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
+    if (
+      this.character.getCharacterLevel(this.character.data, skill) >
+      this.character.getCharacterLevel(this.character.data) + 10
+    ) {
+      logger.info(
+        `${skill} level (${this.character.getCharacterLevel(this.character.data, skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel(this.character.data)}. Not training`,
+      );
+      return true;
+    }
+
+    if (!skill) {
+      job = new TrainCombatObjective(
+        this.character,
+        this.character.data.level + 1,
+      );
+    } else if (isGatheringSkill(skill)) {
+      job = new TrainGatheringSkillObjective(
+        this.character,
+        skill,
+        this.character.getCharacterLevel(this.character.data, skill) + 1,
+      );
+    } else {
+      job = new TrainCraftingSkillObjective(
+        this.character,
+        skill,
+        this.character.getCharacterLevel(this.character.data, skill) + 1,
+      );
+    }
+    return await this.character.executeJobNow(
+      job,
+      true,
+      true,
+      this.objectiveId,
+    );
+  }
+}

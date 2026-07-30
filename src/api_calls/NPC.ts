@@ -1,17 +1,31 @@
-import { ApiError } from '../objectives/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
   CharacterSchema,
-  DataPageNPCItem,
-  DataPageNPCSchema,
+  StaticDataPageNPCItemSchema,
+  StaticDataPageNPCSchema,
   GetAllNpcsItemsNpcsItemsGetParams,
   GetAllNpcsNpcsDetailsGetParams,
   GetNpcItemsNpcsItemsCodeGetParams,
   NpcMerchantTransactionResponseSchema,
   NpcMerchantTransactionSchema,
+  NPCResponseSchema,
   NPCSchema,
   SimpleItemSchema,
 } from '../types/types.js';
-import { ApiUrl, MyHeaders, sleep } from '../utils.js';
+import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
+
+/**
+ * NPC trade offerings are static game data, so list responses are cached by
+ * request URL (which encodes the code/npc/currency/page/size query) for the
+ * process lifetime. Shared by getNpcItems and getAllNpcItems.
+ */
+const npcItemsCache = new Map<string, StaticDataPageNPCItemSchema>();
+
+/** Test seam: drop the cached NPC items so each test starts from a clean fetch. */
+export function clearNpcItemsCache(): void {
+  npcItemsCache.clear();
+}
 
 /**
  * @description buy items into the npc. Character must be at the same map as the NPC
@@ -23,125 +37,49 @@ export async function actionBuyItem(
   character: CharacterSchema,
   items: SimpleItemSchema,
 ): Promise<NpcMerchantTransactionResponseSchema | ApiError> {
-  const requestOptions = {
+  return apiRequest<NpcMerchantTransactionResponseSchema>({
+    url: new URL(`${ApiUrl}/my/${character.name}/action/npc/buy`),
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(items),
-  };
-
-  const apiUrl = new URL(`${ApiUrl}/my/${character.name}/action/npc/buy`);
-
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        case 441:
-          message = 'This item is not available for purchase.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 492:
-          message = 'The character does not have enough gold.';
-          break;
-        default:
-          message = 'Unknown error from /action/npc/buy';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: NpcMerchantTransactionResponseSchema = await response.json();
-
-    await sleep(
-      result.data.cooldown.remaining_seconds,
-      result.data.cooldown.reason,
-    );
-
-    return result;
-  } catch (error) {
-    return error as ApiError;
-  }
+    body: items,
+    errorMessages: {
+      404: 'Item not found.',
+      441: 'This item is not available for purchase.',
+      478: 'Missing item or insufficient quantity.',
+      486: 'An action is already in progress for this character.',
+      492: 'The character does not have enough gold.',
+    },
+    fallbackMessage: 'Unknown error from /action/npc/buy',
+  });
 }
 
 /**
  * @description sell items to an npc. Character must be at the same map as the NPC
  * @param character
  * @param items items to sell
- * @returns {NpcMerchantTransactionSchema}
+ * @returns {NpcMerchantTransactionResponseSchema}
  */
 export async function actionSellItem(
   character: CharacterSchema,
   items: SimpleItemSchema,
-): Promise<NpcMerchantTransactionSchema | ApiError> {
-  const requestOptions = {
+): Promise<NpcMerchantTransactionResponseSchema | ApiError> {
+  return apiRequest<NpcMerchantTransactionResponseSchema>({
+    url: new URL(`${ApiUrl}/my/${character.name}/action/npc/sell`),
     method: 'POST',
-    headers: MyHeaders,
-    body: JSON.stringify(items),
-  };
-
-  const apiUrl = new URL(`${ApiUrl}/my/${character.name}}/action/npc/sell`);
-
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-        case 442:
-          message = 'This item cannot be sold.';
-          break;
-        case 478:
-          message = 'Missing item or insufficient quantity.';
-          break;
-        case 486:
-          message = 'An action is already in progress for this character.';
-          break;
-        case 492:
-          message = 'The character does not have enough gold.';
-          break;
-        default:
-          message = 'Unknown error from /action/sell/item';
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: NpcMerchantTransactionSchema = await response.json();
-
-    await sleep(result.cooldown.remaining_seconds, result.cooldown.reason);
-
-    return result;
-  } catch (error) {
-    return error as ApiError;
-  }
+    body: items,
+    errorMessages: {
+      404: 'Item not found.',
+      442: 'This item cannot be sold.',
+      478: 'Missing item or insufficient quantity.',
+      486: 'An action is already in progress for this character.',
+      492: 'The character does not have enough gold.',
+    },
+    fallbackMessage: 'Unknown error from /action/sell/item',
+  });
 }
 
 export async function getAllNpcs(
   params: GetAllNpcsNpcsDetailsGetParams,
-): Promise<ApiError | DataPageNPCSchema> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
+): Promise<ApiError | StaticDataPageNPCSchema> {
   const apiUrl = new URL(`${ApiUrl}/npcs/details`);
 
   if (params.name) {
@@ -157,67 +95,29 @@ export async function getAllNpcs(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /npcs/details`,
-      });
-    }
-
-    const result: DataPageNPCSchema = await response.json();
-
-    return result;
-  } catch (error) {
-    return error as ApiError;
-  }
+  return apiRequest<StaticDataPageNPCSchema>({
+    url: apiUrl,
+    fallbackMessage: 'Unknown error from /npcs/details',
+  });
 }
 
 export async function getNpc(code: string): Promise<ApiError | NPCSchema> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
   const apiUrl = new URL(`${ApiUrl}/npcs/details/${code}`);
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-      }
-
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: NPCSchema = await response.json();
-
-    return result;
-  } catch (error) {
-    return error as ApiError;
-  }
+  const res = await apiRequest<NPCResponseSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: 'Item not found.',
+    },
+  });
+  return res instanceof ApiError ? res : res.data;
 }
 
 export async function getNpcItems(
   code: string,
-  params: GetNpcItemsNpcsItemsCodeGetParams,
-): Promise<ApiError | DataPageNPCItem> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
-  const apiUrl = new URL(`${ApiUrl}/npcs/items`);
+  params?: GetNpcItemsNpcsItemsCodeGetParams,
+): Promise<ApiError | StaticDataPageNPCItemSchema> {
+  const apiUrl = new URL(`${ApiUrl}/npcs/items/${code}`);
 
   if (params.page) {
     apiUrl.searchParams.set('page', params.page.toString());
@@ -226,39 +126,28 @@ export async function getNpcItems(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Item not found.';
-          break;
-      }
-
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
-
-    const result: DataPageNPCItem = await response.json();
-
-    return result;
-  } catch (error) {
-    return error as ApiError;
+  const cached = npcItemsCache.get(apiUrl.toString());
+  if (cached) {
+    return cached;
   }
+
+  const res = await apiRequest<StaticDataPageNPCItemSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: 'Item not found.',
+    },
+  });
+
+  if (!(res instanceof ApiError)) {
+    npcItemsCache.set(apiUrl.toString(), res);
+  }
+
+  return res;
 }
 
 export async function getAllNpcItems(
   params: GetAllNpcsItemsNpcsItemsGetParams,
-): Promise<ApiError | DataPageNPCItem> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
+): Promise<ApiError | StaticDataPageNPCItemSchema> {
   const apiUrl = new URL(`${ApiUrl}/npcs/items`);
 
   if (params.code) {
@@ -277,20 +166,19 @@ export async function getAllNpcItems(
     apiUrl.searchParams.set('size', params.size.toString());
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /npcs/items`,
-      });
-    }
-
-    const result: DataPageNPCItem = await response.json();
-
-    return result;
-  } catch (error) {
-    return error as ApiError;
+  const cached = npcItemsCache.get(apiUrl.toString());
+  if (cached) {
+    return cached;
   }
+
+  const res = await apiRequest<StaticDataPageNPCItemSchema>({
+    url: apiUrl,
+    fallbackMessage: 'Unknown error from /npcs/items',
+  });
+
+  if (!(res instanceof ApiError)) {
+    npcItemsCache.set(apiUrl.toString(), res);
+  }
+
+  return res;
 }

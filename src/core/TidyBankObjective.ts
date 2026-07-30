@@ -1,0 +1,366 @@
+import {
+  actionDeleteItem,
+  getAllItemInformation,
+  getItemInformation,
+} from '../api_calls/Items.js';
+import { Role } from '../types/CharacterData.js';
+import { CraftSkill, ItemSchema, SimpleItemSchema } from '../types/types.js';
+import { logger } from '../utils.js';
+import { Character } from '../character/characterClass.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+
+export class TidyBankObjective extends Objective {
+  //ToDo: get the list of stuff via API
+  // Make lists of cooking, mining, etc
+  rawFoodList = [
+    'gudgeon',
+    'shrimp',
+    'trout',
+    'bass',
+    'salmon',
+    'raw_chicken',
+    'raw_beef',
+    'raw_wolf_meat',
+    'raw_rat_meat',
+    'raw_hellhound_meat',
+    'desert_scorpion_meat',
+    'apple',
+    'raw_porkchop',
+  ];
+  rawOreList = [
+    'copper_ore',
+    'iron_ore',
+    'emerald_stone',
+    'ruby_stone',
+    'sapphire_stone',
+    'topaz_stone',
+  ];
+
+  role: Role;
+
+  constructor(character: Character, role: Role) {
+    super(character, `tidy_${role}_bank`, 'not_started');
+
+    this.character = character;
+    this.jobFlavour = 'TidyBank';
+    this.role = role;
+  }
+
+  async runPrerequisiteChecks(): Promise<boolean> {
+    return true;
+  }
+
+  /**
+   * @description Picks a random resource to clean up from the available options. Currently just cooks fish
+   */
+  async run(): Promise<boolean> {
+    const contentsOfBank = await this.character.getAllBankItems();
+    if (contentsOfBank instanceof ApiError) {
+      this.character.handleErrors(contentsOfBank);
+      return false;
+    }
+
+    switch (this.role) {
+      case 'alchemist':
+        break;
+
+      case 'fisherman':
+        await this.cleanUpBags(contentsOfBank);
+        return await this.cookFood();
+
+      case 'gearcrafter':
+        return await this.recycleExcessEquipment(
+          'gearcrafting',
+          contentsOfBank,
+        );
+
+      case 'jewelrycrafter':
+        return await this.recycleExcessEquipment(
+          'jewelrycrafting',
+          contentsOfBank,
+        );
+
+      case 'lumberjack':
+        break;
+
+      case 'weaponcrafter':
+        return await this.recycleExcessEquipment(
+          'weaponcrafting',
+          contentsOfBank,
+        );
+
+      case 'crafter':
+        await this.recycleExcessEquipment('gearcrafting', contentsOfBank);
+        await this.recycleExcessEquipment('jewelrycrafting', contentsOfBank);
+        return await this.recycleExcessEquipment(
+          'weaponcrafting',
+          contentsOfBank,
+        );
+
+      case 'miner':
+      case 'labourer':
+        return await this.craftBars(contentsOfBank);
+
+      default:
+        break;
+    }
+
+    return true;
+  }
+
+  /**
+   * Finds any raw food in the bank and cooks it
+   * @returns true if successful or false if it failed
+   */
+  private async cookFood(): Promise<boolean> {
+    logger.info(`Starting to cook uncooked food in bank`);
+    for (const item of this.rawFoodList) {
+      const numInBank = await this.character.checkQuantityOfItemInBank(item);
+
+      if (numInBank === undefined) {
+        logger.debug(`${item} not found in bank`);
+        break;
+      }
+
+      if (numInBank === 0) {
+        logger.debug(`Found no ${item} in the bank. Moving on`);
+      } else {
+        logger.info(`Found ${numInBank} ${item} in the bank.`);
+        const itemToCraftSchema = await this.identifyCraftedItemFrom(
+          item,
+          'cooking',
+        );
+        if (!itemToCraftSchema) {
+          continue;
+        }
+
+        // If the item is a fish and more than 20 levels below the lowest character level, skip it
+        const rawItemInfo = await getItemInformation(item);
+        if (rawItemInfo instanceof ApiError) {
+          this.character.handleErrors(rawItemInfo);
+          continue;
+        }
+        if (
+          rawItemInfo.subtype === 'fishing' &&
+          this.character.lowestCharLevel - rawItemInfo.level > 20
+        ) {
+          logger.info(
+            `Skipping ${item} as lowest char level is > 20 levels above it`,
+          );
+          continue;
+        }
+
+        logger.info(`Cooking ${itemToCraftSchema.code} from ${item}`);
+
+        const numToCraft = Math.floor(
+          numInBank / itemToCraftSchema.craft.items[0].quantity,
+        );
+
+        await this.character.craftNow(numToCraft, itemToCraftSchema.code);
+      }
+    }
+    logger.info(`Finished cooking uncooked food in the bank`);
+    return true;
+  }
+
+  /**
+   * @description Finds any raw ore in the bank and crafts it into bars
+   * Keeps 500 of the raw resource in case we need it, crafts the rest into bars
+   * @returns
+   */
+  private async craftBars(
+    contentsOfBank: SimpleItemSchema[],
+  ): Promise<boolean> {
+    for (const item of this.rawOreList) {
+      const content = contentsOfBank.find((bankItem) => bankItem.code === item);
+      if (!content) {
+        logger.info(`No ${item} found in the bank`);
+        break;
+      }
+      const numInBank = content.quantity;
+      const numToKeep = 500;
+      const numToCraftWith = Math.max(numInBank - numToKeep, 0);
+
+      if (numInBank === undefined) {
+        logger.info(`${item} not found in bank`);
+        break;
+      }
+
+      if (numInBank == 0) {
+        break;
+      } else {
+        const itemToCraftSchema = await this.identifyCraftedItemFrom(
+          item,
+          'mining',
+        );
+        if (!itemToCraftSchema) {
+          break;
+        }
+
+        const numToCraft = Math.floor(
+          numToCraftWith / itemToCraftSchema.craft.items[0].quantity,
+        );
+
+        return await this.character.craftNow(
+          numToCraft,
+          itemToCraftSchema.code,
+        );
+      }
+    }
+    logger.info(`Found no ore in the bank to clean up`);
+    return true;
+  }
+
+  /**
+   * @description Figures out what we should craft from the ingredient supplied
+   * @param ingredient item_code of the raw ingredient in the bank
+   * @returns the item_code of the item we should cook
+   */
+  async identifyCraftedItemFrom(
+    ingredient: string,
+    craftSkill: CraftSkill,
+  ): Promise<ItemSchema> {
+    const craftedItemList = await getAllItemInformation({
+      craft_material: ingredient,
+      craft_skill: craftSkill,
+      max_level: this.character.getCharacterLevel(
+        this.character.data,
+        craftSkill,
+      ),
+    });
+    if (craftedItemList instanceof ApiError) {
+      this.character.handleErrors(craftedItemList);
+      return;
+    } else if (craftedItemList.data.length === 0) {
+      logger.info(
+        `${craftSkill} isn't high enough to craft anything. Skipping`,
+      );
+      return;
+    }
+
+    // ToDo: we should make a better decision somehow if there are multiple options
+    // Currently this just picks one that only requires 1 ingredient
+    for (const craftItem of craftedItemList.data) {
+      if (craftItem.craft.items.length > 1) {
+        logger.debug(
+          `${craftItem.code} requires more than 1 ingredient. Skipping`,
+        );
+        continue;
+      } else {
+        logger.info(`Crafting ${craftItem.code} from ${ingredient}`);
+        return craftItem;
+      }
+    }
+    return;
+  }
+
+  /**
+   * @description Recycle any excess gear if there are more than 5 in the bank.
+   * Also recycles all of any item whose level is more than 10 below the lowest character level.
+   */
+  private async recycleExcessEquipment(
+    skill: CraftSkill,
+    contentsOfBank: SimpleItemSchema[],
+  ): Promise<boolean> {
+    const maxNumberNeededInBank = 5;
+    const obsoleteThreshold = this.character.lowestCharLevel - 10;
+
+    const itemListResponse = await getAllItemInformation({
+      craft_skill: skill,
+      max_level: this.character.getCharacterLevel(this.character.data, skill),
+    });
+    if (itemListResponse instanceof ApiError) {
+      this.character.handleErrors(itemListResponse);
+      return false;
+    }
+
+    for (const gear of itemListResponse.data) {
+      const content = contentsOfBank.find(
+        (bankItem) => bankItem.code === gear.code,
+      );
+      if (!content) {
+        logger.info(`No ${gear.code} found in the bank`);
+        continue;
+      }
+      const numInBank = content.quantity;
+
+      if (numInBank === undefined) {
+        logger.info(`${gear.code} not found in bank`);
+        continue;
+      }
+
+      if (gear.code === 'wooden_stick') {
+        logger.info(
+          `wooden_stick found. Deleting item as it can't be recycled.`,
+        );
+        const deleteResult = await actionDeleteItem(this.character.data, {
+          code: gear.code,
+          quantity: numInBank,
+        });
+        if (deleteResult instanceof ApiError) {
+          logger.error(
+            `Failed to delete ${numInBank} wooden_stick. [${deleteResult.error.code}] Message: ${deleteResult.error.message}`,
+          );
+          continue;
+        }
+      }
+
+      if (gear.level < obsoleteThreshold) {
+        logger.info(
+          `${gear.code} (level ${gear.level}) is more than 10 levels below lowest character level (${this.character.lowestCharLevel}). Recycling all ${numInBank}`,
+        );
+        await this.character.recycleItemNow(gear.code, numInBank);
+        continue;
+      }
+
+      if (numInBank <= maxNumberNeededInBank) {
+        logger.info(
+          `${numInBank}/${maxNumberNeededInBank} in the bank so no need to recycle ${gear.code}`,
+        );
+        continue;
+      }
+
+      await this.character.recycleItemNow(
+        gear.code,
+        numInBank - maxNumberNeededInBank,
+      );
+    }
+
+    return true;
+  }
+
+  /**
+   * Uses any gem bags in the bank
+   */
+  private async cleanUpBags(contentsOfBank: SimpleItemSchema[]) {
+    const itemListResponse = await getAllItemInformation({
+      type: 'consumable',
+    });
+    if (itemListResponse instanceof ApiError) {
+      this.character.handleErrors(itemListResponse);
+      return false;
+    }
+
+    for (const item of itemListResponse.data) {
+      if (item.subtype !== 'bag') {
+        logger.debug(`${item.name} is not a bag. Skipping`);
+        continue;
+      }
+
+      const content = contentsOfBank.find(
+        (bankItem) => bankItem.code === item.code,
+      );
+      if (!content) {
+        logger.info(`No ${item.code} found in the bank`);
+        continue;
+      }
+      const numInBank = content.quantity;
+
+      logger.info(`Found ${numInBank}x ${item.name} in the bank`);
+
+      await this.character.withdrawNow(numInBank, item.code);
+      return await this.character.useItem(item.code, numInBank);
+    }
+  }
+}

@@ -1,0 +1,576 @@
+import { actionCraft } from '../api_calls/Actions.js';
+import { logger } from '../utils.js';
+import { Character } from '../character/characterClass.js';
+import { ApiError } from './Error.js';
+import { Objective } from './Objective.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import { getItemInformation } from '../api_calls/Items.js';
+import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
+import { Role } from '../types/CharacterData.js';
+import { addToWishlist } from '../wishlist/functions.js';
+
+/**
+ * Maps a craft skill to the role responsible for it. Skills without an entry
+ * aren't gated by role, so any character crafts them with the normal logic.
+ *
+ * Only the crafter's skills are gated for now: gating alchemy/gathering skills
+ * caused non-specialist characters (e.g. a fighter needing health potions
+ * mid-fight) to wishlist an item they needed immediately and then fail.
+ */
+const SKILL_ROLE: Partial<Record<Skill, Role>> = {
+  mining: 'labourer',
+  woodcutting: 'labourer',
+  alchemy: 'healer',
+  weaponcrafting: 'crafter',
+  gearcrafting: 'crafter',
+  jewelrycrafting: 'crafter',
+};
+
+/**
+ * @description Crafts the requested amount of the item
+ * There are 2 ways this class should be used.
+ * 1. Calculates the remaining amount we need, after getting the current amount from
+ * inventory and bank. Set checkBank & includeInventory to true for this method
+ * 2. Takes in the remaining amount we need, ignoring bank and inventory. Set checkBank
+ * & includeInventory to false for this method
+ * It can also be used in a mix of both if you really desire it
+ * @todo
+ * - Empty inventory before starting, except for the item or any ingredients
+ *
+ */
+export class CraftObjective extends Objective {
+  target: ObjectiveTargets;
+  numBatches: number = 1;
+  numCraftsPerBatch: number;
+  checkBank?: boolean;
+  includeInventory?: boolean;
+  /**
+   * When true, an ingredient this character can't obtain itself is added to the
+   * wishlist and crafting continues to the next ingredient; the job then fails
+   * so it gets parked (onHold) until the requests are fulfilled. When false
+   * (the default) a missing ingredient just fails the craft, as before.
+   */
+  blockOnMissing: boolean;
+
+  constructor(
+    character: Character,
+    target: ObjectiveTargets,
+    checkBank?: boolean,
+    includeInventory?: boolean,
+    blockOnMissing?: boolean,
+  ) {
+    super(character, `craft_${target.quantity}_${target.code}`, 'not_started');
+
+    this.character = character;
+    this.jobFlavour = 'Craft';
+    this.target = target;
+    this.shouldEmitMetrics = true;
+    this.metricLabel = target.code;
+    this.checkBank = checkBank;
+    this.includeInventory = includeInventory ?? true;
+    this.blockOnMissing = blockOnMissing ?? false;
+  }
+
+  async runPrerequisiteChecks(): Promise<boolean> {
+    if (this.includeInventory) {
+      const quantyInInv = this.character.checkQuantityOfItemInInv(
+        this.target.code,
+      );
+
+      if (quantyInInv >= this.target.quantity) {
+        // Already have enough, set target to 0 so no crafting is needed
+        this.target.quantity = 0;
+      } else if (quantyInInv > 0) {
+        // Carrying some, so only need to craft the remainder
+        this.target.quantity = this.target.quantity - quantyInInv;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * @description Craft the item. Character will move to the correct workshop map
+   */
+  async run(): Promise<boolean> {
+    if (this.target.quantity === 0 || this.progress >= this.target.quantity) {
+      logger.info(
+        `Already crafted the requested amount (${this.target.quantity}) of ${this.target.code}. Completing job`,
+      );
+      // Batches are banked as they're crafted, so the order may be finished
+      // while the items are still in the bank. The caller checks what's carried.
+      await this.carryFinishedItems();
+      return true;
+    }
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      logger.debug(`Craft attempt ${attempt}/${this.maxRetries}`);
+
+      const targetItem = await getItemInformation(this.target.code);
+
+      if (targetItem instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(targetItem);
+
+        if (!shouldRetry || attempt === this.maxRetries) {
+          logger.error(`Craft failed after ${attempt} attempts`);
+          return false;
+        }
+      } else {
+        if (!(await this.checkStatus())) return false;
+
+        if (!targetItem.craft) {
+          logger.warn(
+            `Item ${targetItem.code} has no craft information. Failing`,
+          );
+          this.character.removeItemFromItemsToKeep(targetItem.code);
+          return false;
+        }
+
+        /**
+         * ToDo: Check all the skills required and wishlist any that don't belong to the crafter
+         * After this we loop through again and do the ones that the crafter can do
+         */
+        if (targetItem.craft?.skill) {
+          const skillNeeded = targetItem.craft.skill;
+
+          const requiredRole = SKILL_ROLE[skillNeeded];
+          if (requiredRole && this.character.role !== requiredRole) {
+            logger.warn(
+              `${this.character.data.name} (${this.character.role}) needs a ${skillNeeded} to craft ${targetItem.code}. Posting to wishlist`,
+            );
+            await addToWishlist({
+              itemCode: targetItem.code,
+              quantity: this.target.quantity,
+              characterName: this.character.data.name,
+              acquisitionMethod: skillNeeded,
+            });
+            // ToDo: Should add this job to an 'onHold' job list instead of ending it
+            return false;
+          }
+        }
+
+        // One craft consumes a single set of ingredients and provides
+        // craft.quantity output items, so the number of crafts needed is the
+        // requested item count divided by the results per-craft (rounded up).
+        const outputPerCraft = targetItem.craft.quantity ?? 1;
+        const outstanding = this.target.quantity - this.progress;
+        const craftsNeeded = Math.ceil(outstanding / outputPerCraft);
+
+        // Build shopping list so that we can ensure we have enough inventory space to collect everything
+        // If not enough inv space, split it into 2 jobs, craft half as much at once
+        // If still not enough, keep splitting in half until we have enough inv space
+        const batchInfo = this.calculateNumBatches(
+          targetItem.craft.items,
+          craftsNeeded,
+        );
+        this.numBatches = batchInfo.numBatches;
+        this.numCraftsPerBatch = batchInfo.numPerBatch;
+
+        const maps = this.character.findMaps({
+          content_code: targetItem.craft.skill,
+          content_type: 'workshop',
+        });
+        if (maps.length === 0) {
+          logger.error(`Cannot find any maps to craft ${this.target.code}`);
+          return false;
+        }
+
+        const contentLocation = this.character.evaluateClosestMap(maps);
+
+        let craftsProgress = 0;
+        for (let batch = 1; batch <= this.numBatches; batch++) {
+          if (craftsProgress >= craftsNeeded) {
+            logger.info(
+              `Successfully crafted ${this.progress} ${this.target.code}`,
+            );
+            await this.carryFinishedItems();
+            return true;
+          }
+
+          logger.info(`Crafting batch ${batch}/${this.numBatches}`);
+
+          if (!(await this.checkStatus())) return false;
+
+          // Clamp the final batch to what's still outstanding. numCraftsPerBatch
+          // is derived from inventory size, so when craftsNeeded isn't an exact
+          // multiple of it the last batch would otherwise over-craft and
+          // over-gather ingredients past the target.
+          const craftsThisBatch = CraftObjective.batchQuantity(
+            this.numCraftsPerBatch,
+            craftsNeeded,
+            craftsProgress,
+          );
+          const itemsThisBatch = craftsThisBatch * outputPerCraft;
+
+          const gathered = await this.gatherIngredients(
+            targetItem.craft.items,
+            craftsThisBatch,
+          );
+          if (!gathered) {
+            logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
+            return false;
+          }
+
+          for (const craftItem of targetItem.craft.items) {
+            this.character.addItemToItemsToKeep(craftItem.code);
+
+            const numInInvAfterGathering =
+              this.character.checkQuantityOfItemInInv(craftItem.code);
+            logger.debug(
+              `Carrying ${numInInvAfterGathering}/${craftItem.quantity * craftsThisBatch} ${craftItem.code}`,
+            );
+            if (numInInvAfterGathering < craftItem.quantity * craftsThisBatch) {
+              logger.warn(
+                `Carrying ${numInInvAfterGathering}/${craftItem.quantity * craftsThisBatch} ${craftItem.code}. Regathering`,
+              );
+
+              const gathered = await this.gatherIngredients(
+                targetItem.craft.items,
+                craftsThisBatch,
+              );
+              if (!gathered) {
+                logger.warn(
+                  `Regathering ingredients for ${targetItem.code} has failed`,
+                );
+                this.character.removeItemFromItemsToKeep(craftItem.code);
+                break;
+              }
+            }
+          }
+
+          if (!(await this.checkStatus())) return false;
+
+          if (!(await this.character.move(contentLocation))) {
+            logger.error(
+              `Could not reach workshop at x: ${contentLocation.x}, y: ${contentLocation.y} to craft ${this.target.code}`,
+            );
+            return false;
+          }
+
+          logger.info(
+            `Crafting ${itemsThisBatch} ${this.target.code} (${craftsThisBatch} crafts) at x: ${this.character.data.x}, y: ${this.character.data.y}`,
+          );
+
+          const response = await actionCraft(this.character.data, {
+            code: this.target.code,
+            quantity: craftsThisBatch,
+          });
+
+          if (response instanceof ApiError) {
+            const shouldRetry = await this.character.handleErrors(response);
+
+            if (!shouldRetry || attempt === this.maxRetries) {
+              logger.error(`Craft failed after ${attempt} attempts`);
+              return false;
+            }
+            break;
+          } else {
+            craftsProgress += craftsThisBatch;
+            this.progress += itemsThisBatch;
+
+            if (response.data.character) {
+              this.character.data = response.data.character;
+            } else {
+              logger.error('Craft response missing character data');
+            }
+
+            for (const ingredient of targetItem.craft?.items) {
+              this.character.removeItemFromItemsToKeep(ingredient.code);
+            }
+
+            if (this.numBatches > 1) {
+              logger.debug(`Depositing items from batch ${batch}`);
+              await this.character.depositNow(itemsThisBatch, this.target.code);
+            }
+
+            logger.info(
+              `Successfully crafted ${itemsThisBatch} ${this.target.code}`,
+            );
+          }
+        }
+        await this.carryFinishedItems();
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * @description Grabs all the crafted items out of the bank. Stops the caller from
+   * restarting the craft request thinking that nothing exists
+   */
+  private async carryFinishedItems(): Promise<void> {
+    const carried = this.character.checkQuantityOfItemInInv(this.target.code);
+    const shortfall = this.target.quantity - carried;
+
+    if (shortfall <= 0) {
+      return;
+    }
+
+    if (shortfall >= this.character.data.inventory_max_items) {
+      logger.debug(
+        `Leaving ${this.target.code} in the bank; ${shortfall} won't fit in the inventory`,
+      );
+      return;
+    }
+
+    const banked = await this.character.checkQuantityOfItemInBank(
+      this.target.code,
+    );
+    if (banked <= 0) {
+      return;
+    }
+
+    const toWithdraw = Math.min(shortfall, banked);
+    logger.debug(`Withdrawing ${toWithdraw} ${this.target.code} from bank`);
+    await this.character.withdrawNow(toWithdraw, this.target.code);
+  }
+
+  private async gatherIngredients(
+    craftingItems: SimpleItemSchema[],
+    numCrafts: number,
+  ): Promise<boolean> {
+    for (const craftingItem of craftingItems) {
+      const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
+        craftingItem.code,
+      );
+
+      if (craftingItemInfo instanceof ApiError) {
+        await this.character.handleErrors(craftingItemInfo);
+        this.character.removeItemFromItemsToKeep(craftingItem.code);
+        return false;
+      }
+
+      logger.debug(
+        `Collecting ${craftingItem.quantity * numCrafts} ${craftingItem.code}`,
+      );
+
+      let numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
+
+      let numInBank = await this.character.checkQuantityOfItemInBank(
+        craftingItem.code,
+      );
+
+      const totalIngredNeededToCraft = craftingItem.quantity * numCrafts;
+
+      if (numInInv >= totalIngredNeededToCraft) {
+        logger.info(
+          `${numInInv} ${craftingItem.code} in inventory already. No need to collect more`,
+        );
+        continue;
+      } else if (numInInv > 0) {
+        logger.info(
+          `${numInInv} ${craftingItem.code} in inventory already. Finding more`,
+        );
+      }
+      if (numInBank >= totalIngredNeededToCraft - numInInv) {
+        logger.info(`Found ${numInBank} ${craftingItem.code} in the bank`);
+        await this.character.withdrawNow(
+          totalIngredNeededToCraft - numInInv,
+          craftingItem.code,
+        );
+
+        numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
+      }
+
+      if (numInInv < totalIngredNeededToCraft) {
+        if (!(await this.checkStatus())) return false;
+
+        if (craftingItemInfo.subtype === 'mob') {
+          logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
+
+          if (
+            !(await this.character.gatherNow(
+              totalIngredNeededToCraft,
+              craftingItem.code,
+              true,
+              true,
+            ))
+          ) {
+            logger.warn(
+              `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
+            );
+            if (this.blockOnMissing) {
+              await this.requestIngredientFromWishlist({
+                code: craftingItem.code,
+                quantity: totalIngredNeededToCraft,
+              });
+              continue;
+            }
+            this.character.removeItemListfromItemsToKeep(craftingItems);
+            return false;
+          }
+
+          if (!(await this.checkStatus())) return false;
+          // ToDo: Find a better way to handle items that are craftable and gatherable (i.e. sap)
+        } else if (
+          craftingItemInfo.craft !== null &&
+          craftingItemInfo.code !== 'sap'
+        ) {
+          logger.debug(`Resource ${craftingItemInfo.code} is a craftable item`);
+
+          if (
+            !(await this.character.craftNow(
+              totalIngredNeededToCraft - numInInv,
+              craftingItem.code,
+              true,
+              false,
+              this.blockOnMissing,
+            ))
+          ) {
+            logger.warn(
+              `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
+            );
+            if (this.blockOnMissing) {
+              await this.requestIngredientFromWishlist({
+                code: craftingItem.code,
+                quantity: totalIngredNeededToCraft,
+              });
+              continue;
+            }
+            this.character.removeItemListfromItemsToKeep(craftingItems);
+            return false;
+          }
+
+          if (!(await this.checkStatus())) return false;
+        } else {
+          logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
+
+          // Pass the total amount needed, let GatherObjective figure out how many to gather
+          if (
+            !(await this.character.gatherNow(
+              totalIngredNeededToCraft,
+              craftingItem.code,
+              true,
+              true,
+            ))
+          ) {
+            logger.warn(
+              `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
+            );
+            if (this.blockOnMissing) {
+              await this.requestIngredientFromWishlist({
+                code: craftingItem.code,
+                quantity: totalIngredNeededToCraft,
+              });
+              continue;
+            }
+            this.character.removeItemListfromItemsToKeep(craftingItems);
+            return false;
+          }
+
+          if (!(await this.checkStatus())) return false;
+        }
+      }
+
+      // Ensure that we're carrying the correct amount of ingredients. They may have been deposited into bank
+      numInInv = this.character.checkQuantityOfItemInInv(craftingItem.code);
+      numInBank = await this.character.checkQuantityOfItemInBank(
+        craftingItem.code,
+      );
+      if (numInInv >= totalIngredNeededToCraft) {
+        logger.info(`${numInInv} in inventory. Moving on to craft`);
+        continue;
+      } else if (numInBank >= totalIngredNeededToCraft - numInInv) {
+        return await this.character.withdrawNow(
+          totalIngredNeededToCraft - numInInv,
+          craftingItem.code,
+        );
+      } else {
+        logger.info(
+          `Need ${totalIngredNeededToCraft} but only carrying ${numInInv} and ${numInBank} in the bank`,
+        );
+      }
+    }
+
+    // If we wishlisted any ingredient we can't complete the craft now — fail so
+    // the job is parked until the requests are fulfilled.
+    return !this.raisedBlockingRequest;
+  }
+
+  /**
+   * @description Calculates how many batches we need to split the craft job into
+   * Often we don't have enough inventory space to craft them all at once
+   * @param craftList
+   * @returns
+   * - numBatches - The amount of batches to craft
+   * - numPerBatch - The amount of items to craft per batch
+   */
+  /**
+   * @description How many crafts to perform in the current batch: the
+   * inventory-derived batch size, clamped to what's still outstanding so the
+   * final batch never over-crafts (and over-gathers ingredients) past the
+   * target when craftsNeeded isn't an exact multiple of the batch size.
+   */
+  static batchQuantity(
+    numCraftsPerBatch: number,
+    craftsNeeded: number,
+    craftsProgress: number,
+  ): number {
+    return Math.min(numCraftsPerBatch, craftsNeeded - craftsProgress);
+  }
+
+  private calculateNumBatches(
+    craftList: SimpleItemSchema[],
+    craftsNeeded: number,
+  ): {
+    numBatches: number;
+    numPerBatch: number;
+  } {
+    const numIngredients = this.getTotalNumberOfIngredients(
+      craftList,
+      craftsNeeded,
+    );
+
+    const batches: { numBatches: number; numPerBatch: number } =
+      this.getTotalNumberOfIngredientsPerBatch(numIngredients, 1, craftsNeeded);
+
+    return batches;
+  }
+
+  /**
+   * @description Calculates how many ingredients are needed
+   * @returns the total number of ingredients to perform craftsNeeded crafts
+   */
+  private getTotalNumberOfIngredients(
+    craftList: SimpleItemSchema[],
+    craftsNeeded: number,
+  ): number {
+    let totalNumIngredients = 0;
+    for (const craftItem of craftList) {
+      totalNumIngredients += craftItem.quantity * craftsNeeded;
+    }
+    return totalNumIngredients;
+  }
+
+  /**
+   * @description Checks if we can carry all the ingredients for a batch at once
+   * If not, return false, telling the caller to split it in half
+   */
+  private getTotalNumberOfIngredientsPerBatch(
+    totalNumIngredients: number,
+    numBatches: number,
+    numPerBatch: number,
+  ): { numBatches: number; numPerBatch: number } {
+    const numIngredientsPerBatch = Math.ceil(totalNumIngredients / numBatches);
+    const newNumPerBatch = Math.ceil(numPerBatch / numBatches);
+    if (
+      numIngredientsPerBatch >
+      this.character.data.inventory_max_items * 0.9
+    ) {
+      numBatches += 1;
+      return this.getTotalNumberOfIngredientsPerBatch(
+        totalNumIngredients,
+        numBatches,
+        numPerBatch,
+      );
+    } else {
+      logger.debug(
+        `Found ${numBatches} batches with ${newNumPerBatch} items/${numIngredientsPerBatch} ingredients per batch`,
+      );
+    }
+    return { numBatches: numBatches, numPerBatch: newNumPerBatch };
+  }
+}

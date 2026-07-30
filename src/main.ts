@@ -1,30 +1,58 @@
-import { Character } from './objectives/Character.js';
-import { getCharacter } from './api_calls/Character.js';
+import { Character } from './character/characterClass.js';
+import { getCharacter } from './character/apiCalls.js';
 import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
-import { ApiUrl, CharName, logger } from './utils.js';
+import { GetCharacterData, getRandomInt, logger, sleep } from './utils.js';
+import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
 import EquipRouter from './routes/Equip.js';
 import FightRouter from './routes/Fight.js';
 import RecycleRouter from './routes/Recycle.js';
-import { ApiError } from './objectives/Error.js';
+import { ApiError } from './core/Error.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
 import BankRouter from './routes/Bank.js';
+import CharacterRouter from './character/routes.js';
+import { CharacterSchema } from './types/types.js';
+import { AllCharNames, CharName } from './constants.js';
+import { register } from './metrics.js';
+import { db } from './db.js';
+import EventRouter from './events/routes.js';
+import WishlistRouter from './wishlist/routes.js';
+import { reclaimExecutingWishlistRequests } from './wishlist/functions.js';
 
 async function main() {
-  const charData = await getCharacter(CharName);
-  if (charData instanceof ApiError) {
-    logger.error(`Failed to get character data`);
-    return;
+  let charDetails: CharacterSchema[] = await GetCharacterData();
+
+  const char = new Character(
+    charDetails.find((charData) => charData.name === CharName),
+  );
+  await char.init(charDetails);
+
+  /** Test the DB connection */
+  const isDbConnected = await db.testConnection();
+
+  if (!isDbConnected) {
+    logger.error(
+      'Critical failure: Could not connect to the local database. Exiting.',
+    );
+    process.exit(1);
   } else {
-    logger.debug(`Gathered data for ${charData.name}`);
+    logger.info('Database connection successful!');
   }
-  const char = new Character(charData);
-  await char.init();
+
+  // A fresh process has nothing of its own in flight, so any request this
+  // character still holds was stranded by an interrupted fulfilment; release it
+  // so it can be picked up again rather than blocking jobs waiting on it.
+  const reclaimed = await reclaimExecutingWishlistRequests(CharName);
+  if (reclaimed > 0) {
+    logger.info(
+      `Reclaimed ${reclaimed} stranded executing wishlist request(s)`,
+    );
+  }
 
   if (ApiUrl === 'https://api-test.artifactsmmo.com') {
     logger.info(`-- Using Test server --`);
@@ -34,9 +62,16 @@ async function main() {
   const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
+
+  app.get('/metrics', async (_req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  });
+
   app.use('/bank', BankRouter(char));
   app.use('/craft', CraftRouter(char));
   app.use('/equip', EquipRouter(char));
+  app.use('/events', EventRouter(char));
   app.use('/fight', FightRouter(char));
   app.use('/gather', GatherRouter(char));
   app.use('/items', ItemsRouter(char));
@@ -45,6 +80,8 @@ async function main() {
   app.use('/task', TaskRouter(char));
   app.use('/trade', TradeRouter(char));
   app.use('/train', TrainSkillRouter(char));
+  app.use('/character', CharacterRouter(char));
+  app.use('/wishlist', WishlistRouter(char));
 
   app.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);

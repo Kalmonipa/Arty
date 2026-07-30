@@ -1,19 +1,28 @@
-import { ApiError } from '../objectives/Error.js';
+import { ApiError } from '../core/Error.js';
 import {
-  DataPageMonsterSchema,
+  StaticDataPageMonsterSchema,
   GetAllMonstersMonstersGetParams,
   MonsterResponseSchema,
 } from '../types/types.js';
-import { ApiUrl, MyHeaders } from '../utils.js';
+import { ApiUrl } from '../constants.js';
+import { apiRequest } from './request.js';
+
+/**
+ * Monster data is static, so once fetched it is cached by code for the lifetime
+ * of the process. Warmed in bulk by getAllMonsterInformation (Character.init
+ * loads the full monster list) and read by getMonsterInformation to avoid
+ * per-monster API calls during combat gear/loadout evaluation.
+ */
+const monsterCache = new Map<string, MonsterResponseSchema>();
+
+/** Test seam: drop the cached monsters so each test starts from a clean fetch. */
+export function clearMonsterCache(): void {
+  monsterCache.clear();
+}
 
 export async function getAllMonsterInformation(
   data: GetAllMonstersMonstersGetParams,
-): Promise<DataPageMonsterSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
-
+): Promise<StaticDataPageMonsterSchema | ApiError> {
   const apiUrl = new URL(`${ApiUrl}/monsters`);
 
   if (data.drop) {
@@ -35,50 +44,42 @@ export async function getAllMonsterInformation(
     apiUrl.searchParams.set('name', data.name);
   }
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      throw new ApiError({
-        code: response.status,
-        message: `Unknown error from /monsters: ${response}`,
-      });
+  const res = await apiRequest<StaticDataPageMonsterSchema>({
+    url: apiUrl,
+    fallbackMessage: `Unknown error from /monsters`,
+  });
+
+  if (!(res instanceof ApiError)) {
+    for (const monster of res.data) {
+      monsterCache.set(monster.code, { data: monster });
     }
-    return await response.json();
-  } catch (error) {
-    return error as ApiError;
   }
+
+  return res;
 }
 
 export async function getMonsterInformation(
   monsterCode: string,
 ): Promise<MonsterResponseSchema | ApiError> {
-  const requestOptions = {
-    method: 'GET',
-    headers: MyHeaders,
-  };
+  const cached = monsterCache.get(monsterCode);
+  if (cached) {
+    return cached;
+  }
 
   const apiUrl = new URL(`${ApiUrl}/monsters/${monsterCode}`);
 
-  try {
-    const response = await fetch(apiUrl, requestOptions);
-    if (!response.ok) {
-      let message: string;
-      switch (response.status) {
-        case 404:
-          message = 'Map not found';
-          break;
-        default:
-          message = `Unknown error from /monsters: ${response}`;
-          break;
-      }
-      throw new ApiError({
-        code: response.status,
-        message: message,
-      });
-    }
+  const res = await apiRequest<MonsterResponseSchema>({
+    url: apiUrl,
+    errorMessages: {
+      404: `Monster not found: ${monsterCode}`,
+    },
+    fallbackMessage: `Unknown error from /monsters`,
+  });
 
-    return await response.json();
-  } catch (error) {
-    return error as ApiError;
+  if (res instanceof ApiError) {
+    return res;
   }
+
+  monsterCache.set(monsterCode, res);
+  return res;
 }

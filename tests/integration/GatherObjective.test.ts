@@ -1,14 +1,17 @@
 import { jest } from '@jest/globals';
-import { GatherObjective } from '../../src/objectives/GatherObjective.js';
+import { GatherObjective } from '../../src/core/GatherObjective.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
-import { MapSchema, ItemSchema } from '../../src/types/types.js';
+import {
+  MapSchema,
+  ItemSchema,
+  CharacterSchema,
+} from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
-import { getMaps } from '../../src/api_calls/Maps.js';
 import { actionGather } from '../../src/api_calls/Actions.js';
 
 // Mock item data
@@ -70,6 +73,7 @@ const mockResourceData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -89,6 +93,7 @@ const mockMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -101,10 +106,6 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(),
-}));
-
 jest.mock('../../src/api_calls/Monsters', () => ({
   getAllMonsterInformation: jest.fn(),
 }));
@@ -115,7 +116,10 @@ jest.mock('../../src/api_calls/Resources', () => ({
 
 // Simple mock character
 class SimpleMockCharacter {
-  data = mockCharacterData;
+  data = {
+    ...mockCharacterData,
+    inventory: mockCharacterData.inventory.map((slot) => ({ ...slot })),
+  };
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
@@ -174,6 +178,8 @@ class SimpleMockCharacter {
     },
   );
 
+  findMaps = jest.fn((): MapSchema[] => mockMapData.data as MapSchema[]);
+
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
   });
@@ -186,28 +192,34 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  getCharacterLevel = jest.fn((skillName?: string): number => {
-    switch (skillName) {
-      case 'alchemy':
-        return this.data.alchemy_level;
-      case 'cooking':
-        return this.data.cooking_level;
-      case 'fishing':
-        return this.data.fishing_level;
-      case 'gearcrafting':
-        return this.data.gearcrafting_level;
-      case 'jewelrycrafting':
-        return this.data.jewelrycrafting_level;
-      case 'mining':
-        return this.data.mining_level;
-      case 'weaponcrafting':
-        return this.data.weaponcrafting_level;
-      case 'woodcutting':
-        return this.data.woodcutting_level;
-      default:
-        return this.data.level;
-    }
+  checkForActiveEvents = jest.fn((): boolean => {
+    return true;
   });
+
+  getCharacterLevel = jest.fn(
+    (char?: CharacterSchema, skillName?: string): number => {
+      switch (skillName) {
+        case 'alchemy':
+          return this.data.alchemy_level;
+        case 'cooking':
+          return this.data.cooking_level;
+        case 'fishing':
+          return this.data.fishing_level;
+        case 'gearcrafting':
+          return this.data.gearcrafting_level;
+        case 'jewelrycrafting':
+          return this.data.jewelrycrafting_level;
+        case 'mining':
+          return this.data.mining_level;
+        case 'weaponcrafting':
+          return this.data.weaponcrafting_level;
+        case 'woodcutting':
+          return this.data.woodcutting_level;
+        default:
+          return this.data.level;
+      }
+    },
+  );
 
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
@@ -242,24 +254,29 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
     // Create fresh gather objective
     gatherObjective = new GatherObjective(mockCharacter as any, target);
 
-    // Mock actionGather to simulate successful gathering
+    // Mock actionGather to simulate successful gathering. Each gather adds the
+    // ore to the inventory so the progress counter (which reads real holdings)
+    // advances and the loop terminates.
     (
       actionGather as jest.MockedFunction<typeof actionGather>
-    ).mockResolvedValue({
-      data: {
-        character: mockCharacter.data,
-        cooldown: {
-          total_seconds: 1,
-          remaining_seconds: 0,
-          started_at: new Date().toISOString(),
-          expiration: new Date(Date.now() + 1000).toISOString(),
-          reason: 'gathering',
+    ).mockImplementation(async () => {
+      mockCharacter.addItemToInventory('iron_ore', 1);
+      return {
+        data: {
+          character: mockCharacter.data,
+          cooldown: {
+            total_seconds: 1,
+            remaining_seconds: 0,
+            started_at: new Date().toISOString(),
+            expiration: new Date(Date.now() + 1000).toISOString(),
+            reason: 'gathering',
+          },
+          details: {
+            xp: 10,
+            items: [{ code: 'iron_ore', quantity: 1 }],
+          },
         },
-        details: {
-          xp: 10,
-          items: [{ code: 'iron_ore', quantity: 1 }],
-        },
-      },
+      };
     });
   });
 
@@ -301,7 +318,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should withdraw partial amount from bank and gather the rest', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(3);
+      mockCharacter.addItemToInventory('iron_ore', 3);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
       mockCharacter.withdrawNow.mockResolvedValue(true);
 
@@ -314,9 +331,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
@@ -344,6 +359,32 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       expect(objective.status).toBe('not_started');
     });
 
+    it('should call evaluateGear with item code as targetResource', async () => {
+      // Arrange
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+
+      // Mock the API calls for gathering
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue(mockIronOreData);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue(mockResourceData);
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
+
+      // Act
+      await gatherObjective.run();
+
+      // Assert
+      expect(mockCharacter.evaluateGear).toHaveBeenCalledWith(
+        'mining', // resourceDetails.subtype cast to WeaponFlavours
+        undefined, // targetMob
+        'iron_ore', // targetResource — the item code being gathered
+      );
+    });
+
     it('should return false if gathering item is wooden_stick', async () => {
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
@@ -360,7 +401,6 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should gather all and not withdraw from bank when bank has 0', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
       mockCharacter.withdrawNow.mockResolvedValue(true);
 
@@ -373,9 +413,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
@@ -395,7 +433,6 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
   describe('New simplified logic tests', () => {
     it('should reset progress to 0 when starting to gather', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Mock the API calls
@@ -407,9 +444,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -428,7 +463,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should calculate correct quantity to gather after bank withdrawal', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(2);
+      mockCharacter.addItemToInventory('iron_ore', 2);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(3);
       mockCharacter.withdrawNow.mockResolvedValue(true);
 
@@ -441,9 +476,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -482,8 +515,6 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should not check bank when checkBank is false', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
-
       // Mock the API calls
       (
         getItemInformation as jest.MockedFunction<typeof getItemInformation>
@@ -493,9 +524,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -514,7 +543,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
     it('should handle includeInventory parameter correctly', async () => {
       // Arrange
-      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(5);
+      mockCharacter.addItemToInventory('iron_ore', 5);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
       // Mock the API calls
@@ -526,9 +555,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
           typeof getAllResourceInformation
         >
       ).mockResolvedValue(mockResourceData);
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        mockMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(mockMapData.data as MapSchema[]);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -543,6 +570,100 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       // Assert
       expect(result).toBe(true);
       // Should gather 5 more (10 - 5 = 5)
+    });
+  });
+
+  describe('Flat rate side drops', () => {
+    const algaeNodes = [
+      {
+        name: 'Gudgeon Fishing Spot',
+        code: 'gudgeon_spot',
+        skill: 'fishing' as const,
+        level: 1,
+        drops: [{ code: 'algae', rate: 10, min_quantity: 1, max_quantity: 1 }],
+      },
+      {
+        name: 'Salmon Fishing Spot',
+        code: 'salmon_spot',
+        skill: 'fishing' as const,
+        level: 40,
+        drops: [{ code: 'algae', rate: 10, min_quantity: 1, max_quantity: 1 }],
+      },
+    ];
+
+    const arrangeAlgaeGather = (
+      fishingLevel: number,
+      fleetWeaponcrafting: number,
+    ) => {
+      mockCharacter.data.fishing_level = fishingLevel;
+      (mockCharacter as any).role = 'healer';
+      (mockCharacter as any).highestWeaponcraftingLevel = fleetWeaponcrafting;
+
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue({
+        ...mockIronOreData,
+        code: 'algae',
+        name: 'Algae',
+        level: 1,
+        subtype: 'fishing',
+      } as ItemSchema);
+
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue({
+        data: algaeNodes,
+        total: algaeNodes.length,
+        page: 1,
+        pages: 1,
+        size: 50,
+      } as any);
+
+      (
+        actionGather as jest.MockedFunction<typeof actionGather>
+      ).mockImplementation(async () => {
+        mockCharacter.addItemToInventory('algae', 1);
+        return {
+          data: {
+            character: mockCharacter.data,
+            cooldown: {
+              total_seconds: 1,
+              remaining_seconds: 0,
+              started_at: new Date().toISOString(),
+              expiration: new Date(Date.now() + 1000).toISOString(),
+              reason: 'gathering',
+            },
+            details: { xp: 0, items: [{ code: 'algae', quantity: 1 }] },
+          },
+        } as any;
+      });
+
+      return new GatherObjective(mockCharacter as any, {
+        code: 'algae',
+        quantity: 2,
+      });
+    };
+
+    it('gathers algae from the cheapest node once fishing outruns fleet weaponcrafting', async () => {
+      const objective = arrangeAlgaeGather(43, 24);
+
+      await objective.run();
+
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+        content_code: 'gudgeon_spot',
+      });
+    });
+
+    it('gathers algae from the highest usable node while fishing is still behind', async () => {
+      const objective = arrangeAlgaeGather(40, 44);
+
+      await objective.run();
+
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+        content_code: 'salmon_spot',
+      });
     });
   });
 });

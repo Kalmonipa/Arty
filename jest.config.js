@@ -8,7 +8,7 @@ export default {
         useESM: true,
         tsconfig: {
           module: 'esnext',
-          target: 'es2020',
+          target: 'es2024',
           moduleResolution: 'node',
           allowSyntheticDefaultImports: true,
           esModuleInterop: true,

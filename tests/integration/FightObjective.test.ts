@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { FightObjective } from '../../src/objectives/FightObjective.js';
+import { FightObjective } from '../../src/core/FightObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/objectives/Error.js';
+import { ApiError } from '../../src/core/Error.js';
 import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { HealthStatus } from '../../src/types/CharacterData.js';
 
@@ -11,19 +11,14 @@ jest.mock('../../src/api_calls/Actions', () => ({
   actionFight: jest.fn(),
 }));
 
-jest.mock('../../src/api_calls/Maps', () => ({
-  getMaps: jest.fn(),
-}));
-
 jest.mock('../../src/api_calls/Monsters', () => ({
   getMonsterInformation: jest.fn(),
 }));
 
 // Import the mocked functions
 import { actionFight } from '../../src/api_calls/Actions.js';
-import { getMaps } from '../../src/api_calls/Maps.js';
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
-import { ItemSlot } from '../../src/types/types.js';
+import { CharacterSchema, ItemSlot, Skill } from '../../src/types/types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -31,6 +26,87 @@ class SimpleMockCharacter {
   minEquippedUtilities = 5;
   currentExecutingJob?: { objectiveId: string };
   createdTrainCombatObjective?: { parentId?: string; targetLevel: number };
+
+  utilitiesMap = {
+    restore: [
+      {
+        name: 'Small Health Potion',
+        code: 'small_health_potion',
+        level: 5,
+        type: 'utility',
+        subtype: 'potion',
+        description:
+          'A compact potion that restores a bit of health when most needed. Fits in any pocket.',
+        conditions: [
+          {
+            code: 'level',
+            operator: 'gt',
+            value: 4,
+          },
+        ],
+        effects: [
+          {
+            code: 'restore',
+            value: 30,
+            description:
+              'Restores 30 HP at the start of the turn if the player has lost more than 50% of their health points.',
+          },
+        ],
+        craft: {
+          skill: 'alchemy',
+          level: 5,
+          items: [
+            {
+              code: 'sunflower',
+              quantity: 3,
+            },
+          ],
+          quantity: 1,
+        },
+        tradeable: true,
+      },
+      {
+        name: 'Minor Health Potion',
+        code: 'minor_health_potion',
+        level: 20,
+        type: 'utility',
+        subtype: 'potion',
+        description:
+          'A small but effective potion. Restores a fair amount of health in a pinch.',
+        conditions: [
+          {
+            code: 'level',
+            operator: 'gt',
+            value: 19,
+          },
+        ],
+        effects: [
+          {
+            code: 'restore',
+            value: 70,
+            description:
+              'Restores 70 HP at the start of the turn if the player has lost more than 50% of their health points.',
+          },
+        ],
+        craft: {
+          skill: 'alchemy',
+          level: 20,
+          items: [
+            {
+              code: 'nettle_leaf',
+              quantity: 2,
+            },
+            {
+              code: 'algae',
+              quantity: 1,
+            },
+          ],
+          quantity: 1,
+        },
+        tradeable: true,
+      },
+    ],
+  };
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
@@ -53,6 +129,17 @@ class SimpleMockCharacter {
     async (quantity: number, code: string): Promise<boolean> => {
       // Mock successful withdrawal
       this.addItemToInventory(code, quantity);
+      return true;
+    },
+  );
+
+  equipNow = jest.fn(
+    async (
+      itemName: string,
+      itemSlot: ItemSlot,
+      quantity?: number,
+    ): Promise<boolean> => {
+      this.data.weapon_slot = itemName;
       return true;
     },
   );
@@ -91,6 +178,8 @@ class SimpleMockCharacter {
   evaluateClosestMap = jest.fn((maps: any[]): { x: number; y: number } => {
     return { x: maps[0].x, y: maps[0].y };
   });
+
+  findMaps = jest.fn((): any[] => mockMapData.data);
 
   evaluateDepositItemsInBank = jest.fn(async (): Promise<void> => {
     // Mock implementation
@@ -137,6 +226,17 @@ class SimpleMockCharacter {
         return { ...inventoryFood[0], source: 'inventory' as const };
       }
       return null;
+    },
+  );
+
+  getCharacterLevel = jest.fn(
+    (char?: CharacterSchema, skillName?: Skill): number => {
+      switch (skillName) {
+        case 'alchemy':
+          return 12;
+        default:
+          return 14;
+      }
     },
   );
 
@@ -263,6 +363,31 @@ const mockFightResponse = {
   },
 };
 
+const mockLossResponse = {
+  data: {
+    cooldown: {
+      total_seconds: 5,
+      remaining_seconds: 5,
+      started_at: '2025-10-01T16:52:35.196Z',
+      expiration: '2025-10-01T16:52:40.196Z',
+      reason: 'fight' as const,
+    },
+    fight: {
+      result: 'loss' as const,
+      turns: 10,
+      opponent: 'red_slime',
+      logs: ['Character attacks', 'Monster attacks', 'Character loses'],
+      characters: [],
+    },
+    characters: [
+      {
+        ...mockCharacterData,
+        hp: 0,
+      },
+    ],
+  },
+};
+
 const mockMapData = {
   data: [
     {
@@ -280,6 +405,7 @@ const mockMapData = {
   ],
   total: 1,
   page: 1,
+  pages: 1,
   size: 50,
 };
 
@@ -344,9 +470,7 @@ describe('FightObjective Integration Tests', () => {
     fightObjective = new FightObjective(mockCharacter as any, target);
 
     // Set up default mock responses
-    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-      mockMapData,
-    );
+    mockCharacter.findMaps.mockReturnValue(mockMapData.data);
     (actionFight as jest.MockedFunction<typeof actionFight>).mockResolvedValue(
       mockFightResponse,
     );
@@ -376,7 +500,9 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(getMaps).toHaveBeenCalledWith({ content_code: 'red_slime' });
+      expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+        content_code: 'red_slime',
+      });
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
       expect(actionFight).toHaveBeenCalledTimes(5); // Should fight 5 times
     });
@@ -395,30 +521,6 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.evaluateGear).toHaveBeenCalled();
       //expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
-
-    // it('should handle low food levels in prerequisites', async () => {
-    //   // Arrange
-    //   mockCharacter.checkFoodLevels.mockResolvedValue(false);
-
-    //   // Act
-    //   const result = await fightObjective.runPrerequisiteChecks();
-
-    //   // Assert
-    //   expect(result).toBe(true);
-    //   expect(mockCharacter.topUpFood).toHaveBeenCalled();
-    // });
-
-    // it('should fail prerequisite checks if fight simulation fails', async () => {
-    //   // Arrange
-    //   mockCharacter.simulateFightNow.mockResolvedValue(false);
-    //   mockCharacter.trainCombatLevelNow.mockResolvedValue(true);
-
-    //   // Act
-    //   const result = await fightObjective.runPrerequisiteChecks();
-
-    //   // Assert
-    //   expect(result).toBe(false);
-    // });
   });
 
   describe('Health management', () => {
@@ -455,7 +557,7 @@ describe('FightObjective Integration Tests', () => {
     });
   });
 
-  describe('Utility management', () => {
+  describe('Utility1 management', () => {
     it('should equip utility when quantity is low', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
@@ -475,7 +577,7 @@ describe('FightObjective Integration Tests', () => {
     it('should not equip utility when quantity is sufficient', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
-      mockCharacter.data.utility1_slot_quantity = 10; // Above minEquippedUtilities
+      mockCharacter.data.utility1_slot_quantity = 30; // Above minEquippedUtilities
 
       // Act
       const result = await fightObjective.run();
@@ -500,6 +602,19 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
     });
   });
+
+  // ToDo: Get the antipoison tests working
+  // describe('Utility2 management', () => {
+  //   it('should equip antidotes if monster has poison effect', async () => {
+  //     mockCharacter.data.utility2_slot_quantity = 0;
+  //     mockCharacter.equipUtility.mockResolvedValue(true);
+
+  //     const result = await fightObjective.runPrerequisiteChecks();
+
+  //     expect(result).toBe(true);
+  //     expect(mockCharacter.equipUtility).toHaveBeenCalledWith('antipoison', 'utility2')
+  //   })
+  // })
 
   describe('Error handling', () => {
     it('should handle API errors and retry', async () => {
@@ -551,30 +666,9 @@ describe('FightObjective Integration Tests', () => {
       expect(actionFight).toHaveBeenCalledTimes(1); // Should fail on first attempt
     });
 
-    it('should handle getMaps API error', async () => {
-      // Arrange
-      const apiError = new ApiError({ code: 500, message: 'Maps API error' });
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        apiError,
-      );
-      mockCharacter.handleErrors.mockResolvedValue(false);
-
-      // Act
-      const result = await fightObjective.run();
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-    });
-
     it('should handle no maps found', async () => {
       // Arrange
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue({
-        data: [],
-        total: 0,
-        page: 1,
-        size: 50,
-      });
+      mockCharacter.findMaps.mockReturnValue([]);
 
       mockCharacter.addItemToInventory('apple', 20);
 
@@ -783,11 +877,10 @@ describe('FightObjective Integration Tests', () => {
           ],
           total: 1,
           page: 1,
+          pages: 1,
           size: 50,
         };
-        (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-          testMapData,
-        );
+        mockCharacter.findMaps.mockReturnValue(testMapData.data);
 
         mockCharacter.addItemToInventory('apple', 20);
 
@@ -796,7 +889,9 @@ describe('FightObjective Integration Tests', () => {
 
         // Assert
         expect(result).toBe(true);
-        expect(getMaps).toHaveBeenCalledWith({ content_code: test.code });
+        expect(mockCharacter.findMaps).toHaveBeenCalledWith({
+          content_code: test.code,
+        });
         expect(actionFight).toHaveBeenCalledTimes(test.quantity);
 
         // Reset for next test
@@ -805,6 +900,72 @@ describe('FightObjective Integration Tests', () => {
           actionFight as jest.MockedFunction<typeof actionFight>
         ).mockResolvedValue(mockFightResponse);
       }
+    });
+
+    it('should stop fighting and return false after 3 consecutive losses', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockResolvedValue(mockLossResponse as any);
+
+      // Act
+      const result = await fightObjective.run();
+
+      // Assert
+      expect(result).toBe(false);
+      expect(fightObjective.lostTooManyFights).toBe(true);
+      expect(actionFight).toHaveBeenCalledTimes(3);
+    });
+
+    it('should not count lost fights toward progress', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const lossTarget: ObjectiveTargets = { code: 'red_slime', quantity: 2 };
+      const lossObjective = new FightObjective(
+        mockCharacter as any,
+        lossTarget,
+      );
+      // lose twice, then win the two required fights
+      (actionFight as jest.MockedFunction<typeof actionFight>)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValue(mockFightResponse);
+
+      // Act
+      const result = await lossObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(lossObjective.progress).toBe(2);
+      expect(actionFight).toHaveBeenCalledTimes(4); // 2 losses + 2 wins
+    });
+
+    it('should reset the loss counter after a win', async () => {
+      // Arrange
+      mockCharacter.addItemToInventory('apple', 20);
+      const resetTarget: ObjectiveTargets = { code: 'red_slime', quantity: 3 };
+      const resetObjective = new FightObjective(
+        mockCharacter as any,
+        resetTarget,
+      );
+      // Interleave losses and wins so it never loses 3 in a row
+      (actionFight as jest.MockedFunction<typeof actionFight>)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockFightResponse)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockFightResponse)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValueOnce(mockFightResponse);
+
+      // Act
+      const result = await resetObjective.run();
+
+      // Assert
+      expect(result).toBe(true);
+      expect(resetObjective.lostTooManyFights).toBe(false);
+      expect(resetObjective.progress).toBe(3);
+      expect(actionFight).toHaveBeenCalledTimes(6);
     });
 
     it('should handle progress tracking correctly', async () => {
@@ -847,11 +1008,10 @@ describe('FightObjective Integration Tests', () => {
         ],
         total: 1,
         page: 1,
+        pages: 1,
         size: 50,
       };
-      (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
-        customMapData,
-      );
+      mockCharacter.findMaps.mockReturnValue(customMapData.data);
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
 
       mockCharacter.addItemToInventory('apple', 20);
@@ -923,7 +1083,7 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
-    it('should skip fight simulation for boss monsters', async () => {
+    it('should skip fight simulation for boss monsters with no participants', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
       const bossMonsterData = {
@@ -962,18 +1122,18 @@ describe('FightObjective Integration Tests', () => {
       const bossObjective = new FightObjective(
         mockCharacter as any,
         bossTarget,
-        ['testchar1', 'testChar2'],
+        //['testchar1', 'testChar2'],
       );
 
       // Act
       const result = await bossObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result).toBe(false);
       expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
     });
 
-    it('should skip fight simulation for elite monsters', async () => {
+    it('should run fight simulation for elite monsters', async () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
       const eliteMonsterData = {
@@ -1019,7 +1179,7 @@ describe('FightObjective Integration Tests', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
     it('should return false if attempting to fight boss alone', async () => {

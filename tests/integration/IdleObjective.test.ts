@@ -1,0 +1,626 @@
+import { jest } from '@jest/globals';
+import { IdleObjective } from '../../src/idleObjectives/IdleObjective.js';
+import { mockCharacterData } from '../mocks/apiMocks.js';
+import { ItemSchema, CharacterSchema } from '../../src/types/types.js';
+import { GearEffects } from '../../src/types/ItemData.js';
+import { ApiError } from '../../src/core/Error.js';
+
+jest.mock('../../src/api_calls/NPC', () => ({
+  getAllNpcItems: jest.fn(),
+}));
+
+jest.mock('../../src/api_calls/Items', () => ({
+  actionClaimPendingItems: jest.fn(),
+  getAllItemInformation: jest.fn(),
+  getPendingItems: jest.fn(),
+}));
+
+jest.mock('../../src/api_calls/Monsters', () => ({
+  getAllMonsterInformation: jest.fn(),
+}));
+
+import { getAllNpcItems } from '../../src/api_calls/NPC.js';
+
+const createMockArtifact = (
+  code: string,
+  level: number,
+  effectType: GearEffects,
+  effectValue: number = 20,
+): ItemSchema => ({
+  code,
+  name: code,
+  level,
+  type: 'artifact',
+  subtype: 'artifact',
+  description: '',
+  craft: null,
+  tradeable: true,
+  conditions: [],
+  effects: [
+    {
+      code: effectType,
+      value: effectValue,
+      description: `${effectType} effect`,
+    },
+  ],
+});
+
+const makeRestorePotion = (code: string, level: number): ItemSchema => ({
+  code,
+  name: code,
+  level,
+  type: 'utility',
+  subtype: 'potion',
+  description: '',
+  craft: { skill: 'alchemy', level, items: [], quantity: 1 } as any,
+  tradeable: true,
+  conditions: [],
+  effects: [{ code: 'restore', value: 100, description: 'restore' }],
+});
+
+const makeNpcResult = (
+  items: Array<{ buy_price?: number | null; currency?: string; code?: string }>,
+) => ({
+  data: items.map((item, i) => ({
+    code: item.code ?? 'artifact',
+    npc: `npc_${i}`,
+    currency: item.currency ?? 'gold',
+    buy_price: item.buy_price ?? null,
+    sell_price: null,
+  })),
+  total: 50,
+  page: 1,
+  pages: 1,
+  size: 1,
+});
+
+class MockCharacter {
+  data: CharacterSchema = { ...mockCharacterData };
+
+  artifactsMap: Record<GearEffects, ItemSchema[]> | undefined = undefined;
+
+  jobList: unknown[] = [];
+
+  getCharacterLevel = jest.fn((char: CharacterSchema): number => char.level);
+
+  getCharacterGearIn = jest.fn((_slot: string): string => '');
+
+  checkQuantityOfItemInInv = jest.fn((_code: string): number => 0);
+
+  checkQuantityOfItemInBank = jest.fn(
+    async (_code: string): Promise<number> => 0,
+  );
+
+  executeJobNow = jest.fn(async (): Promise<boolean> => true);
+
+  depositNow = jest.fn(async (): Promise<boolean> => true);
+
+  withdrawNow = jest.fn(async (): Promise<boolean> => true);
+
+  equipNow = jest.fn(async (): Promise<boolean> => true);
+
+  craftNow = jest.fn(
+    async (_quantity: number, _code: string): Promise<boolean> => true,
+  );
+
+  handleErrors = jest.fn(async (): Promise<boolean> => true);
+
+  saveJobQueue = jest.fn(async (): Promise<void> => {});
+
+  utilitiesMap: Record<string, ItemSchema[]> = { restore: [], antipoison: [] };
+
+  allCharacterDetails: CharacterSchema[] = [];
+
+  highestCharLevel = 30;
+
+  lowestCharLevel = 1;
+}
+
+describe('IdleObjective.checkAndBuyArtifacts', () => {
+  let mockCharacter: MockCharacter;
+  let objective: IdleObjective;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCharacter = new MockCharacter();
+    mockCharacter.data = { ...mockCharacterData }; // level: 10
+    objective = new IdleObjective(mockCharacter as any, 'miner');
+  });
+
+  it('returns early without buying when artifactsMap is not built', async () => {
+    mockCharacter.artifactsMap = undefined;
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+    expect(mockCharacter.depositNow).not.toHaveBeenCalled();
+  });
+
+  it('skips artifact already equipped in an artifact slot', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation((slot: string) =>
+      slot === 'artifact1' ? 'hp_stone' : '',
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+  });
+
+  it('equips an artifact already held in inventory instead of buying another', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'hp_stone' ? 1 : 0,
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
+  });
+
+  it('withdraws an artifact sitting in the bank and equips it', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'hp_stone' ? 1 : 0),
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+    expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(1, 'hp_stone');
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
+  });
+
+  it('equips a banked artifact into the first free slot, not an occupied one', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation((slot: string) =>
+      slot === 'artifact3' ? '' : 'some_other_artifact',
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'hp_stone' ? 1 : 0),
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact3',
+    );
+  });
+
+  it('leaves a banked artifact alone when every artifact slot is occupied', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation(
+      () => 'some_other_artifact',
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'hp_stone' ? 1 : 0),
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+    expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+  });
+
+  it('skips when getAllNpcItems returns an ApiError', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(new ApiError({ code: 404, message: 'Not found' }));
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+  });
+
+  it('skips when no NPC carries the artifact (empty result)', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([]));
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+  });
+
+  it('skips when all NPC entries have null buy_price', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: null }]));
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+  });
+
+  it('skips when character cannot afford the artifact', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 1000, currency: 'gold' }]));
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 300 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'gold' ? 600 : 0),
+    );
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+  });
+
+  it('buys and equips artifact when affordable and not owned', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 200 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(1);
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
+    expect(mockCharacter.depositNow).not.toHaveBeenCalled();
+  });
+
+  it('banks a bought artifact when there is no free slot to equip it into', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation(
+      () => 'some_other_artifact',
+    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 200 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.equipNow).not.toHaveBeenCalled();
+    expect(mockCharacter.depositNow).toHaveBeenCalledWith(1, 'hp_stone');
+  });
+
+  it('skips effect when no artifact is at or below character level', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 20, 'hp')], // level 20 > char level 10
+    } as any;
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(getAllNpcItems).not.toHaveBeenCalled();
+    expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+  });
+
+  it('uses lowest buy_price when multiple NPCs sell the same artifact', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(
+      makeNpcResult([
+        { buy_price: 500, currency: 'gold' },
+        { buy_price: 50, currency: 'gold' },
+      ]),
+    );
+    // Can afford 50 but not 500
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 100 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(1);
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone',
+      'artifact1',
+    );
+  });
+
+  it('selects the highest-level artifact at or below character level', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [
+        createMockArtifact('hp_stone_5', 5, 'hp'),
+        createMockArtifact('hp_stone_8', 8, 'hp'),
+        createMockArtifact('hp_stone_15', 15, 'hp'), // above char level 10
+      ],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 500 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(getAllNpcItems).toHaveBeenCalledWith({ code: 'hp_stone_8' });
+    expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+      'hp_stone_8',
+      'artifact1',
+    );
+  });
+
+  it('continues to next effect when TradeObjective fails', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+      wisdom: [createMockArtifact('wisdom_gem', 5, 'wisdom')],
+    } as any;
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 500 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
+    mockCharacter.executeJobNow
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(2);
+    // Only equips for the successful buy
+    expect(mockCharacter.equipNow).toHaveBeenCalledTimes(1);
+  });
+
+  it('continues to next effect when the fallback depositNow fails', async () => {
+    mockCharacter.artifactsMap = {
+      hp: [createMockArtifact('hp_stone', 5, 'hp')],
+      wisdom: [createMockArtifact('wisdom_gem', 5, 'wisdom')],
+    } as any;
+    mockCharacter.getCharacterGearIn.mockImplementation(
+      () => 'some_other_artifact',
+    );
+    (
+      getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+    ).mockResolvedValue(makeNpcResult([{ buy_price: 100, currency: 'gold' }]));
+    mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+      code === 'gold' ? 500 : 0,
+    );
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
+    mockCharacter.depositNow
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+
+    await (objective as any).checkAndBuyArtifacts();
+
+    // Attempted deposit for both effects
+    expect(mockCharacter.depositNow).toHaveBeenCalledTimes(2);
+  });
+
+  // An artifact's level says nothing about how much of the effect it gives:
+  // perfect_pearl (+100 prospecting) and lich_race_trophy (+50) are both level 20.
+  describe('choosing between candidates for the same effect', () => {
+    beforeEach(() => {
+      mockCharacter.data = { ...mockCharacterData, level: 31 };
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'small_pearls' ? 40 : 0),
+      );
+    });
+
+    it('buys the strongest artifact for the effect, not the highest level', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('novice_guide', 10, 'prospecting', 25),
+          createMockArtifact('lich_race_trophy', 20, 'prospecting', 50),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(getAllNpcItems).toHaveBeenCalledWith({ code: 'perfect_pearl' });
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'perfect_pearl',
+        'artifact1',
+      );
+    });
+
+    it('falls back to the next best candidate when the best is unaffordable', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('lich_race_trophy', 20, 'prospecting', 50),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockImplementation(async (params: any) =>
+        params.code === 'perfect_pearl'
+          ? makeNpcResult([{ buy_price: 999, currency: 'small_pearls' }])
+          : makeNpcResult([{ buy_price: 10, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'lich_race_trophy',
+        'artifact1',
+      );
+    });
+
+    it('stops after buying one artifact for an effect', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('lich_race_trophy', 20, 'prospecting', 50),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.executeJobNow).toHaveBeenCalledTimes(1);
+    });
+
+    // Larry's equipped novice_guide grants prospecting +25, so "owns something
+    // for this effect" must not block buying a stronger one.
+    it('still upgrades when only a weaker artifact for the effect is owned', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('novice_guide', 10, 'prospecting', 25),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      mockCharacter.getCharacterGearIn.mockImplementation((slot: string) =>
+        slot === 'artifact1' ? 'novice_guide' : '',
+      );
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'perfect_pearl',
+        'artifact2',
+      );
+    });
+
+    it('buys nothing when the strongest candidate is already owned', async () => {
+      mockCharacter.artifactsMap = {
+        prospecting: [
+          createMockArtifact('novice_guide', 10, 'prospecting', 25),
+          createMockArtifact('perfect_pearl', 20, 'prospecting', 100),
+        ],
+      } as any;
+      mockCharacter.getCharacterGearIn.mockImplementation((slot: string) =>
+        slot === 'artifact1' ? 'perfect_pearl' : '',
+      );
+      (
+        getAllNpcItems as jest.MockedFunction<typeof getAllNpcItems>
+      ).mockResolvedValue(
+        makeNpcResult([{ buy_price: 20, currency: 'small_pearls' }]),
+      );
+
+      await (objective as any).checkAndBuyArtifacts();
+
+      expect(mockCharacter.executeJobNow).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('IdleObjective.topUpBank (alchemist restore potions)', () => {
+  let mockCharacter: MockCharacter;
+  let objective: IdleObjective;
+
+  const rosterLevels = (levels: number[]): CharacterSchema[] =>
+    levels.map((level) => ({ level }) as CharacterSchema);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCharacter = new MockCharacter();
+    mockCharacter.data = { ...mockCharacterData };
+    mockCharacter.utilitiesMap = {
+      restore: [
+        makeRestorePotion('small_health_potion', 5),
+        makeRestorePotion('minor_health_potion', 20),
+        makeRestorePotion('health_potion', 30),
+      ],
+      antipoison: [],
+    };
+    // Alchemist skill is high enough to craft every tier
+    mockCharacter.getCharacterLevel.mockReturnValue(45);
+    objective = new IdleObjective(mockCharacter as any, 'alchemist');
+  });
+
+  it('crafts the best usable tier for each character, covering low and high levels', async () => {
+    // 2 characters below 20 -> small is their best; 3 above 20 -> minor is theirs
+    mockCharacter.allCharacterDetails = rosterLevels([12, 18, 22, 25, 28]);
+
+    await (objective as any).topUpBank();
+
+    const craftedCodes = mockCharacter.craftNow.mock.calls.map(
+      (call) => call[1],
+    );
+    expect(craftedCodes).toContain('small_health_potion');
+    expect(craftedCodes).toContain('minor_health_potion');
+    // No character can use health_potion (level 30); highest is 28
+    expect(craftedCodes).not.toContain('health_potion');
+  });
+
+  it('does not craft low tiers when no character is stuck at that tier', async () => {
+    // Every character is high level -> small potions are wasteful, nobody needs them
+    mockCharacter.allCharacterDetails = rosterLevels([35, 40, 42]);
+
+    await (objective as any).topUpBank();
+
+    const craftedCodes = mockCharacter.craftNow.mock.calls.map(
+      (call) => call[1],
+    );
+    expect(craftedCodes).not.toContain('small_health_potion');
+    expect(craftedCodes).not.toContain('minor_health_potion');
+    expect(craftedCodes).toContain('health_potion');
+  });
+
+  it('skips a tier already stocked in the bank', async () => {
+    mockCharacter.allCharacterDetails = rosterLevels([12, 25]);
+    mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+      async (code: string) => (code === 'small_health_potion' ? 500 : 0),
+    );
+
+    await (objective as any).topUpBank();
+
+    const craftedCodes = mockCharacter.craftNow.mock.calls.map(
+      (call) => call[1],
+    );
+    expect(craftedCodes).not.toContain('small_health_potion');
+    expect(craftedCodes).toContain('minor_health_potion');
+  });
+});

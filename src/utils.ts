@@ -1,79 +1,48 @@
 import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
 import {
-  DataPageItemSchema,
+  CharacterSchema,
+  CraftSkill,
+  StaticDataPageItemSchema,
   GatheringSkill,
   ItemSchema,
   ItemType,
   MapSchema,
 } from './types/types.js';
 import { getAllItemInformation } from './api_calls/Items.js';
-import { ApiError } from './objectives/Error.js';
+import { ApiError } from './core/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
-import dotenv from 'dotenv';
-import { Role } from './types/CharacterData.js';
-
-dotenv.config({ quiet: true });
-
-export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
-export const ApiToken = getEnv('API_TOKEN');
-
-export const CharName = getEnv('CHARACTER_NAME');
-export const CharRole = getEnv('ROLE').toLowerCase() as Role;
-export const MAX_COMBAT_LEVEL = 50;
-export const MAX_SKILL_LEVEL = 50;
-export const CRITICAL_MODIFIER = 0.5;
+import { Role, ROLES } from './types/CharacterData.js';
+import { getCharacter } from './character/apiCalls.js';
+import { CharName, AllCharNames, ApiToken } from './constants.js';
+import { getAllMaps, getMaps } from './api_calls/Maps.js';
+import { Character } from './character/characterClass.js';
 
 /**
- * Array of all the transition maps:
- * - 571: mountain_6; to Mithril/Bat cave
- * @todo Find a way to get this programmatically
+ * @description Array of all maps
  */
-export const TransitionLocations: MapSchema[] = [
-  {
-    map_id: 571,
-    name: 'Mountain',
-    skin: 'mountain_6',
-    x: -2,
-    y: 6,
-    layer: 'overworld',
-    access: {
-      type: 'standard',
-      conditions: [],
-    },
-    interactions: {
-      content: null,
-      transition: {
-        map_id: 572,
-        x: -2,
-        y: 6,
-        layer: 'underground',
-        conditions: [],
-      },
-    },
-  },
-  {
-    map_id: 572,
-    name: 'Underground',
-    skin: 'mine_1',
-    x: -2,
-    y: 6,
-    layer: 'underground',
-    access: {
-      type: 'standard',
-      conditions: [],
-    },
-    interactions: {
-      content: null,
-      transition: {
-        map_id: 571,
-        x: -2,
-        y: 6,
-        layer: 'overworld',
-        conditions: [],
-      },
-    },
-  },
-];
+export async function AllMaps(): Promise<MapSchema[]> {
+  const allMaps = await getAllMaps({});
+
+  logger.info(`Found ${allMaps.length} total maps`);
+
+  return allMaps;
+}
+
+/**
+ * @description Array of all transition maps
+ */
+export function TransitionLocations(allMaps: MapSchema[]): MapSchema[] {
+  const transitionLocations = allMaps.filter(
+    (map) =>
+      map.interactions.transition !== undefined &&
+      map.interactions.transition !== null,
+  );
+
+  logger.info(`Found ${transitionLocations.length} transition maps`);
+
+  return transitionLocations;
+}
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 
@@ -119,12 +88,10 @@ const customFormat = winston.format.combine(
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'DD-MM-YY HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(
-    ({ timestamp, level, message, character }) => {
-      const char = character || CharName;
-      return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
-    },
-  ),
+  winston.format.printf(({ timestamp, level, message, character }) => {
+    const char = character || CharName;
+    return `[${timestamp}] [${char}] ${level.toUpperCase()}: ${message}`;
+  }),
 );
 
 export const logger = winston.createLogger({
@@ -133,8 +100,12 @@ export const logger = winston.createLogger({
     character: CharName,
   },
   transports: [
-    new winston.transports.File({
-      filename: './logs/arty.log',
+    new DailyRotateFile({
+      filename: './logs/arty-%DATE%.log',
+      datePattern: 'YYYY-[W]WW',
+      maxSize: '200m',
+      maxFiles: '30d',
+      zippedArchive: true,
       level: logLevel,
       format: customFormat,
     }),
@@ -157,6 +128,18 @@ export function getEnv(name: string): string {
   }
 
   return process.env[name];
+}
+
+/**
+ * Gets a random number between the two values
+ * @param min Lowest value
+ * @param max Highest value
+ * @returns A random number between the min and max
+ */
+export function getRandomInt(min, max) {
+  const minCeiled = Math.ceil(min);
+  const maxFloored = Math.floor(max);
+  return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
 }
 
 /**
@@ -200,12 +183,16 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-  const allWeapons: ApiError | DataPageItemSchema = await getAllItemInformation(
-    { type: 'weapon' },
-  );
+  const allWeapons: ApiError | StaticDataPageItemSchema =
+    await getAllItemInformation({ type: 'weapon', size: 100 });
   if (allWeapons instanceof ApiError) {
     logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
     return;
+  }
+  if (allWeapons.pages > 1) {
+    logger.error(
+      `Weapon list in buildListOfWeapons is ${allWeapons.pages} long. I should add logic to check multiple pages`,
+    );
   }
 
   allWeapons.data.forEach((weapon) => {
@@ -225,7 +212,7 @@ export async function buildListOfWeapons(): Promise<
         if (gatherSkills.includes(effect.code as GatheringSkill)) {
           const skillArray = weaponMap[effect.code as GatheringSkill];
           if (skillArray && !skillArray.includes(weapon)) {
-            //logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
+            logger.debug(`Adding ${weapon.code} object to ${effect.code} map`);
             skillArray.push(weapon);
           }
         }
@@ -234,6 +221,20 @@ export async function buildListOfWeapons(): Promise<
   });
 
   return weaponMap;
+}
+
+/**
+ * @description checks to see if we're working with any skill
+ */
+export function isSkill(value: string): value is CraftSkill | GatheringSkill {
+  return isCraftingSkill(value) || isGatheringSkill(value);
+}
+
+/**
+ * @description How much of a given effect an item grants, 0 if it doesn't grant any
+ */
+export function effectValueOf(item: ItemSchema, effect: string): number {
+  return item.effects?.find((e) => e.code === effect)?.value ?? 0;
 }
 
 /**
@@ -246,9 +247,36 @@ export function isGatheringSkill(value: string): value is GatheringSkill {
 }
 
 /**
- * @description Builds a map of all the utilities
- * The key being the effect (restore, res_fire, fire_damage, etc)
- * The value being an array of the items that have the key effect
+ * @description The cooldown a fight incurs. It's driven by how long the fight
+ * runs, not by damage dealt or taken, so a tougher monster costs proportionally
+ * more time per kill.
+ * @param turns how many turns the fight takes
+ * @param haste the character's haste stat, as a percentage reduction
+ * @returns the cooldown in seconds, never below the game's 5s floor
+ */
+export function estimateFightCooldown(turns: number, haste: number): number {
+  return Math.max(5, turns * 2 * (1 - haste / 100));
+}
+
+/**
+ * @description checks to see if we're working with a crafting skill
+ * @param value the skill to check
+ * @returns true if the provided skill is a crafting skill
+ */
+export function isCraftingSkill(value: string): value is CraftSkill {
+  return [
+    'mining',
+    'woodcutting',
+    'weaponcrafting',
+    'gearcrafting',
+    'jewelrycrafting',
+    'cooking',
+    'alchemy',
+  ].includes(value);
+}
+
+/**
+ * @description Builds a map of the specified item so we don't have to make API calls
  */
 export async function buildListOf(
   itemType: ItemType,
@@ -257,14 +285,21 @@ export async function buildListOf(
 
   const itemMap: Record<string, ItemSchema[]> = {};
 
-  const allItems: ApiError | DataPageItemSchema = await getAllItemInformation({
-    type: itemType,
-  });
+  const allItems: ApiError | StaticDataPageItemSchema =
+    await getAllItemInformation({
+      type: itemType,
+      size: 100,
+    });
   if (allItems instanceof ApiError) {
     logger.error(
       `Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`,
     );
     return {};
+  }
+  if (allItems.pages > 1) {
+    logger.error(
+      `Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`,
+    );
   }
 
   allItems.data.forEach((item) => {
@@ -282,4 +317,90 @@ export async function buildListOf(
   });
 
   return itemMap;
+}
+
+export function isRole(value: unknown): value is Role {
+  return typeof value === 'string' && ROLES.includes(value as Role);
+}
+
+export async function GetCharacterData(): Promise<CharacterSchema[]> {
+  let charDetails: CharacterSchema[] = [];
+
+  for (const character of AllCharNames) {
+    const charDetail = await getCharacter(character);
+    if (charDetail instanceof ApiError) {
+      logger.error(
+        `Failed to get data for ${character}: [${charDetail.error.code}] ${charDetail.message}`,
+      );
+      if (charDetail.error.code === 500 || charDetail.error.code === 502) {
+        await sleep(300, '5xx error code');
+      }
+      break;
+    }
+
+    charDetails.push(charDetail);
+  }
+
+  return charDetails;
+}
+
+export function isValidLevelLimit(level: any): level is number {
+  return (
+    level !== null &&
+    level !== undefined &&
+    level !== '' &&
+    String(level) !== 'null'
+  );
+}
+
+export function getHighestCharLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.level > curr.level ? prev : curr,
+  ).level;
+}
+
+export function getLowestCharLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.level < curr.level ? prev : curr,
+  ).level;
+}
+export function getLowestAlchemyLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.alchemy_level < curr.alchemy_level ? prev : curr,
+  ).alchemy_level;
+}
+
+export function getLowestFishingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.fishing_level < curr.fishing_level ? prev : curr,
+  ).fishing_level;
+}
+export function getLowestMiningLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.mining_level < curr.mining_level ? prev : curr,
+  ).mining_level;
+}
+export function getLowestWoodcuttingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.woodcutting_level < curr.woodcutting_level ? prev : curr,
+  ).woodcutting_level;
+}
+export function getHighestWeaponcraftingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.weaponcrafting_level > curr.weaponcrafting_level ? prev : curr,
+  ).weaponcrafting_level;
 }

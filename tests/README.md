@@ -21,7 +21,7 @@ Contains integration test files:
 
 ### API Mocking
 
-All external API calls are mocked based on the OpenAPI specification at `https://api-test.artifactsmmo.com/docs/#/`:
+All external API calls are mocked based on the OpenAPI specification at `https://api.artifactsmmo.com/docs/#/`:
 
 - `actionGather`: Mock gathering actions
 - `getItemInformation`: Mock item data retrieval
