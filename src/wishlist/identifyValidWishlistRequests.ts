@@ -52,7 +52,7 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
       }
 
       if (
-        itemInformation.level <
+        itemInformation.level <=
         this.character.getCharacterLevel(this.character.data)
       ) {
         logger.info(
