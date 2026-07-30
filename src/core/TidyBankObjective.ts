@@ -1,5 +1,9 @@
 import { getBankItems } from '../api_calls/Bank.js';
-import { actionDeleteItem, getAllItemInformation } from '../api_calls/Items.js';
+import {
+  actionDeleteItem,
+  getAllItemInformation,
+  getItemInformation,
+} from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { CraftSkill, ItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
@@ -115,12 +119,12 @@ export class TidyBankObjective extends Objective {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
 
       if (numInBank === undefined) {
-        logger.info(`${item} not found in bank`);
+        logger.debug(`${item} not found in bank`);
         break;
       }
 
       if (numInBank === 0) {
-        logger.info(`Found no ${item} in the bank. Moving on`);
+        logger.debug(`Found no ${item} in the bank. Moving on`);
       } else {
         logger.info(`Found ${numInBank} ${item} in the bank.`);
         const itemToCraftSchema = await this.identifyCraftedItemFrom(
@@ -131,8 +135,16 @@ export class TidyBankObjective extends Objective {
           continue;
         }
 
-        // If the item is more than 20 levels below the lowest character level, skip it
-        if (this.character.lowestCharLevel - itemToCraftSchema.level > 20) {
+        // If the item is a fish and more than 20 levels below the lowest character level, skip it
+        const rawItemInfo = await getItemInformation(item);
+        if (rawItemInfo instanceof ApiError) {
+          this.character.handleErrors(rawItemInfo);
+          continue;
+        }
+        if (
+          rawItemInfo.subtype === 'fishing' &&
+          this.character.lowestCharLevel - rawItemInfo.level > 20
+        ) {
           logger.info(
             `Skipping ${item} as lowest char level is > 20 levels above it`,
           );
