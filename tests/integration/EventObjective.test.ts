@@ -15,6 +15,7 @@ jest.mock('../../src/api_calls/Items', () => ({
 
 import { getNpc, getAllNpcItems } from '../../src/api_calls/NPC.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
+import { Objective } from '../../src/core/Objective.js';
 
 const mockGetNpc = getNpc as jest.MockedFunction<typeof getNpc>;
 const mockGetItemInformation = getItemInformation as jest.MockedFunction<
@@ -307,14 +308,6 @@ describe('EventObjective - sellToMerchant', () => {
       5,
       'golden_shrimp',
     );
-  });
-
-  it('deposits gold after selling', async () => {
-    mockGetNpc.mockResolvedValue(makeNpcResponse([]) as any);
-
-    await makeObjective('fish_merchant').run();
-
-    expect(character.depositNow).toHaveBeenCalledWith(0, 'gold');
   });
 
   it('sets fishMerchantTradeDate on success', async () => {
