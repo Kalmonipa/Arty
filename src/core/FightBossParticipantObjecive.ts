@@ -39,6 +39,8 @@ export class FightBossParticipantObjective extends Objective {
 
     await this.character.evaluateGear('combat', this.target.code);
 
+    await this.character.recoverHealth();
+
     logger.info(`Finding location of ${this.target.code}`);
 
     const maps = this.character.findMaps({ content_code: this.target.code });
@@ -58,16 +60,6 @@ export class FightBossParticipantObjective extends Objective {
         `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
       );
 
-      // Get all food items to deposit
-      const foodItems = this.character.findFoodInInventory();
-      const foodCodes = foodItems.map((food) => food.code);
-      const itemsToKeep = [...foodCodes];
-
-      await this.character.evaluateDepositItemsInBank(
-        itemsToKeep,
-        contentLocation,
-      );
-
       await this.character.recoverHealth();
 
       // Check these after each fight in case we need to top up
@@ -75,34 +67,6 @@ export class FightBossParticipantObjective extends Objective {
         if (await this.character.equipUtility('restore', 'utility1')) {
           // If we moved to the bank we need to move back to the monster location
           await this.character.move(contentLocation);
-        }
-      }
-
-      const response = await actionFight(
-        this.character.data,
-        this.participants,
-      );
-
-      if (response instanceof ApiError) {
-        await this.character.handleErrors(response);
-        continue;
-      } else {
-        if (response.data.characters) {
-          const charData = response.data.characters.find(
-            (char) => char.name === this.character.data.name,
-          );
-
-          this.character.data = charData;
-        } else {
-          logger.error('Fight response missing character data');
-          return false;
-        }
-
-        await this.character.recoverHealth();
-
-        // Check amount of food in inventory to use after battles
-        if (!(await this.character.checkFoodLevels())) {
-          await this.character.topUpFood(contentLocation);
         }
       }
 

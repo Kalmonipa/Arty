@@ -626,7 +626,7 @@ export class EventObjective extends Objective {
       await this.character.tradeWithNpcNow('sell', numToWithdraw, npcItem.code);
     }
 
-    await this.character.depositNow(0, 'gold');
+    await this.depositGoldIntoBank();
 
     return true;
   }
