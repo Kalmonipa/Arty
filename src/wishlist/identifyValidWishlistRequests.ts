@@ -51,6 +51,8 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
         return false;
       }
 
+      logger.debug(`Checking ${request.character}s ${request.acquisition_method} request for ${request.quantity}x ${request.item_code} (${itemInformation.level}) `)
+
       if (
         itemInformation.level <=
         this.character.getCharacterLevel(this.character.data)
