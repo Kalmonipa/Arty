@@ -1,4 +1,3 @@
-import { getBankItems } from '../api_calls/Bank.js';
 import {
   actionDeleteItem,
   getAllItemInformation,
@@ -19,6 +18,7 @@ export class TidyBankObjective extends Objective {
     'shrimp',
     'trout',
     'bass',
+    'salmon',
     'raw_chicken',
     'raw_beef',
     'raw_wolf_meat',
