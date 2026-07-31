@@ -101,7 +101,7 @@ A standalone, genuinely useful command: _could_ we beat this boss? Nothing moves
       first, the `else if` lets `part2` end up higher-level than `part1`, and the leader is
       in its own candidate pool. Replace with `findSupportCharacters()` — filter
       `getMyCharacters()` for `role === 'labourer'`, take two.
-- [ ] `POST /fight/boss/check` + `arty <leader> bossfight-check <boss>` in the CLI.
+- [x] `POST /fight/boss/check` + `arty <leader> bossfight-check <boss>` in the CLI.
 
 **Verify:** `arty larry bossfight-check king_slime` prints the three loadouts, any
 reconciliation it did, and a win rate. Nothing has moved and nothing is equipped.
@@ -150,7 +150,7 @@ rather than restarting.
 
 Mechanical. No behaviour change.
 
-- [ ] Migration:
+- [x] Migration:
 
 ```sql
 CREATE TABLE boss_fights (
