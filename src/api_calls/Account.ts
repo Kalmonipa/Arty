@@ -15,7 +15,7 @@ export async function pauseCharacter(charName: string): Promise<JobResponse> {
 
   try {
     const response = await fetch(
-      `http://${charName.toLowerCase}:3000/jobs/pause`,
+      `http://${charName.toLowerCase()}:3000/jobs/pause`,
       requestOptions,
     );
     const data = await response.json();
@@ -40,7 +40,7 @@ export async function resumeCharacter(charName: string): Promise<JobResponse> {
 
   try {
     const response = await fetch(
-      `http://${charName.toLowerCase}:3000/jobs/resume`,
+      `http://${charName.toLowerCase()}:3000/jobs/resume`,
       requestOptions,
     );
     const data = await response.json();
