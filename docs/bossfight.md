@@ -46,7 +46,7 @@ Three latent bugs sit directly on the road. None have ever run.
 
 - [x] `src/api_calls/Account.ts:18` — `charName.toLowerCase` is missing its call parens, so
       the URL interpolates the function source: `http://function toLowerCase() { [native
-  code] }:3000/jobs/pause`. `fetch` throws, the `catch` at :24 returns the error as if
+code] }:3000/jobs/pause`. `fetch` throws, the `catch` at :24 returns the error as if
       it were a `JobResponse`, and both call sites ignore the return value. Add `()`.
       The `http://<name>:3000` scheme itself is correct — containers are named after the
       lowercased character.
@@ -93,7 +93,7 @@ A standalone, genuinely useful command: _could_ we beat this boss? Nothing moves
       fewer than the number claimed, strip it from the lower-priority character and ask
       that one to re-propose without it. Priority: leader > first support > second support.
       Pass an exclusion list to the re-propose call.
-- [ ] Delete the private `createFakeCharacterSchema`
+- [x] Delete the private `createFakeCharacterSchema`
       (`FightBossLeaderObjective.ts:140-170`) — `Character.createFakeCharacterSchema`
       (`characterClass.ts:1659`) already exists and is correct.
 - [ ] Delete `findBestParticipants` (`FightBossLeaderObjective.ts:104-135`). Its
