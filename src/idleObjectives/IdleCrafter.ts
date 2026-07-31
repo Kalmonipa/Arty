@@ -56,7 +56,7 @@ export class IdleCrafterObjective extends Objective {
     await completeTasksFarmerAchievement(this.character, this.role);
     if (this.checkIdleJobIsLast()) return true;
 
-    await this.gambleTaskCoins();
+    await this.gambleExcessTaskCoins();
     if (this.checkIdleJobIsLast()) return true;
 
     await this.character.tidyUpBank(this.character.role);
@@ -243,7 +243,7 @@ export class IdleCrafterObjective extends Objective {
    * If we have excess (>maxCoinsInBank) task coins in the bank, gamble the excess to get rewards
    * @returns True if successful
    */
-  private async gambleTaskCoins(): Promise<boolean> {
+  private async gambleExcessTaskCoins(): Promise<boolean> {
     // The number of task coins needed to exchange. Pretty sure this won't change but who knows
     const costToExchange = 6;
     // Arbitrary number for now. Might adjust as I see fit
