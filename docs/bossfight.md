@@ -67,7 +67,7 @@ a leader container can reach `http://timidtom:3000/jobs/pause` on the docker net
 
 Expose what already exists so the leader can ask others what they'd wear.
 
-- [ ] `GET /equip/propose-loadout?mob=<code>` in `src/routes/Equip.ts`, wrapping
+- [x] `GET /equip/propose-loadout?mob=<code>` in `src/routes/Equip.ts`, wrapping
       `Character.proposeCombatLoadout` (`characterClass.ts:3118`). Returns the
       `FakeCharacterSchema` unchanged. No equipping, no movement.
 - [ ] Add an `Account.ts` helper to call it on another character.
