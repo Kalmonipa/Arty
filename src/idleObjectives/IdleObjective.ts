@@ -4,7 +4,16 @@ import {
   getPendingItems,
 } from '../api_calls/Items.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
-import { TasksCoin } from '../names.js';
+import {
+  Alchemy,
+  Fishing,
+  Gearcrafting,
+  Jewelrycrafting,
+  Mining,
+  TasksCoin,
+  Weaponcrafting,
+  Woodcutting,
+} from '../names.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
@@ -112,7 +121,7 @@ export class IdleObjective extends Objective {
     switch (this.role) {
       case 'alchemist':
         if (
-          this.character.getCharacterLevel(this.character.data, 'alchemy') >=
+          this.character.getCharacterLevel(this.character.data, Alchemy) >=
             this.character.getCharacterLevel(this.character.data) + 5 &&
           this.character.getCharacterLevel(this.character.data) <=
             this.character.highestCharLevel
@@ -121,39 +130,37 @@ export class IdleObjective extends Objective {
             this.character.data.level + 1,
           );
         } else if (
-          this.character.getCharacterLevel(this.character.data, 'alchemy') <=
+          this.character.getCharacterLevel(this.character.data, Alchemy) <=
           this.character.getCharacterLevel(this.character.data) + 5
         ) {
-          await this.trainSkill('alchemy');
+          await this.trainSkill(Alchemy);
         } else {
           await this.character.doItemsTask(2);
         }
         if (this.checkIdleJobIsLast()) return true;
         break;
       case 'fisherman':
-        await this.trainSkill('fishing');
+        await this.trainSkill(Fishing);
         if (this.checkIdleJobIsLast()) return true;
         await this.character.trainCombatLevelNow(this.character.data.level + 1);
         if (this.checkIdleJobIsLast()) return true;
         break;
       case 'lumberjack':
-        await this.trainSkill('woodcutting');
+        await this.trainSkill(Woodcutting);
         if (this.checkIdleJobIsLast()) return true;
         break;
       case 'miner':
-        await this.trainSkill('mining');
+        await this.trainSkill(Mining);
         if (this.checkIdleJobIsLast()) return true;
         break;
 
       // Crafting skills should aim to be at the combat level
       case 'gearcrafter':
         if (
-          this.character.getCharacterLevel(
-            this.character.data,
-            'gearcrafting',
-          ) < this.character.getCharacterLevel(this.character.data)
+          this.character.getCharacterLevel(this.character.data, Gearcrafting) <
+          this.character.getCharacterLevel(this.character.data)
         ) {
-          await this.trainSkill('gearcrafting');
+          await this.trainSkill(Gearcrafting);
           if (this.checkIdleJobIsLast()) return true;
         } else {
           await this.trainSkill();
@@ -164,10 +171,10 @@ export class IdleObjective extends Objective {
         if (
           this.character.getCharacterLevel(
             this.character.data,
-            'jewelrycrafting',
+            Jewelrycrafting,
           ) < this.character.getCharacterLevel(this.character.data)
         ) {
-          await this.trainSkill('jewelrycrafting');
+          await this.trainSkill(Jewelrycrafting);
           if (this.checkIdleJobIsLast()) return true;
         } else {
           await this.trainSkill();
@@ -178,10 +185,10 @@ export class IdleObjective extends Objective {
         if (
           this.character.getCharacterLevel(
             this.character.data,
-            'weaponcrafting',
+            Weaponcrafting,
           ) < this.character.getCharacterLevel(this.character.data)
         ) {
-          await this.trainSkill('weaponcrafting');
+          await this.trainSkill(Weaponcrafting);
           if (this.checkIdleJobIsLast()) return true;
         } else {
           await this.trainSkill();

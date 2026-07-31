@@ -40,6 +40,7 @@ import {
 } from './idleUtils.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
+import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';
 
 /**
  * Labourer role idle jobs
@@ -132,7 +133,7 @@ export class IdleLabourerObjective extends Objective {
       await doItemTask(this.character, this, 1);
       if (this.checkIdleJobIsLast()) return true;
     }
-    return true
+    return true;
   }
 
   /**
@@ -198,9 +199,9 @@ export class IdleLabourerObjective extends Objective {
     );
     // Crafting skills should stay relatively close to combat level. Gathering skills can go further above
     const maxLevelGap = [
-      'weaponcrafting',
-      'gearcrafting',
-      'jewelrycrafting',
+      Weaponcrafting,
+      Gearcrafting,
+      Jewelrycrafting,
     ].includes(skill)
       ? 0
       : 5;

@@ -300,9 +300,9 @@ export class IdleCrafterObjective extends Objective {
     );
     // Crafting skills should stay relatively close to combat level. Gathering skills can go further above
     const maxLevelGap = [
-      'weaponcrafting',
-      'gearcrafting',
-      'jewelrycrafting',
+      Weaponcrafting,
+      Gearcrafting,
+      Jewelrycrafting,
     ].includes(skill)
       ? 0
       : 5;

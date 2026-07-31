@@ -13,6 +13,13 @@ import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
+import {
+  Alchemy,
+  Cooking,
+  Gearcrafting,
+  Mining,
+  Weaponcrafting,
+} from '../names.js';
 
 /**
  * @description Trains the desired crafting skill until reaching the desired level
@@ -59,13 +66,13 @@ export class TrainCraftingSkillObjective extends Objective {
 
     let numToCraft: number;
     switch (this.skill) {
-      case 'alchemy':
-      case 'cooking':
-      case 'mining':
+      case Alchemy:
+      case Cooking:
+      case Mining:
         numToCraft = 10;
         break;
-      case 'weaponcrafting':
-      case 'gearcrafting':
+      case Weaponcrafting:
+      case Gearcrafting:
         numToCraft = 2;
         break;
       default:
@@ -107,7 +114,7 @@ export class TrainCraftingSkillObjective extends Objective {
       }
 
       // Weaponcrafter ensures we have 1 of every tool first
-      if (this.skill === 'weaponcrafting') {
+      if (this.skill === Weaponcrafting) {
         for (const craftableItem of craftableItemsList) {
           if (!(await this.checkStatus())) return false;
 

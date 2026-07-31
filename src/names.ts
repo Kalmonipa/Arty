@@ -50,6 +50,11 @@ export const Utility2Slot = 'utility2_slot';
 /**
  * Skills
  */
-export const Weaponcrafting = 'weaponcrafting';
+export const Alchemy = 'alchemy';
+export const Cooking = 'cooking';
+export const Fishing = 'fishing';
 export const Gearcrafting = 'gearcrafting';
 export const Jewelrycrafting = 'jewelrycrafting';
+export const Mining = 'mining';
+export const Weaponcrafting = 'weaponcrafting';
+export const Woodcutting = 'woodcutting';

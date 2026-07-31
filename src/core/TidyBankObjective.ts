@@ -9,6 +9,7 @@ import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';
 
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API
@@ -70,14 +71,11 @@ export class TidyBankObjective extends Objective {
         return await this.cookFood();
 
       case 'gearcrafter':
-        return await this.recycleExcessEquipment(
-          'gearcrafting',
-          contentsOfBank,
-        );
+        return await this.recycleExcessEquipment(Gearcrafting, contentsOfBank);
 
       case 'jewelrycrafter':
         return await this.recycleExcessEquipment(
-          'jewelrycrafting',
+          Jewelrycrafting,
           contentsOfBank,
         );
 
@@ -86,15 +84,15 @@ export class TidyBankObjective extends Objective {
 
       case 'weaponcrafter':
         return await this.recycleExcessEquipment(
-          'weaponcrafting',
+          Weaponcrafting,
           contentsOfBank,
         );
 
       case 'crafter':
-        await this.recycleExcessEquipment('gearcrafting', contentsOfBank);
-        await this.recycleExcessEquipment('jewelrycrafting', contentsOfBank);
+        await this.recycleExcessEquipment(Gearcrafting, contentsOfBank);
+        await this.recycleExcessEquipment(Jewelrycrafting, contentsOfBank);
         return await this.recycleExcessEquipment(
-          'weaponcrafting',
+          Weaponcrafting,
           contentsOfBank,
         );
 

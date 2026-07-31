@@ -103,7 +103,7 @@ import {
   getNavigationGraph,
   NavigationGraph,
 } from '../core/navigation/graph.js';
-import { ForestBankPotion, RecallPotion } from '../names.js';
+import { Fishing, ForestBankPotion, RecallPotion } from '../names.js';
 import {
   CharRole,
   DesiredFoodCount,
@@ -335,7 +335,7 @@ export class Character {
     this.weaponMap = await buildListOfWeapons();
 
     const fishingResources = await getAllResourceInformation({
-      skill: 'fishing',
+      skill: Fishing,
     });
     if (!(fishingResources instanceof ApiError)) {
       fishingResources.data.forEach((resource) =>

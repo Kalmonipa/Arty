@@ -17,6 +17,15 @@ import { getCharacter } from './character/apiCalls.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
 import { getAllMaps, getMaps } from './api_calls/Maps.js';
 import { Character } from './character/characterClass.js';
+import {
+  Alchemy,
+  Cooking,
+  Gearcrafting,
+  Jewelrycrafting,
+  Mining,
+  Weaponcrafting,
+  Woodcutting,
+} from './names.js';
 
 /**
  * @description Array of all maps
@@ -265,13 +274,13 @@ export function estimateFightCooldown(turns: number, haste: number): number {
  */
 export function isCraftingSkill(value: string): value is CraftSkill {
   return [
-    'mining',
-    'woodcutting',
-    'weaponcrafting',
-    'gearcrafting',
-    'jewelrycrafting',
-    'cooking',
-    'alchemy',
+    Mining,
+    Woodcutting,
+    Weaponcrafting,
+    Gearcrafting,
+    Jewelrycrafting,
+    Cooking,
+    Alchemy,
   ].includes(value);
 }
 
