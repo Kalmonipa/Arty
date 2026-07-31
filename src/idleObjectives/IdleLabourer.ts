@@ -132,6 +132,7 @@ export class IdleLabourerObjective extends Objective {
       await doItemTask(this.character, this, 1);
       if (this.checkIdleJobIsLast()) return true;
     }
+    return true
   }
 
   /**
