@@ -55,10 +55,23 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
         `Checking ${request.character}s ${request.acquisition_method} request for ${request.quantity}x ${request.item_code} (${itemInformation.level}) `,
       );
 
-      if (
-        itemInformation.level <=
-        this.character.getCharacterLevel(this.character.data)
-      ) {
+      let levelRequired: number;
+      switch (this.acquisitionMethod) {
+        case 'mining':
+        case 'woodcutting':
+        case 'fishing':
+        case 'alchemy':
+          levelRequired = this.character.getCharacterLevel(
+            this.character.data,
+            this.acquisitionMethod,
+          );
+          break;
+        default:
+          levelRequired = this.character.getCharacterLevel(this.character.data);
+          break;
+      }
+
+      if (itemInformation.level <= levelRequired) {
         logger.info(
           `Executing request #${request.id} for ${request.quantity}x ${request.item_code}`,
         );
@@ -70,6 +83,10 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
           request,
         );
         await this.character.executeJobNow(job, true, true, this.objectiveId);
+      } else {
+        logger.info(
+          `Skipping request #${request.id} for ${request.quantity}x ${request.item_code} (${itemInformation.level}) - character level is ${levelRequired}`,
+        );
       }
     }
 

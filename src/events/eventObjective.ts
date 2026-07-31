@@ -627,7 +627,6 @@ export class EventObjective extends Objective {
     }
 
     await this.depositGoldIntoBank();
-
     return true;
   }
 }

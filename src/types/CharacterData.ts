@@ -6,7 +6,13 @@ import { ObjectiveStatus } from './ObjectiveData.js';
  * @param difference The amount needed to get to 100%
  */
 export type HealthStatus = {
+  /**
+   * The percentage of health we are currently on
+   */
   percentage: number;
+  /**
+   * The amount needed to get to 100%
+   */
   difference: number;
 };
 
