@@ -70,7 +70,7 @@ Expose what already exists so the leader can ask others what they'd wear.
 - [x] `GET /equip/propose-loadout?mob=<code>` in `src/routes/Equip.ts`, wrapping
       `Character.proposeCombatLoadout` (`characterClass.ts:3118`). Returns the
       `FakeCharacterSchema` unchanged. No equipping, no movement.
-- [ ] Add an `Account.ts` helper to call it on another character.
+- [x] Add an `Account.ts` helper to call it on another character.
 
 **Verify:** curl each of the five characters for `king_slime` and eyeball the loadouts.
 Check that a character holding a gathering weapon proposes a _combat_ weapon — that is the
