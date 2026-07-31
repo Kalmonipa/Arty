@@ -360,7 +360,9 @@ export class TidyBankObjective extends Objective {
       logger.info(`Found ${numInBank}x ${item.name} in the bank`);
 
       await this.character.withdrawNow(numInBank, item.code);
-      return await this.character.useItem(item.code, numInBank);
+      await this.character.useItem(item.code, numInBank);
     }
+
+    return true;
   }
 }
