@@ -259,7 +259,9 @@ export class IdleCrafterObjective extends Objective {
       return true;
     }
 
-    const numExchangesToMake = Math.floor(coinsInBank / costToExchange);
+    const numExchangesToMake = Math.floor(
+      (coinsInBank - MIN_TASK_COINS_IN_BANK) / costToExchange,
+    );
     const coinsToSpend = numExchangesToMake * costToExchange;
 
     await this.character.withdrawNow(coinsToSpend, TasksCoin);
