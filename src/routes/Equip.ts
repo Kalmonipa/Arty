@@ -44,27 +44,5 @@ export default function EquipRouter(char: Character) {
     }
   });
 
-  router.get('/propose-loadout', async (req: Request, res: Response) => {
-    try {
-      const { targetMob } = req.query;
-
-      if (!targetMob || typeof targetMob !== 'string') {
-        return res.status(400).json({ error: 'Invalid or missing targetMob.' });
-      }
-
-      const proposedLoadout = await char.proposeCombatLoadout(targetMob);
-
-      return res.status(200).json({
-        message: `Proposed loadout for target mob ${targetMob}.`,
-        character: char.data.name,
-        proposedLoadout,
-      });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: error.message || 'Internal server error.' });
-    }
-  });
-
   return router;
 }

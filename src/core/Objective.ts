@@ -11,7 +11,7 @@ import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { SimpleItemSchema, Skill, TaskType } from '../types/types.js';
 import { addToWishlist } from '../wishlist/functions.js';
-import { TasksCoin } from '../constants.js';
+import { TasksCoin } from '../names.js';
 
 export abstract class Objective {
   character: Character;

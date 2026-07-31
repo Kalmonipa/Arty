@@ -1,15 +1,11 @@
 import { getItemInformation } from '../api_calls/Items.js';
-import { actionTasksTrade } from '../api_calls/Tasks.js';
-import { ItemSchema, TaskTradeResponseSchema } from '../types/types.js';
+import { ItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { Role } from '../types/CharacterData.js';
-import { addToWishlist } from '../wishlist/functions.js';
-import { AcquisitionMethod, WishlistRequest } from '../wishlist/types.js';
-import { TasksCoin } from '../constants.js';
+import { TasksCoin } from '../names.js';
 
 export class ItemTaskObjective extends Objective {
   type = 'items' as const;

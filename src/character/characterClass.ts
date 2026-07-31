@@ -63,7 +63,7 @@ import {
   SimpleObjectiveInfo,
   WishlistRequestRef,
 } from '../types/ObjectiveData.js';
-import { FightObjective } from '../core/FightObjective.js';
+import { FightObjective } from '../fights/FightObjective.js';
 import { EquipObjective } from '../core/EquipObjective.js';
 import { UnequipObjective } from '../core/UnequipObjective.js';
 import { WithdrawObjective } from '../core/WithdrawObjective.js';
@@ -85,7 +85,7 @@ import { TidyBankObjective } from '../core/TidyBankObjective.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
-import { FightSimulator } from '../core/FightSimulator.js';
+import { FightSimulator } from '../fights/FightSimulator.js';
 import { IdleObjective } from '../idleObjectives/IdleObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import { deleteWishlistRequest } from '../wishlist/functions.js';
@@ -105,6 +105,13 @@ import {
 } from '../core/navigation/graph.js';
 import { ForestBankPotion, RecallPotion } from '../names.js';
 import {
+  CharRole,
+  DesiredFoodCount,
+  MaxEquippedUtilities,
+  MinEquippedUtilities,
+  MinFood,
+} from '../constants.js';
+import {
   AmuletSlot,
   Artifact1Slot,
   Artifact2Slot,
@@ -112,16 +119,11 @@ import {
   BagSlot,
   BodyArmorSlot,
   BootsSlot,
-  CharRole,
-  DesiredFoodCount,
   FishMerchant,
   Gearcrafting,
   HelmetSlot,
   Jewelrycrafting,
   LegArmorSlot,
-  MaxEquippedUtilities,
-  MinEquippedUtilities,
-  MinFood,
   NomadicMerchant,
   Ring1Slot,
   Ring2Slot,
@@ -131,7 +133,7 @@ import {
   Utility2Slot,
   Weaponcrafting,
   WeaponSlot,
-} from '../constants.js';
+} from '../names.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
 import { shouldDoEvent } from '../events/functions.js';

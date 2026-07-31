@@ -9,7 +9,7 @@ import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
 import EquipRouter from './routes/Equip.js';
-import FightRouter from './routes/Fight.js';
+import FightRouter from './fights/Fight.js';
 import RecycleRouter from './routes/Recycle.js';
 import { ApiError } from './core/Error.js';
 import ItemsRouter from './routes/Items.js';

@@ -1,6 +1,7 @@
 import { ApiError } from '../core/Error.js';
+import { ProposeLoadoutResponse } from '../fights/types.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
-import { SimpleItemSchema } from '../types/types.js';
+import { FakeCharacterSchema, SimpleItemSchema } from '../types/types.js';
 import { logger, MyHeaders } from '../utils.js';
 
 /**
@@ -86,6 +87,46 @@ export async function requestCraftItem(
     }
 
     const data = await response.json();
+
+    logger.info(data.message);
+
+    return data;
+  } catch (error) {
+    return error;
+  }
+}
+
+/**
+ * @description Requests a loadout from the character for a specific target mob
+ * @param charName
+ * @param targetMob
+ */
+export async function requestLoadout(
+  charName: string,
+  targetMob: string,
+): Promise<ProposeLoadoutResponse | ApiError> {
+  const requestOptions = {
+    method: 'GET',
+  };
+
+  try {
+    logger.info(
+      `Trying GET http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}`,
+    );
+
+    const response = await fetch(
+      `http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}`,
+      requestOptions,
+    );
+
+    if (!response.ok) {
+      throw new ApiError({
+        code: response.status,
+        message: `Failed to reach ${charName}`,
+      });
+    }
+
+    const data: ProposeLoadoutResponse | ApiError = await response.json();
 
     logger.info(data.message);
 

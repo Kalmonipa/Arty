@@ -2,14 +2,13 @@ import {
   actionClaimPendingItems,
   getPendingItems,
 } from '../api_calls/Items.js';
+import { MAX_SKILL_LEVEL, MIN_TASK_COINS_IN_BANK } from '../constants.js';
 import {
   Gearcrafting,
   Jewelrycrafting,
-  MAX_SKILL_LEVEL,
-  MIN_TASK_COINS_IN_BANK,
   TasksCoin,
   Weaponcrafting,
-} from '../constants.js';
+} from '../names.js';
 import { Role } from '../types/CharacterData.js';
 import { Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';

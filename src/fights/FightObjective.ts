@@ -1,8 +1,8 @@
 import { actionFight } from '../api_calls/Actions.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
-import { ApiError } from './Error.js';
-import { Objective } from './Objective.js';
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { MonsterSchema, SimpleEffectSchema } from '../types/types.js';
