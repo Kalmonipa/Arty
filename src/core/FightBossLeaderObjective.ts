@@ -66,13 +66,13 @@ export class FightBossLeaderObjective extends Objective {
       }
 
       // Build FakeCharacterSchemas to run a fight sim
-      const leaderFakeCharSchema = this.createFakeCharacterSchema(
+      const leaderFakeCharSchema = this.character.createFakeCharacterSchema(
         this.character.data,
       );
-      const part1FakeCharSchema = this.createFakeCharacterSchema(
+      const part1FakeCharSchema = this.character.createFakeCharacterSchema(
         participants[0],
       );
-      const part2FakeCharSchema = this.createFakeCharacterSchema(
+      const part2FakeCharSchema = this.character.createFakeCharacterSchema(
         participants[1],
       );
 
@@ -133,40 +133,5 @@ export class FightBossLeaderObjective extends Objective {
     }
 
     return [part1, part2];
-  }
-
-  /**
-   * @description Creates a FakeCharacterSchema of the current character
-   */
-  private createFakeCharacterSchema(
-    character: CharacterSchema,
-  ): FakeCharacterSchema {
-    const fakeChar: FakeCharacterSchema = {
-      level: character.level,
-      // Using the current characters weapon here because the other character might be wearing a gathering weapon
-      weapon_slot: this.character.data.weapon_slot,
-      rune_slot: character.rune_slot,
-      shield_slot: character.shield_slot,
-      helmet_slot: character.helmet_slot,
-      body_armor_slot: character.body_armor_slot,
-      leg_armor_slot: character.leg_armor_slot,
-      boots_slot: character.boots_slot,
-      ring1_slot: character.ring1_slot,
-      ring2_slot: character.ring2_slot,
-      amulet_slot: character.amulet_slot,
-      artifact1_slot: character.artifact1_slot,
-      artifact2_slot: character.artifact2_slot,
-      artifact3_slot: character.artifact3_slot,
-      utility1_slot: character.utility1_slot,
-      utility2_slot: character.utility2_slot,
-    };
-    if (character.utility1_slot) {
-      fakeChar.utility1_slot_quantity = character.utility1_slot_quantity;
-    }
-    if (character.utility2_slot) {
-      fakeChar.utility2_slot_quantity = character.utility2_slot_quantity;
-    }
-    logger.debug(JSON.stringify(fakeChar));
-    return fakeChar;
   }
 }
