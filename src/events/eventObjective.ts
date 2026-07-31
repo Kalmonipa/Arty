@@ -13,12 +13,8 @@ import {
 import { actionFight, actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
-import {
-  FishMerchant,
-  GemstoneMerchant,
-  MinEquippedUtilities,
-  NomadicMerchant,
-} from '../constants.js';
+import { MinEquippedUtilities } from '../constants.js';
+import { FishMerchant, GemstoneMerchant, NomadicMerchant } from '../names.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event

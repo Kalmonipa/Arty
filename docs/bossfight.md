@@ -87,7 +87,7 @@ depends on.
 
 A standalone, genuinely useful command: _could_ we beat this boss? Nothing moves.
 
-- [ ] `src/bossFight/feasibility.ts` — given a leader, a boss and two support names:
+- [x] `src/bossFight/feasibility.ts` — given a leader, a boss and two support names:
       collect three proposals, reconcile contention, sim, return verdict + win rate.
 - [ ] **Reconciliation:** where two proposals name the same item code and the bank holds
       fewer than the number claimed, strip it from the lower-priority character and ask
@@ -96,7 +96,7 @@ A standalone, genuinely useful command: _could_ we beat this boss? Nothing moves
 - [x] Delete the private `createFakeCharacterSchema`
       (`FightBossLeaderObjective.ts:140-170`) — `Character.createFakeCharacterSchema`
       (`characterClass.ts:1659`) already exists and is correct.
-- [ ] Delete `findBestParticipants` (`FightBossLeaderObjective.ts:104-135`). Its
+- [x] Delete `findBestParticipants` (`FightBossLeaderObjective.ts:104-135`). Its
       comparison logic is broken: `part1`/`part2` are seeded from whichever character comes
       first, the `else if` lets `part2` end up higher-level than `part1`, and the leader is
       in its own candidate pool. Replace with `findSupportCharacters()` — filter

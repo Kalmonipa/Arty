@@ -3,7 +3,8 @@ import {
   getAllItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { MAX_SKILL_LEVEL, TasksCoin } from '../constants.js';
+import { MAX_SKILL_LEVEL } from '../constants.js';
+import { TasksCoin } from '../names.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';

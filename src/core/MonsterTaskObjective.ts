@@ -1,15 +1,15 @@
 import { estimateFightCooldown, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { DepositObjective } from './DepositObjective.js';
-import { FightSimulator } from './FightSimulator.js';
+import { FightSimulator } from '../fights/FightSimulator.js';
 import { Objective } from './Objective.js';
 import {
   MAX_MONSTER_TASK_SECONDS,
   MAX_TASK_REROLLS,
   MIN_TASK_COINS_TO_REROLL,
   TASK_ESTIMATE_SIM_ITERATIONS,
-  TasksCoin,
 } from '../constants.js';
+import { TasksCoin } from '../names.js';
 
 export class MonsterTaskObjective extends Objective {
   type = 'monster' as const;

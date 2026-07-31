@@ -1,8 +1,14 @@
 import { actionFight } from '../api_calls/Actions.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
+<<<<<<< HEAD:src/core/FightBossParticipantObjecive.ts
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+=======
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
+import { ObjectiveTargets } from '../types/ObjectiveData.js';
+>>>>>>> main:src/fights/FightBossParticipantObjecive.ts
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { MinEquippedUtilities } from '../constants.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
@@ -17,7 +23,15 @@ export class FightBossParticipantObjective extends Objective {
     participants: string[],
     parentObjective?: string,
   ) {
+<<<<<<< HEAD:src/core/FightBossParticipantObjecive.ts
     super(character, `participate_${target}_bossfight`, 'not_started');
+=======
+    super(
+      character,
+      `participate_bossfight_${target.quantity}_${target.code}`,
+      'not_started',
+    );
+>>>>>>> main:src/fights/FightBossParticipantObjecive.ts
 
     this.character = character;
     this.jobFlavour = 'FightBossParticipant';
