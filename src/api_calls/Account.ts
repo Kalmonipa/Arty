@@ -107,18 +107,14 @@ export async function requestLoadout(
 ): Promise<ProposeLoadoutResponse | ApiError> {
   const requestOptions = {
     method: 'GET',
-    body: JSON.stringify({ targetMob: targetMob }),
   };
 
   try {
-    logger.info(
-      `Trying GET http://${charName.toLowerCase()}:3000/fight/propose-loadout`,
-    );
+    const url = `http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}`;
 
-    const response = await fetch(
-      `http://${charName.toLowerCase()}:3000/fight/propose-loadout`,
-      requestOptions,
-    );
+    logger.info(`Trying GET ${url}`);
+
+    const response = await fetch(url, requestOptions);
 
     if (!response.ok) {
       throw new ApiError({
