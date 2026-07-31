@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Character } from '../character/characterClass.js';
 import { FightObjective } from './FightObjective.js';
 import { FightBossLeaderObjective } from './FightBossLeaderObjective.js';
+import { simulateBossFight } from './BossfightPreRequisite.js';
 
 export default function FightRouter(char: Character) {
   const router = Router();
@@ -85,6 +86,38 @@ export default function FightRouter(char: Character) {
       return res
         .status(500)
         .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  router.post('/boss/simulate', async (req: Request, res: Response) => {
+    try {
+      const { quantity, targetMob } = req.body;
+
+      if (Number.isNaN(quantity) || !targetMob) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid quantity or targetMob.' });
+      }
+
+      if (char === undefined || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      const result = await simulateBossFight(char, {
+        code: targetMob,
+        quantity: quantity,
+      });
+
+      return res.status(200).json({
+        message: `Boss fight sim against ${targetMob} was a ${result ? 'win' : 'loss'}`,
+        character: char.data.name,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error' });
     }
   });
 
