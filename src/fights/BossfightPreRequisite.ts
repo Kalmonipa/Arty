@@ -60,9 +60,12 @@ export async function simulateBossFight(
   const simResult = await character.simulateFightNow(
     [leaderFakeCharSchema, part1FakeCharSchema, part2FakeCharSchema],
     target.code,
+    target.quantity,
   );
 
   logger.info(`Sim result was a ${simResult ? 'win' : 'loss'}`);
+
+  return simResult;
 }
 
 /**

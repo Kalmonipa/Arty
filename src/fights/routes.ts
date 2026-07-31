@@ -138,7 +138,7 @@ export default function FightRouter(char: Character) {
       const proposedLoadout = await char.proposeCombatLoadout(targetMob);
 
       return res.status(200).json({
-        message: `Proposed loadout for target mob ${targetMob}.`,
+        message: `Proposed loadout for target mob ${targetMob}: helmet: ${proposedLoadout.helmet_slot}, weapon: ${proposedLoadout.weapon_slot}`,
         character: char.data.name,
         proposedLoadout,
       });

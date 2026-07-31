@@ -180,7 +180,6 @@ export class MonsterTaskObjective extends Objective {
       [this.character.createFakeCharacterSchema(this.character.data)],
       this.character.data.task,
       TASK_ESTIMATE_SIM_ITERATIONS,
-      false,
     );
     await this.character.executeJobNow(sim, true, true, this.objectiveId);
 
