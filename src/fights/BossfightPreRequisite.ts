@@ -40,7 +40,7 @@ export async function simulateBossFight(
     );
     part1FakeCharSchema = character.createFakeCharacterSchema(participants[0]);
   } else {
-    logger.info(`Successfully received loadout from ${participants[1].name}`);
+    logger.info(`Successfully received loadout from ${participants[0].name}`);
     part1FakeCharSchema = part1FakeCharSchemaRequest.proposedLoadout;
   }
   const part2FakeCharSchemaRequest = await requestLoadout(

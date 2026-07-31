@@ -11,7 +11,7 @@ export default function FightRouter(char: Character) {
     try {
       const { quantity, itemCode } = req.body;
 
-      if (isNaN(quantity) || !itemCode) {
+      if (Number.isNaN(quantity) || !itemCode) {
         return res.status(400).json({ error: 'Invalid quantity or itemCode.' });
       }
 
@@ -127,7 +127,7 @@ export default function FightRouter(char: Character) {
    */
   router.get('/propose-loadout', async (req: Request, res: Response) => {
     try {
-      const { targetMob } = req.body;
+      const { targetMob } = req.query;
 
       if (!targetMob || typeof targetMob !== 'string') {
         return res.status(400).json({

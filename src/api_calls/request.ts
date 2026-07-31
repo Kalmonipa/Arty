@@ -64,6 +64,21 @@ function hasCooldown(body: unknown): body is CooldownBody {
 }
 
 /**
+ * Validation failures name the offending fields in the response body, e.g. a 422
+ * carries `{"error":{"data":{"characters.1":["Input should be a valid dictionary"]}}}`.
+ * Our per-status messages are generic, so without this the body's diagnosis is lost.
+ */
+async function fieldErrors(response: Response): Promise<string> {
+  try {
+    const body = await response.json();
+    const data = body?.error?.data;
+    return data ? ` ${JSON.stringify(data)}` : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Full-jitter backoff: pick a delay uniformly from [0, window], where the
  * window grows exponentially per attempt and is capped at maxDelaySeconds.
  * Randomising across the whole window (rather than adding jitter on top of a
@@ -141,9 +156,10 @@ export async function apiRequest<T>(
         throw new ApiError({
           code: response.status,
           message:
-            errorMessages[response.status] ??
-            fallbackMessage ??
-            `Unknown error from ${url.toString()}`,
+            (errorMessages[response.status] ??
+              fallbackMessage ??
+              `Unknown error from ${url.toString()}`) +
+            (await fieldErrors(response)),
         });
       }
 

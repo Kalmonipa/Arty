@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import { ProposeLoadoutResponse } from '../fights/types.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
 import { SimpleItemSchema } from '../types/types.js';
@@ -133,6 +133,6 @@ export async function requestLoadout(
 
     return data;
   } catch (error) {
-    return error;
+    return toApiError(error);
   }
 }

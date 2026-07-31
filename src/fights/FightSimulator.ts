@@ -39,6 +39,10 @@ export class FightSimulator extends Objective {
   }
 
   async run(): Promise<boolean> {
+    logger.debug(
+      `Simulating ${this.iterations} fights vs ${this.targetMobCode} with ${JSON.stringify(this.mockCharacters)}`,
+    );
+
     const fightSimResponse = await fightSimulator(
       this.mockCharacters,
       this.targetMobCode,
