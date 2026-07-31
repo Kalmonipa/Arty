@@ -30,7 +30,7 @@ export class FightSimulator extends Objective {
     this.jobFlavour = 'FightSimulator';
     this.mockCharacters = mockCharacters;
     this.targetMobCode = targetMobCode;
-    this.iterations = iterations !== undefined ? iterations : 10;
+    this.iterations = iterations ?? 10;
     this.debugLogs = debugLogs;
   }
 

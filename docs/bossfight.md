@@ -13,7 +13,7 @@ Two consequences shape the whole design:
 
 1. **Readiness is mostly observable.** `GET /my/characters` returns position, HP, every
    gear slot, utility quantities and `cooldown_expiration` for all five characters in one
-   call. The leader does not need to be *told* the happy path.
+   call. The leader does not need to be _told_ the happy path.
 2. **Failure is not observable.** "Still walking there" and "gave up, no restore potions"
    look identical from outside. That is the only thing that genuinely needs a channel.
 
@@ -24,7 +24,7 @@ locking.
 
 Interruption reuses the existing on-hold queue (`parkJob` / `resumeOnHoldJob`,
 `characterClass.ts:1049-1094`) — the machinery already built for wishlist blocking. Boss
-fights just need it triggered *externally* rather than by a job discovering it's blocked.
+fights just need it triggered _externally_ rather than by a job discovering it's blocked.
 
 ### Division of labour
 
@@ -44,16 +44,16 @@ planning independently against one bank will each claim the same best-in-slot it
 
 Three latent bugs sit directly on the road. None have ever run.
 
-- [ ] `src/api_calls/Account.ts:18` — `charName.toLowerCase` is missing its call parens, so
+- [x] `src/api_calls/Account.ts:18` — `charName.toLowerCase` is missing its call parens, so
       the URL interpolates the function source: `http://function toLowerCase() { [native
-      code] }:3000/jobs/pause`. `fetch` throws, the `catch` at :24 returns the error as if
+  code] }:3000/jobs/pause`. `fetch` throws, the `catch` at :24 returns the error as if
       it were a `JobResponse`, and both call sites ignore the return value. Add `()`.
       The `http://<name>:3000` scheme itself is correct — containers are named after the
       lowercased character.
-- [ ] `src/api_calls/Actions.ts:97` — `body: participants` sends a bare array, but the
+- [x] `src/api_calls/Actions.ts:97` — `body: participants` sends a bare array, but the
       endpoint expects `FightRequestSchema` (`types.ts:1415-1421`), i.e.
       `{ participants: [...] }`. As written a group fight would 422.
-- [ ] `src/character/characterClass.ts:3355` — `simulateFightNow` returns
+- [x] `src/character/characterClass.ts:3355` — `simulateFightNow` returns
       `executeJobNow`'s boolean, discarding `FightSimulator.winRate`
       (`FightSimulator.ts:20,63`). Step 2 and Step 7 both need the actual rate to decide
       "is a two-character fight good enough". Return the win rate or the job.
@@ -73,7 +73,7 @@ Expose what already exists so the leader can ask others what they'd wear.
 - [ ] Add an `Account.ts` helper to call it on another character.
 
 **Verify:** curl each of the five characters for `king_slime` and eyeball the loadouts.
-Check that a character holding a gathering weapon proposes a *combat* weapon — that is the
+Check that a character holding a gathering weapon proposes a _combat_ weapon — that is the
 bug in the leader stub's private `createFakeCharacterSchema`
 (`FightBossLeaderObjective.ts:146`), which substitutes the leader's own weapon into every
 participant's schema.
@@ -85,7 +85,7 @@ depends on.
 
 ## Step 2 — Feasibility check (no movement)
 
-A standalone, genuinely useful command: *could* we beat this boss? Nothing moves.
+A standalone, genuinely useful command: _could_ we beat this boss? Nothing moves.
 
 - [ ] `src/bossFight/feasibility.ts` — given a leader, a boss and two support names:
       collect three proposals, reconcile contention, sim, return verdict + win rate.
@@ -116,7 +116,7 @@ moot. Find that out before building coordination.
 The one change that reaches outside boss-fight code. Highest risk, so ship it alone and
 test it in isolation.
 
-Note `pauseJob()` is *not* this: it sets the current objective to `paused` and
+Note `pauseJob()` is _not_ this: it sets the current objective to `paused` and
 `checkStatus` spins in `while (status === 'paused') await sleep(10)`
 (`Objective.ts:328`), which freezes the job in place. Control never returns to
 `executeJobList`, so a prepended job would never run.
@@ -230,7 +230,7 @@ progress.
       only notices at its next `checkStatus()` checkpoint.
 - [ ] A `failed` participant row short-circuits the wait — no point waiting on someone who
       has given up.
-- [ ] On timeout or failure: re-sim with the participants that *are* ready. Proceed with two
+- [ ] On timeout or failure: re-sim with the participants that _are_ ready. Proceed with two
       if the win rate clears the threshold, else abort with a reason. Needs the win rate
       from Step 0.
 - [ ] `expires_at` (~30 min) as the crash backstop. Participants exit their wait loop when
