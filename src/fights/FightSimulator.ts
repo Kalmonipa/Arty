@@ -13,7 +13,6 @@ export class FightSimulator extends Objective {
   mockCharacters: FakeCharacterSchema[];
   targetMobCode: string;
   iterations: number;
-  debugLogs: boolean = true;
   /** Average turns across the winning simulations; 0 if none were won */
   averageTurns: number = 0;
   /** Percentage of simulations won */
@@ -24,14 +23,12 @@ export class FightSimulator extends Objective {
     mockCharacters: FakeCharacterSchema[],
     targetMobCode: string,
     iterations?: number,
-    debugLogs?: boolean,
   ) {
     super(character, `fight_sim_${targetMobCode}`, 'not_started');
     this.jobFlavour = 'FightSimulator';
     this.mockCharacters = mockCharacters;
     this.targetMobCode = targetMobCode;
     this.iterations = iterations ?? 10;
-    this.debugLogs = debugLogs;
   }
 
   async runPrerequisiteChecks(): Promise<boolean> {
@@ -39,6 +36,10 @@ export class FightSimulator extends Objective {
   }
 
   async run(): Promise<boolean> {
+    logger.debug(
+      `Simulating ${this.iterations} fights vs ${this.targetMobCode} with ${JSON.stringify(this.mockCharacters)}`,
+    );
+
     const fightSimResponse = await fightSimulator(
       this.mockCharacters,
       this.targetMobCode,

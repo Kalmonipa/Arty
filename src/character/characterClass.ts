@@ -3358,14 +3358,12 @@ export class Character {
     mockCharacters: FakeCharacterSchema[],
     targetMobCode: string,
     iterations?: number,
-    debugLogs?: boolean,
   ) {
     const job = new FightSimulator(
       this,
       mockCharacters,
       targetMobCode,
       iterations,
-      debugLogs,
     );
 
     return await this.executeJobNow(

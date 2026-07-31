@@ -1,7 +1,7 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/Error.js';
 import { ProposeLoadoutResponse } from '../fights/types.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
-import { FakeCharacterSchema, SimpleItemSchema } from '../types/types.js';
+import { SimpleItemSchema } from '../types/types.js';
 import { logger, MyHeaders } from '../utils.js';
 
 /**
@@ -110,14 +110,11 @@ export async function requestLoadout(
   };
 
   try {
-    logger.info(
-      `Trying GET http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}`,
-    );
+    const url = `http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}`;
 
-    const response = await fetch(
-      `http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}`,
-      requestOptions,
-    );
+    logger.info(`Trying GET ${url}`);
+
+    const response = await fetch(url, requestOptions);
 
     if (!response.ok) {
       throw new ApiError({
@@ -132,6 +129,6 @@ export async function requestLoadout(
 
     return data;
   } catch (error) {
-    return error;
+    return toApiError(error);
   }
 }

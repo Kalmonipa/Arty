@@ -83,6 +83,50 @@ describe('apiRequest', () => {
     );
   });
 
+  it("appends the body's field-level detail to a validation failure", async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      jsonResponse(422, {
+        error: {
+          code: 422,
+          message: 'Request could not be processed due to an invalid payload.',
+          data: {
+            'characters.1': ['Input should be a valid dictionary or object'],
+          },
+        },
+      }),
+    );
+
+    const result = await apiRequest(
+      {
+        url: 'https://api/simulation/fight',
+        method: 'POST',
+        errorMessages: { 422: 'Invalid payload.' },
+      },
+      { sleep: makeSleep() },
+    );
+
+    expect((result as ApiError).error.message).toBe(
+      'Invalid payload. {"characters.1":["Input should be a valid dictionary or object"]}',
+    );
+  });
+
+  it('keeps the configured message when the error body is not JSON', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => {
+        throw new SyntaxError('Unexpected token < in JSON');
+      },
+    } as unknown as Response);
+
+    const result = await apiRequest(
+      { url: 'https://api/items', fallbackMessage: 'Unknown error' },
+      { sleep: makeSleep() },
+    );
+
+    expect((result as ApiError).error.message).toBe('Unknown error');
+  });
+
   it('returns an ApiError when fetch throws a transport error', async () => {
     jest
       .spyOn(global, 'fetch')

@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { actionUse } from '../../src/api_calls/Items.js';
 import { actionFight } from '../../src/api_calls/Actions.js';
+import { requestLoadout } from '../../src/api_calls/Account.js';
 import { ApiError } from '../../src/core/Error.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
@@ -51,6 +52,34 @@ describe('api_calls error handling', () => {
         .mockRejectedValue(new TypeError('fetch failed'));
 
       const result = await actionFight(mockCharacterData, []);
+
+      expect(result).toBeInstanceOf(ApiError);
+    });
+  });
+
+  describe('requestLoadout', () => {
+    it('returns an ApiError when the request never leaves the process', async () => {
+      // A raw TypeError here passes the caller's `instanceof ApiError` guard,
+      // so a failed request reads as a success and yields an undefined loadout.
+      jest
+        .spyOn(global, 'fetch')
+        .mockRejectedValue(
+          new TypeError('Request with GET/HEAD method cannot have body.'),
+        );
+
+      const result = await requestLoadout('BouncyBella', 'king_slime');
+
+      expect(result).toBeInstanceOf(ApiError);
+    });
+
+    it('returns an ApiError when the participant responds non-OK', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'Internal server error.' }),
+      } as unknown as Response);
+
+      const result = await requestLoadout('BouncyBella', 'king_slime');
 
       expect(result).toBeInstanceOf(ApiError);
     });
