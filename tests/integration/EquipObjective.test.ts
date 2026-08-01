@@ -511,7 +511,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBeUndefined(); // Should return undefined due to quantity limit
+      expect(result).toBe(false); // Should return false due to quantity limit
       expect(actionEquipItem).not.toHaveBeenCalled();
     });
 
