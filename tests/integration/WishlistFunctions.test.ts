@@ -36,9 +36,7 @@ describe('wishlist functions', () => {
 
   describe('addToWishlist', () => {
     it('returns the id of the newly inserted request', async () => {
-      mockedQuery
-        .mockResolvedValueOnce({ rows: [] } as any) // no duplicate
-        .mockResolvedValueOnce({ rows: [{ id: 42 }] } as any); // insert
+      mockedQuery.mockResolvedValueOnce({ rows: [{ id: 42 }] } as any);
 
       const id = await addToWishlist({
         itemCode: 'iron_ore',
@@ -48,28 +46,34 @@ describe('wishlist functions', () => {
       });
 
       expect(id).toBe(42);
-      const insertSql = mockedQuery.mock.calls[1][0] as string;
+      const insertSql = mockedQuery.mock.calls[0][0] as string;
       expect(insertSql).toMatch(/RETURNING id/i);
     });
 
-    it('reuses an existing open request instead of inserting a duplicate', async () => {
-      mockedQuery.mockResolvedValueOnce({ rows: [{ id: 7 }] } as any); // duplicate found
+    it('inserts a separate row when an identical open request already exists', async () => {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ id: 7 }] } as any)
+        .mockResolvedValueOnce({ rows: [{ id: 8 }] } as any);
 
-      const id = await addToWishlist({
+      const request = {
         itemCode: 'iron_ore',
         quantity: 10,
         characterName: 'TimidTom',
-        acquisitionMethod: 'mining',
-      });
+        acquisitionMethod: 'mining' as const,
+      };
+      const first = await addToWishlist(request);
+      const second = await addToWishlist(request);
 
-      expect(id).toBe(7);
-      expect(mockedQuery).toHaveBeenCalledTimes(1); // no insert
+      expect(first).toBe(7);
+      expect(second).toBe(8);
+      expect(mockedQuery).toHaveBeenCalledTimes(2);
+      for (const call of mockedQuery.mock.calls) {
+        expect(call[0] as string).toMatch(/INSERT INTO wishlist/i);
+      }
     });
 
     it('returns null when the insert fails', async () => {
-      mockedQuery
-        .mockResolvedValueOnce({ rows: [] } as any)
-        .mockRejectedValueOnce(new Error('db down'));
+      mockedQuery.mockRejectedValueOnce(new Error('db down'));
 
       const id = await addToWishlist({
         itemCode: 'iron_ore',

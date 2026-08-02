@@ -43,9 +43,13 @@ export function deriveRequiredLevel(item: ItemSchema): number {
  * Adds an item to the wishlist. The acquisition method and required level are
  * derived from the item's data so fulfillers can filter reliably; a caller may
  * still override them explicitly (e.g. to force "buy" for a craftable item).
+ *
+ * Every call inserts its own row, even when an identical open request already
+ * exists. A row is the blocking token for one job: sharing one between jobs
+ * delivers a single quantity for all of them and lets the first job to resume
+ * delete the row the others are still waiting on.
  * @param wishlistInfo The information for the request so other characters can understand what's required
- * @returns true if the request was saved, false otherwise
- * @todo Check if there's already a request in the wishlist for this item from this char
+ * @returns the new request's id, or null if the insert failed
  */
 export async function addToWishlist(
   wishlistInfo: WishlistRequest,
@@ -65,22 +69,6 @@ export async function addToWishlist(
   }
 
   try {
-    // Reuse an existing open request for the same item/character rather than
-    // piling up duplicates (e.g. when a parked job restarts and re-checks).
-    const existing = await db.query<{ id: number }>(
-      `
-      SELECT id FROM wishlist
-      WHERE item_code = $1 AND character = $2
-        AND fulfilled = false AND executing = false
-        AND (expiration_date IS NULL OR expiration_date > NOW())
-      LIMIT 1;
-      `,
-      [wishlistInfo.itemCode, wishlistInfo.characterName],
-    );
-    if (existing.rows.length > 0) {
-      return existing.rows[0].id;
-    }
-
     const result = await db.query<{ id: number }>(
       `
       INSERT INTO wishlist (
