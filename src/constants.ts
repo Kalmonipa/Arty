@@ -66,5 +66,13 @@ export const DesiredFoodCount = 50;
  */
 export const MinFood = 15;
 
+/**
+ * How long a per-item bank quantity stays usable before it's read again.
+ * The API budgets data requests per minute across the whole host, so this is
+ * really a cap on how often any one item code can cost us a request.
+ * https://docs.artifactsmmo.com/api_guide/rate_limits/
+ */
+export const BankQuantityCacheTtlMs = 30 * 1000;
+
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 export const ApiToken = getEnv('API_TOKEN');

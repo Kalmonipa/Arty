@@ -52,6 +52,10 @@ import { CraftObjective } from '../core/CraftObjective.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
 import type { BankCache } from '../core/BankCache.js';
+import {
+  cacheBankQuantity,
+  readCachedBankQuantity,
+} from '../core/bankQuantityCache.js';
 import { GatherObjective } from '../core/GatherObjective.js';
 import { Objective } from '../core/Objective.js';
 import {
@@ -1584,6 +1588,12 @@ export class Character {
       return cache.quantityOf(contentCode);
     }
 
+    const cached = readCachedBankQuantity(contentCode);
+    if (cached !== undefined) {
+      logger.debug(`Found ${cached} ${contentCode} in bank (cached)`);
+      return cached;
+    }
+
     let numFound = 0;
     const bankItem = await getBankItems(contentCode);
     if (bankItem instanceof ApiError) {
@@ -1602,6 +1612,7 @@ export class Character {
       }
       numFound = total;
     }
+    cacheBankQuantity(contentCode, numFound);
     logger.debug(`Found ${numFound} ${contentCode} in bank`);
     return numFound;
   }

@@ -15,6 +15,7 @@ import {
 } from '../types/types.js';
 import { logger } from '../utils.js';
 import { ApiUrl } from '../constants.js';
+import { invalidateBankQuantities } from '../core/bankQuantityCache.js';
 import { apiRequest } from './request.js';
 
 /**
@@ -74,6 +75,7 @@ export async function actionDepositItems(
     },
     fallbackMessage: 'Unknown error from /action/bank/deposit/item',
     onSuccess: () => {
+      invalidateBankQuantities(items.map((item) => item.code));
       items.forEach((item) => {
         logger.info(`Deposited ${item.quantity} ${item.code} into the bank`);
       });
@@ -247,6 +249,7 @@ export async function actionWithdrawItem(
     },
     fallbackMessage: 'Unknown error from /action/withdraw/item',
     onSuccess: () => {
+      invalidateBankQuantities(items.map((item) => item.code));
       items.forEach((item) => {
         logger.info(`Withdrew ${item.quantity} ${item.code} from the bank`);
       });

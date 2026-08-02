@@ -4,6 +4,7 @@ import { getMaps } from '../api_calls/Maps.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
+import { invalidateBankQuantities } from './bankQuantityCache.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 
@@ -67,6 +68,10 @@ export class WithdrawObjective extends Objective {
       ]);
 
       if (response instanceof ApiError) {
+        // Usually 478: another character emptied the bank since we last read it.
+        // Drop the memo so the next check sees what's really there
+        invalidateBankQuantities([this.target.code]);
+
         const shouldRetry = await this.character.handleErrors(response);
 
         if (!shouldRetry || attempt === this.maxRetries) {
