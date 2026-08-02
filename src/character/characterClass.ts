@@ -180,7 +180,7 @@ export class Character {
    */
   onHold: OnHoldJob[] = [];
   /** The most parked jobs a character may hold at once */
-  maxOnHoldJobs = 10;
+  maxOnHoldJobs = 6;
   /**
    * Wishlist requests raised during the current root job that should cause the
    * job to be parked when it finishes. Reset before each root job runs.
