@@ -1,5 +1,4 @@
 import { Role } from './types/CharacterData.js';
-import { ItemSlot } from './types/types.js';
 import { getEnv } from './utils.js';
 import dotenv from 'dotenv';
 

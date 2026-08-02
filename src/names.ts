@@ -4,6 +4,8 @@
 export const RecallPotion = 'recall_potion';
 export const ForestBankPotion = 'forest_bank_potion';
 export const TasksCoin = 'tasks_coin';
+export const Algae = 'algae';
+export const Sap = 'sap';
 
 /**
  * @description Map Areas

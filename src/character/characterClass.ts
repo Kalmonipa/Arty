@@ -1877,14 +1877,14 @@ export class Character {
 
   /**
    * @description Find the best way to recover health fully
-   * If there is less than 30% health to recover, rest (which takes 1 second per % of health)
+   * If there is less than 20% health to recover, rest (which takes 1 second per % of health)
    * Otherwise eat food to heal
    */
   async recoverHealth(): Promise<boolean> {
     const healthStatus: HealthStatus = this.checkHealth();
 
     if (healthStatus.percentage !== 100) {
-      if (healthStatus.percentage > 70) {
+      if (healthStatus.percentage > 80) {
         await this.rest();
         return true;
       } else {

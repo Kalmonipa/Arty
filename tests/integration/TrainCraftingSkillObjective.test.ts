@@ -17,6 +17,13 @@ jest.mock('../../src/api_calls/Items', () => ({
 
 // Import the mocked functions
 import { getAllItemInformation } from '../../src/api_calls/Items.js';
+import {
+  Alchemy,
+  Cooking,
+  Mining,
+  Weaponcrafting,
+  Woodcutting,
+} from '../../src/names.js';
 
 // Mock craftable items
 const createMockCraftableItem = (
@@ -240,7 +247,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       mockCharacter.data.alchemy_level = 1;
       mockCharacter.getCharacterLevel.mockImplementation(
         (char: CharacterSchema, skill?: string) => {
-          if (skill === 'alchemy') {
+          if (skill === Alchemy) {
             return mockCharacter.data.alchemy_level;
           }
           return mockCharacter.data.level;
@@ -256,7 +263,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       const objective = new TrainCraftingSkillObjective(
         mockCharacter as any,
-        'alchemy',
+        Alchemy,
         15,
       );
 
@@ -275,7 +282,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       mockCharacter.data.alchemy_level = 1;
       mockCharacter.getCharacterLevel.mockImplementation(
         (char: CharacterSchema, skill?: string) => {
-          if (skill === 'alchemy') {
+          if (skill === Alchemy) {
             return mockCharacter.data.alchemy_level;
           }
           return mockCharacter.data.level;
@@ -289,7 +296,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       const objective = new TrainCraftingSkillObjective(
         mockCharacter as any,
-        'alchemy',
+        Alchemy,
         5,
       );
 
@@ -311,7 +318,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       mockCharacter.data.cooking_level = 1;
       mockCharacter.getCharacterLevel.mockImplementation(
         (char: CharacterSchema, skill?: string) => {
-          if (skill === 'cooking') {
+          if (skill === Cooking) {
             return mockCharacter.data.cooking_level;
           }
           return mockCharacter.data.level;
@@ -325,7 +332,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       const objective = new TrainCraftingSkillObjective(
         mockCharacter as any,
-        'cooking',
+        Cooking,
         5,
       );
 
@@ -342,12 +349,84 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       );
     });
 
-    it('should craft 2 items for weaponcrafting skill', async () => {
+    it('should craft 10 items for mining skill', async () => {
+      // Arrange
+      mockCharacter.data.mining_level = 1;
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === Mining) {
+            return mockCharacter.data.mining_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
+
+      mockCharacter.craftNow.mockImplementation(async () => {
+        mockCharacter.data.mining_level = 5;
+        return true;
+      });
+
+      const objective = new TrainCraftingSkillObjective(
+        mockCharacter as any,
+        Mining,
+        5,
+      );
+
+      // Act
+      await objective.run();
+
+      // Assert
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(
+        10,
+        expect.any(String),
+        undefined,
+        undefined,
+        true,
+      );
+    });
+
+    it('should craft 10 items for woodcutting skill', async () => {
+      // Arrange
+      mockCharacter.data.woodcutting_level = 1;
+      mockCharacter.getCharacterLevel.mockImplementation(
+        (char: CharacterSchema, skill?: string) => {
+          if (skill === Woodcutting) {
+            return mockCharacter.data.woodcutting_level;
+          }
+          return mockCharacter.data.level;
+        },
+      );
+
+      mockCharacter.craftNow.mockImplementation(async () => {
+        mockCharacter.data.woodcutting_level = 5;
+        return true;
+      });
+
+      const objective = new TrainCraftingSkillObjective(
+        mockCharacter as any,
+        Woodcutting,
+        5,
+      );
+
+      // Act
+      await objective.run();
+
+      // Assert
+      expect(mockCharacter.craftNow).toHaveBeenCalledWith(
+        10,
+        expect.any(String),
+        undefined,
+        undefined,
+        true,
+      );
+    });
+
+    it('should craft 5 items for weaponcrafting skill', async () => {
       // Arrange
       mockCharacter.data.weaponcrafting_level = 5;
       mockCharacter.getCharacterLevel.mockImplementation(
         (char: CharacterSchema, skill?: string) => {
-          if (skill === 'weaponcrafting') {
+          if (skill === Weaponcrafting) {
             return mockCharacter.data.weaponcrafting_level;
           }
           return mockCharacter.data.level;
@@ -361,7 +440,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       const objective = new TrainCraftingSkillObjective(
         mockCharacter as any,
-        'weaponcrafting',
+        Weaponcrafting,
         10,
       );
 
@@ -370,7 +449,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       // Assert
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
-        2,
+        5,
         expect.any(String),
         undefined,
         undefined,
@@ -378,7 +457,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       );
     });
 
-    it('should craft 2 items for gearcrafting skill', async () => {
+    it('should craft 5 items for gearcrafting skill', async () => {
       // Arrange
       mockCharacter.data.gearcrafting_level = 3;
       mockCharacter.getCharacterLevel.mockImplementation(
@@ -406,7 +485,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       // Assert
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
-        2,
+        5,
         expect.any(String),
         undefined,
         undefined,
@@ -414,7 +493,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       );
     });
 
-    it('should craft 1 item for jewelrycrafting skill', async () => {
+    it('should craft 5 item for jewelrycrafting skill', async () => {
       // Arrange
       mockCharacter.data.jewelrycrafting_level = 1;
       mockCharacter.getCharacterLevel.mockImplementation(
@@ -442,7 +521,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       // Assert
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
-        1,
+        5,
         expect.any(String),
         undefined,
         undefined,

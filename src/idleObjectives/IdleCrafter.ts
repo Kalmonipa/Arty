@@ -1,5 +1,7 @@
 import {
   actionClaimPendingItems,
+  getAllItemInformation,
+  getItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
 import { MAX_SKILL_LEVEL, MIN_TASK_COINS_IN_BANK } from '../constants.js';
@@ -10,7 +12,12 @@ import {
   Weaponcrafting,
 } from '../names.js';
 import { Role } from '../types/CharacterData.js';
-import { Skill } from '../types/types.js';
+import {
+  CraftSkill,
+  GetAllItemsItemsGetParams,
+  ItemSchema,
+  Skill,
+} from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from '../core/Error.js';
@@ -27,6 +34,7 @@ import {
   doMonsterTask,
 } from './idleUtils.js';
 import { actionTasksExchange } from '../api_calls/Tasks.js';
+import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 
 export class IdleCrafterObjective extends Objective {
   role: Role;
@@ -78,6 +86,12 @@ export class IdleCrafterObjective extends Objective {
     if (this.checkIdleJobIsLast()) return true;
 
     await checkWithinLevelRange(this.character);
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.craftMissingTools();
+    if (this.checkIdleJobIsLast()) return true;
+
+    await this.craftMissingWeapons();
     if (this.checkIdleJobIsLast()) return true;
 
     // If crafter, train weapon gear and jewelrycrafting
@@ -282,6 +296,187 @@ export class IdleCrafterObjective extends Objective {
     }
 
     return true;
+  }
+
+  /**
+   * Ensures that there are the latest available tools in the bank. Any missing ones get crafted
+   * @returns true if successful
+   */
+  private async craftMissingTools(): Promise<boolean> {
+    // Character level minus this is the minimum level of tools to craft
+    const levelRange = 9;
+    const skill = Weaponcrafting;
+
+    const charLevel = this.character.getCharacterLevel(
+      this.character.data,
+      skill,
+    );
+
+    // Get bank items so we don't need to make lots of bank calls
+    const allBankItems = await this.character.getAllBankItems();
+
+    logger.debug(
+      `Finding missing tools between ${Math.max(charLevel - levelRange, 0)} and ${charLevel}`,
+    );
+
+    const payload: GetAllItemsItemsGetParams = {
+      craft_skill: skill,
+      max_level: charLevel,
+      min_level: Math.max(charLevel - levelRange, 0),
+    };
+
+    const craftableItemsListData = await getAllItemInformation(payload);
+    if (craftableItemsListData instanceof ApiError) {
+      return await this.character.handleErrors(craftableItemsListData);
+    }
+
+    const craftableItemsList = craftableItemsListData.data;
+    if (craftableItemsList.length === 0) {
+      logger.error(`No craftable items found. This shouldn't happen?`);
+      return false;
+    }
+
+    for (const craftableItem of craftableItemsList) {
+      if (!(await this.checkStatus())) return false;
+
+      if (craftableItem.subtype !== 'tool') {
+        logger.debug(
+          `[train_${skill}] Skipping ${craftableItem.code} because it's not a tool`,
+        );
+        continue;
+      }
+      logger.debug(`Checking ${craftableItem.code} count in bank`);
+      const bankItem = allBankItems.find(
+        (bankItem) => craftableItem.code === bankItem.code,
+      );
+
+      // Ensure there is at least 1 of each tool in the bank. We might have crafted more
+      // but if they're in use then we'd like to have spares in case someone else needs one
+      if (!bankItem || bankItem.quantity < 1) {
+        if (await this.needsBossDrop(craftableItem)) {
+          logger.warn(
+            `Skipping ${craftableItem.code} because it needs a boss drop`,
+          );
+          continue;
+        }
+
+        logger.debug(
+          `Crafting ${craftableItem.code} because there aren't enough in bank`,
+        );
+        if (
+          await this.character.craftNow(
+            1,
+            craftableItem.code,
+            undefined,
+            undefined,
+            true,
+          )
+        ) {
+          // Only deposit if the craft was successful
+          await this.character.depositNow(1, craftableItem.code);
+        }
+      }
+    }
+  }
+
+  private async craftMissingWeapons(): Promise<boolean> {
+    const levelRange = 9;
+    const skill = Weaponcrafting;
+    const allBankItems = await this.character.getAllBankItems();
+
+    const charLevel = this.character.getCharacterLevel(
+      this.character.data,
+      skill,
+    );
+
+    const payload: GetAllItemsItemsGetParams = {
+      craft_skill: Weaponcrafting,
+      max_level: charLevel,
+      min_level: Math.max(charLevel - levelRange, 0),
+    };
+
+    const craftableItemsListData = await getAllItemInformation(payload);
+    if (craftableItemsListData instanceof ApiError) {
+      return await this.character.handleErrors(craftableItemsListData);
+    }
+
+    const craftableItemsList = craftableItemsListData.data;
+    if (craftableItemsList.length === 0) {
+      logger.error(`No craftable items found. This shouldn't happen?`);
+      return false;
+    }
+
+    for (const craftableItem of craftableItemsList) {
+      if (!(await this.checkStatus())) return false;
+
+      if (craftableItem.subtype === 'tool') {
+        logger.debug(
+          `[train_${skill}] Skipping ${craftableItem.code} because it is a tool`,
+        );
+        continue;
+      }
+
+      logger.debug(`Checking ${craftableItem.code} count in bank`);
+      const bankItem = allBankItems.find(
+        (bankItem) => craftableItem.code === bankItem.code,
+      );
+
+      if (!bankItem || bankItem.quantity < 1) {
+        if (await this.needsBossDrop(craftableItem)) {
+          logger.warn(
+            `Skipping ${craftableItem.code} because it needs a boss drop`,
+          );
+          continue;
+        }
+
+        logger.debug(
+          `Crafting ${craftableItem.code} because there aren't enough in bank`,
+        );
+        if (
+          await this.character.craftNow(
+            1,
+            craftableItem.code,
+            undefined,
+            undefined,
+            true,
+          )
+        ) {
+          // Only deposit if the craft was successful
+          await this.character.depositNow(1, craftableItem.code);
+        }
+      }
+    }
+  }
+
+  /**
+   * Returns true if any ingredient of the item is dropped by a boss monster,
+   * meaning the item can't be reliably crafted while training.
+   */
+  private async needsBossDrop(item: ItemSchema): Promise<boolean> {
+    if (!item.craft?.items) return false;
+
+    for (const ingredient of item.craft.items) {
+      const ingredientInfo = await getItemInformation(ingredient.code);
+      if (ingredientInfo instanceof ApiError) {
+        logger.warn(`Item info not found for ${ingredient.code}`);
+        continue;
+      }
+      if (ingredientInfo.subtype !== 'mob') continue;
+
+      const mobsThatDrop = await getAllMonsterInformation({
+        drop: ingredientInfo.code,
+      });
+      if (mobsThatDrop instanceof ApiError) {
+        logger.warn(`Mob info not found for drop ${ingredientInfo.code}`);
+        continue;
+      }
+
+      if (mobsThatDrop.data.some((mob) => mob.type === 'boss')) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

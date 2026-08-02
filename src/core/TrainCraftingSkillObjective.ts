@@ -17,8 +17,10 @@ import {
   Alchemy,
   Cooking,
   Gearcrafting,
+  Jewelrycrafting,
   Mining,
   Weaponcrafting,
+  Woodcutting,
 } from '../names.js';
 
 /**
@@ -69,11 +71,13 @@ export class TrainCraftingSkillObjective extends Objective {
       case Alchemy:
       case Cooking:
       case Mining:
+      case Woodcutting:
         numToCraft = 10;
         break;
       case Weaponcrafting:
       case Gearcrafting:
-        numToCraft = 2;
+      case Jewelrycrafting:
+        numToCraft = 5;
         break;
       default:
         numToCraft = 1;
@@ -113,107 +117,6 @@ export class TrainCraftingSkillObjective extends Objective {
         return false;
       }
 
-      // Weaponcrafter ensures we have 1 of every tool first
-      if (this.skill === Weaponcrafting) {
-        for (const craftableItem of craftableItemsList) {
-          if (!(await this.checkStatus())) return false;
-
-          if (craftableItem.subtype !== 'tool') {
-            logger.debug(
-              `[train_${this.skill}] Skipping ${craftableItem.code} because it's not a tool`,
-            );
-            continue;
-          }
-          logger.debug(`Checking ${craftableItem.code} count in bank`);
-          const bankItem = allBankItems.find(
-            (bankItem) => craftableItem.code === bankItem.code,
-          );
-
-          // Ensure there is at least 1 of each tool in the bank. We might have crafted more
-          // but if they're in use then we'd like to have spares in case someone else needs one
-          if (!bankItem || bankItem.quantity < 1) {
-            if (await needsBossDrop(craftableItem)) {
-              logger.warn(
-                `Skipping ${craftableItem.code} because it needs a boss drop`,
-              );
-              continue;
-            }
-
-            logger.debug(
-              `Crafting ${craftableItem.code} because there aren't enough in bank`,
-            );
-            if (
-              await this.character.craftNow(
-                1,
-                craftableItem.code,
-                undefined,
-                undefined,
-                true,
-              )
-            ) {
-              // Only deposit if the craft was successful
-              await this.character.depositNow(1, craftableItem.code);
-            }
-          }
-
-          // Check if character has reached the level goal
-          if (
-            this.character.getCharacterLevel(this.character.data, this.skill) >=
-            this.targetLevel
-          ) {
-            return true;
-          }
-        }
-      }
-      // Then move on to crafting 1 of every other item, skipping tools
-      for (const craftableItem of craftableItemsList) {
-        if (!(await this.checkStatus())) return false;
-
-        if (craftableItem.subtype === 'tool') {
-          logger.debug(
-            `[train_${this.skill}] Skipping ${craftableItem.code} because it is a tool`,
-          );
-          continue;
-        }
-
-        logger.debug(`Checking ${craftableItem.code} count in bank`);
-        const bankItem = allBankItems.find(
-          (bankItem) => craftableItem.code === bankItem.code,
-        );
-
-        if (!bankItem || bankItem.quantity < 1) {
-          if (await needsBossDrop(craftableItem)) {
-            logger.warn(
-              `Skipping ${craftableItem.code} because it needs a boss drop`,
-            );
-            continue;
-          }
-
-          logger.debug(
-            `Crafting ${craftableItem.code} because there aren't enough in bank`,
-          );
-          if (
-            await this.character.craftNow(
-              numToCraft,
-              craftableItem.code,
-              undefined,
-              undefined,
-              true,
-            )
-          ) {
-            // Only deposit if the craft was successful
-            await this.character.depositNow(numToCraft, craftableItem.code);
-          }
-        }
-        // Check if character has reached the level goal
-        if (
-          this.character.getCharacterLevel(this.character.data, this.skill) >=
-          this.targetLevel
-        ) {
-          return true;
-        }
-      }
-
       if (!(await this.checkStatus())) return false;
 
       // If there is each piece of equipment in the bank then we move on to finding the
@@ -230,7 +133,7 @@ export class TrainCraftingSkillObjective extends Objective {
 
       if (
         await this.character.craftNow(
-          5,
+          numToCraft,
           itemToCraft.code,
           undefined,
           undefined,
@@ -238,7 +141,7 @@ export class TrainCraftingSkillObjective extends Objective {
         )
       ) {
         // Only deposit if the craft was successful
-        await this.character.depositNow(5, itemToCraft.code);
+        await this.character.depositNow(numToCraft, itemToCraft.code);
       }
 
       // Recycle excess gear to get materials
@@ -251,37 +154,6 @@ export class TrainCraftingSkillObjective extends Objective {
     }
     return true;
   }
-}
-
-/**
- * Returns true if any ingredient of the item is dropped by a boss monster,
- * meaning the item can't be reliably crafted while training.
- */
-async function needsBossDrop(item: ItemSchema): Promise<boolean> {
-  if (!item.craft?.items) return false;
-
-  for (const ingredient of item.craft.items) {
-    const ingredientInfo = await getItemInformation(ingredient.code);
-    if (ingredientInfo instanceof ApiError) {
-      logger.warn(`Item info not found for ${ingredient.code}`);
-      continue;
-    }
-    if (ingredientInfo.subtype !== 'mob') continue;
-
-    const mobsThatDrop = await getAllMonsterInformation({
-      drop: ingredientInfo.code,
-    });
-    if (mobsThatDrop instanceof ApiError) {
-      logger.warn(`Mob info not found for drop ${ingredientInfo.code}`);
-      continue;
-    }
-
-    if (mobsThatDrop.data.some((mob) => mob.type === 'boss')) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 /**
