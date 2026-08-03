@@ -8,11 +8,13 @@ import {
 } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
+import { WishlistRequestRef } from '../../src/types/ObjectiveData.js';
 
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
 import { actionGather } from '../../src/api_calls/Actions.js';
+import { addToWishlist } from '../../src/wishlist/functions.js';
 
 // Mock item data
 const mockIronOreData: ItemSchema = {
@@ -112,6 +114,11 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 
 jest.mock('../../src/api_calls/Resources', () => ({
   getAllResourceInformation: jest.fn(),
+}));
+
+jest.mock('../../src/wishlist/functions', () => ({
+  addToWishlist: jest.fn(async () => 701),
+  getWishlistRequestsByIds: jest.fn(async () => []),
 }));
 
 // Simple mock character
@@ -231,6 +238,24 @@ class SimpleMockCharacter {
       this.data.inventory.push({ slot: 10, code: code, quantity: quantity });
     }
   };
+
+  pendingWishlistRequests: WishlistRequestRef[] = [];
+
+  addBlockingWishlistRequest = jest.fn(
+    (requestId: number | null, itemCode: string, quantity: number): void => {
+      if (requestId == null) return;
+      if (
+        !this.pendingWishlistRequests.some((r) => r.requestId === requestId)
+      ) {
+        this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
+      }
+    },
+  );
+
+  findOpenWishlistRequest = jest.fn(
+    async (itemCode: string): Promise<WishlistRequestRef | undefined> =>
+      this.pendingWishlistRequests.find((r) => r.itemCode === itemCode),
+  );
 }
 
 describe('GatherObjective Integration Tests (Minimal)', () => {
@@ -664,6 +689,72 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       expect(mockCharacter.findMaps).toHaveBeenCalledWith({
         content_code: 'salmon_spot',
       });
+    });
+  });
+
+  describe('Resource out of reach', () => {
+    it('adds one tracked request when no node is within the skill level', async () => {
+      // Arrange — the only mithril node needs mining 40. Every gather retry
+      // re-checks, so an untracked request piled up a row per attempt.
+      mockCharacter.data.mining_level = 10;
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue({
+        ...mockIronOreData,
+        code: 'mithril_ore',
+        name: 'Mithril Ore',
+        level: 40,
+      } as ItemSchema);
+      (
+        getAllResourceInformation as jest.MockedFunction<
+          typeof getAllResourceInformation
+        >
+      ).mockResolvedValue({
+        data: [
+          {
+            name: 'Mithril Rocks',
+            code: 'mithril_rocks',
+            skill: 'mining' as const,
+            level: 40,
+            drops: [
+              {
+                code: 'mithril_ore',
+                rate: 1,
+                min_quantity: 1,
+                max_quantity: 1,
+              },
+            ],
+          },
+        ],
+        total: 1,
+        page: 1,
+        pages: 1,
+        size: 50,
+      } as any);
+
+      const objective = new GatherObjective(mockCharacter as any, {
+        code: 'mithril_ore',
+        quantity: 10,
+      });
+
+      // Act
+      const result = await objective.gather(10, 'mithril_ore');
+
+      // Assert
+      expect(result).toBeFalsy();
+      expect(addToWishlist).toHaveBeenCalledTimes(1);
+      expect(addToWishlist).toHaveBeenCalledWith({
+        itemCode: 'mithril_ore',
+        quantity: 10,
+        characterName: 'TestCharacter',
+        acquisitionMethod: 'mining',
+        minLevel: 40,
+      });
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
+        701,
+        'mithril_ore',
+        10,
+      );
     });
   });
 });

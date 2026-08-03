@@ -11,6 +11,7 @@ import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { SimpleItemSchema, Skill, TaskType } from '../types/types.js';
 import { addToWishlist } from '../wishlist/functions.js';
+import { WishlistRequest } from '../wishlist/types.js';
 import { TasksCoin } from '../names.js';
 
 export abstract class Objective {
@@ -427,12 +428,28 @@ export abstract class Objective {
   }
 
   /**
-   * @description Adds a missing ingredient to the wishlist and records it as a
-   * blocking request so the root job gets parked until it's fulfilled.
+   * @description Adds a missing item to the wishlist and records it as a blocking
+   * request so the root job gets parked until it's fulfilled. This is the single
+   * entry point for "this character can't get this item": an item already
+   * requested during this run is waited on again rather than requested twice.
+   * @param overrides Details the caller knows better than they can be derived
+   * from the item's data, e.g. the skill and level a fulfiller needs
    */
   async requestIngredientFromWishlist(
     craftingItem: SimpleItemSchema,
+    overrides?: Pick<WishlistRequest, 'acquisitionMethod' | 'minLevel'>,
   ): Promise<void> {
+    const alreadyRequested = await this.character.findOpenWishlistRequest(
+      craftingItem.code,
+    );
+    if (alreadyRequested) {
+      logger.info(
+        `${this.character.data.name} already requested ${alreadyRequested.quantity} ${craftingItem.code} (#${alreadyRequested.requestId}); waiting on that instead of adding another`,
+      );
+      this.raisedBlockingRequest = true;
+      return;
+    }
+
     logger.info(
       `${this.character.data.name} can't obtain ${craftingItem.quantity} ${craftingItem.code}; adding to wishlist`,
     );
@@ -440,6 +457,7 @@ export abstract class Objective {
       itemCode: craftingItem.code,
       quantity: craftingItem.quantity,
       characterName: this.character.data.name,
+      ...overrides,
     });
     this.character.addBlockingWishlistRequest(
       requestId,

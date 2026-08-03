@@ -7,7 +7,6 @@ import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
 import { Role } from '../types/CharacterData.js';
-import { addToWishlist } from '../wishlist/functions.js';
 
 /**
  * Maps a craft skill to the role responsible for it. Skills without an entry
@@ -136,14 +135,12 @@ export class CraftObjective extends Objective {
           const requiredRole = SKILL_ROLE[skillNeeded];
           if (requiredRole && this.character.role !== requiredRole) {
             logger.warn(
-              `${this.character.data.name} (${this.character.role}) needs a ${skillNeeded} to craft ${targetItem.code}. Posting to wishlist`,
+              `${this.character.data.name} (${this.character.role}) needs a ${skillNeeded} to craft ${targetItem.code}`,
             );
-            await addToWishlist({
-              itemCode: targetItem.code,
-              quantity: this.target.quantity,
-              characterName: this.character.data.name,
-              acquisitionMethod: skillNeeded,
-            });
+            await this.requestIngredientFromWishlist(
+              { code: targetItem.code, quantity: this.target.quantity },
+              { acquisitionMethod: skillNeeded },
+            );
             // ToDo: Should add this job to an 'onHold' job list instead of ending it
             return false;
           }
