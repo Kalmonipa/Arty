@@ -50,10 +50,16 @@ export default function CharacterRouter(char: Character) {
     try {
       return res.status(200).json({
         message: `Information for ${char.data.name}`,
-        character: char.data.name,
+        character: char.data,
+        role: char.role,
         currentJob: char.activeJob?.objectiveId || 'none',
-        enableEvents: char.enableEvents,
-        jobsInQueue: char.jobList.length,
+        currentExecutingJob: {
+          id: char.currentExecutingJob?.objectiveId || 'none',
+          status: char.currentExecutingJob?.status || 'none',
+          progress: char.currentExecutingJob?.progress || 0,
+        },
+        numJobsInQueue: char.jobList.length,
+        jobs: char.listObjectivesWithParents(),
         itemsToKeep: char.itemsToKeep,
       });
     } catch (error) {
