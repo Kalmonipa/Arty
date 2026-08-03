@@ -13,7 +13,7 @@ import RecycleRouter from './routes/Recycle.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
 import BankRouter from './routes/Bank.js';
-import CharacterRouter from './character/routes.js';
+import CharacterRouter from './character/Routes.js';
 import { CharacterSchema } from './types/types.js';
 import { CharName } from './constants.js';
 import { register } from './metrics.js';
