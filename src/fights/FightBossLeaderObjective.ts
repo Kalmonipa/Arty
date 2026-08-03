@@ -1,10 +1,15 @@
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { getMyCharacters } from '../character/apiCalls.js';
+import { getMyCharacters } from '../character/ApiCalls.js';
 import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { requestLoadout } from '../api_calls/Account.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
@@ -27,8 +32,8 @@ export class FightBossLeaderObjective extends Objective {
     this.target = target;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
@@ -40,9 +45,10 @@ export class FightBossLeaderObjective extends Objective {
    * - Initiate the fight x amount of times
    * - Resume the participants activities so they can go back to what they were doing
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
     }
+    return ObjectiveCompleted;
   }
 }

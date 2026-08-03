@@ -1,9 +1,15 @@
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { BankCache } from './BankCache.js';
 import { Objective } from './Objective.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @description Finds a suitable mob to fight to level up the characters combat level until the desired level
@@ -23,19 +29,19 @@ export class TrainCombatObjective extends Objective {
     this.metricLabel = 'combat';
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     let attempts = 0;
     let charLevel = this.character.getCharacterLevel(this.character.data);
 
-    if (!(await this.checkStatus())) return false;
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     if (charLevel >= this.targetLevel) {
       logger.info(`Already at target combat level ${this.targetLevel}`);
-      return true;
+      return ObjectiveCompleted;
     }
 
     while (charLevel < this.targetLevel && attempts < this.maxRetries) {
@@ -46,7 +52,7 @@ export class TrainCombatObjective extends Objective {
       });
       if (mobs instanceof ApiError) {
         this.character.handleErrors(mobs);
-        return false;
+        return ObjectiveFailed;
       }
 
       // One bank snapshot shared across every candidate-mob loadout simulation
@@ -57,7 +63,7 @@ export class TrainCombatObjective extends Objective {
       let fightSuccessful = false;
 
       for (let ind = mobs.data.length - 1; ind >= 0; ind--) {
-        if (!(await this.checkStatus())) return false;
+        if (!(await this.checkStatus())) return ObjectiveCancelled;
 
         const mob = mobs.data[ind];
 
@@ -87,7 +93,7 @@ export class TrainCombatObjective extends Objective {
 
             if (charLevel >= this.targetLevel) {
               logger.info(`Train to combat level ${this.targetLevel} achieved`);
-              return true;
+              return ObjectiveCompleted;
             }
             break;
           }
@@ -107,7 +113,7 @@ export class TrainCombatObjective extends Objective {
               `${attempts}/${this.maxRetries} attempts to fight reached. Failing job`,
             );
           }
-          return false;
+          return ObjectiveFailed;
         }
         // Continue the while loop to try again with fresh monster data
       }
@@ -115,12 +121,12 @@ export class TrainCombatObjective extends Objective {
 
     if (charLevel >= this.targetLevel) {
       logger.info(`Train to combat level ${this.targetLevel} achieved`);
-      return true;
+      return ObjectiveCompleted;
     }
 
     logger.warn(
       `Training incomplete after ${attempts} attempts. Current level: ${charLevel}, Target: ${this.targetLevel}`,
     );
-    return false;
+    return ObjectiveFailed;
   }
 }

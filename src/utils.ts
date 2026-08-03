@@ -13,10 +13,10 @@ import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './core/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import { Role, ROLES } from './types/CharacterData.js';
-import { getCharacter } from './character/apiCalls.js';
+import { getCharacter } from './character/ApiCalls.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
 import { getAllMaps, getMaps } from './api_calls/Maps.js';
-import { Character } from './character/characterClass.js';
+import { Character } from './character/CharacterClass.js';
 import {
   Alchemy,
   Cooking,

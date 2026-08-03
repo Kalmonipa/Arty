@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Character } from '../../src/character/characterClass.js';
+import { Character } from '../../src/character/CharacterClass.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { OnHoldJob } from '../../src/types/ObjectiveData.js';
 

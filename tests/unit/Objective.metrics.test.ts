@@ -1,5 +1,9 @@
 import { Objective } from '../../src/core/Objective.js';
 import { jobActiveGauge } from '../../src/metrics.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 
 /**
  * Minimal concrete Objective so we can exercise the base-class
@@ -13,12 +17,12 @@ class TestObjective extends Objective {
     this.metricLabel = 'test_target';
   }
 
-  async run(): Promise<boolean> {
-    return true;
+  async run(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 }
 

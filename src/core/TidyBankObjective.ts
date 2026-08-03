@@ -6,10 +6,15 @@ import {
 import { Role } from '../types/CharacterData.js';
 import { CraftSkill, ItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API
@@ -48,18 +53,18 @@ export class TidyBankObjective extends Objective {
     this.role = role;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
    * @description Picks a random resource to clean up from the available options. Currently just cooks fish
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     const contentsOfBank = await this.character.getAllBankItems();
     if (contentsOfBank instanceof ApiError) {
-      this.character.handleErrors(contentsOfBank);
-      return false;
+      await this.character.handleErrors(contentsOfBank);
+      return ObjectiveFailed;
     }
 
     switch (this.role) {
@@ -104,14 +109,14 @@ export class TidyBankObjective extends Objective {
         break;
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
    * Finds any raw food in the bank and cooks it
    * @returns true if successful or false if it failed
    */
-  private async cookFood(): Promise<boolean> {
+  private async cookFood(): Promise<ObjectiveResult> {
     logger.info(`Starting to cook uncooked food in bank`);
     for (const item of this.rawFoodList) {
       const numInBank = await this.character.checkQuantityOfItemInBank(item);
@@ -159,7 +164,7 @@ export class TidyBankObjective extends Objective {
       }
     }
     logger.info(`Finished cooking uncooked food in the bank`);
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
@@ -169,7 +174,7 @@ export class TidyBankObjective extends Objective {
    */
   private async craftBars(
     contentsOfBank: SimpleItemSchema[],
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     for (const item of this.rawOreList) {
       const content = contentsOfBank.find((bankItem) => bankItem.code === item);
       if (!content) {
@@ -207,7 +212,7 @@ export class TidyBankObjective extends Objective {
       }
     }
     logger.info(`Found no ore in the bank to clean up`);
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
@@ -260,7 +265,7 @@ export class TidyBankObjective extends Objective {
   private async recycleExcessEquipment(
     skill: CraftSkill,
     contentsOfBank: SimpleItemSchema[],
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const maxNumberNeededInBank = 5;
     const obsoleteThreshold = this.character.lowestCharLevel - 10;
 
@@ -270,7 +275,7 @@ export class TidyBankObjective extends Objective {
     });
     if (itemListResponse instanceof ApiError) {
       this.character.handleErrors(itemListResponse);
-      return false;
+      return ObjectiveFailed;
     }
 
     for (const gear of itemListResponse.data) {
@@ -325,19 +330,21 @@ export class TidyBankObjective extends Objective {
       );
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
    * Uses any gem bags in the bank
    */
-  private async cleanUpBags(contentsOfBank: SimpleItemSchema[]) {
+  private async cleanUpBags(
+    contentsOfBank: SimpleItemSchema[],
+  ): Promise<ObjectiveResult> {
     const itemListResponse = await getAllItemInformation({
       type: 'consumable',
     });
     if (itemListResponse instanceof ApiError) {
       this.character.handleErrors(itemListResponse);
-      return false;
+      return ObjectiveFailed;
     }
 
     for (const item of itemListResponse.data) {
@@ -361,6 +368,6 @@ export class TidyBankObjective extends Objective {
       await this.character.useItem(item.code, numInBank);
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 }

@@ -1,6 +1,10 @@
 import { jest } from '@jest/globals';
 import { DepositObjective } from '../../src/core/DepositObjective.js';
-import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../../src/types/ObjectiveData.js';
 import { MapSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
@@ -50,8 +54,8 @@ class SimpleMockCharacter {
     },
   );
 
-  executeJobNow = jest.fn(async (): Promise<boolean> => {
-    return true;
+  executeJobNow = jest.fn(async (): Promise<ObjectiveResult> => {
+    return ObjectiveCompleted;
   });
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
@@ -276,7 +280,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await depositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.getAvailableBanks).toHaveBeenCalled();
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 4, y: 1 });
       expect(actionDepositItems).toHaveBeenCalledWith(
@@ -305,7 +309,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await allDepositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -336,7 +340,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await allQuantityObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -360,7 +364,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await goldObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionDepositGold).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -386,7 +390,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await depositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
       expect(actionDepositItems).toHaveBeenCalledTimes(2);
     });
@@ -404,7 +408,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await depositObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(actionDepositItems).toHaveBeenCalledTimes(3); // maxRetries = 3
     });
 
@@ -423,7 +427,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await depositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should still return true even if character data is missing
     });
   });
@@ -450,7 +454,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await allDepositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -475,7 +479,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await allDepositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionDepositItems).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -511,7 +515,7 @@ describe('DepositObjective Integration Tests', () => {
       const result = await depositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.data).toEqual(updatedCharacterData);
     });
   });
@@ -519,13 +523,13 @@ describe('DepositObjective Integration Tests', () => {
   describe('Movement and location', () => {
     it('should move to bank location before depositing', async () => {
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });
-      mockCharacter.executeJobNow.mockResolvedValue(true);
+      mockCharacter.executeJobNow.mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await depositObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.evaluateClosestMap).toHaveBeenCalled();
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 200, y: 300 });
     });

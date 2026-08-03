@@ -1,4 +1,9 @@
 import { jest } from '@jest/globals';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { IdleObjective } from '../../src/idleObjectives/IdleObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ItemSchema, CharacterSchema } from '../../src/types/types.js';
@@ -91,16 +96,23 @@ class MockCharacter {
     async (_code: string): Promise<number> => 0,
   );
 
-  executeJobNow = jest.fn(async (): Promise<boolean> => true);
+  executeJobNow = jest.fn(
+    async (): Promise<ObjectiveResult> => ObjectiveCompleted,
+  );
 
-  depositNow = jest.fn(async (): Promise<boolean> => true);
+  depositNow = jest.fn(
+    async (): Promise<ObjectiveResult> => ObjectiveCompleted,
+  );
 
-  withdrawNow = jest.fn(async (): Promise<boolean> => true);
+  withdrawNow = jest.fn(
+    async (): Promise<ObjectiveResult> => ObjectiveCompleted,
+  );
 
-  equipNow = jest.fn(async (): Promise<boolean> => true);
+  equipNow = jest.fn(async (): Promise<ObjectiveResult> => ObjectiveCompleted);
 
   craftNow = jest.fn(
-    async (_quantity: number, _code: string): Promise<boolean> => true,
+    async (_quantity: number, _code: string): Promise<ObjectiveResult> =>
+      ObjectiveCompleted,
   );
 
   handleErrors = jest.fn(async (): Promise<boolean> => true);
@@ -398,8 +410,8 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     );
     mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
     mockCharacter.executeJobNow
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
+      .mockResolvedValueOnce(ObjectiveFailed)
+      .mockResolvedValueOnce(ObjectiveCompleted);
 
     await (objective as any).checkAndBuyArtifacts();
 
@@ -424,8 +436,8 @@ describe('IdleObjective.checkAndBuyArtifacts', () => {
     );
     mockCharacter.checkQuantityOfItemInBank.mockImplementation(async () => 0);
     mockCharacter.depositNow
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
+      .mockResolvedValueOnce(ObjectiveFailed)
+      .mockResolvedValueOnce(ObjectiveCompleted);
 
     await (objective as any).checkAndBuyArtifacts();
 

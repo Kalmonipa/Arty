@@ -1,4 +1,4 @@
-import type { Character } from '../character/characterClass.js';
+import type { Character } from '../character/CharacterClass.js';
 
 /**
  * @description A snapshot of the bank's item quantities, built once and read

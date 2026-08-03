@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import { TradeObjective } from '../../src/core/TradeWithNPCObjective.js';
 import { GatherObjective } from '../../src/core/GatherObjective.js';
 import { getAllNpcItems, actionBuyItem } from '../../src/api_calls/NPC.js';
@@ -30,8 +31,10 @@ class MockCharacter {
     code === 'wool' ? 2 : 0,
   );
   checkQuantityOfItemInBank = jest.fn(async () => 0);
-  withdrawNow = jest.fn(async () => true);
-  executeJobNow = jest.fn(async (_job: any, ..._rest: any[]) => true);
+  withdrawNow = jest.fn(async () => ObjectiveCompleted);
+  executeJobNow = jest.fn(
+    async (_job: any, ..._rest: any[]) => ObjectiveCompleted,
+  );
   findMaps = jest.fn(() => [{ x: 1, y: 1 }] as any);
   evaluateClosestMap = jest.fn((maps: any[]) => ({
     x: maps[0].x,
@@ -112,7 +115,7 @@ describe('TradeObjective buy currency gathering', () => {
 
     const result = await objective.run();
 
-    expect(result).toBe(true);
+    expect(result.success).toBe(true);
     expect(mockedGetAllMaps).toHaveBeenCalledWith({
       content_code: 'nomadic_merchant',
       content_type: 'npc',
@@ -147,7 +150,7 @@ describe('TradeObjective buy currency gathering', () => {
 
     const result = await objective.run();
 
-    expect(result).toBe(false);
+    expect(result.success).toBe(false);
     expect(character.move).not.toHaveBeenCalled();
     expect(mockedActionBuyItem).not.toHaveBeenCalled();
   });

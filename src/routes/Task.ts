@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { Objective } from '../core/Objective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';

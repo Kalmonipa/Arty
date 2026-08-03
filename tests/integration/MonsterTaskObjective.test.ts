@@ -1,4 +1,10 @@
 import { jest } from '@jest/globals';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { MonsterTaskObjective } from '../../src/core/MonsterTaskObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
@@ -40,11 +46,11 @@ class SimpleMockCharacter {
 
   // Stands in for really running the job: the fight simulator records its
   // average turns on itself, which is what the task cost estimate reads.
-  executeJobNow = jest.fn(async (job?: any): Promise<boolean> => {
+  executeJobNow = jest.fn(async (job?: any): Promise<ObjectiveResult> => {
     if (job && 'averageTurns' in job) {
       job.averageTurns = this.simTurns;
     }
-    return true;
+    return ObjectiveCompleted;
   });
 
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
@@ -130,13 +136,13 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(5, 'red_slime');
       expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
@@ -160,7 +166,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // startNewTask is stubbed here, so no task is actually assigned. With
       // nothing to target the job has to stop: an empty content_code matches
       // every monster map, which would otherwise send it to fight a random mob.
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
 
@@ -324,7 +330,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
 
@@ -351,7 +357,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1);
     });
 
@@ -367,13 +373,13 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
@@ -472,7 +478,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       setTask('sheep', 400);
       mockCharacter.simTurns = 5;
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
       const spies = spyOnTaskChanges(objective);
 
       await objective.run();
@@ -486,7 +492,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       setTask('imp', 229);
       mockCharacter.simTurns = 74;
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
       const spies = spyOnTaskChanges(objective);
 
       await objective.run();
@@ -500,7 +506,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       setTask('skeleton', 300, 250);
       mockCharacter.simTurns = 20;
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
       const spies = spyOnTaskChanges(objective);
 
       await objective.run();
@@ -513,7 +519,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       setTask('imp', 400);
       mockCharacter.simTurns = 74;
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
       const spies = spyOnTaskChanges(objective);
 
       await objective.run();
@@ -529,7 +535,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
       const spies = spyOnTaskChanges(objective);
 
       await objective.run();
@@ -542,7 +548,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       setTask('death_knight', 100);
       mockCharacter.simTurns = 0;
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
-      jest.spyOn(objective, 'handInTask').mockResolvedValue(true);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
       const spies = spyOnTaskChanges(objective);
 
       await objective.run();
@@ -565,7 +571,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
@@ -587,13 +593,13 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
@@ -609,13 +615,13 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method to fail
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(false);
+        .mockResolvedValue(ObjectiveFailed);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
   });

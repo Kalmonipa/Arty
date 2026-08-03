@@ -1,5 +1,11 @@
 import { jest } from '@jest/globals';
 import { EquipObjective } from '../../src/core/EquipObjective.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
@@ -35,10 +41,10 @@ class SimpleMockCharacter {
   });
 
   withdrawNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Mock successful withdrawal
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -203,7 +209,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -232,7 +238,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -267,7 +273,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -296,7 +302,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -318,7 +324,7 @@ describe('EquipObjective Integration Tests', () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
-      mockCharacter.withdrawNow.mockResolvedValue(true);
+      mockCharacter.withdrawNow.mockResolvedValue(ObjectiveCompleted);
 
       const objective = new EquipObjective(
         mockCharacter as any,
@@ -330,7 +336,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
         'iron_sword',
       );
@@ -353,7 +359,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.checkQuantityOfItemInBank).not.toHaveBeenCalled();
       expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
       expect(actionEquipItem).toHaveBeenCalled();
@@ -363,7 +369,7 @@ describe('EquipObjective Integration Tests', () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
-      mockCharacter.withdrawNow.mockResolvedValue(false);
+      mockCharacter.withdrawNow.mockResolvedValue(ObjectiveFailed);
 
       const objective = new EquipObjective(
         mockCharacter as any,
@@ -375,7 +381,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(1, 'iron_sword');
       // Should still attempt to equip even if withdrawal fails
       expect(actionEquipItem).toHaveBeenCalled();
@@ -403,7 +409,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
       expect(actionEquipItem).toHaveBeenCalledTimes(2);
     });
@@ -428,7 +434,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(actionEquipItem).toHaveBeenCalledTimes(3); // maxRetries = 3
     });
 
@@ -462,7 +468,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should still return true even if character data is missing
     });
 
@@ -489,7 +495,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(
         itemNotFoundError,
       );
@@ -511,7 +517,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false); // Should return false due to quantity limit
+      expect(result.success).toBe(false); // Should return false due to quantity limit
       expect(actionEquipItem).not.toHaveBeenCalled();
     });
 
@@ -529,7 +535,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionEquipItem).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'TestCharacter',
@@ -581,7 +587,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.data).toEqual(updatedCharacterData);
     });
 
@@ -617,7 +623,7 @@ describe('EquipObjective Integration Tests', () => {
         const result = await objective.run();
 
         // Assert
-        expect(result).toBe(true);
+        expect(result.success).toBe(true);
         expect(actionEquipItem).toHaveBeenCalledWith(
           expect.objectContaining({
             name: 'TestCharacter',
@@ -658,7 +664,7 @@ describe('EquipObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(actionEquipItem).not.toHaveBeenCalled();
     });
   });

@@ -1,9 +1,14 @@
 import { actionCraft } from '../api_calls/Actions.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveOnHold,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
 import { Role } from '../types/CharacterData.js';
@@ -70,7 +75,7 @@ export class CraftObjective extends Objective {
     this.blockOnMissing = blockOnMissing ?? false;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
     if (this.includeInventory) {
       const quantyInInv = this.character.checkQuantityOfItemInInv(
         this.target.code,
@@ -85,13 +90,13 @@ export class CraftObjective extends Objective {
       }
     }
 
-    return true;
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
    * @description Craft the item. Character will move to the correct workshop map
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     if (this.target.quantity === 0 || this.progress >= this.target.quantity) {
       logger.info(
         `Already crafted the requested amount (${this.target.quantity}) of ${this.target.code}. Completing job`,
@@ -99,7 +104,7 @@ export class CraftObjective extends Objective {
       // Batches are banked as they're crafted, so the order may be finished
       // while the items are still in the bank. The caller checks what's carried.
       await this.carryFinishedItems();
-      return true;
+      return { complete: true, success: true, reason: 'complete' };
     }
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
@@ -112,17 +117,17 @@ export class CraftObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Craft failed after ${attempt} attempts`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
       } else {
-        if (!(await this.checkStatus())) return false;
+        if (!(await this.checkStatus())) return ObjectiveCancelled;
 
         if (!targetItem.craft) {
           logger.warn(
             `Item ${targetItem.code} has no craft information. Failing`,
           );
           this.character.removeItemFromItemsToKeep(targetItem.code);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
 
         /**
@@ -135,14 +140,13 @@ export class CraftObjective extends Objective {
           const requiredRole = SKILL_ROLE[skillNeeded];
           if (requiredRole && this.character.role !== requiredRole) {
             logger.warn(
-              `${this.character.data.name} (${this.character.role}) needs a ${skillNeeded} to craft ${targetItem.code}`,
+              `${this.character.data.name} (${this.character.role}) needs ${skillNeeded} to craft ${targetItem.code}`,
             );
             await this.requestIngredientFromWishlist(
               { code: targetItem.code, quantity: this.target.quantity },
               { acquisitionMethod: skillNeeded },
             );
-            // ToDo: Should add this job to an 'onHold' job list instead of ending it
-            return false;
+            return ObjectiveOnHold;
           }
         }
 
@@ -169,7 +173,7 @@ export class CraftObjective extends Objective {
         });
         if (maps.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
 
         const contentLocation = this.character.evaluateClosestMap(maps);
@@ -181,12 +185,12 @@ export class CraftObjective extends Objective {
               `Successfully crafted ${this.progress} ${this.target.code}`,
             );
             await this.carryFinishedItems();
-            return true;
+            return { complete: true, success: true, reason: 'complete' };
           }
 
           logger.info(`Crafting batch ${batch}/${this.numBatches}`);
 
-          if (!(await this.checkStatus())) return false;
+          if (!(await this.checkStatus())) return ObjectiveCancelled;
 
           // Clamp the final batch to what's still outstanding. numCraftsPerBatch
           // is derived from inventory size, so when craftsNeeded isn't an exact
@@ -203,9 +207,9 @@ export class CraftObjective extends Objective {
             targetItem.craft.items,
             craftsThisBatch,
           );
-          if (!gathered) {
+          if (!gathered.success) {
             logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
-            return false;
+            return gathered;
           }
 
           for (const craftItem of targetItem.craft.items) {
@@ -225,7 +229,7 @@ export class CraftObjective extends Objective {
                 targetItem.craft.items,
                 craftsThisBatch,
               );
-              if (!gathered) {
+              if (!gathered.success) {
                 logger.warn(
                   `Regathering ingredients for ${targetItem.code} has failed`,
                 );
@@ -235,13 +239,13 @@ export class CraftObjective extends Objective {
             }
           }
 
-          if (!(await this.checkStatus())) return false;
+          if (!(await this.checkStatus())) return ObjectiveCancelled;
 
           if (!(await this.character.move(contentLocation))) {
             logger.error(
               `Could not reach workshop at x: ${contentLocation.x}, y: ${contentLocation.y} to craft ${this.target.code}`,
             );
-            return false;
+            return { complete: true, success: false, reason: 'failed' };
           }
 
           logger.info(
@@ -258,7 +262,7 @@ export class CraftObjective extends Objective {
 
             if (!shouldRetry || attempt === this.maxRetries) {
               logger.error(`Craft failed after ${attempt} attempts`);
-              return false;
+              return { complete: true, success: false, reason: 'failed' };
             }
             break;
           } else {
@@ -287,11 +291,11 @@ export class CraftObjective extends Objective {
         }
         await this.carryFinishedItems();
 
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       }
     }
 
-    return false;
+    return { complete: true, success: false, reason: 'failed' };
   }
 
   /**
@@ -328,7 +332,7 @@ export class CraftObjective extends Objective {
   private async gatherIngredients(
     craftingItems: SimpleItemSchema[],
     numCrafts: number,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     for (const craftingItem of craftingItems) {
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
         craftingItem.code,
@@ -337,7 +341,7 @@ export class CraftObjective extends Objective {
       if (craftingItemInfo instanceof ApiError) {
         await this.character.handleErrors(craftingItemInfo);
         this.character.removeItemFromItemsToKeep(craftingItem.code);
-        return false;
+        return { complete: true, success: false, reason: 'failed' };
       }
 
       logger.debug(
@@ -373,18 +377,20 @@ export class CraftObjective extends Objective {
       }
 
       if (numInInv < totalIngredNeededToCraft) {
-        if (!(await this.checkStatus())) return false;
-
+        if (!(await this.checkStatus())) return ObjectiveCancelled;
+        ObjectiveCancelled;
         if (craftingItemInfo.subtype === 'mob') {
           logger.debug(`Resource ${craftingItemInfo.code} is a mob drop`);
 
           if (
-            !(await this.character.gatherNow(
-              totalIngredNeededToCraft,
-              craftingItem.code,
-              true,
-              true,
-            ))
+            !(
+              await this.character.gatherNow(
+                totalIngredNeededToCraft,
+                craftingItem.code,
+                true,
+                true,
+              )
+            ).success
           ) {
             logger.warn(
               `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
@@ -397,11 +403,10 @@ export class CraftObjective extends Objective {
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
-            return false;
+            return { complete: true, success: false, reason: 'failed' };
           }
 
-          if (!(await this.checkStatus())) return false;
-          // ToDo: Find a better way to handle items that are craftable and gatherable (i.e. sap)
+          if (!(await this.checkStatus())) return ObjectiveCancelled;
         } else if (
           craftingItemInfo.craft !== null &&
           craftingItemInfo.code !== 'sap'
@@ -409,13 +414,15 @@ export class CraftObjective extends Objective {
           logger.debug(`Resource ${craftingItemInfo.code} is a craftable item`);
 
           if (
-            !(await this.character.craftNow(
-              totalIngredNeededToCraft - numInInv,
-              craftingItem.code,
-              true,
-              false,
-              this.blockOnMissing,
-            ))
+            !(
+              await this.character.craftNow(
+                totalIngredNeededToCraft - numInInv,
+                craftingItem.code,
+                true,
+                false,
+                this.blockOnMissing,
+              )
+            ).success
           ) {
             logger.warn(
               `Crafting ${craftingItem.quantity} ${craftingItem.code} has failed`,
@@ -428,21 +435,23 @@ export class CraftObjective extends Objective {
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
-            return false;
+            return { complete: true, success: false, reason: 'failed' };
           }
 
-          if (!(await this.checkStatus())) return false;
+          if (!(await this.checkStatus())) return ObjectiveCancelled;
         } else {
           logger.debug(`Resource ${craftingItem.code} is a gatherable item`);
 
           // Pass the total amount needed, let GatherObjective figure out how many to gather
           if (
-            !(await this.character.gatherNow(
-              totalIngredNeededToCraft,
-              craftingItem.code,
-              true,
-              true,
-            ))
+            !(
+              await this.character.gatherNow(
+                totalIngredNeededToCraft,
+                craftingItem.code,
+                true,
+                true,
+              )
+            ).success
           ) {
             logger.warn(
               `Gathering ${craftingItem.quantity} ${craftingItem.code} has failed`,
@@ -455,10 +464,10 @@ export class CraftObjective extends Objective {
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
-            return false;
+            return { complete: true, success: false, reason: 'failed' };
           }
 
-          if (!(await this.checkStatus())) return false;
+          if (!(await this.checkStatus())) return ObjectiveCancelled;
         }
       }
 
@@ -484,7 +493,11 @@ export class CraftObjective extends Objective {
 
     // If we wishlisted any ingredient we can't complete the craft now — fail so
     // the job is parked until the requests are fulfilled.
-    return !this.raisedBlockingRequest;
+    return {
+      complete: !this.raisedBlockingRequest, // If we raised a blocking request, the job is parked (onHold) until the requests are fulfilled
+      success: !this.raisedBlockingRequest,
+      reason: this.raisedBlockingRequest ? 'on_hold' : 'complete',
+    };
   }
 
   /**

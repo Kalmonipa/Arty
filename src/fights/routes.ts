@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { FightObjective } from './FightObjective.js';
 import { FightBossLeaderObjective } from './FightBossLeaderObjective.js';
 import { simulateBossFight } from './BossfightPreRequisite.js';

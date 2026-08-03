@@ -1,11 +1,16 @@
 import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { TasksCoin } from '../names.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveOnHold,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class ItemTaskObjective extends Objective {
   type = 'items' as const;
@@ -20,20 +25,24 @@ export class ItemTaskObjective extends Objective {
     this.shouldEmitMetrics = true;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
-  async run(): Promise<boolean> {
-    let result = false;
+  async run(): Promise<ObjectiveResult> {
+    let result: ObjectiveResult = {
+      complete: false,
+      success: false,
+      reason: 'in_progress',
+    };
 
     while (this.progress < this.quantity) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       logger.info(`Completed ${this.progress}/${this.quantity} tasks`);
       result = await this.doTask();
 
-      if (result) {
+      if (result.success) {
         const numCoinsInInv =
           this.character.checkQuantityOfItemInInv(TasksCoin);
 
@@ -58,11 +67,11 @@ export class ItemTaskObjective extends Objective {
    * Executes the task loop
    * @returns true if successful, false if not
    */
-  async doTask(): Promise<boolean> {
+  async doTask(): Promise<ObjectiveResult> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       logger.info(`Item task attempt ${attempt}/${this.maxRetries}`);
 
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       if (!this.character.data.task || this.character.data.task === '') {
         await this.startNewTask('items');
@@ -102,7 +111,7 @@ export class ItemTaskObjective extends Objective {
         const shouldRetry = await this.character.handleErrors(taskInfo);
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Item task failed after ${attempt} attempts`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
         continue;
       }
@@ -111,7 +120,7 @@ export class ItemTaskObjective extends Objective {
       while (
         this.character.data.task_progress < this.character.data.task_total
       ) {
-        if (!(await this.checkStatus())) return false;
+        if (!(await this.checkStatus())) return ObjectiveCancelled;
 
         // Gather the remaining items for the task, or fill up the remaining inv space
         const numToGather = Math.min(
@@ -142,17 +151,19 @@ export class ItemTaskObjective extends Objective {
             ))
           ) {
             this.character.removeItemFromItemsToKeep(this.character.data.task);
-            return false;
+            return { complete: true, success: false, reason: 'failed' };
           }
         } else if (taskInfo.craft) {
           logger.debug(
             `${taskInfo.code} is a crafted item. Crafting ${numToGather}`,
           );
           if (
-            !(await this.character.craftNow(
-              numToGather,
-              this.character.data.task,
-            ))
+            !(
+              await this.character.craftNow(
+                numToGather,
+                this.character.data.task,
+              )
+            ).success
           ) {
             if (attempt >= this.maxRetries) {
               this.character.removeItemFromItemsToKeep(
@@ -162,7 +173,7 @@ export class ItemTaskObjective extends Objective {
                 `Cancelling ${this.character.data.task} collection task`,
               );
               await this.cancelCurrentTask('items');
-              return false;
+              return { complete: true, success: false, reason: 'failed' };
             } else {
               break;
             }
@@ -177,7 +188,7 @@ export class ItemTaskObjective extends Objective {
           );
           if (itemInformation instanceof ApiError) {
             logger.warn(`Item info not found for ${this.character.data.task}`);
-            return false;
+            return { complete: true, success: false, reason: 'failed' };
           }
           // ToDo: Make this into a reusable function that encompasses all roles and their responsibilities
           if (
@@ -188,24 +199,26 @@ export class ItemTaskObjective extends Objective {
               code: itemInformation.code,
               quantity: this.character.data.task_total,
             });
-            return false;
+            return ObjectiveOnHold;
           } else {
             // If we get a task to get an item that we aren't high enough to gather, we'd like to exit out.
             // This happens sometimes with fish when our cooking level is high
             // but fishing might be too low to actually gather the required ingredient
             if (
-              !(await this.character.gatherNow(
-                numToGather,
-                this.character.data.task,
-                true,
-                true,
-              ))
+              !(
+                await this.character.gatherNow(
+                  numToGather,
+                  this.character.data.task,
+                  true,
+                  true,
+                )
+              ).success
             ) {
               if (attempt >= this.maxRetries) {
                 this.character.removeItemFromItemsToKeep(
                   this.character.data.task,
                 );
-                return false;
+                return { complete: true, success: false, reason: 'failed' };
               } else {
                 break;
               }
@@ -221,9 +234,9 @@ export class ItemTaskObjective extends Objective {
       ) {
         this.character.removeItemFromItemsToKeep(this.character.data.task);
         await this.handInTask('items');
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       }
     }
-    return false;
+    return { complete: true, success: false, reason: 'failed' };
   }
 }

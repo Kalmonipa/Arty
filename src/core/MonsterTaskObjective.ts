@@ -1,5 +1,5 @@
 import { estimateFightCooldown, logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { DepositObjective } from './DepositObjective.js';
 import { FightSimulator } from '../fights/FightSimulator.js';
 import { Objective } from './Objective.js';
@@ -10,6 +10,7 @@ import {
   TASK_ESTIMATE_SIM_ITERATIONS,
 } from '../constants.js';
 import { TasksCoin } from '../names.js';
+import { ObjectiveCancelled, ObjectiveResult } from '../types/ObjectiveData.js';
 
 export class MonsterTaskObjective extends Objective {
   type = 'monster' as const;
@@ -24,18 +25,22 @@ export class MonsterTaskObjective extends Objective {
     this.shouldEmitMetrics = true;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
-  async run() {
-    let result = false;
+  async run(): Promise<ObjectiveResult> {
+    let result: ObjectiveResult = {
+      complete: false,
+      success: false,
+      reason: 'in_progress',
+    };
 
     while (this.progress < this.quantity) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-        if (!(await this.checkStatus())) return false;
+        if (!(await this.checkStatus())) return ObjectiveCancelled;
 
         logger.info(`Monster task attempt ${attempt}/${this.maxRetries}`);
 
@@ -82,7 +87,7 @@ export class MonsterTaskObjective extends Objective {
     return result;
   }
 
-  private async doTask(): Promise<boolean> {
+  private async doTask(): Promise<ObjectiveResult> {
     this.character.lostTooManyFights = false;
 
     if (!this.character.data.task || this.character.data.task === '') {
@@ -91,30 +96,17 @@ export class MonsterTaskObjective extends Objective {
 
     // Check if task is completed and hand it in
     if (this.character.data.task_total === this.character.data.task_progress) {
-      return true;
+      return { complete: true, success: true, reason: 'complete' };
     }
 
     // Without a task there's no target to look up, and an empty content_code
     // matches every monster map — so bail rather than fighting something random
     if (!this.character.data.task || this.character.data.task === '') {
       logger.warn(`No monster task to work on`);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     await this.rerollTasksThatCostTooMuch();
-
-    // const maps = this.character.findMaps({
-    //   content_code: this.character.data.task,
-    //   content_type: 'monster',
-    // });
-    // if (maps.length === 0) {
-    //   logger.error(`Cannot find the task target. This shouldn't happen ??`);
-    //   return false;
-    // }
-
-    // const contentLocation = this.character.evaluateClosestMap(maps);
-
-    // await this.character.move(contentLocation);
 
     const result = await this.character.fightNow(
       this.character.data.task_total - this.character.data.task_progress,

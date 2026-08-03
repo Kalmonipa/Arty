@@ -19,7 +19,7 @@ import {
   isGatheringSkill,
   logger,
 } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
@@ -41,6 +41,12 @@ import {
 import { AcquisitionMethod } from '../wishlist/types.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * Labourer role idle jobs
@@ -61,32 +67,32 @@ export class IdleLabourerObjective extends Objective {
     this.metricLabel = 'labourer';
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
    * @description Goes through the list of tasks and does some clean up stuff
    * The type of task varies depending on the role of the character
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     let startTime = Date.now();
 
     await completeTasksFarmerAchievement(this.character, this.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.character.tidyUpBank(this.character.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.depositGoldIntoBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.claimPendingItems();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // Improve this to equip wisdom/prospecting gear/artifacts/runes if any
     await checkAndBuyArtifacts(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // Woodcutting wishlist requests aren't getting done so I figured shuffling
     // the order in which the labourers fulfill the requests should help that
@@ -98,26 +104,26 @@ export class IdleLabourerObjective extends Objective {
       shufflesWishlistRequests[0],
       this.objectiveId,
     );
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWishlistToFulfill(
       this.character,
       shufflesWishlistRequests[1],
       this.objectiveId,
     );
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkOnHoldQueue(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWithinLevelRange(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     if (Date.now() - startTime > 10 * 60 * 1000) {
       logger.info(
         `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else if (
       this.character.getCharacterLevel(this.character.data) <
       this.character.highestCharLevel - 5
@@ -131,9 +137,9 @@ export class IdleLabourerObjective extends Objective {
         `Combat level is within 5 levels of highest character level. Doing item task`,
       );
       await doItemTask(this.character, this, 1);
-      if (this.checkIdleJobIsLast()) return true;
+      if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
     }
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
@@ -191,7 +197,7 @@ export class IdleLabourerObjective extends Objective {
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainSkill(skill?: Skill): Promise<boolean> {
+  private async trainSkill(skill?: Skill): Promise<ObjectiveResult> {
     let job: Objective;
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
@@ -210,7 +216,7 @@ export class IdleLabourerObjective extends Objective {
       logger.info(
         `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else if (
       skillLevel >=
       this.character.getCharacterLevel(this.character.data) + maxLevelGap
@@ -218,7 +224,7 @@ export class IdleLabourerObjective extends Objective {
       logger.info(
         `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel(this.character.data)}). Not training ${skill}`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
@@ -229,14 +235,14 @@ export class IdleLabourerObjective extends Objective {
       logger.info(
         `${skill} level (${this.character.getCharacterLevel(this.character.data, skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel(this.character.data)}. Not training`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     if (skill !== 'woodcutting' && skill !== 'mining') {
       logger.debug(
         `Labourers shouldn't be training ${skill}. Should only train mining or woodcutting`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     const resourceTypes: StaticDataPageResourceSchema | ApiError =
@@ -245,7 +251,8 @@ export class IdleLabourerObjective extends Objective {
         max_level: this.character.getCharacterLevel(this.character.data, skill),
       });
     if (resourceTypes instanceof ApiError) {
-      return this.character.handleErrors(resourceTypes);
+      await this.character.handleErrors(resourceTypes);
+      return ObjectiveFailed;
     }
 
     let resourceToGather = resourceTypes.data.at(-1).drops[0].code;

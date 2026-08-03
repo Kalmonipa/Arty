@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { logger } from '../utils.js';
 import { addToWishlist, listOpenWishlistRequests } from './functions.js';
 import { WishlistRequest } from './types.js';

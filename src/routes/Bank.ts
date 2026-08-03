@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { WithdrawObjective } from '../core/WithdrawObjective.js';
 import { ExpandBankObjective } from '../core/BankExpansion.js';

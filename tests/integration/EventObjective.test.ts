@@ -1,4 +1,9 @@
 import { jest } from '@jest/globals';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { EventObjective } from '../../src/events/eventObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ApiError } from '../../src/core/Error.js';
@@ -68,11 +73,12 @@ class SimpleMockCharacter {
   checkQuantityOfItemInInv = jest.fn((_code: string): number => 0);
 
   withdrawNow = jest.fn(
-    async (_qty: number, _code: string): Promise<boolean> => true,
+    async (_qty: number, _code: string): Promise<ObjectiveResult> =>
+      ObjectiveCompleted,
   );
   tradeWithNpcNow = jest.fn(async (): Promise<boolean> => true);
   depositNow = jest.fn(async (): Promise<void> => {});
-  equipNow = jest.fn(async (): Promise<boolean> => true);
+  equipNow = jest.fn(async (): Promise<ObjectiveResult> => ObjectiveCompleted);
   recordEventSuccess = jest.fn();
   recordEventFailure = jest.fn();
   getEquippedSlot = jest.fn((_code: string): string => null);
@@ -126,7 +132,7 @@ describe('EventObjective - sellToMerchant', () => {
 
     const result = await makeObjective('fish_merchant').run();
 
-    expect(result).toBe(false);
+    expect(result.success).toBe(false);
     expect(character.withdrawNow).not.toHaveBeenCalled();
   });
 
@@ -297,8 +303,8 @@ describe('EventObjective - sellToMerchant', () => {
     character.bankItems = { shell: 10, golden_shrimp: 5 };
     mockGetItemInformation.mockResolvedValue(makeItemInfo('resource') as any);
     character.withdrawNow
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
+      .mockResolvedValueOnce(ObjectiveFailed)
+      .mockResolvedValueOnce(ObjectiveCompleted);
 
     await makeObjective('fish_merchant').run();
 

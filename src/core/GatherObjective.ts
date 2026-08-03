@@ -3,7 +3,11 @@ import { getItemInformation } from '../api_calls/Items.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { WeaponFlavours } from '../types/ItemData.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import {
   StaticDataPageMonsterSchema,
   ItemSchema,
@@ -11,7 +15,7 @@ import {
   SimpleItemSchema,
 } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { selectResourceNode } from './resourceNodeSelection.js';
@@ -38,8 +42,8 @@ export class GatherObjective extends Objective {
       includeInventory !== undefined ? includeInventory : true;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
@@ -47,8 +51,8 @@ export class GatherObjective extends Objective {
    * Then calls gather() to retrieve the remaining amount
    * @returns true if successful, false if failure
    */
-  async run(): Promise<boolean> {
-    if (!(await this.checkStatus())) return false;
+  async run(): Promise<ObjectiveResult> {
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     let numInInv = 0;
     let numInBank = 0;
@@ -56,7 +60,7 @@ export class GatherObjective extends Objective {
 
     if (this.target.code === 'wooden_stick') {
       logger.info(`${this.target.code} is not gatherable`);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     if (this.includeInventory) {
@@ -79,7 +83,7 @@ export class GatherObjective extends Objective {
         logger.info(
           `${numInInv} ${this.target.code} in inventory already. No need to collect more`,
         );
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       } else {
         // Need to withdraw from bank
         const needToWithdraw = Math.max(this.target.quantity - numInInv, 0);
@@ -111,7 +115,7 @@ export class GatherObjective extends Objective {
       logger.info(
         `Already have enough ${this.target.code} after bank withdrawal`,
       );
-      return true;
+      return { complete: true, success: true, reason: 'complete' };
     }
 
     logger.info(`Need to gather ${amountStillNeeded} more ${this.target.code}`);
@@ -130,10 +134,9 @@ export class GatherObjective extends Objective {
     quantity: number,
     code: string,
     maxRetries: number = 3,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
-
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
       logger.info(`Gather attempt ${attempt}/${maxRetries}`);
 
       // Check our equipment to see if we can equip something useful
@@ -144,7 +147,7 @@ export class GatherObjective extends Objective {
 
         if (!shouldRetry || attempt === maxRetries) {
           logger.error(`Gather failed after ${attempt} attempts`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
         continue;
       } else if (isGatheringSkill(resourceDetails.subtype)) {
@@ -167,57 +170,66 @@ export class GatherObjective extends Objective {
 
       if (resourceDetails.subtype === 'mob') {
         if (
-          !(await this.gatherMobDrop({
-            code: resourceDetails.code,
-            quantity: quantity,
-          }))
+          !(
+            await this.gatherMobDrop({
+              code: resourceDetails.code,
+              quantity: quantity,
+            })
+          ).success
         ) {
           continue;
         } else {
-          return true;
+          return { complete: true, success: true, reason: 'complete' };
         }
       } else if (
         resourceDetails.subtype === 'task' ||
         resourceDetails.subtype === 'npc'
       ) {
         if (
-          !(await this.character.tradeWithNpcNow(
-            'buy',
-            quantity,
-            resourceDetails.code,
-          ))
+          !(
+            await this.character.tradeWithNpcNow(
+              'buy',
+              quantity,
+              resourceDetails.code,
+            )
+          ).success
         ) {
           continue;
         } else {
-          return true;
+          return { complete: true, success: true, reason: 'complete' };
         }
       } else if (resourceDetails.craft && resourceDetails.code !== 'sap') {
         if (
-          !(await this.character.craftNow(
-            quantity,
-            resourceDetails.code,
-            false,
-            false,
-          ))
+          !(
+            await this.character.craftNow(
+              quantity,
+              resourceDetails.code,
+              false,
+              false,
+            )
+          ).success
         ) {
           continue;
         } else {
-          return true;
+          return { complete: true, success: true, reason: 'complete' };
         }
       } else {
-        if (!(await this.gatherResource(code, quantity, itemsToKeep))) {
+        if (!(await this.gatherResource(code, quantity, itemsToKeep)).success) {
           continue;
         } else {
-          return true;
+          return { complete: true, success: true, reason: 'complete' };
         }
       }
     }
+
+    logger.error(`Gather failed after ${maxRetries} attempts`);
+    return { complete: true, success: false, reason: 'failed' };
   }
 
   async gatherItemLoop(
     location: MapSchema,
     itemsToKeep?: string[],
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const baselineInventory = this.includeInventory
       ? 0
       : this.character.checkQuantityOfItemInInv(this.target.code);
@@ -252,7 +264,7 @@ export class GatherObjective extends Objective {
 
       if (response instanceof ApiError) {
         await this.character.handleErrors(response);
-        return false;
+        return { complete: true, success: false, reason: 'failed' };
       } else {
         if (response && response.data && response.data.character) {
           this.character.data = response.data.character;
@@ -261,17 +273,17 @@ export class GatherObjective extends Objective {
             'Invalid response structure from actionGather:',
             response,
           );
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
       }
 
-      if (!(await this.checkStatus())) return false;
-
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
+      ObjectiveCancelled;
       await this.character.saveJobQueue();
       iteration++;
     }
 
-    return true;
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
@@ -283,17 +295,18 @@ export class GatherObjective extends Objective {
    * @param target The drop to farm; its code decides which mob to fight
    * @returns true once the target is met, false if a fight failed or the job stopped
    */
-  async gatherMobDrop(target: SimpleItemSchema) {
+  async gatherMobDrop(target: SimpleItemSchema): Promise<ObjectiveResult> {
     const mobInfo: StaticDataPageMonsterSchema | ApiError =
       await getAllMonsterInformation({
         drop: target.code,
         max_level: this.character.data.level,
       });
     if (mobInfo instanceof ApiError) {
-      return await this.character.handleErrors(mobInfo);
+      await this.character.handleErrors(mobInfo);
+      return { complete: true, success: false, reason: 'failed' };
     } else if (mobInfo.data.length === 0) {
       logger.error(`Found no mobs for drop ${target.code}`);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     } else {
       const baselineInventory = this.includeInventory
         ? 0
@@ -329,14 +342,14 @@ export class GatherObjective extends Objective {
             logger.debug(
               `Fight attempt against ${mobInfo.data[0].code} failed`,
             );
-            return false;
+            return { complete: true, success: false, reason: 'failed' };
           }
 
-          if (!(await this.checkStatus())) return false;
+          if (!(await this.checkStatus())) return ObjectiveCancelled;
 
           await this.character.saveJobQueue();
         }
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       } finally {
         if (!keptByOuterJob) {
           this.character.removeItemFromItemsToKeep(this.target.code);
@@ -356,14 +369,15 @@ export class GatherObjective extends Objective {
     code: string,
     quantity: number,
     itemsToKeep?: string[],
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     logger.debug(`Finding resource map type for ${code}`);
 
     const resources = await getAllResourceInformation({
       drop: code,
     });
     if (resources instanceof ApiError) {
-      return this.character.handleErrors(resources);
+      await this.character.handleErrors(resources);
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     logger.debug(`Finding best resource to gather`);
@@ -383,7 +397,7 @@ export class GatherObjective extends Objective {
         { code, quantity },
         { acquisitionMethod: skillNeeded, minLevel: levelNeeded },
       );
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     logger.info(`Finding location of ${resource.code}`);
@@ -391,7 +405,7 @@ export class GatherObjective extends Objective {
     const maps = this.character.findMaps({ content_code: resource.code });
     if (maps.length === 0) {
       logger.error(`Cannot find any maps for ${resource.code}`);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     const contentLocation = this.character.evaluateClosestMap(maps);
@@ -399,16 +413,20 @@ export class GatherObjective extends Objective {
 
     const success = await this.gatherItemLoop(contentLocation, itemsToKeep);
 
-    if (!(await this.checkStatus())) return false;
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     if (this.progress >= this.target.quantity) {
       logger.info(`Successfully gathered ${this.progress} ${code}`);
-      return true;
+      return { complete: true, success: true, reason: 'complete' };
     } else {
       logger.warn(
         `Only gathered ${this.progress}/${this.target.quantity} ${code}. We should gather more`,
       );
-      return success; // Return the result from gatherItemLoop
+      return {
+        complete: true,
+        success: success.success,
+        reason: success.reason,
+      }; // Return the result from gatherItemLoop
     }
   }
 }

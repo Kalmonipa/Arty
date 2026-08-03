@@ -1,5 +1,10 @@
 import { jest } from '@jest/globals';
 import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
@@ -401,9 +406,9 @@ class SimpleMockCharacter {
   );
 
   withdrawNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -484,10 +489,10 @@ class SimpleMockCharacter {
     utility2_slot: charData.utility2_slot,
   }));
 
-  equipUtility = jest.fn(async (): Promise<boolean> => {
+  equipUtility = jest.fn(async (): Promise<ObjectiveResult> => {
     this.data.utility1_slot = 'health_potion';
     this.data.utility1_slot_quantity = 100;
-    return true;
+    return ObjectiveCompleted;
   });
 
   equipAntiEffectUtility = jest.fn(async (): Promise<boolean> => {
@@ -496,47 +501,49 @@ class SimpleMockCharacter {
     return true;
   });
 
-  equipNow = jest.fn(async (code: string, slot: ItemSlot): Promise<boolean> => {
-    switch (slot) {
-      case 'weapon':
-        this.data.weapon_slot = code;
-        break;
-      case 'shield':
-        this.data.shield_slot = code;
-        break;
-      case 'helmet':
-        this.data.helmet_slot = code;
-        break;
-      case 'body_armor':
-        this.data.body_armor_slot = code;
-        break;
-      case 'leg_armor':
-        this.data.leg_armor_slot = code;
-        break;
-      case 'boots':
-        this.data.boots_slot = code;
-        break;
-      case 'ring1':
-        this.data.ring1_slot = code;
-        break;
-      case 'ring2':
-        this.data.ring2_slot = code;
-        break;
-      case 'amulet':
-        this.data.amulet_slot = code;
-        break;
-      case 'artifact1':
-        this.data.artifact1_slot = code;
-        break;
-      case 'artifact2':
-        this.data.artifact2_slot = code;
-        break;
-      case 'artifact3':
-        this.data.artifact3_slot = code;
-        break;
-    }
-    return true;
-  });
+  equipNow = jest.fn(
+    async (code: string, slot: ItemSlot): Promise<ObjectiveResult> => {
+      switch (slot) {
+        case 'weapon':
+          this.data.weapon_slot = code;
+          break;
+        case 'shield':
+          this.data.shield_slot = code;
+          break;
+        case 'helmet':
+          this.data.helmet_slot = code;
+          break;
+        case 'body_armor':
+          this.data.body_armor_slot = code;
+          break;
+        case 'leg_armor':
+          this.data.leg_armor_slot = code;
+          break;
+        case 'boots':
+          this.data.boots_slot = code;
+          break;
+        case 'ring1':
+          this.data.ring1_slot = code;
+          break;
+        case 'ring2':
+          this.data.ring2_slot = code;
+          break;
+        case 'amulet':
+          this.data.amulet_slot = code;
+          break;
+        case 'artifact1':
+          this.data.artifact1_slot = code;
+          break;
+        case 'artifact2':
+          this.data.artifact2_slot = code;
+          break;
+        case 'artifact3':
+          this.data.artifact3_slot = code;
+          break;
+      }
+      return ObjectiveCompleted;
+    },
+  );
 
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
@@ -646,7 +653,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(getMonsterInformation).toHaveBeenCalledWith('red_slime');
       expect(mockCharacter.recoverHealth).toHaveBeenCalled();
     });
@@ -664,7 +671,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(getMonsterInformation).not.toHaveBeenCalled();
       expect(mockCharacter.getCharacterLevel).toHaveBeenCalledWith(
         mockCharacter.data,
@@ -686,7 +693,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipNow).not.toHaveBeenCalled();
     });
   });
@@ -706,7 +713,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
     });
 
@@ -724,7 +731,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // equipUtility should not be called when quantity is above minEquippedUtilities
       // The code checks utility1_slot_quantity <= minEquippedUtilities, and 50 > 20
       expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
@@ -773,7 +780,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipAntiEffectUtility).not.toHaveBeenCalled();
     });
 
@@ -797,7 +804,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipAntiEffectUtility).not.toHaveBeenCalled();
     });
   });
@@ -832,7 +839,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'res_fire_shield',
         'shield',
@@ -854,7 +861,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert — equipNow handles the bank withdrawal internally
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'res_fire_shield',
         'shield',
@@ -892,7 +899,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'fire_sword',
         'weapon',
@@ -929,7 +936,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Weapon is in bank
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
       // equipNow will handle the withdrawal via EquipObjective internally
-      mockCharacter.equipNow.mockResolvedValue(true);
+      mockCharacter.equipNow.mockResolvedValue(ObjectiveCompleted);
 
       const objective = new EvaluateGearObjective(
         mockCharacter as any,
@@ -941,7 +948,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // selectWeapon checks bank and then equipNow handles the withdrawal
       expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
         'fire_sword',
@@ -985,7 +992,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should attempt to equip fire damage gear (helmet, armor, etc.)
       expect(mockCharacter.equipNow).toHaveBeenCalled();
     });
@@ -1026,7 +1033,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'dmg_helmet',
         'helmet',
@@ -1049,7 +1056,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipNow).toHaveBeenCalledWith('hp_boots', 'boots');
     });
   });
@@ -1079,7 +1086,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
     });
 
@@ -1098,7 +1105,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should still return true even if some gear is missing
     });
   });
@@ -1119,7 +1126,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should not call equipNow for already equipped items
     });
 
@@ -1146,7 +1153,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should not equip gear above character level
     });
 
@@ -1164,7 +1171,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
     });
 
     it('should handle gathering weapon not found', async () => {
@@ -1183,7 +1190,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       // Assert
       // Gathering path now always returns true (artifact check runs after weapon check)
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should not throw when no weapons are mapped for the activity type', async () => {
@@ -1192,7 +1199,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
         'mob' as WeaponFlavours,
       );
 
-      await expect(objective.run()).resolves.toBe(true);
+      expect((await objective.run()).success).toBe(true);
     });
 
     it('should handle different gathering activity types', async () => {

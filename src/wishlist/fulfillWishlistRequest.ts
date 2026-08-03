@@ -1,4 +1,4 @@
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { Objective } from '../core/Objective.js';
 import {
   claimWishlistRequest,
@@ -6,6 +6,11 @@ import {
   markAsNotExecuting,
 } from './functions.js';
 import { WishlistRow } from './types.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * Fulfills the request that gets passed in. Some preliminary checks should have been
@@ -28,12 +33,12 @@ export class FulfillWishlistRequestObjective extends Objective {
     this.request = request;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async run(): Promise<boolean> {
-    if (!(await this.checkStatus())) return false;
+  async run(): Promise<ObjectiveResult> {
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     const characterName = this.character.data.name;
 
@@ -41,7 +46,7 @@ export class FulfillWishlistRequestObjective extends Objective {
     // been a while ago (or another character may have taken it since), so the
     // claim decides whether this character actually works on it.
     if (!(await claimWishlistRequest(this.request.id, characterName))) {
-      return false;
+      return ObjectiveCancelled;
     }
 
     // Calculate how many inventories full the gather job will be
@@ -59,10 +64,9 @@ export class FulfillWishlistRequestObjective extends Objective {
           Math.round(this.character.data.inventory_max_items * 0.9),
         );
         await this.character.gatherNow(numToGather, this.request.item_code);
-        successfull = await this.character.depositNow(
-          numToGather,
-          this.request.item_code,
-        );
+        successfull = (
+          await this.character.depositNow(numToGather, this.request.item_code)
+        ).success;
         iterations++;
       }
     } finally {
@@ -76,6 +80,6 @@ export class FulfillWishlistRequestObjective extends Objective {
       }
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 }

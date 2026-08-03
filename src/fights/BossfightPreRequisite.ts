@@ -1,7 +1,7 @@
 import { requestLoadout } from '../api_calls/Account.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { getMyCharacters } from '../character/apiCalls.js';
-import { Character } from '../character/characterClass.js';
+import { getMyCharacters } from '../character/ApiCalls.js';
+import { Character } from '../character/CharacterClass.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { ApiError } from '../core/Error.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';

@@ -1,5 +1,5 @@
 import { effectValueOf, logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
 import {
@@ -15,6 +15,12 @@ import { ApiError } from './Error.js';
 import { BankCache } from './BankCache.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
 import { MinEquippedUtilities } from '../constants.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @description Evaluates which gear is the best to use for the upcoming fight
@@ -42,18 +48,18 @@ export class EvaluateGearObjective extends Objective {
     this.targetResource = targetResource;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
    * @description Check current gear and equip anything that we're missing
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     this.bankCache = await BankCache.create(this.character);
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       logger.debug(`Gear up attempt ${attempt}/${this.maxRetries}`);
 
@@ -76,11 +82,11 @@ export class EvaluateGearObjective extends Objective {
         await this.checkGatheringWeapon(this.activityType, charLevel);
         await this.checkGatheringEquipment(gatheringStat, overallLevel);
         await this.checkGatheringArtifacts(gatheringStat, overallLevel);
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       }
 
       if (await this.evaluateCombatGear(charLevel, this.targetMob)) {
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       }
 
       logger.warn(
@@ -88,7 +94,7 @@ export class EvaluateGearObjective extends Objective {
       );
     }
 
-    return false;
+    return { complete: true, success: false, reason: 'failed' };
   }
 
   /**
@@ -474,10 +480,12 @@ export class EvaluateGearObjective extends Objective {
    * utility 1 is reserved for health potions
    * @returns
    */
-  private async topUpHealthPots(): Promise<boolean> {
+  private async topUpHealthPots(): Promise<ObjectiveResult> {
     if (this.character.data.utility1_slot_quantity <= MinEquippedUtilities) {
       return await this.character.equipUtility('restore', 'utility1');
     }
+
+    return ObjectiveCompleted;
   }
 
   /**
@@ -548,20 +556,20 @@ export class EvaluateGearObjective extends Objective {
   private async checkGatheringWeapon(
     activityType: WeaponFlavours,
     charLevel: number,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const weapons = this.character.weaponMap?.[activityType];
     if (!weapons) {
       logger.warn(
         `No weapons mapped for ${activityType}, skipping weapon check`,
       );
-      return false;
+      return ObjectiveFailed;
     }
 
     for (let ind = weapons.length - 1; ind >= 0; ind--) {
       if (weapons[ind].level <= charLevel) {
         if (weapons[ind].code === this.character.data.weapon_slot) {
           logger.info(`Already have ${weapons[ind].code} equipped`);
-          return true;
+          return ObjectiveCompleted;
         }
         logger.debug(`Attempting to equip ${weapons[ind].name} for gathering`);
         if (this.character.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
@@ -578,7 +586,7 @@ export class EvaluateGearObjective extends Objective {
         }
       }
     }
-    return false;
+    return ObjectiveFailed;
   }
 
   /**
@@ -809,7 +817,7 @@ export class EvaluateGearObjective extends Objective {
         return false;
       }
 
-      if (await this.character.tradeWithNpcNow('buy', 1, runeName)) {
+      if ((await this.character.tradeWithNpcNow('buy', 1, runeName)).success) {
         const equipResponse = await this.character.equipNow(
           runeName,
           'rune',

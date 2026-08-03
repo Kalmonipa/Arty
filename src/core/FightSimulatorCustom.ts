@@ -3,9 +3,14 @@ import { CRITICAL_MODIFIER } from '../constants.js';
 import { TurnsDetails } from '../types/FightData.js';
 import { CharacterSchema, MonsterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @description Simulates fights against the target mob. Can take in mock schemas to decide what gear we should equip
@@ -43,18 +48,18 @@ export class FightSimulatorCustom extends Objective {
     this.debugLogs = debugLogs;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
     if (!this.targetMobCode && !this.targetMobSchema) {
       logger.error(
         `One of targetMobName or targetMobSchema must be passed into the fightSimulator`,
       );
-      return false;
+      return ObjectiveFailed;
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     let fightResult = false;
     let numTurns = 0;
     const mobName = this.targetMobCode || this.targetMobSchema.code;
@@ -69,7 +74,8 @@ export class FightSimulatorCustom extends Objective {
       logger.debug(`Getting info on ${mobName}`);
       const mobInfo = await getMonsterInformation(this.targetMobCode);
       if (mobInfo instanceof ApiError) {
-        return this.character.handleErrors(mobInfo);
+        await this.character.handleErrors(mobInfo);
+        return ObjectiveFailed;
       }
 
       mob = mobInfo.data;
@@ -224,7 +230,9 @@ export class FightSimulatorCustom extends Objective {
       numTurns++;
     }
 
-    return fightResult;
+    // A simulated loss is a valid answer, not a job failure — but `run` only has
+    // success/failure to report it through, so callers read it as failed
+    return fightResult ? ObjectiveCompleted : ObjectiveFailed;
   }
 
   /**

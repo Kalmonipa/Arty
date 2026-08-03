@@ -16,7 +16,7 @@ import {
   isGatheringSkill,
   logger,
 } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
@@ -32,6 +32,12 @@ import {
 import { GatherObjective } from '../core/GatherObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { BankCache } from '../core/BankCache.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class IdleHealerObjective extends Objective {
   role: Role;
@@ -45,47 +51,47 @@ export class IdleHealerObjective extends Objective {
     this.metricLabel = 'healer';
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
    * @description Goes through the list of tasks and does some clean up stuff
    * The type of task varies depending on the role of the character
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     await completeTasksFarmerAchievement(this.character, this.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.character.tidyUpBank(this.character.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.depositGoldIntoBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWishlistToFulfill(this.character, 'alchemy', this.objectiveId);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpTeleportPotionsInBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpPotionsInBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpFishInBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.claimPendingItems();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkAndBuyArtifacts(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkOnHoldQueue(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWithinLevelRange(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // Train skills depending on their role
     // If the skill gets 5 levels ahead of their combat level then they won't train the skill any further
@@ -98,7 +104,9 @@ export class IdleHealerObjective extends Objective {
     } else {
       await this.trainSkill('fishing');
     }
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+
+    return ObjectiveCompleted;
   }
 
   /**
@@ -322,7 +330,7 @@ export class IdleHealerObjective extends Objective {
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainSkill(skill: Skill): Promise<boolean> {
+  private async trainSkill(skill: Skill): Promise<ObjectiveResult> {
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
       skill,
@@ -333,7 +341,7 @@ export class IdleHealerObjective extends Objective {
       logger.info(
         `Max ${skill} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else if (
       skillLevel >=
       this.character.getCharacterLevel(this.character.data) + maxLevelGap
@@ -341,7 +349,7 @@ export class IdleHealerObjective extends Objective {
       logger.info(
         `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel(this.character.data)}). Not training ${skill}`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     if (skill === 'fishing') {
@@ -354,7 +362,8 @@ export class IdleHealerObjective extends Objective {
           ),
         });
       if (resourceTypes instanceof ApiError) {
-        return this.character.handleErrors(resourceTypes);
+        await this.character.handleErrors(resourceTypes);
+        return ObjectiveFailed;
       }
 
       let resourceToGather = resourceTypes.data.at(-1).drops[0].code;

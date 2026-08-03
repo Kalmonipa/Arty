@@ -1,4 +1,10 @@
 import { jest } from '@jest/globals';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { ItemTaskObjective } from '../../src/core/ItemTaskObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
@@ -48,10 +54,10 @@ class SimpleMockCharacter {
   });
 
   withdrawNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Mock successful withdrawal
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -78,23 +84,23 @@ class SimpleMockCharacter {
 
   findMaps = jest.fn((): MapSchema[] => []);
 
-  executeJobNow = jest.fn(async (): Promise<boolean> => {
-    return true;
+  executeJobNow = jest.fn(async (): Promise<ObjectiveResult> => {
+    return ObjectiveCompleted;
   });
 
   craftNow = jest.fn(
-    async (quantity: number, itemCode: string): Promise<boolean> => {
+    async (quantity: number, itemCode: string): Promise<ObjectiveResult> => {
       // Mock crafting
       this.addItemToInventory(itemCode, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
   gatherNow = jest.fn(
-    async (quantity: number, itemCode: string): Promise<boolean> => {
+    async (quantity: number, itemCode: string): Promise<ObjectiveResult> => {
       // Mock gathering
       this.addItemToInventory(itemCode, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -339,13 +345,13 @@ describe('ItemTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(handInTaskSpy).toHaveBeenCalledWith('items');
     });
 
@@ -365,7 +371,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(startNewTaskSpy).toHaveBeenCalledWith('items');
     });
 
@@ -388,7 +394,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(startNewTaskSpy).not.toHaveBeenCalled();
     });
   });
@@ -408,7 +414,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.checkQuantityOfItemInBank).toHaveBeenCalledWith(
         'iron_ore',
       );
@@ -432,7 +438,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(2, 'iron_sword');
     });
 
@@ -449,7 +455,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert - for now, just test that the task completes successfully
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Note: The gathering logic is complex and may not be called in all scenarios
       // This test verifies that the task completes successfully
     });
@@ -468,7 +474,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Note: The gathering logic is complex and may not be called in all scenarios
       // This test verifies that the task completes successfully
     });
@@ -495,7 +501,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
       expect(getItemInformation).toHaveBeenCalledTimes(2);
     });
@@ -519,7 +525,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(getItemInformation).toHaveBeenCalledTimes(3); // maxRetries = 3
     });
 
@@ -539,7 +545,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should handle crafting failures and cancel task', async () => {
@@ -551,7 +557,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       mockCharacter.data.task_type = 'items';
       mockCharacter.data.task_progress = 0;
       mockCharacter.data.task_total = 2;
-      mockCharacter.craftNow.mockResolvedValue(false);
+      mockCharacter.craftNow.mockResolvedValue(ObjectiveFailed);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
 
@@ -559,7 +565,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
     });
 
     it('should handle gathering failures and return false', async () => {
@@ -576,7 +582,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       (
         mockCharacter.checkQuantityOfItemInBank as jest.MockedFunction<any>
       ).mockResolvedValue(0);
-      mockCharacter.gatherNow.mockResolvedValue(false);
+      mockCharacter.gatherNow.mockResolvedValue(ObjectiveFailed);
 
       const objective = new ItemTaskObjective(mockCharacter as any, 1);
 
@@ -584,7 +590,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
     });
   });
 
@@ -606,7 +612,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(actionTasksTrade).not.toHaveBeenCalled();
     });
 
@@ -659,7 +665,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
     });
 
     it('should handle multiple task completions', async () => {
@@ -675,13 +681,13 @@ describe('ItemTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(handInTaskSpy).toHaveBeenCalledTimes(3);
     });
 
@@ -698,13 +704,13 @@ describe('ItemTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method to prevent real API calls
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.data.task_progress).toBe(10);
       expect(mockCharacter.data.task_total).toBe(10);
     });
@@ -725,13 +731,13 @@ describe('ItemTaskObjective Integration Tests', () => {
 
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(handInTaskSpy).toHaveBeenCalledWith('items');
     });
 
@@ -749,7 +755,7 @@ describe('ItemTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.saveJobQueue).toHaveBeenCalled();
     });
 
@@ -765,13 +771,13 @@ describe('ItemTaskObjective Integration Tests', () => {
       // Mock the Objective's handInTask method
       const handInTaskSpy = jest
         .spyOn(objective, 'handInTask')
-        .mockResolvedValue(true);
+        .mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(handInTaskSpy).toHaveBeenCalledWith('items');
     });
   });

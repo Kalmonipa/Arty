@@ -1,8 +1,12 @@
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import { actionDeleteItem } from '../api_calls/Items.js';
 
 /**
@@ -19,28 +23,30 @@ export class DeleteItemObjective extends Objective {
     this.target = target;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
    * @description Find the item and delete it
    */
-  async run(): Promise<boolean> {
-    if (!(await this.checkStatus())) return false;
+  async run(): Promise<ObjectiveResult> {
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
 
     if (
-      !(await this.character.withdrawNow(
-        this.target.quantity - numInInv,
-        this.target.code,
-      ))
+      !(
+        await this.character.withdrawNow(
+          this.target.quantity - numInInv,
+          this.target.code,
+        )
+      ).success
     ) {
       logger.warn(
         `Failed to withdraw ${this.target.quantity - numInInv} ${this.target.code} from the bank`,
       );
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     logger.info(`Deleting ${this.target.quantity} ${this.target.code}`);
@@ -52,16 +58,16 @@ export class DeleteItemObjective extends Objective {
     if (deleteResult instanceof ApiError) {
       logger.info(deleteResult.message);
       await this.character.handleErrors(deleteResult);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     } else {
       if (deleteResult.data.character) {
         this.character.data = deleteResult.data.character;
       } else {
         logger.error('Delete response missing character data');
-        return false;
+        return { complete: true, success: false, reason: 'failed' };
       }
 
-      return true;
+      return { complete: true, success: true, reason: 'complete' };
     }
   }
 }

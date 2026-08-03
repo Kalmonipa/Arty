@@ -1,5 +1,5 @@
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import {
@@ -8,7 +8,7 @@ import {
   getBankItems,
   purchaseBankExpansion,
 } from '../api_calls/Bank.js';
-import { getMaps } from '../api_calls/Maps.js';
+import { ObjectiveResult } from '../types/ObjectiveData.js';
 
 export class ExpandBankObjective extends Objective {
   constructor(character: Character) {
@@ -18,28 +18,28 @@ export class ExpandBankObjective extends Objective {
     this.jobFlavour = 'ExpandBank';
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
    * @description Calculates whether we should expand the bank and also if we are able too
    * Purchases a bank expansion if the requirements are met
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     const maxBankFullness = 90;
     const targetPercentageLeftoverCash = 25;
 
     const currentBankFullness = await getBankItems();
     if (currentBankFullness instanceof ApiError) {
       await this.character.handleErrors(currentBankFullness);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     const bankDetails = await getBankDetails();
     if (bankDetails instanceof ApiError) {
       await this.character.handleErrors(bankDetails);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     // Check if the bank is >90% full
@@ -49,7 +49,7 @@ export class ExpandBankObjective extends Objective {
     ) {
       logger.debug(`Bank is less than 90% full so no need to upgrade`);
       // Returning true because technically the job completed
-      return true;
+      return { complete: true, success: true, reason: 'complete' };
     }
 
     // Check if we have enough gold to purchase
@@ -62,14 +62,14 @@ export class ExpandBankObjective extends Objective {
       logger.debug(
         `Purchasing an upgrade would leave us with ${leftoverGold}. Not purchasing`,
       );
-      return true;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     const maps = await this.character.getAvailableBanks();
 
     if (maps.length === 0) {
       logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     const contentLocation = this.character.evaluateClosestMap(maps);
@@ -82,15 +82,15 @@ export class ExpandBankObjective extends Objective {
     );
     if (withdrawGold instanceof ApiError) {
       await this.character.handleErrors(withdrawGold);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
     const upgradeBank = await purchaseBankExpansion(this.character.data);
     if (upgradeBank instanceof ApiError) {
       await this.character.handleErrors(upgradeBank);
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
-    return true;
+    return { complete: true, success: true, reason: 'complete' };
   }
 }

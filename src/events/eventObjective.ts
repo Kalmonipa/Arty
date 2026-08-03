@@ -1,4 +1,4 @@
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { Objective } from '../core/Objective.js';
 import { ApiError } from '../core/Error.js';
 import { getResourceInformation } from '../api_calls/Resources.js';
@@ -15,6 +15,11 @@ import { getItemInformation } from '../api_calls/Items.js';
 import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
 import { MinEquippedUtilities } from '../constants.js';
 import { FishMerchant, GemstoneMerchant, NomadicMerchant } from '../names.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @description Performs the necessary steps to find and execute an event
@@ -51,12 +56,16 @@ export class EventObjective extends Objective {
     }
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async run() {
-    let result: boolean;
+  async run(): Promise<ObjectiveResult> {
+    let result: ObjectiveResult = {
+      complete: false,
+      success: false,
+      reason: 'in_progress',
+    };
     const contentType = this.activeEvent.map.interactions?.content?.type;
 
     // Gather resource
@@ -71,7 +80,7 @@ export class EventObjective extends Objective {
       switch (this.activeEvent.code) {
         case FishMerchant:
           result = await this.sellToFishMerchant();
-          if (!result) {
+          if (!result.success) {
             this.character.recordEventFailure(this.activeEvent.code);
             return result;
           }
@@ -90,7 +99,7 @@ export class EventObjective extends Objective {
           if (this.character.role === 'fisherman') {
             result = await this.sellToNomadicMerchant();
 
-            if (!result) {
+            if (!result.success) {
               this.character.recordEventFailure(this.activeEvent.code);
               return result;
             }
@@ -103,11 +112,11 @@ export class EventObjective extends Objective {
           this.character.lastEventCheckTimestamp = Math.round(
             Date.now() / 1000,
           );
-          return false;
+          return ObjectiveFailed;
       }
     }
 
-    if (result) {
+    if (result.success) {
       this.character.recordEventSuccess(this.activeEvent.code);
     }
     return result;
@@ -118,8 +127,10 @@ export class EventObjective extends Objective {
    * checks to see if we can buy them
    * @param
    */
-  async buyWishlistItemsFromMerchant(skill: GatheringSkill): Promise<boolean> {
-    return true;
+  async buyWishlistItemsFromMerchant(
+    skill: GatheringSkill,
+  ): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
     // const itemsToBuy = []
 
     // for (const item of itemsToBuy) {
@@ -236,7 +247,9 @@ export class EventObjective extends Objective {
   /**
    * @description Function to respond to resource events
    */
-  private async gatherResources(event: ActiveEventSchema): Promise<boolean> {
+  private async gatherResources(
+    event: ActiveEventSchema,
+  ): Promise<ObjectiveResult> {
     let resourceInfo = this.resourceInfo;
 
     if (!resourceInfo) {
@@ -244,7 +257,8 @@ export class EventObjective extends Objective {
         event.map.interactions.content.code,
       );
       if (response instanceof ApiError) {
-        return this.character.handleErrors(response);
+        await this.character.handleErrors(response);
+        return ObjectiveFailed;
       }
       resourceInfo = response;
     }
@@ -256,7 +270,7 @@ export class EventObjective extends Objective {
 
     if (charSkillLevel < resourceInfo.data.level) {
       logger.debug(`Not high enough level for ${event.code}`);
-      return false;
+      return ObjectiveFailed;
     }
 
     const expirationTime = new Date(event.expiration).getTime();
@@ -280,7 +294,8 @@ export class EventObjective extends Objective {
         const response = await actionGather(this.character.data);
 
         if (response instanceof ApiError) {
-          return await this.character.handleErrors(response);
+          await this.character.handleErrors(response);
+          return ObjectiveFailed;
         } else {
           // Ensure response has the expected structure before accessing nested properties
           if (response && response.data && response.data.character) {
@@ -291,11 +306,11 @@ export class EventObjective extends Objective {
               'Invalid response structure from actionGather:',
               response,
             );
-            return false;
+            return ObjectiveFailed;
           }
         }
 
-        if (!(await this.checkStatus())) return false;
+        if (!(await this.checkStatus())) return ObjectiveFailed;
 
         await this.character.saveJobQueue();
       }
@@ -306,10 +321,10 @@ export class EventObjective extends Objective {
    * @description Fight the event mob
    * @todo Determine if the character can fight the mob within this event rather than hardcoding in CheckForActiveEvents
    */
-  private async fightMobs(event: ActiveEventSchema): Promise<boolean> {
+  private async fightMobs(event: ActiveEventSchema): Promise<ObjectiveResult> {
     if (!event.map.interactions.content) {
       logger.warn(`Event ${event.code} has no interactions content`);
-      return false;
+      return ObjectiveFailed;
     }
 
     await this.character.evaluateGear(
@@ -323,7 +338,7 @@ export class EventObjective extends Objective {
       const moveResult = await this.character.move(event.map);
       if (!moveResult) {
         logger.warn(`Move to ${event.code} failed`);
-        return false;
+        return ObjectiveFailed;
       }
 
       // Check amount of food in inventory to use after battles
@@ -335,7 +350,9 @@ export class EventObjective extends Objective {
 
       // Check these after each fight in case we need to top up
       if (this.character.data.utility1_slot_quantity <= MinEquippedUtilities) {
-        if (await this.character.equipUtility('restore', 'utility1')) {
+        if (
+          (await this.character.equipUtility('restore', 'utility1')).success
+        ) {
           // If we moved to the bank we need to move back to the monster location
           await this.character.equipNow(preferredWeapon, 'weapon');
           await this.character.move(event.map);
@@ -345,7 +362,8 @@ export class EventObjective extends Objective {
       const response = await actionFight(this.character.data);
 
       if (response instanceof ApiError) {
-        return await this.character.handleErrors(response);
+        await this.character.handleErrors(response);
+        return ObjectiveFailed;
       } else {
         if (response.data.characters) {
           const charData = response.data.characters.find(
@@ -355,37 +373,37 @@ export class EventObjective extends Objective {
           this.character.data = charData;
         } else {
           logger.error('Fight response missing character data');
-          return false;
+          return ObjectiveFailed;
         }
       }
 
       if (response.data.fight.result === 'loss') {
         this.character.recordEventFailure(event.code);
-        return false;
+        return ObjectiveFailed;
       }
     }
 
     // Top up health pots after the event so that we're prepared for the next one
     await this.character.topUpHealthPots();
 
-    return true;
+    return ObjectiveCompleted;
   }
 
-  private async sellToFishMerchant(): Promise<boolean> {
-    const success = await this.sellToMerchant(FishMerchant);
-    if (success) {
+  private async sellToFishMerchant(): Promise<ObjectiveResult> {
+    const result = await this.sellToMerchant(FishMerchant);
+    if (result.success) {
       this.character.fishMerchantTradeDate = Math.round(Date.now() / 1000);
     }
-    return success;
+    return result;
   }
 
-  private async sellToNomadicMerchant(): Promise<boolean> {
+  private async sellToNomadicMerchant(): Promise<ObjectiveResult> {
     logger.debug(`Selling to Nomadic Merchant`);
-    const success = await this.sellToMerchant(NomadicMerchant);
-    if (success) {
+    const result = await this.sellToMerchant(NomadicMerchant);
+    if (result.success) {
       this.character.nomadicMerchantTradeDate = Math.round(Date.now() / 1000);
     }
-    return success;
+    return result;
   }
 
   /**
@@ -399,7 +417,7 @@ export class EventObjective extends Objective {
    * - having a programmatic list of items from the nomadic merchant
    * - putting these items in the wishlist at the start of the season
    */
-  private async buyFromNomadicMerchant(): Promise<boolean> {
+  private async buyFromNomadicMerchant(): Promise<ObjectiveResult> {
     const itemsToBuy = ['backpack', 'lost_world_map'];
 
     for (const item of itemsToBuy) {
@@ -514,7 +532,7 @@ export class EventObjective extends Objective {
       }
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
@@ -523,7 +541,7 @@ export class EventObjective extends Objective {
    * Items with only a sell_price: keep 5 if equipment type (weapon/helmet/body_armor/ring),
    * keep all if utility or consumable, otherwise sell everything.
    */
-  private async sellToMerchant(npcCode: string): Promise<boolean> {
+  private async sellToMerchant(npcCode: string): Promise<ObjectiveResult> {
     const keepEquipmentTypes = ['weapon', 'helmet', 'body_armor', 'ring'];
     const keepAllTypes = ['utility', 'consumable'];
     const keepQuantity = 5;
@@ -531,7 +549,7 @@ export class EventObjective extends Objective {
     const npcResponse = await getNpc(npcCode);
     if (npcResponse instanceof ApiError) {
       logger.error(`Could not fetch ${npcCode} details`);
-      return false;
+      return ObjectiveFailed;
     }
 
     const sellableItems = (npcResponse.items ?? []).filter(
@@ -612,7 +630,9 @@ export class EventObjective extends Objective {
         );
       }
 
-      if (!(await this.character.withdrawNow(numToWithdraw, npcItem.code))) {
+      if (
+        !(await this.character.withdrawNow(numToWithdraw, npcItem.code)).success
+      ) {
         logger.warn(
           `Withdraw ${numToWithdraw} ${npcItem.code} failed. Moving on`,
         );
@@ -623,6 +643,6 @@ export class EventObjective extends Objective {
     }
 
     await this.depositGoldIntoBank();
-    return true;
+    return ObjectiveCompleted;
   }
 }

@@ -1,6 +1,12 @@
 import { jest } from '@jest/globals';
 import { CraftObjective } from '../../src/core/CraftObjective.js';
-import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveOnHold,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../../src/types/ObjectiveData.js';
 import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
@@ -46,18 +52,18 @@ class SimpleMockCharacter {
   });
 
   withdrawNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Simulate successful withdrawal
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
   depositNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Simulate successful deposit
       this.removeItemFromInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -67,10 +73,10 @@ class SimpleMockCharacter {
       code: string,
       checkBank: boolean,
       deposit: boolean,
-    ): Promise<boolean> => {
+    ): Promise<ObjectiveResult> => {
       // Simulate successful gathering
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -81,10 +87,10 @@ class SimpleMockCharacter {
       checkBank?: boolean,
       includeInventory?: boolean,
       blockOnMissing?: boolean,
-    ): Promise<boolean> => {
+    ): Promise<ObjectiveResult> => {
       // Simulate successful crafting
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -423,7 +429,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(craftObjective.target.quantity).toBe(0);
     });
 
@@ -436,7 +442,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(craftObjective.target.quantity).toBe(3); // 5 - 2 = 3
     });
 
@@ -464,7 +470,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.findMaps).toHaveBeenCalledWith({
         content_code: 'weaponcrafting',
         content_type: 'workshop',
@@ -501,7 +507,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await potionObjective.run();
 
       // Assert — 4 crafts (not 8), each consuming 3 sunflower = 12 total
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(potionObjective.numCraftsPerBatch).toBe(4);
       expect(actionCraft).toHaveBeenCalledTimes(1);
       expect(actionCraft).toHaveBeenCalledWith(
@@ -533,7 +539,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await potionObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionCraft).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'TestCharacter' }),
         { code: 'small_health_potion', quantity: 3 },
@@ -585,7 +591,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Just check that withdrawNow was called at least once
       expect(mockCharacter.withdrawNow).toHaveBeenCalled();
       // Check specific calls - the implementation might call withdrawNow multiple times
@@ -621,20 +627,20 @@ describe('CraftObjective Integration Tests', () => {
           if (code === 'feather') {
             featherInInv += quantity;
           }
-          return true;
+          return ObjectiveCompleted;
         },
       );
 
       mockCharacter.craftNow.mockImplementation(async (quantity: number) => {
         ironBarInInv += quantity;
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         20,
         'iron_bar',
@@ -702,7 +708,7 @@ describe('CraftObjective Integration Tests', () => {
           if (code === 'iron_bar') {
             ironBarInInv += quantity;
           }
-          return true;
+          return ObjectiveCompleted;
         },
       );
 
@@ -712,7 +718,7 @@ describe('CraftObjective Integration Tests', () => {
           if (code === 'feather') {
             featherInInv += quantity;
           }
-          return true;
+          return ObjectiveCompleted;
         },
       );
 
@@ -720,7 +726,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         20,
         'iron_bar',
@@ -794,7 +800,7 @@ describe('CraftObjective Integration Tests', () => {
           } else if (code === 'feather') {
             featherInInv += quantity;
           }
-          return true;
+          return ObjectiveCompleted;
         },
       );
 
@@ -802,7 +808,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.gatherNow).toHaveBeenCalledWith(
         15,
         'cowhide',
@@ -843,7 +849,7 @@ describe('CraftObjective Integration Tests', () => {
 
       const result = await craftObjective.run();
 
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionCraft).toHaveBeenCalledWith(expect.anything(), {
         code: 'iron_sword',
         quantity: 2,
@@ -859,7 +865,7 @@ describe('CraftObjective Integration Tests', () => {
 
       const result = await craftObjective.run();
 
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(actionCraft).not.toHaveBeenCalled();
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_sword');
     });
@@ -871,7 +877,7 @@ describe('CraftObjective Integration Tests', () => {
 
       const result = await craftObjective.run();
 
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
     });
   });
@@ -902,7 +908,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(craftObjective.numBatches).toBe(1);
       expect(craftObjective.numCraftsPerBatch).toBe(5);
     });
@@ -937,7 +943,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await reasonableCraftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(reasonableCraftObjective.numBatches).toBeGreaterThanOrEqual(1);
       expect(reasonableCraftObjective.numCraftsPerBatch).toBeGreaterThan(0);
     });
@@ -953,7 +959,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveOnHold);
       expect(addToWishlist).toHaveBeenCalledWith({
         itemCode: 'iron_sword',
         quantity: 5,
@@ -994,7 +1000,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(addToWishlist).not.toHaveBeenCalled();
       expect(actionCraft).toHaveBeenCalled();
     });
@@ -1035,7 +1041,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await cookedObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(addToWishlist).not.toHaveBeenCalled();
       expect(actionCraft).toHaveBeenCalled();
     });
@@ -1087,7 +1093,7 @@ describe('CraftObjective Integration Tests', () => {
       });
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
-      mockCharacter.gatherNow.mockResolvedValue(false); // can't gather either ore
+      mockCharacter.gatherNow.mockResolvedValue(ObjectiveFailed); // can't gather either ore
       (addToWishlist as jest.MockedFunction<typeof addToWishlist>)
         .mockResolvedValueOnce(101)
         .mockResolvedValueOnce(102);
@@ -1104,7 +1110,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert — both ingredients requested (didn't bail on the first), job fails
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(addToWishlist).toHaveBeenCalledTimes(2);
       expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
         101,
@@ -1131,7 +1137,7 @@ describe('CraftObjective Integration Tests', () => {
       });
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
-      mockCharacter.gatherNow.mockResolvedValue(false);
+      mockCharacter.gatherNow.mockResolvedValue(ObjectiveFailed);
 
       const objective = new CraftObjective(mockCharacter as any, {
         code: 'custom_item',
@@ -1142,7 +1148,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert — bails on the first missing ingredient, no wishlist
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(addToWishlist).not.toHaveBeenCalled();
       expect(mockCharacter.addBlockingWishlistRequest).not.toHaveBeenCalled();
     });
@@ -1222,7 +1228,7 @@ describe('CraftObjective Integration Tests', () => {
 
       // Assert — one row for the 10 steel_bar actually missing, and the job
       // still fails so it gets parked until that request is fulfilled
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(addToWishlist).toHaveBeenCalledTimes(1);
       expect(addToWishlist).toHaveBeenCalledWith({
         itemCode: 'steel_bar',
@@ -1257,7 +1263,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert — must not craft at the wrong tile (which would yield a misleading 598)
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(actionCraft).not.toHaveBeenCalled();
     });
 
@@ -1291,7 +1297,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
       // Just check that actionCraft was called at least once
       expect(actionCraft).toHaveBeenCalled();
@@ -1330,7 +1336,7 @@ describe('CraftObjective Integration Tests', () => {
       // Note: The current implementation has a bug where the retry logic doesn't work properly
       // for actionCraft errors because the continue statement is inside the batch loop, not the outer loop
       // This test reflects the current (incorrect) behavior
-      expect(result).toBe(true); // Currently returns true due to the bug
+      expect(result.success).toBe(true); // Currently returns true due to the bug
       expect(actionCraft).toHaveBeenCalled();
     });
 
@@ -1346,7 +1352,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
     });
 
@@ -1375,7 +1381,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(false); // Should return false but log error
+      expect(result.success).toBe(false); // Should return false but log error
       expect(actionCraft).not.toHaveBeenCalled();
     });
 
@@ -1411,7 +1417,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should still return true even if character data is missing
     });
   });
@@ -1444,7 +1450,7 @@ describe('CraftObjective Integration Tests', () => {
       // Assert
       // Note: The current implementation has a bug where cancellation doesn't work properly
       // in all scenarios. This test reflects the current (incorrect) behavior
-      expect(result).toBe(true); // Currently returns true due to the bug
+      expect(result.success).toBe(true); // Currently returns true due to the bug
       // The cancellation check happens after actionCraft is called, so it still gets called
       expect(actionCraft).toHaveBeenCalled();
     });
@@ -1504,7 +1510,7 @@ describe('CraftObjective Integration Tests', () => {
       const result = await craftObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.evaluateClosestMap).toHaveBeenCalledWith(
         customWorkshopMap.data,
       );

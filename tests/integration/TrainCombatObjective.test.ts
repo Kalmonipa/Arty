@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { TrainCombatObjective } from '../../src/core/TrainCombatObjective.js';
+import { ObjectiveCancelled } from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
@@ -194,7 +195,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should return true immediately if already at target level', async () => {
@@ -206,7 +207,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(true); // Should return true when already at target level
+      expect(result.success).toBe(true); // Should return true when already at target level
       expect(getAllMonsterInformation).not.toHaveBeenCalled(); // Should return early without calling API
       expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
@@ -229,7 +230,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(getAllMonsterInformation).toHaveBeenCalledWith({
         max_level: 10,
         min_level: 0,
@@ -273,7 +274,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should simulate fights with monsters in descending order (highest level first)
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
         expect.any(Array),
@@ -291,7 +292,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
   });
@@ -323,7 +324,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
       expect(getAllMonsterInformation).toHaveBeenCalledTimes(1);
     });
@@ -345,7 +346,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
     });
 
@@ -371,7 +372,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
     });
 
     it('should handle fight failures and retry', async () => {
@@ -386,7 +387,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(false); // Returns false due to fight failure
+      expect(result.success).toBe(false); // Returns false due to fight failure
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(6); // Called maxRetries times (2 mobs * 3 retries)
     });
 
@@ -400,7 +401,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(6); // Called maxRetries times (2 mobs * 3 retries)
     });
   });
@@ -419,7 +420,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
 
@@ -483,7 +484,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
@@ -508,7 +509,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
         expect.any(Array),
         expect.any(String),
@@ -538,7 +539,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(true); // Should succeed after finding suitable mob
+      expect(result.success).toBe(true); // Should succeed after finding suitable mob
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledTimes(2);
       expect(mockCharacter.simulateFightNow).toHaveBeenNthCalledWith(
         1,
@@ -614,7 +615,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const result = await trainCombatObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
         expect.any(Array),

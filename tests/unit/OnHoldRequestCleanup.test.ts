@@ -5,7 +5,7 @@ jest.mock('../../src/wishlist/functions.js', () => ({
   addToWishlist: jest.fn(async () => null),
 }));
 
-import { Character } from '../../src/character/characterClass.js';
+import { Character } from '../../src/character/CharacterClass.js';
 import { deleteWishlistRequest } from '../../src/wishlist/functions.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import {

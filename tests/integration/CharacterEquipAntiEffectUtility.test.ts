@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
-import { Character } from '../../src/character/characterClass.js';
+import { ObjectiveFailed } from '../../src/types/ObjectiveData.js';
+import { Character } from '../../src/character/CharacterClass.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import {
@@ -7,6 +8,10 @@ import {
   ItemSchema,
   SimpleEffectSchema,
 } from '../../src/types/types.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 
 // Mock the necessary modules
 jest.mock('../../src/api_calls/Items', () => ({
@@ -107,13 +112,13 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
     }) as jest.MockedFunction<(code: string) => Promise<number>>;
 
     character.withdrawNow = jest.fn(
-      async (quantity: number, code: string): Promise<boolean> => {
+      async (quantity: number, code: string): Promise<ObjectiveResult> => {
         // Simulate adding item to inventory
         addItemToInventory(code, quantity);
-        return true;
+        return ObjectiveCompleted;
       },
     ) as jest.MockedFunction<
-      (quantity: number, code: string) => Promise<boolean>
+      (quantity: number, code: string) => Promise<ObjectiveResult>
     >;
 
     character.equipNow = jest.fn(
@@ -121,26 +126,30 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         code: string,
         slot: string,
         quantity?: number,
-      ): Promise<boolean> => {
+      ): Promise<ObjectiveResult> => {
         if (slot === 'utility2') {
           character.data.utility2_slot = code;
           character.data.utility2_slot_quantity =
             (character.data.utility2_slot_quantity || 0) + (quantity || 1);
         }
-        return true;
+        return ObjectiveCompleted;
       },
     ) as jest.MockedFunction<
-      (code: string, slot: string, quantity?: number) => Promise<boolean>
+      (
+        code: string,
+        slot: string,
+        quantity?: number,
+      ) => Promise<ObjectiveResult>
     >;
 
     character.craftNow = jest.fn(
-      async (quantity: number, code: string): Promise<boolean> => {
+      async (quantity: number, code: string): Promise<ObjectiveResult> => {
         // Simulate crafting by adding to inventory
         addItemToInventory(code, quantity);
-        return true;
+        return ObjectiveCompleted;
       },
     ) as jest.MockedFunction<
-      (quantity: number, code: string) => Promise<boolean>
+      (quantity: number, code: string) => Promise<ObjectiveResult>
     >;
 
     character.getCharacterLevel = jest.fn(
@@ -191,7 +200,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         'utility2',
         100,
       );
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should select the appropriate antidote based on mob effect value', async () => {
@@ -249,7 +258,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         'utility2',
         100,
       );
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should skip utilities above character level', async () => {
@@ -310,7 +319,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         'weak_antidote',
       );
       expect(character.withdrawNow).toHaveBeenCalled();
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should withdraw partial amount from bank when needed', async () => {
@@ -338,7 +347,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       expect(character.withdrawNow).toHaveBeenCalled();
       const withdrawCall = (character.withdrawNow as jest.Mock).mock.calls[0];
       expect(withdrawCall[0]).toBeLessThanOrEqual(50); // Should not withdraw more than available
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
   });
 
@@ -370,7 +379,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         'weak_antidote',
       );
       expect(character.craftNow).toHaveBeenCalledWith(100, 'weak_antidote');
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should not attempt to craft if alchemy level is too low', async () => {
@@ -520,7 +529,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         'weak_antidote',
       );
       expect(character.withdrawNow).toHaveBeenCalled();
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should return false when crafting fails', async () => {
@@ -534,7 +543,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       character.data.alchemy_level = 1; // Can craft weak_antidote (level 1)
       (character.checkQuantityOfItemInInv as jest.Mock).mockReturnValue(0);
       (character.checkQuantityOfItemInBank as any).mockResolvedValue(0);
-      (character.craftNow as any).mockResolvedValue(false); // Crafting fails
+      (character.craftNow as any).mockResolvedValue(ObjectiveFailed); // Crafting fails
 
       // Act
       const result = await character.equipAntiEffectUtility(
@@ -550,7 +559,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         'weak_antidote',
       );
       expect(character.craftNow).toHaveBeenCalledWith(100, 'weak_antidote');
-      expect(result).toBe(false); // Crafting failed
+      expect(result.success).toBe(false); // Crafting failed
     });
   });
 
@@ -607,7 +616,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         'utility2',
         50, // Should equip the needed amount (50)
       );
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
   });
 });

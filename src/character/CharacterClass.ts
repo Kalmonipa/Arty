@@ -66,6 +66,9 @@ import {
   OnHoldJobInfo,
   SimpleObjectiveInfo,
   WishlistRequestRef,
+  ObjectiveResult as ObjectiveResult,
+  ObjectiveFailed,
+  ObjectiveCompleted,
 } from '../types/ObjectiveData.js';
 import { FightObjective } from '../fights/FightObjective.js';
 import { EquipObjective } from '../core/EquipObjective.js';
@@ -957,7 +960,7 @@ export class Character {
     prepend: boolean = true,
     trackInQueue: boolean = true,
     parentId?: string,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     // Set the parentId if provided
     if (parentId) {
       obj.parentId = parentId;
@@ -1306,20 +1309,20 @@ export class Character {
   /**
    * @description Checks if there are any active jobs and creates an EventObjective to do it
    */
-  async checkForActiveEvents(): Promise<boolean> {
+  async checkForActiveEvents(): Promise<ObjectiveResult> {
     const currentTimestamp = Math.round(Date.now() / 1000);
     if (this.lastEventCheckTimestamp + 300 >= currentTimestamp) {
       logger.debug(
         `Last event check (${this.lastEventCheckTimestamp}) was within the last 300 seconds (${currentTimestamp}). Not checking again`,
       );
-      return false;
+      return ObjectiveFailed;
     }
 
     const activeEventsResponse = await getActiveEvents({});
     if (activeEventsResponse instanceof ApiError) {
       await this.handleErrors(activeEventsResponse);
       this.lastEventCheckTimestamp = currentTimestamp;
-      return false;
+      return ObjectiveFailed;
     }
 
     // This for loop avoids creating an infinite loop
@@ -1346,11 +1349,11 @@ export class Character {
             await this.move(job.previousLocation);
           }
 
-          return false;
+          return ObjectiveFailed;
         }
 
         this.lastEventCheckTimestamp = currentTimestamp;
-        return false;
+        return ObjectiveFailed;
       }
     }
 
@@ -1431,7 +1434,7 @@ export class Character {
     }
 
     this.lastEventCheckTimestamp = currentTimestamp;
-    return true;
+    return ObjectiveCompleted;
   }
 
   recordEventFailure(eventCode: string): void {
@@ -1463,7 +1466,7 @@ export class Character {
    * utility 1 is reserved for health potions
    * @returns
    */
-  async topUpHealthPots(potionToEquip?: string): Promise<boolean> {
+  async topUpHealthPots(potionToEquip?: string): Promise<ObjectiveResult> {
     if (potionToEquip) {
       const numToEquip =
         MaxEquippedUtilities - this.data.utility1_slot_quantity;
@@ -2007,7 +2010,7 @@ export class Character {
   async equipUtility(
     utilityType: UtilityEffects,
     slot: ItemSlot,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const utility = this.utilitiesMap[utilityType];
     const charLevel = this.getCharacterLevel(this.data);
     const minPotionLevel = utilityType === 'restore' ? charLevel - 20 : 0;
@@ -2027,8 +2030,7 @@ export class Character {
         logger.debug(`Attempting to equip ${potion.name}`);
         if (numInInv >= numNeeded) {
           logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-          await this.equipNow(potion.code, slot, numNeeded);
-          return true;
+          return await this.equipNow(potion.code, slot, numNeeded);
         } else if (numInInv > 0 && numInInv < numNeeded) {
           logger.debug(
             `Carrying ${numInInv} in inv. Equipping them and checking bank`,
@@ -2040,15 +2042,14 @@ export class Character {
         const numInBank = await this.checkQuantityOfItemInBank(potion.code);
         if (numInBank > 0) {
           await this.withdrawNow(Math.min(numInBank, numNeeded), potion.code);
-          await this.equipNow(
+          return await this.equipNow(
             potion.code,
             slot,
             Math.min(numInBank, numNeeded),
           );
-          return true;
         } else if (this.role === 'healer' || this.role === 'alchemist') {
           logger.debug(`Can't find any ${potion.name}. Crafting`);
-          if (await this.craftNow(numNeeded, potion.code)) {
+          if ((await this.craftNow(numNeeded, potion.code)).success) {
             return await this.equipNow(potion.code, slot, numNeeded);
           } else {
             logger.debug(`Can't craft ${potion.name}. Trying next best option`);
@@ -2071,7 +2072,7 @@ export class Character {
   async equipAntiEffectUtility(
     utilityType: UtilityEffects,
     mobEffect: SimpleEffectSchema,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const utility = this.utilitiesMap[utilityType];
 
     // Find the best potion for the attack
@@ -2098,8 +2099,7 @@ export class Character {
       logger.debug(`Attempting to equip ${utility[ind].name}`);
       if (numInInv >= numNeeded) {
         logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-        await this.equipNow(utility[ind].code, 'utility2', numNeeded);
-        return true;
+        return await this.equipNow(utility[ind].code, 'utility2', numNeeded);
       } else if (numInInv > 0 && numInInv < numNeeded) {
         logger.debug(
           `Carrying ${numInInv} in inv. Equipping them and checking bank`,
@@ -2114,18 +2114,17 @@ export class Character {
           Math.min(numInBank, numNeeded),
           utility[ind].code,
         );
-        await this.equipNow(
+        return await this.equipNow(
           utility[ind].code,
           'utility2',
           Math.min(numInBank, numNeeded),
         );
-        return true;
       } else {
         if (
           utility[ind].level <= this.getCharacterLevel(this.data, 'alchemy')
         ) {
           logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
-          if (await this.craftNow(numNeeded, utility[ind].code)) {
+          if ((await this.craftNow(numNeeded, utility[ind].code)).success) {
             return await this.equipNow(
               utility[ind].code,
               'utility2',
@@ -2133,7 +2132,7 @@ export class Character {
             );
           } else {
             logger.debug(`Can't craft ${utility[ind].name}`);
-            return false;
+            return ObjectiveFailed;
           }
         } else {
           logger.debug(`Can't find any ${utility[ind].name}`);
@@ -2263,14 +2262,14 @@ export class Character {
     }
   }
 
-  async completeTask(taskType: TaskType): Promise<boolean> {
+  async completeTask(taskType: TaskType): Promise<ObjectiveResult> {
     const maps = this.findMaps({
       content_code: taskType,
       content_type: 'tasks_master',
     });
     if (maps.length === 0) {
       logger.error(`Cannot find the tasks master`);
-      return false;
+      return ObjectiveFailed;
     }
     const tasksLocation = this.evaluateClosestMap(maps);
     await this.move(tasksLocation);
@@ -2278,13 +2277,16 @@ export class Character {
     if (response instanceof ApiError && response.error.code === 497) {
       // Inventory full — deposit items to make space for the task reward, then retry
       const shouldRetry = await this.handleErrors(response);
-      if (!shouldRetry) return false;
+      if (!shouldRetry) return ObjectiveFailed;
       await this.move(tasksLocation);
       response = await actionCompleteTask(this.data);
     }
-    if (response instanceof ApiError) return this.handleErrors(response);
+    if (response instanceof ApiError) {
+      this.handleErrors(response);
+      return ObjectiveFailed;
+    }
     if (response.data.character) this.data = response.data.character;
-    return true;
+    return ObjectiveCompleted;
   }
 
   /********
@@ -3078,7 +3080,7 @@ export class Character {
     checkBank?: boolean,
     includeInventory?: boolean,
     blockOnMissing?: boolean,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const craftJob = new CraftObjective(
       this,
       {
@@ -3131,7 +3133,10 @@ export class Character {
    * @description deposit the specified items into the bank
    * @todo Should be able to provide a list of items to deposit instead of depositing one type at a time
    */
-  async depositNow(quantity: number, itemCode: string): Promise<boolean> {
+  async depositNow(
+    quantity: number,
+    itemCode: string,
+  ): Promise<ObjectiveResult> {
     const depositJob = new DepositObjective(this, {
       code: itemCode,
       quantity: quantity,
@@ -3189,7 +3194,7 @@ export class Character {
     itemName: string,
     itemSlot: ItemSlot,
     quantity?: number,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const equipJob = new EquipObjective(this, itemName, itemSlot, quantity);
     return await this.executeJobNow(
       equipJob,
@@ -3209,7 +3214,10 @@ export class Character {
   /**
    * @description equip the item from the slot specified
    */
-  async unequipNow(itemSlot: ItemSlot, quantity?: number): Promise<boolean> {
+  async unequipNow(
+    itemSlot: ItemSlot,
+    quantity?: number,
+  ): Promise<ObjectiveResult> {
     const unequipJob = new UnequipObjective(this, itemSlot, quantity);
     return await this.executeJobNow(
       unequipJob,
@@ -3240,7 +3248,7 @@ export class Character {
     code: string,
     participants?: string[],
     runFightSim?: boolean,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const fightJob = new FightObjective(
       this,
       {
@@ -3293,7 +3301,7 @@ export class Character {
     code: string,
     checkBank?: boolean,
     includeInventory?: boolean,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const gatherJob = new GatherObjective(
       this,
       {
@@ -3471,7 +3479,10 @@ export class Character {
   /**
    * @description withdraw the specified items from the bank
    */
-  async withdrawNow(quantity: number, itemCode: string): Promise<boolean> {
+  async withdrawNow(
+    quantity: number,
+    itemCode: string,
+  ): Promise<ObjectiveResult> {
     const withdrawJob = new WithdrawObjective(this, {
       code: itemCode,
       quantity: quantity,
@@ -3682,7 +3693,8 @@ export class Character {
         if (this.getEquippedSlot(condition.code)) return true;
         const onHand = this.checkQuantityOfItemInInv(condition.code);
         if (onHand >= required) return true;
-        return await this.withdrawNow(required - onHand, condition.code);
+        return (await this.withdrawNow(required - onHand, condition.code))
+          .success;
       }
 
       case ConditionOperator.cost: {
@@ -3691,7 +3703,9 @@ export class Character {
             ? this.data.gold
             : this.checkQuantityOfItemInInv(condition.code);
         if (onHand >= condition.value) return true;
-        return await this.withdrawNow(condition.value - onHand, condition.code);
+        return (
+          await this.withdrawNow(condition.value - onHand, condition.code)
+        ).success;
       }
 
       default:
@@ -3723,7 +3737,10 @@ export class Character {
           logger.info(
             `Acquiring ${required}x ${condition.code} to pass transition at (${transitionPoint.x}, ${transitionPoint.y})`,
           );
-          if (!(await this.gatherNow(required, condition.code, true, true))) {
+          if (
+            !(await this.gatherNow(required, condition.code, true, true))
+              .success
+          ) {
             logger.warn(
               `Could not acquire ${condition.code}; abandoning route`,
             );
@@ -3794,7 +3811,8 @@ export class Character {
         logger.error(`Invalid payload [Code: ${response.error.code}]`);
         return false;
       case 462:
-        return this.executeJobNow(new ExpandBankObjective(this));
+        return (await this.executeJobNow(new ExpandBankObjective(this)))
+          .success;
       case 483: // The character does not have enough HP to uneqip this item
         return await this.recoverHealth();
       case 484: // The character cannot equip more than 100 utilities in the same slot.

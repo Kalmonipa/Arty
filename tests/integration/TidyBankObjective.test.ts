@@ -78,7 +78,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
 
     const result = await makeObjective('gearcrafter').run();
 
-    expect(result).toBe(false);
+    expect(result.success).toBe(false);
     expect(character.recycleItemNow).not.toHaveBeenCalled();
   });
 
@@ -205,7 +205,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
 
         const result = await makeObjective(role).run();
 
-        expect(result).toBe(true);
+        expect(result.success).toBe(true);
         expect(mockGetAllItemInformation).toHaveBeenCalledTimes(1);
       },
     );

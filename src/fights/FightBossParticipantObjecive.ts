@@ -1,9 +1,14 @@
 import { actionFight } from '../api_calls/Actions.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { MinEquippedUtilities } from '../constants.js';
 
@@ -29,7 +34,7 @@ export class FightBossParticipantObjective extends Objective {
     this.participants = participants;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
     // Get all food items to deposit
     const foodItems = this.character.findFoodInInventory();
     const foodCodes = foodItems.map((food) => food.code);
@@ -41,107 +46,17 @@ export class FightBossParticipantObjective extends Objective {
 
     const mobInfo = await getMonsterInformation(this.target.code);
     if (mobInfo instanceof ApiError) {
-      return this.character.handleErrors(mobInfo);
+      await this.character.handleErrors(mobInfo);
+      return ObjectiveFailed;
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
    * @description Fight the requested amount of mobs
    */
-  async run(): Promise<boolean> {
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
-
-      logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
-
-      logger.info(`Finding location of ${this.target.code}`);
-
-      const maps = this.character.findMaps({ content_code: this.target.code });
-      if (maps.length === 0) {
-        logger.error(`Cannot find any maps for ${this.target.code}`);
-        return false;
-      }
-
-      const contentLocation = this.character.evaluateClosestMap(maps);
-
-      await this.character.move(contentLocation);
-
-      for (
-        this.progress;
-        this.progress < this.target.quantity;
-        this.progress++
-      ) {
-        if (!(await this.checkStatus())) return false;
-
-        logger.info(
-          `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
-        );
-
-        // Get all food items to deposit
-        const foodItems = this.character.findFoodInInventory();
-        const foodCodes = foodItems.map((food) => food.code);
-        const itemsToKeep = [...foodCodes];
-
-        await this.character.evaluateDepositItemsInBank(
-          itemsToKeep,
-          contentLocation,
-        );
-
-        await this.character.recoverHealth();
-
-        // Check these after each fight in case we need to top up
-        if (
-          this.character.data.utility1_slot_quantity <= MinEquippedUtilities
-        ) {
-          if (await this.character.equipUtility('restore', 'utility1')) {
-            // If we moved to the bank we need to move back to the monster location
-            await this.character.move(contentLocation);
-          }
-        }
-
-        const response = await actionFight(
-          this.character.data,
-          this.participants,
-        );
-
-        if (response instanceof ApiError) {
-          const shouldRetry = await this.character.handleErrors(response);
-
-          if (!shouldRetry || attempt === this.maxRetries) {
-            logger.error(`Fight failed after ${attempt} attempts`);
-            return false;
-          }
-          this.progress--;
-          continue;
-        } else {
-          if (response.data.characters) {
-            const charData = response.data.characters.find(
-              (char) => char.name === this.character.data.name,
-            );
-
-            this.character.data = charData;
-          } else {
-            logger.error('Fight response missing character data');
-            return false;
-          }
-
-          await this.character.recoverHealth();
-
-          // Check amount of food in inventory to use after battles
-          if (!(await this.character.checkFoodLevels())) {
-            await this.character.topUpFood(contentLocation);
-          }
-        }
-
-        await this.character.saveJobQueue();
-      }
-
-      logger.debug(
-        `Successfully fought ${this.target.quantity} ${this.target.code}`,
-      );
-      return true;
-    }
+  async run(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 }

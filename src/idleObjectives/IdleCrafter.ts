@@ -19,7 +19,7 @@ import {
   Skill,
 } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
@@ -35,6 +35,12 @@ import {
 } from './idleUtils.js';
 import { actionTasksExchange } from '../api_calls/Tasks.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class IdleCrafterObjective extends Objective {
   role: Role;
@@ -49,50 +55,50 @@ export class IdleCrafterObjective extends Objective {
     this.metricLabel = role;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
    * @description Goes through the list of tasks and does some clean up stuff
    * The type of task varies depending on the role of the character
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     let startTime = Date.now();
 
     // ToDo: Maybe we don't need this if we enable gambling
     await completeTasksFarmerAchievement(this.character, this.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.gambleExcessTaskCoins();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.character.tidyUpBank(this.character.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.depositGoldIntoBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.claimPendingItems();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkAndBuyArtifacts(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkOnHoldQueue(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWishlistToFulfill(this.character, 'fight', this.objectiveId);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWithinLevelRange(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.craftMissingTools();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.craftMissingWeapons();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // If crafter, train weapon gear and jewelrycrafting
     if (this.role === 'crafter') {
@@ -113,19 +119,19 @@ export class IdleCrafterObjective extends Objective {
         if (!this.checkForJobInOnHoldQueue(Weaponcrafting)) {
           await this.trainSkill(Weaponcrafting);
         }
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
       }
       if (gearLevel < combatLevel) {
         if (!this.checkForJobInOnHoldQueue(Gearcrafting)) {
           await this.trainSkill(Gearcrafting);
         }
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
       }
       if (jewelryLevel < combatLevel) {
         if (!this.checkForJobInOnHoldQueue(Jewelrycrafting)) {
           await this.trainSkill(Jewelrycrafting);
         }
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
       }
     } else {
       // Get the relevant skill level based on which role the char is
@@ -160,7 +166,7 @@ export class IdleCrafterObjective extends Objective {
 
       if (relevantSkillLevel < combatLevel) {
         await this.trainSkill(relevantSkillToTrain);
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
       }
 
       // We only want to do monster tasks if our crafter skills are at or above our combat level
@@ -168,7 +174,7 @@ export class IdleCrafterObjective extends Objective {
         if (await this.isLowOnTaskCoins()) {
           await doMonsterTask(this.character, this, 1);
         }
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
       }
     }
 
@@ -176,13 +182,13 @@ export class IdleCrafterObjective extends Objective {
       logger.info(
         `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else if (await this.isLowOnTaskCoins()) {
       // If the idle job hasn't really triggered any other jobs, we want to do a monster task
       await doMonsterTask(this.character, this, 1);
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
@@ -302,7 +308,7 @@ export class IdleCrafterObjective extends Objective {
    * Ensures that there are the latest available tools in the bank. Any missing ones get crafted
    * @returns true if successful
    */
-  private async craftMissingTools(): Promise<boolean> {
+  private async craftMissingTools(): Promise<ObjectiveResult> {
     // Character level minus this is the minimum level of tools to craft
     const levelRange = 9;
     const skill = Weaponcrafting;
@@ -327,17 +333,18 @@ export class IdleCrafterObjective extends Objective {
 
     const craftableItemsListData = await getAllItemInformation(payload);
     if (craftableItemsListData instanceof ApiError) {
-      return await this.character.handleErrors(craftableItemsListData);
+      await this.character.handleErrors(craftableItemsListData);
+      return ObjectiveFailed;
     }
 
     const craftableItemsList = craftableItemsListData.data;
     if (craftableItemsList.length === 0) {
       logger.error(`No craftable items found. This shouldn't happen?`);
-      return false;
+      return ObjectiveFailed;
     }
 
     for (const craftableItem of craftableItemsList) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       if (craftableItem.subtype !== 'tool') {
         logger.debug(
@@ -373,13 +380,13 @@ export class IdleCrafterObjective extends Objective {
           )
         ) {
           // Only deposit if the craft was successful
-          await this.character.depositNow(1, craftableItem.code);
+          return await this.character.depositNow(1, craftableItem.code);
         }
       }
     }
   }
 
-  private async craftMissingWeapons(): Promise<boolean> {
+  private async craftMissingWeapons(): Promise<ObjectiveResult> {
     const levelRange = 9;
     const skill = Weaponcrafting;
     const allBankItems = await this.character.getAllBankItems();
@@ -397,17 +404,18 @@ export class IdleCrafterObjective extends Objective {
 
     const craftableItemsListData = await getAllItemInformation(payload);
     if (craftableItemsListData instanceof ApiError) {
-      return await this.character.handleErrors(craftableItemsListData);
+      await this.character.handleErrors(craftableItemsListData);
+      return ObjectiveFailed;
     }
 
     const craftableItemsList = craftableItemsListData.data;
     if (craftableItemsList.length === 0) {
       logger.error(`No craftable items found. This shouldn't happen?`);
-      return false;
+      return ObjectiveFailed;
     }
 
     for (const craftableItem of craftableItemsList) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       if (craftableItem.subtype === 'tool') {
         logger.debug(
@@ -442,7 +450,7 @@ export class IdleCrafterObjective extends Objective {
           )
         ) {
           // Only deposit if the craft was successful
-          await this.character.depositNow(1, craftableItem.code);
+          return await this.character.depositNow(1, craftableItem.code);
         }
       }
     }
@@ -487,7 +495,7 @@ export class IdleCrafterObjective extends Objective {
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainSkill(skill?: Skill): Promise<boolean> {
+  private async trainSkill(skill?: Skill): Promise<ObjectiveResult> {
     let job: Objective;
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
@@ -506,7 +514,7 @@ export class IdleCrafterObjective extends Objective {
       logger.info(
         `Max ${skill || 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else if (
       skillLevel >=
       this.character.getCharacterLevel(this.character.data) + maxLevelGap
@@ -514,7 +522,7 @@ export class IdleCrafterObjective extends Objective {
       logger.info(
         `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel(this.character.data)}). Not training ${skill}`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
@@ -525,7 +533,7 @@ export class IdleCrafterObjective extends Objective {
       logger.info(
         `${skill} level (${this.character.getCharacterLevel(this.character.data, skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel(this.character.data)}. Not training`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     if (!skill) {

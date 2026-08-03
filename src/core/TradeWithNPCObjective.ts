@@ -6,7 +6,7 @@ import {
 import { TradeType } from '../types/NPCData.js';
 import { NPCItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
 import { getAllMaps } from '../api_calls/Maps.js';
@@ -14,6 +14,12 @@ import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { Objective } from './Objective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
 import { TasksCoin } from '../names.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @description Objective to buy or sell goods from/to a trader. Automatically finds
@@ -43,15 +49,16 @@ export class TradeObjective extends Objective {
     this.quantity = quantity;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     const npcItems = await getAllNpcItems({ code: this.itemCode });
 
     if (npcItems instanceof ApiError) {
-      return await this.character.handleErrors(npcItems);
+      await this.character.handleErrors(npcItems);
+      return ObjectiveFailed;
     } else {
       if (this.tradeType === 'buy') {
         return await this.buyFromNpc(npcItems.data, {
@@ -66,7 +73,7 @@ export class TradeObjective extends Objective {
       }
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
@@ -76,13 +83,13 @@ export class TradeObjective extends Objective {
   async buyFromNpc(
     npcItems: NPCItemSchema[],
     items: SimpleItemSchema,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     // ToDo: make this iterate through all the NPCs in the list. Some might be better than others
     this.currency = npcItems[0].currency;
     const targetNpc = npcItems[0].npc;
     const buyPrice = npcItems[0].buy_price;
 
-    if (!(await this.checkStatus())) return false;
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     // Calculate crystals needed
     let currencyNeeded = this.quantity * buyPrice;
@@ -123,7 +130,7 @@ export class TradeObjective extends Objective {
               currencyNeeded &&
             taskAttempts < maxTaskAttempts
           ) {
-            if (!(await this.checkStatus())) return false;
+            if (!(await this.checkStatus())) return ObjectiveCancelled;
             taskAttempts++;
             if (
               this.character.role === 'weaponcrafter' ||
@@ -151,7 +158,7 @@ export class TradeObjective extends Objective {
             logger.warn(
               `Reached maximum task attempts (${maxTaskAttempts}) for ${this.currency}`,
             );
-            return false;
+            return ObjectiveFailed;
           }
         } else {
           logger.info(`Attempting to gather ${this.currency}`);
@@ -179,7 +186,7 @@ export class TradeObjective extends Objective {
           logger.warn(
             `Our collected ${this.currency} have gone missing. Only ${numInBank} in the bank`,
           );
-          return false;
+          return ObjectiveFailed;
         }
         logger.info(
           `Only ${numCurrInInv} in inventory. Withdrawing ${currencyNeeded - numCurrInInv} ${this.currency} from bank`,
@@ -191,41 +198,46 @@ export class TradeObjective extends Objective {
       }
     }
 
-    if (!(await this.findNpc(targetNpc))) {
-      return false;
+    if (!(await this.findNpc(targetNpc)).success) {
+      return ObjectiveFailed;
     }
 
     const buyResponse = await actionBuyItem(this.character.data, items);
     if (buyResponse instanceof ApiError) {
-      return this.character.handleErrors(buyResponse);
+      await this.character.handleErrors(buyResponse);
+      return ObjectiveFailed;
     } else {
       this.character.data = buyResponse.data.character;
-      return true;
+      return ObjectiveCompleted;
     }
   }
 
   /**
    * @description Sells to the NPC. The char must already be on the same map as the NPC
    */
-  async sellToNpc(npcCode: string, items: SimpleItemSchema): Promise<boolean> {
-    if (!(await this.findNpc(npcCode))) {
-      return false;
+  async sellToNpc(
+    npcCode: string,
+    items: SimpleItemSchema,
+  ): Promise<ObjectiveResult> {
+    if (!(await this.findNpc(npcCode)).success) {
+      return ObjectiveFailed;
     }
 
     logger.info(`Selling ${items.quantity} ${items.code} to ${npcCode}`);
     const sellResponse = await actionSellItem(this.character.data, items);
     if (sellResponse instanceof ApiError) {
-      return this.character.handleErrors(sellResponse);
+      await this.character.handleErrors(sellResponse);
+      return ObjectiveFailed;
     } else {
       this.character.data = sellResponse.data.character;
-      return true;
+      return ObjectiveCompleted;
     }
   }
 
   /**
    * @description Find and move to NPC
    */
-  async findNpc(npcCode: string): Promise<boolean> {
+  async findNpc(npcCode: string): Promise<ObjectiveResult> {
     logger.info(`Finding location of ${npcCode}`);
     // Event traders like the nomadic_merchant only appear on a map while their
     // event is active, so they won't be in the cached map snapshot. Query the
@@ -236,18 +248,12 @@ export class TradeObjective extends Objective {
     });
     if (maps.length === 0) {
       logger.error(`Cannot find any maps for ${npcCode}`);
-      return false;
+      return ObjectiveFailed;
     }
 
     const traderLocation = this.character.evaluateClosestMap(maps);
 
     await this.character.move(traderLocation);
-    return true;
+    return ObjectiveCompleted;
   }
-
-  /**
-   * @description Finds the correct amount of the currency needed
-   * Gold will get the characters gold
-   * Items will get the number of items in their inventory and bank
-   */
 }

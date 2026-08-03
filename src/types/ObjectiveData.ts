@@ -3,6 +3,45 @@ export type ObjectiveTargets = {
   quantity: number;
 };
 
+export type ObjectiveResult = {
+  /**
+   * @description Whether the objective has been completed or not
+   */
+  complete: boolean;
+  /**
+   * @description Whether the objective was successful or not
+   */
+  success: boolean;
+  /**
+   * @description The reason for the current state
+   */
+  reason: ObjectiveStatus;
+};
+
+export const ObjectiveCancelled: ObjectiveResult = {
+  complete: true,
+  success: false,
+  reason: 'cancelled',
+};
+
+export const ObjectiveCompleted: ObjectiveResult = {
+  complete: true,
+  success: true,
+  reason: 'complete',
+};
+
+export const ObjectiveFailed: ObjectiveResult = {
+  complete: true,
+  success: false,
+  reason: 'failed',
+};
+
+export const ObjectiveOnHold: ObjectiveResult = {
+  complete: false,
+  success: false,
+  reason: 'on_hold',
+};
+
 export type ObjectiveStatus =
   | 'cancelled'
   | 'not_started'

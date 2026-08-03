@@ -1,5 +1,9 @@
 import { jest } from '@jest/globals';
-import { Character } from '../../src/character/characterClass.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
+import { Character } from '../../src/character/CharacterClass.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ApiError } from '../../src/core/Error.js';
 import {
@@ -88,7 +92,7 @@ describe('Character.move()', () => {
     character = new Character(mockCharacter);
 
     character.withdrawNow = jest.fn(
-      async (quantity: number, code: string): Promise<boolean> => {
+      async (quantity: number, code: string): Promise<ObjectiveResult> => {
         const item = character.data.inventory.find(
           (item: InventorySlotSchema) => item.code === code,
         );
@@ -104,7 +108,7 @@ describe('Character.move()', () => {
             emptySlot.quantity = quantity;
           }
         }
-        return true;
+        return ObjectiveCompleted;
       },
     );
   });
@@ -433,7 +437,7 @@ describe('Character.move()', () => {
         map_id: 800,
       };
       character = new Character(mockCharacter);
-      character.withdrawNow = jest.fn(async () => true);
+      character.withdrawNow = jest.fn(async () => ObjectiveCompleted);
 
       const interiorExit: MapSchema = {
         map_id: 800,
@@ -1110,7 +1114,7 @@ describe('Character.move()', () => {
       };
       character = new Character(mockCharacter);
       character.data.gold = 0;
-      const withdrawSpy = jest.fn(async () => true);
+      const withdrawSpy = jest.fn(async () => ObjectiveCompleted);
       character.withdrawNow = withdrawSpy;
 
       const gated: MapSchema = {
@@ -1217,7 +1221,7 @@ describe('Character.move()', () => {
         layer: 'overworld',
       };
       character = new Character(mockCharacter);
-      character.withdrawNow = jest.fn(async () => true);
+      character.withdrawNow = jest.fn(async () => ObjectiveCompleted);
 
       const gated: MapSchema = {
         map_id: 600,
@@ -1358,7 +1362,7 @@ describe('Character.move()', () => {
       };
       character = new Character(mockCharacter);
       character.data.gold = 0;
-      character.withdrawNow = jest.fn(async () => true);
+      character.withdrawNow = jest.fn(async () => ObjectiveCompleted);
 
       // The character has no key anywhere until it acquires one.
       let keyAcquired = false;
@@ -1372,7 +1376,7 @@ describe('Character.move()', () => {
       ).getBankGold = jest.fn(async () => 0);
       const gatherSpy = jest.fn(async (_qty: number, code: string) => {
         if (code === 'lich_tomb_key') keyAcquired = true;
-        return true;
+        return ObjectiveCompleted;
       });
       character.gatherNow = gatherSpy as typeof character.gatherNow;
 
@@ -1484,7 +1488,7 @@ describe('Character.move()', () => {
       (
         character as unknown as { getBankGold: () => Promise<number> }
       ).getBankGold = jest.fn(async () => 0);
-      const gatherSpy = jest.fn(async () => true);
+      const gatherSpy = jest.fn(async () => ObjectiveCompleted);
       character.gatherNow = gatherSpy as typeof character.gatherNow;
 
       const tollGate: MapSchema = {

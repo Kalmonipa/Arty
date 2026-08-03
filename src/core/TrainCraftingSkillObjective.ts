@@ -9,7 +9,7 @@ import {
   SimpleItemSchema,
 } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
@@ -22,6 +22,12 @@ import {
   Weaponcrafting,
   Woodcutting,
 } from '../names.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @description Trains the desired crafting skill until reaching the desired level
@@ -56,11 +62,11 @@ export class TrainCraftingSkillObjective extends Objective {
     this.parkOnWishlistRequest = true;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     let charLevel = this.character.getCharacterLevel(
       this.character.data,
       this.skill,
@@ -84,13 +90,13 @@ export class TrainCraftingSkillObjective extends Objective {
     }
 
     while (charLevel < this.targetLevel) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       // If a previous iteration wishlisted ingredients it couldn't obtain, stop
       // so this job gets parked (onHold) until they're fulfilled — otherwise the
       // loop would spin without ever levelling up.
       if (this.character.pendingWishlistRequests.length > 0) {
-        return false;
+        return ObjectiveFailed;
       }
 
       // Get bank items so we don't need to make lots of bank calls
@@ -108,16 +114,17 @@ export class TrainCraftingSkillObjective extends Objective {
 
       const craftableItemsListData = await getAllItemInformation(payload);
       if (craftableItemsListData instanceof ApiError) {
-        return await this.character.handleErrors(craftableItemsListData);
+        await this.character.handleErrors(craftableItemsListData);
+        return ObjectiveFailed;
       }
 
       const craftableItemsList = craftableItemsListData.data;
       if (craftableItemsList.length === 0) {
         logger.error(`No craftable items found. This shouldn't happen?`);
-        return false;
+        return ObjectiveFailed;
       }
 
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       // If there is each piece of equipment in the bank then we move on to finding the
       // most efficient item to craft to level up the skill
@@ -152,7 +159,7 @@ export class TrainCraftingSkillObjective extends Objective {
         this.skill,
       );
     }
-    return true;
+    return ObjectiveCompleted;
   }
 }
 

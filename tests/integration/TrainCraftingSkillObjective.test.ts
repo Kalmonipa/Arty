@@ -1,5 +1,11 @@
 import { jest } from '@jest/globals';
 import { TrainCraftingSkillObjective } from '../../src/core/TrainCraftingSkillObjective.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot, Role } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
@@ -77,22 +83,22 @@ class SimpleMockCharacter {
   );
 
   craftNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Simulate successful crafting
       this.addItemToInventory(code, quantity);
       // Simulate level progression for alchemy
       if (code.includes('potion') || code.includes('alchemy')) {
         this.data.alchemy_level += 1;
       }
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
   depositNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Simulate successful deposit
       this.removeItemFromInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -217,7 +223,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should return true immediately if already at target level', async () => {
@@ -235,7 +241,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(getAllItemInformation).not.toHaveBeenCalled();
       expect(mockCharacter.craftNow).not.toHaveBeenCalled();
     });
@@ -258,7 +264,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15; // Jump to target level
         mockCharacter.addItemToInventory('health_potion', 10);
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -271,7 +277,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(getAllItemInformation).toHaveBeenCalled();
       expect(mockCharacter.craftNow).toHaveBeenCalled();
       expect(mockCharacter.depositNow).toHaveBeenCalled();
@@ -291,7 +297,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 5;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -327,7 +333,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.cooking_level = 5;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -363,7 +369,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.mining_level = 5;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -399,7 +405,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.woodcutting_level = 5;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -435,7 +441,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.weaponcrafting_level = 10;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -471,7 +477,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.gearcrafting_level = 8;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -507,7 +513,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.jewelrycrafting_level = 5;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -544,7 +550,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
         mockCharacter.addItemToInventory('health_potion', 10);
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -557,7 +563,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.depositNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
@@ -581,11 +587,11 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       mockCharacter.craftNow.mockImplementation(async () => {
         callCount++;
         if (callCount === 1) {
-          return false; // Fail first attempt
+          return ObjectiveFailed; // Fail first attempt
         }
         // Succeed on second attempt to allow loop to complete
         mockCharacter.data.alchemy_level = 15;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -600,7 +606,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       // Assert
       // Should not deposit after failed craft, but should deposit after successful one
       expect(mockCharacter.craftNow).toHaveBeenCalled();
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
   });
 
@@ -619,7 +625,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -654,7 +660,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 5;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -689,7 +695,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -743,7 +749,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -799,7 +805,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       // Assert
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
-      expect(result).toBe(false); // Should return false after error (when handleErrors returns false)
+      expect(result.success).toBe(false); // Should return false after error (when handleErrors returns false)
     });
 
     it('should return false when no craftable items found', async () => {
@@ -846,7 +852,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.craftNow).not.toHaveBeenCalled();
       expect(getAllItemInformation).toHaveBeenCalled();
     });
@@ -870,9 +876,9 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
         if (callCount >= 3) {
           // After 3 failures, succeed to allow loop to complete
           mockCharacter.data.alchemy_level = 15;
-          return true;
+          return ObjectiveCompleted;
         }
-        return false;
+        return ObjectiveFailed;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -889,7 +895,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalled();
       // Should only deposit after successful craft
       expect(mockCharacter.depositNow).toHaveBeenCalled();
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
     });
   });
 
@@ -915,7 +921,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
           15,
         );
         mockCharacter.addItemToInventory('health_potion', 10);
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -957,7 +963,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
           mockCharacter.data.alchemy_level = 15; // Cap at target
         }
         mockCharacter.addItemToInventory('health_potion', 10);
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -970,7 +976,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.craftNow).toHaveBeenCalledTimes(5);
       expect(mockCharacter.data.alchemy_level).toBe(15);
     });
@@ -994,7 +1000,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(mockCharacter.craftNow).not.toHaveBeenCalled();
     });
 
@@ -1013,7 +1019,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 5;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const alchemyObjective = new TrainCraftingSkillObjective(
@@ -1045,7 +1051,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.weaponcrafting_level = 10;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const weaponcraftingObjective = new TrainCraftingSkillObjective(
@@ -1078,7 +1084,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       mockCharacter.craftNow.mockImplementation(async () => {
         // Level up beyond target
         mockCharacter.data.alchemy_level = 16;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -1091,7 +1097,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should exit loop when level >= target (even if exceeded)
     });
   });
@@ -1116,7 +1122,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       );
       mockCharacter.craftNow.mockImplementation(async () => {
         mockCharacter.data.alchemy_level = 15;
-        return true;
+        return ObjectiveCompleted;
       });
 
       const objective = new TrainCraftingSkillObjective(
@@ -1152,7 +1158,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
 
       const result = await objective.run();
 
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.craftNow).not.toHaveBeenCalled();
     });
   });

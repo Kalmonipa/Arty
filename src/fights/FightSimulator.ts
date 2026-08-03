@@ -1,9 +1,14 @@
 import { fightSimulator } from '../api_calls/Actions.js';
 import { FakeCharacterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @description Simulates fights against the target mob using the ArtifactsMMO provided fight sim
@@ -31,11 +36,11 @@ export class FightSimulator extends Objective {
     this.iterations = iterations ?? 10;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     logger.debug(
       `Simulating ${this.iterations} fights vs ${this.targetMobCode} with ${JSON.stringify(this.mockCharacters)}`,
     );
@@ -47,7 +52,7 @@ export class FightSimulator extends Objective {
     );
     if (fightSimResponse instanceof ApiError) {
       this.character.handleErrors(fightSimResponse);
-      return false;
+      return ObjectiveFailed;
     }
 
     let totalTurns = 0;
@@ -68,9 +73,9 @@ export class FightSimulator extends Objective {
     );
 
     if (fightSimResponse.data.winrate >= 80) {
-      return true;
+      return ObjectiveCompleted;
     } else {
-      return false;
+      return ObjectiveFailed;
     }
   }
 }

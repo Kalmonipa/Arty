@@ -17,7 +17,7 @@ import {
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
@@ -31,6 +31,12 @@ import {
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
 } from './idleUtils.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class IdleObjective extends Objective {
   role: Role;
@@ -45,38 +51,38 @@ export class IdleObjective extends Objective {
     this.metricLabel = role;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
    * @description Goes through the list of tasks and does some clean up stuff
    * The type of task varies depending on the role of the character
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     await completeTasksFarmerAchievement(this.character, this.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.character.tidyUpBank(this.character.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.depositGoldIntoBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.claimPendingItems();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.checkAndBuyArtifacts();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkOnHoldQueue(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWithinLevelRange(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // Alchemist never does tasks — sole responsibility is crafting potions.
     // All other roles only do tasks if the bank is low on task coins.
@@ -110,7 +116,7 @@ export class IdleObjective extends Objective {
           } else {
             await this.doItemTask(1);
           }
-          if (this.checkIdleJobIsLast()) return true;
+          if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         }
       }
     }
@@ -137,21 +143,21 @@ export class IdleObjective extends Objective {
         } else {
           await this.character.doItemsTask(2);
         }
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
       case 'fisherman':
         await this.trainSkill(Fishing);
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         await this.character.trainCombatLevelNow(this.character.data.level + 1);
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
       case 'lumberjack':
         await this.trainSkill(Woodcutting);
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
       case 'miner':
         await this.trainSkill(Mining);
-        if (this.checkIdleJobIsLast()) return true;
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
 
       // Crafting skills should aim to be at the combat level
@@ -161,10 +167,10 @@ export class IdleObjective extends Objective {
           this.character.getCharacterLevel(this.character.data)
         ) {
           await this.trainSkill(Gearcrafting);
-          if (this.checkIdleJobIsLast()) return true;
+          if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         } else {
           await this.trainSkill();
-          if (this.checkIdleJobIsLast()) return true;
+          if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         }
         break;
       case 'jewelrycrafter':
@@ -175,10 +181,10 @@ export class IdleObjective extends Objective {
           ) < this.character.getCharacterLevel(this.character.data)
         ) {
           await this.trainSkill(Jewelrycrafting);
-          if (this.checkIdleJobIsLast()) return true;
+          if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         } else {
           await this.trainSkill();
-          if (this.checkIdleJobIsLast()) return true;
+          if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         }
         break;
       case 'weaponcrafter':
@@ -189,13 +195,15 @@ export class IdleObjective extends Objective {
           ) < this.character.getCharacterLevel(this.character.data)
         ) {
           await this.trainSkill(Weaponcrafting);
-          if (this.checkIdleJobIsLast()) return true;
+          if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         } else {
           await this.trainSkill();
-          if (this.checkIdleJobIsLast()) return true;
+          if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         }
         break;
     }
+
+    return ObjectiveCompleted;
   }
 
   /**
@@ -411,7 +419,7 @@ export class IdleObjective extends Objective {
    * Completes an item task
    * @returns true if successful, false if not
    */
-  private async doItemTask(num?: number): Promise<boolean> {
+  private async doItemTask(num?: number): Promise<ObjectiveResult> {
     return await this.character.executeJobNow(
       new ItemTaskObjective(this.character, num ?? 1),
       true,
@@ -424,7 +432,7 @@ export class IdleObjective extends Objective {
    * Completes an item task
    * @returns true if successful, false if not
    */
-  private async doMonsterTask(num?: number): Promise<boolean> {
+  private async doMonsterTask(num?: number): Promise<ObjectiveResult> {
     return await this.character.executeJobNow(
       new MonsterTaskObjective(this.character, num ?? 1),
       true,
@@ -441,7 +449,7 @@ export class IdleObjective extends Objective {
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainSkill(skill?: Skill): Promise<boolean> {
+  private async trainSkill(skill?: Skill): Promise<ObjectiveResult> {
     let job: Objective;
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
@@ -460,7 +468,7 @@ export class IdleObjective extends Objective {
       logger.info(
         `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else if (
       skillLevel >=
       this.character.getCharacterLevel(this.character.data) + maxLevelGap
@@ -468,7 +476,7 @@ export class IdleObjective extends Objective {
       logger.info(
         `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel(this.character.data)}). Not training ${skill}`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
@@ -479,7 +487,7 @@ export class IdleObjective extends Objective {
       logger.info(
         `${skill} level (${this.character.getCharacterLevel(this.character.data, skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel(this.character.data)}. Not training`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     if (!skill) {
@@ -512,7 +520,7 @@ export class IdleObjective extends Objective {
    * @description Miner should make sure there are at least ~100 (maybe increase the value?) of each bar in the bank
    * @todo Maybe make this raw ore instead of crafted bars? Or have another function to top up the ore
    */
-  private async topUpMiningBars(): Promise<boolean> {
+  private async topUpMiningBars(): Promise<ObjectiveResult> {
     const minNumRequired = 100;
 
     const barResponse = await getAllItemInformation({
@@ -520,7 +528,8 @@ export class IdleObjective extends Objective {
       type: 'resource',
     });
     if (barResponse instanceof ApiError) {
-      return this.character.handleErrors(barResponse);
+      await this.character.handleErrors(barResponse);
+      return ObjectiveFailed;
     }
     const barInfo: ItemSchema[] = barResponse.data.filter(
       (item) => item.subtype === 'bar',
@@ -553,6 +562,6 @@ export class IdleObjective extends Objective {
     }
 
     logger.info(`Already have the minimum amount of each bar`);
-    return true;
+    return ObjectiveCompleted;
   }
 }

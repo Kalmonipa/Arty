@@ -1,5 +1,5 @@
 import { getAllNpcItems } from '../api_calls/NPC.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { Role } from '../types/CharacterData.js';
@@ -20,6 +20,7 @@ import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyVali
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { Objective } from '../core/Objective.js';
+import { ObjectiveCompleted, ObjectiveResult } from '../types/ObjectiveData.js';
 
 /**
  * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
@@ -106,7 +107,7 @@ export async function checkOnHoldQueue(character: Character): Promise<void> {
 
 export async function checkWithinLevelRange(
   character: Character,
-): Promise<boolean> {
+): Promise<ObjectiveResult> {
   const allCharacterDetails = await GetCharacterData();
   character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
 
@@ -117,7 +118,7 @@ export async function checkWithinLevelRange(
     return await character.trainCombatLevelNow(character.highestCharLevel - 10);
   }
 
-  return true;
+  return ObjectiveCompleted;
 }
 
 const ArtifactSlots: ItemSlot[] = ['artifact1', 'artifact2', 'artifact3'];
@@ -141,13 +142,13 @@ async function equipOwnedArtifact(
     return false;
   }
 
-  if (!heldInInventory && !(await character.withdrawNow(1, code))) {
+  if (!heldInInventory && !(await character.withdrawNow(1, code)).success) {
     logger.warn(`Failed to withdraw ${code} to equip it`);
     return false;
   }
 
   logger.info(`Equipping ${code} into ${freeSlot}`);
-  return await character.equipNow(code, freeSlot);
+  return (await character.equipNow(code, freeSlot)).success;
 }
 
 /**
@@ -232,7 +233,7 @@ export async function checkAndBuyArtifacts(
       const bought = await character.executeJobNow(
         new TradeObjective(character, 'buy', 1, artifact.code),
       );
-      if (!bought) {
+      if (!bought.success) {
         logger.warn(
           `checkAndBuyArtifacts: failed to buy ${artifact.code}, trying next`,
         );
@@ -241,7 +242,7 @@ export async function checkAndBuyArtifacts(
 
       if (!(await equipOwnedArtifact(character, artifact.code, true))) {
         const deposited = await character.depositNow(1, artifact.code);
-        if (!deposited) {
+        if (!deposited.success) {
           logger.warn(
             `checkAndBuyArtifacts: failed to deposit ${artifact.code}, continuing`,
           );
@@ -259,13 +260,13 @@ export async function checkAndBuyArtifacts(
  * Alchemist looks at alchemy
  * Fisherman looks at fishing + cooking
  * @param acquisitionMethod The way to retrieve the requested item
- * @returns true if successful, false if encounter some failure along the way
+ * @returns the result of the job that identifies and fulfils the requests
  */
 export async function checkWishlistToFulfill(
   character: Character,
   acquisitionMethod: AcquisitionMethod,
   parentId?: string,
-): Promise<boolean> {
+): Promise<ObjectiveResult> {
   const job = new IdentifyValidWishlistRequestsObjective(
     character,
     acquisitionMethod,
@@ -274,14 +275,14 @@ export async function checkWishlistToFulfill(
 }
 
 /**
- * Completes an item task
- * @returns true if successful, false if not
+ * Completes a monster task
+ * @returns the result of the monster task job
  */
 export async function doMonsterTask(
   character: Character,
   parentObj?: Objective,
   num?: number,
-): Promise<boolean> {
+): Promise<ObjectiveResult> {
   return await character.executeJobNow(
     new MonsterTaskObjective(character, num ?? 1),
     true,
@@ -292,13 +293,13 @@ export async function doMonsterTask(
 
 /**
  * Completes an item task
- * @returns true if successful, false if not
+ * @returns the result of the item task job
  */
 export async function doItemTask(
   character: Character,
   parentObj?: Objective,
   num?: number,
-): Promise<boolean> {
+): Promise<ObjectiveResult> {
   return await character.executeJobNow(
     new ItemTaskObjective(character, num ?? 1),
     true,

@@ -1,10 +1,14 @@
 import { actionDepositItems } from '../api_calls/Actions.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import {
   BankGoldTransactionResponseSchema,
   BankItemTransactionResponseSchema,
@@ -34,7 +38,7 @@ export class DepositObjective extends Objective {
     this.shouldIgnoreItemsToKeepList = shouldIgnoreItemsToKeepList || false;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
     // Check if the bank can and should be expanded
     await this.character.executeJobNow(
       new ExpandBankObjective(this.character),
@@ -54,10 +58,10 @@ export class DepositObjective extends Objective {
       logger.warn(
         `Found ${numInInv}/${this.target.quantity} ${this.target.code} in inventory. Exiting`,
       );
-      return false;
+      return { complete: true, success: false, reason: 'failed' };
     }
 
-    return true;
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
@@ -65,9 +69,9 @@ export class DepositObjective extends Objective {
    * If itemCode is 'all', the inventory is emptied into the bank
    * If 0 is entered, all of the specified item is deposited
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       logger.debug(`Deposit attempt ${attempt}/${this.maxRetries}`);
 
@@ -77,7 +81,7 @@ export class DepositObjective extends Objective {
 
       if (maps.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
-        return false;
+        return { complete: true, success: false, reason: 'failed' };
       }
 
       const contentLocation = this.character.evaluateClosestMap(maps);
@@ -144,7 +148,7 @@ export class DepositObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Deposit failed after ${attempt} attempts`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
         continue;
       } else {
@@ -154,7 +158,7 @@ export class DepositObjective extends Objective {
           logger.error('Deposit response missing character data');
         }
       }
-      return true;
+      return { complete: true, success: true, reason: 'complete' };
     }
   }
 }

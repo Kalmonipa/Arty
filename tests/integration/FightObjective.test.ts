@@ -1,9 +1,16 @@
 import { jest } from '@jest/globals';
+import {
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { FightObjective } from '../../src/fights/FightObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
-import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveTargets,
+} from '../../src/types/ObjectiveData.js';
 import { HealthStatus } from '../../src/types/CharacterData.js';
 
 // Mock the API modules
@@ -126,10 +133,10 @@ class SimpleMockCharacter {
   });
 
   withdrawNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Mock successful withdrawal
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -138,25 +145,25 @@ class SimpleMockCharacter {
       itemName: string,
       itemSlot: ItemSlot,
       quantity?: number,
-    ): Promise<boolean> => {
+    ): Promise<ObjectiveResult> => {
       this.data.weapon_slot = itemName;
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
   unequipNow = jest.fn(
-    async (itemSlot: ItemSlot, quantity: number): Promise<boolean> => {
+    async (itemSlot: ItemSlot, quantity: number): Promise<ObjectiveResult> => {
       this.data.utility1_slot = '';
       this.data.utility1_slot_quantity = 0;
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
   depositNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Mock successful deposit
       this.removeItemFromInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -258,7 +265,7 @@ class SimpleMockCharacter {
   });
 
   trainCombatLevelNow = jest.fn(
-    async (targetLevel: number): Promise<boolean> => {
+    async (targetLevel: number): Promise<ObjectiveResult> => {
       // Mock the creation of TrainCombatObjective with parentId
       const mockTrainCombatObjective = {
         parentId: this.currentExecutingJob?.objectiveId,
@@ -268,7 +275,7 @@ class SimpleMockCharacter {
       // Store the created objective for testing purposes
       this.createdTrainCombatObjective = mockTrainCombatObjective;
 
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -287,8 +294,8 @@ class SimpleMockCharacter {
     return true;
   });
 
-  equipUtility = jest.fn(async (): Promise<boolean> => {
-    return true;
+  equipUtility = jest.fn(async (): Promise<ObjectiveResult> => {
+    return ObjectiveCompleted;
   });
 
   addItemToInventory = (code: string, quantity: number): void => {
@@ -499,7 +506,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.findMaps).toHaveBeenCalledWith({
         content_code: 'red_slime',
       });
@@ -515,7 +522,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.evaluateDepositItemsInBank).toHaveBeenCalled();
       //expect(mockCharacter.checkFoodLevels).toHaveBeenCalled();
       expect(mockCharacter.evaluateGear).toHaveBeenCalled();
@@ -536,7 +543,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.recoverHealth).toHaveBeenCalled();
     });
 
@@ -552,7 +559,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.recoverHealth).toHaveBeenCalled();
     });
   });
@@ -567,7 +574,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
         'restore',
         'utility1',
@@ -583,7 +590,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
     });
 
@@ -591,13 +598,13 @@ describe('FightObjective Integration Tests', () => {
       // Arrange
       mockCharacter.addItemToInventory('apple', 20);
       mockCharacter.data.utility1_slot_quantity = 3;
-      mockCharacter.equipUtility.mockResolvedValue(true);
+      mockCharacter.equipUtility.mockResolvedValue(ObjectiveCompleted);
 
       // Act
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should move back to monster location after equipping utility
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 100, y: 100 });
     });
@@ -607,7 +614,7 @@ describe('FightObjective Integration Tests', () => {
   // describe('Utility2 management', () => {
   //   it('should equip antidotes if monster has poison effect', async () => {
   //     mockCharacter.data.utility2_slot_quantity = 0;
-  //     mockCharacter.equipUtility.mockResolvedValue(true);
+  //     mockCharacter.equipUtility.mockResolvedValue(ObjectiveCompleted);
 
   //     const result = await fightObjective.runPrerequisiteChecks();
 
@@ -632,7 +639,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(apiError);
       // Should be called 6 times (1 error + 1 retry + 4 successful fights)
       expect(actionFight).toHaveBeenCalledTimes(6);
@@ -662,7 +669,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await smallObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(actionFight).toHaveBeenCalledTimes(1); // Should fail on first attempt
     });
 
@@ -676,7 +683,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(actionFight).not.toHaveBeenCalled();
     });
 
@@ -711,7 +718,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
     });
 
     it('should handle specific fight API error codes', async () => {
@@ -731,7 +738,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.handleErrors).toHaveBeenCalledWith(
         inventoryFullError,
       );
@@ -751,7 +758,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(actionFight).not.toHaveBeenCalled();
     });
 
@@ -776,7 +783,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual(ObjectiveCancelled);
       expect(actionFight).toHaveBeenCalledTimes(2);
     });
 
@@ -826,7 +833,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.data).toEqual(updatedCharacterData);
     });
 
@@ -839,7 +846,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.topUpFood).toHaveBeenCalled();
     });
 
@@ -888,7 +895,7 @@ describe('FightObjective Integration Tests', () => {
         const result = await testObjective.run();
 
         // Assert
-        expect(result).toBe(true);
+        expect(result.success).toBe(true);
         expect(mockCharacter.findMaps).toHaveBeenCalledWith({
           content_code: test.code,
         });
@@ -913,7 +920,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(fightObjective.lostTooManyFights).toBe(true);
       expect(actionFight).toHaveBeenCalledTimes(3);
     });
@@ -936,7 +943,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await lossObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(lossObjective.progress).toBe(2);
       expect(actionFight).toHaveBeenCalledTimes(4); // 2 losses + 2 wins
     });
@@ -962,7 +969,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await resetObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(resetObjective.lostTooManyFights).toBe(false);
       expect(resetObjective.progress).toBe(3);
       expect(actionFight).toHaveBeenCalledTimes(6);
@@ -984,7 +991,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await progressObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(progressObjective.progress).toBe(3);
       expect(actionFight).toHaveBeenCalledTimes(3);
     });
@@ -1020,7 +1027,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.evaluateClosestMap).toHaveBeenCalledWith(
         customMapData.data,
       );
@@ -1037,7 +1044,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.run();
 
       // Assert
-      expect(result).toBe(true); // Should succeed since movement is handled internally
+      expect(result.success).toBe(true); // Should succeed since movement is handled internally
       expect(mockCharacter.move).toHaveBeenCalled();
     });
   });
@@ -1079,7 +1086,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await fightObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
@@ -1129,7 +1136,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await bossObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
     });
 
@@ -1178,7 +1185,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await eliteObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
@@ -1227,7 +1234,7 @@ describe('FightObjective Integration Tests', () => {
       const result = await eliteObjective.runPrerequisiteChecks();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
     });
   });
@@ -1238,7 +1245,7 @@ describe('FightObjective Integration Tests', () => {
   //   mockCharacter.addItemToInventory('apple', 20);
   //   mockCharacter.simulateFightNow.mockResolvedValue(false); // Fight simulation fails
   //   mockCharacter.trainCombatLevelNow.mockImplementation(
-  //     async (targetLevel: number): Promise<boolean> => {
+  //     async (targetLevel: number): Promise<ObjectiveResult> => {
   //       // Mock the creation of TrainCombatObjective with parentId
   //       const mockTrainCombatObjective = {
   //         parentId: mockCharacter.currentExecutingJob?.objectiveId,
@@ -1248,7 +1255,7 @@ describe('FightObjective Integration Tests', () => {
   //       // Store the created objective for testing purposes
   //       mockCharacter.createdTrainCombatObjective = mockTrainCombatObjective;
 
-  //       return true;
+  //       return ObjectiveCompleted;
   //     },
   //   );
 
@@ -1281,7 +1288,7 @@ describe('FightObjective Integration Tests', () => {
 
   //   mockCharacter.simulateFightNow.mockResolvedValue(false); // Fight simulation fails
   //   mockCharacter.trainCombatLevelNow.mockImplementation(
-  //     async (targetLevel: number): Promise<boolean> => {
+  //     async (targetLevel: number): Promise<ObjectiveResult> => {
   //       // Mock the creation of TrainCombatObjective with parentId
   //       const mockTrainCombatObjective = {
   //         parentId: mockCharacter.currentExecutingJob?.objectiveId,
@@ -1291,7 +1298,7 @@ describe('FightObjective Integration Tests', () => {
   //       // Store the created objective for testing purposes
   //       mockCharacter.createdTrainCombatObjective = mockTrainCombatObjective;
 
-  //       return true;
+  //       return ObjectiveCompleted;
   //     },
   //   );
 

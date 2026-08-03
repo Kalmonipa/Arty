@@ -1,9 +1,15 @@
 import { actionUnequipItem } from '../api_calls/Items.js';
 import { ItemSlot, UnequipSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class UnequipObjective extends Objective {
   itemSlot: ItemSlot;
@@ -17,16 +23,16 @@ export class UnequipObjective extends Objective {
     this.quantity = quantity;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
    * @description equip the item
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       logger.debug(`Unequip attempt ${attempt}/${this.maxRetries}`);
 
@@ -56,7 +62,7 @@ export class UnequipObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Unequip failed after ${attempt} attempts`);
-          return false;
+          return ObjectiveFailed;
         }
         continue;
       } else {
@@ -66,7 +72,7 @@ export class UnequipObjective extends Objective {
           logger.error('Unequip response missing character data');
         }
       }
-      return true;
+      return ObjectiveCompleted;
     }
   }
 }

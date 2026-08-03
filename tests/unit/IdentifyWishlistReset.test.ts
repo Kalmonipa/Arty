@@ -1,4 +1,8 @@
 import { jest } from '@jest/globals';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+} from '../../src/types/ObjectiveData.js';
 
 jest.mock('../../src/wishlist/functions.js', () => ({
   getOpenWishlistRequests: jest.fn(),
@@ -10,7 +14,7 @@ jest.mock('../../src/api_calls/Items.js', () => ({
   getItemInformation: jest.fn(),
 }));
 
-import { Character } from '../../src/character/characterClass.js';
+import { Character } from '../../src/character/CharacterClass.js';
 import {
   claimWishlistRequest,
   getOpenWishlistRequests,
@@ -46,7 +50,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
     mockedClaim.mockResolvedValue(true);
     character = new Character({ ...mockCharacterData });
     jest.spyOn(character, 'getCharacterLevel').mockReturnValue(40);
-    character.gatherNow = jest.fn(async () => true) as any;
+    character.gatherNow = jest.fn(async () => ObjectiveCompleted) as any;
 
     mockedGetItem.mockResolvedValue({ code: 'steel_bar', level: 20 } as any);
     mockedOpen.mockResolvedValue([
@@ -57,7 +61,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
   });
 
   it('marks the request fulfilled when the deposit succeeds', async () => {
-    character.depositNow = jest.fn(async () => true) as any;
+    character.depositNow = jest.fn(async () => ObjectiveCompleted) as any;
 
     await job.run();
 
@@ -66,7 +70,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
   });
 
   it('clears the executing flag when the deposit fails', async () => {
-    character.depositNow = jest.fn(async () => false) as any;
+    character.depositNow = jest.fn(async () => ObjectiveFailed) as any;
 
     await job.run();
 
@@ -78,7 +82,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
     character.gatherNow = jest.fn(async () => {
       throw new Error('character died');
     }) as any;
-    character.depositNow = jest.fn(async () => true) as any;
+    character.depositNow = jest.fn(async () => ObjectiveCompleted) as any;
 
     await expect(job.run()).rejects.toThrow('character died');
 
@@ -87,7 +91,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
   });
 
   it('claims the request for this character before working on it', async () => {
-    character.depositNow = jest.fn(async () => true) as any;
+    character.depositNow = jest.fn(async () => ObjectiveCompleted) as any;
 
     await job.run();
 
@@ -96,7 +100,7 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
 
   it('does no work when another character already holds the request', async () => {
     mockedClaim.mockResolvedValue(false);
-    character.depositNow = jest.fn(async () => true) as any;
+    character.depositNow = jest.fn(async () => ObjectiveCompleted) as any;
 
     await job.run();
 

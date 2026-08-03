@@ -1,4 +1,4 @@
-import { Character } from './character/characterClass.js';
+import { Character } from './character/CharacterClass.js';
 import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
@@ -8,7 +8,7 @@ import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
 import EquipRouter from './routes/Equip.js';
-import FightRouter from './fights/routes.js';
+import FightRouter from './fights/Routes.js';
 import RecycleRouter from './routes/Recycle.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';

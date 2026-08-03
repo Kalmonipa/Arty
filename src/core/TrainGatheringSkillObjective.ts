@@ -5,9 +5,15 @@ import {
   GatheringSkill,
 } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * @todo
@@ -31,17 +37,17 @@ export class TrainGatheringSkillObjective extends Objective {
     this.metricLabel = skill;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     let charLevel = this.character.getCharacterLevel(
       this.character.data,
       this.skill,
     );
     while (charLevel < this.targetLevel) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       const resourceTypes: StaticDataPageResourceSchema | ApiError =
         await getAllResourceInformation({
@@ -49,7 +55,8 @@ export class TrainGatheringSkillObjective extends Objective {
           max_level: charLevel,
         });
       if (resourceTypes instanceof ApiError) {
-        return this.character.handleErrors(resourceTypes);
+        await this.character.handleErrors(resourceTypes);
+        return ObjectiveFailed;
       }
 
       let resourceToGather =
@@ -82,7 +89,7 @@ export class TrainGatheringSkillObjective extends Objective {
         this.skill,
       );
     }
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
@@ -95,13 +102,13 @@ export class TrainGatheringSkillObjective extends Objective {
   private async craftItem(
     ingredientCode: string,
     ingredientQuantity: number,
-  ): Promise<boolean> {
+  ): Promise<ObjectiveResult> {
     const potentialCraftableItems = await getAllItemInformation({
       craft_material: ingredientCode,
     });
     if (potentialCraftableItems instanceof ApiError) {
-      this.character.handleErrors(potentialCraftableItems);
-      return false;
+      await this.character.handleErrors(potentialCraftableItems);
+      return ObjectiveFailed;
     }
 
     if (
@@ -128,7 +135,7 @@ export class TrainGatheringSkillObjective extends Objective {
         logger.debug(
           `${skillNeeded} level not high enough to craft ${potentialCraftableItems.data[0].code}. Need ${levelNeeded} but chars is ${charLevel}`,
         );
-        return false;
+        return ObjectiveFailed;
       }
     }
   }

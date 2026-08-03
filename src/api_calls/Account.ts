@@ -1,5 +1,5 @@
 import { ApiError, toApiError } from '../core/Error.js';
-import { ProposeLoadoutResponse } from '../fights/types.js';
+import { ProposeLoadoutResponse } from '../fights/Types.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
 import { SimpleItemSchema } from '../types/types.js';
 import { logger, MyHeaders } from '../utils.js';

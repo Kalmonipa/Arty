@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,
@@ -81,7 +82,7 @@ function onHoldEntry(overrides: Partial<any> = {}) {
 class MockCharacter {
   data = { level: 30 };
   highestCharLevel = 0;
-  trainCombatLevelNow = jest.fn(async () => true);
+  trainCombatLevelNow = jest.fn(async () => ObjectiveCompleted);
 }
 
 describe('checkWithinLevelRange', () => {
@@ -97,7 +98,7 @@ describe('checkWithinLevelRange', () => {
 
     const result = await checkWithinLevelRange(character as any);
 
-    expect(result).toBe(true);
+    expect(result.success).toBe(true);
     expect(character.highestCharLevel).toBe(35);
     expect(character.trainCombatLevelNow).not.toHaveBeenCalled();
   });

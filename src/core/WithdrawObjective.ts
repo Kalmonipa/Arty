@@ -1,9 +1,12 @@
 import { actionWithdrawItem } from '../api_calls/Actions.js';
-import { actionDepositGold, actionWithdrawGold } from '../api_calls/Bank.js';
-import { getMaps } from '../api_calls/Maps.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import { actionWithdrawGold } from '../api_calls/Bank.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { invalidateBankQuantities } from './bankQuantityCache.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
@@ -22,16 +25,16 @@ export class WithdrawObjective extends Objective {
     this.target = target;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
    * @description withdraw the specified items from the bank
    */
-  async run() {
+  async run(): Promise<ObjectiveResult> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       logger.debug(`Withdraw attempt ${attempt}/${this.maxRetries}`);
 
@@ -41,7 +44,7 @@ export class WithdrawObjective extends Objective {
 
       if (maps.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
-        return true;
+        return { complete: true, success: false, reason: 'failed' };
       }
 
       const contentLocation = this.character.evaluateClosestMap(maps);
@@ -56,10 +59,10 @@ export class WithdrawObjective extends Objective {
         );
         if (response instanceof ApiError) {
           logger.warn(`Withdraw gold attempt failed`);
-          return;
+          return { complete: true, success: false, reason: 'failed' };
         }
 
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       }
 
       // Otherwise withdraw the item
@@ -76,7 +79,7 @@ export class WithdrawObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Withdraw failed after ${attempt} attempts`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
         continue;
       } else {
@@ -85,7 +88,7 @@ export class WithdrawObjective extends Objective {
         } else {
           logger.error('Withdraw response missing character data');
         }
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       }
     }
   }

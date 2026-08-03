@@ -1,6 +1,10 @@
 import { jest } from '@jest/globals';
 import { GatherObjective } from '../../src/core/GatherObjective.js';
-import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../../src/types/ObjectiveData.js';
 import {
   MapSchema,
   ItemSchema,
@@ -141,10 +145,10 @@ class SimpleMockCharacter {
   });
 
   withdrawNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (quantity: number, code: string): Promise<ObjectiveResult> => {
       // Simulate withdrawing from bank by adding to inventory
       this.addItemToInventory(code, quantity);
-      return true;
+      return ObjectiveCompleted;
     },
   );
 
@@ -315,7 +319,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await gatherObjective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.checkQuantityOfItemInInv).toHaveBeenCalledWith(
         'iron_ore',
       );
@@ -325,7 +329,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(5);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(20);
-      mockCharacter.withdrawNow.mockResolvedValue(true);
+      mockCharacter.withdrawNow.mockResolvedValue(ObjectiveCompleted);
 
       const objectiveWithBankCheck = new GatherObjective(
         mockCharacter as any,
@@ -337,7 +341,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objectiveWithBankCheck.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_ore'); // Need to withdraw 5 (10 - 5)
     });
 
@@ -345,7 +349,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       // Arrange
       mockCharacter.addItemToInventory('iron_ore', 3);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(5);
-      mockCharacter.withdrawNow.mockResolvedValue(true);
+      mockCharacter.withdrawNow.mockResolvedValue(ObjectiveCompleted);
 
       // Mock the API calls for gathering
       (
@@ -368,7 +372,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objectiveWithBankCheck.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(5, 'iron_ore'); // Withdraw all from bank
       // Should then gather 2 more (10 - 3 - 5 = 2)
     });
@@ -421,13 +425,13 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objectiveWithBankCheck.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
     });
 
     it('should gather all and not withdraw from bank when bank has 0', async () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
-      mockCharacter.withdrawNow.mockResolvedValue(true);
+      mockCharacter.withdrawNow.mockResolvedValue(ObjectiveCompleted);
 
       // Mock the API calls
       (
@@ -450,7 +454,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objectiveWithBankCheck.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
     });
   });
@@ -490,7 +494,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       // Arrange
       mockCharacter.addItemToInventory('iron_ore', 2);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(3);
-      mockCharacter.withdrawNow.mockResolvedValue(true);
+      mockCharacter.withdrawNow.mockResolvedValue(ObjectiveCompleted);
 
       // Mock the API calls
       (
@@ -513,7 +517,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(3, 'iron_ore'); // Withdraw all from bank
       // Should then gather 5 more (10 - 2 - 3 = 5)
     });
@@ -522,7 +526,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       // Arrange
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(3);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(15);
-      mockCharacter.withdrawNow.mockResolvedValue(true);
+      mockCharacter.withdrawNow.mockResolvedValue(ObjectiveCompleted);
 
       const objective = new GatherObjective(
         mockCharacter as any,
@@ -534,7 +538,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(7, 'iron_ore'); // Need to withdraw 7 (10 - 3)
     });
 
@@ -561,7 +565,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.checkQuantityOfItemInBank).not.toHaveBeenCalled();
       expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
     });
@@ -593,7 +597,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       // Should gather 5 more (10 - 5 = 5)
     });
   });
@@ -741,7 +745,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objective.gather(10, 'mithril_ore');
 
       // Assert
-      expect(result).toBeFalsy();
+      expect(result.success).toBeFalsy();
       expect(addToWishlist).toHaveBeenCalledTimes(1);
       expect(addToWishlist).toHaveBeenCalledWith({
         itemCode: 'mithril_ore',

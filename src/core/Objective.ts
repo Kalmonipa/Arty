@@ -1,6 +1,12 @@
 import * as crypto from 'node:crypto';
-import { ObjectiveStatus } from '../types/ObjectiveData.js';
-import { Character } from '../character/characterClass.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveOnHold,
+  ObjectiveResult,
+  ObjectiveStatus,
+} from '../types/ObjectiveData.js';
+import { Character } from '../character/CharacterClass.js';
 import { logger, sleep } from '../utils.js';
 import {
   jobActiveGauge,
@@ -80,12 +86,12 @@ export abstract class Objective {
     });
   }
 
-  async execute(): Promise<boolean> {
-    if (!(await this.checkStatus())) return false;
+  async execute(): Promise<ObjectiveResult> {
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     // Check if parent job has been cancelled
     if (this.cancelIfParentIsCancelled()) {
-      return false;
+      return ObjectiveCancelled;
     }
 
     this.startJob();
@@ -98,7 +104,7 @@ export abstract class Objective {
     await this.runSharedPrereqChecks();
     let result = await this.runPrerequisiteChecks();
     // If prerequisite checks fail then we should stop the job
-    if (result) {
+    if (result.success) {
       result = await this.run();
     } else {
       this.log.warn(
@@ -109,17 +115,17 @@ export abstract class Objective {
     // If this job wishlisted things it needs, park it (instead of completing)
     // so it resumes once those requests are fulfilled.
     if (
-      this.parkOnWishlistRequest &&
+      result.reason === 'on_hold' &&
       this.character.pendingWishlistRequests.length > 0
     ) {
       const parked = await this.character.parkJob(this);
       this.character.pendingWishlistRequests = [];
       if (parked) {
-        return false;
+        return ObjectiveOnHold;
       }
     }
 
-    this.completeJob(result);
+    this.completeJob(result.success);
     return result;
   }
 
@@ -133,12 +139,12 @@ export abstract class Objective {
     this.clearActiveMetric();
   }
 
-  abstract run(): Promise<boolean>;
+  abstract run(): Promise<ObjectiveResult>;
 
   /**
    * @description Prerequisite checks that each job configures in their own class
    */
-  abstract runPrerequisiteChecks(): Promise<boolean>;
+  abstract runPrerequisiteChecks(): Promise<ObjectiveResult>;
 
   /**
    * @description Runs some validations that all jobs run before they start
@@ -342,7 +348,7 @@ export abstract class Objective {
    */
   async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
     if (this.character.checkQuantityOfItemInInv(TasksCoin) < 1) {
-      if (!(await this.character.withdrawNow(1, TasksCoin))) {
+      if (!(await this.character.withdrawNow(1, TasksCoin)).success) {
         return false;
       }
     }
@@ -398,7 +404,7 @@ export abstract class Objective {
   /**
    * @description Finds the relevant task master and hands in the task
    */
-  async handInTask(taskType: TaskType) {
+  async handInTask(taskType: TaskType): Promise<ObjectiveResult> {
     if (taskType === 'monsters') {
       this.log.info(
         `Completed ${this.character.data.task_total} fights. Handing in task`,
@@ -417,14 +423,14 @@ export abstract class Objective {
    * 3000 per character level. Anything over that gets deposited into the bank
    * @returns
    */
-  protected async depositGoldIntoBank(): Promise<boolean> {
+  protected async depositGoldIntoBank(): Promise<ObjectiveResult> {
     const excessGold = this.character.excessGold;
 
     if (excessGold > 0) {
       return await this.character.depositNow(excessGold, 'gold');
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**

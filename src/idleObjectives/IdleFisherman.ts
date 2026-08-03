@@ -8,7 +8,7 @@ import {
   StaticDataPageResourceSchema,
 } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {
@@ -19,6 +19,12 @@ import {
   checkWishlistToFulfill,
 } from './idleUtils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class IdleFishermanObjective extends Objective {
   constructor(character: Character) {
@@ -30,67 +36,69 @@ export class IdleFishermanObjective extends Objective {
     this.metricLabel = 'fisherman';
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
    * @description Goes through the list of tasks and does some clean up stuff
    * The type of task varies depending on the role of the character
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     let startTime = Date.now();
 
     await completeTasksFarmerAchievement(this.character, 'fisherman');
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.character.tidyUpBank(this.character.role);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.depositGoldIntoBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.claimPendingItems();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkAndBuyArtifacts(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWishlistToFulfill(this.character, 'fishing', this.objectiveId);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWishlistToFulfill(this.character, 'cooking', this.objectiveId);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWishlistToFulfill(this.character, 'tasks', this.objectiveId);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkOnHoldQueue(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkWithinLevelRange(this.character);
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpBank();
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // If the skill gets 5 levels ahead of their combat level then they won't train the skill any further
     // There's no need for skills to get too far ahead of combat level
     await this.trainSkill('fishing');
-    if (this.checkIdleJobIsLast()) return true;
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     if (Date.now() - startTime > 10 * 60 * 1000) {
       logger.info(
         `Idle job has been running for more than 10 minutes. Ending it to see if there's something we need to do`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else {
       // If the idle job hasn't really triggered any other jobs, we want to top up some fish
       await this.gatherExtraFish();
     }
+
+    return ObjectiveCompleted;
   }
 
   /**
@@ -250,7 +258,7 @@ export class IdleFishermanObjective extends Objective {
    * @param skill the skill to train
    * @returns true if successful
    */
-  private async trainSkill(skill?: GatheringSkill): Promise<boolean> {
+  private async trainSkill(skill?: GatheringSkill): Promise<ObjectiveResult> {
     const skillLevel = this.character.getCharacterLevel(
       this.character.data,
       skill,
@@ -261,7 +269,7 @@ export class IdleFishermanObjective extends Objective {
       logger.info(
         `Max ${skill || 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
-      return true;
+      return ObjectiveCompleted;
     } else if (
       skillLevel >=
       this.character.getCharacterLevel(this.character.data) + maxLevelGap
@@ -269,7 +277,7 @@ export class IdleFishermanObjective extends Objective {
       logger.info(
         `${skill} level (${skillLevel}) is too far ahead of combat level (${this.character.getCharacterLevel(this.character.data)}). Not training ${skill}`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     // If the skill is more than 10 levels higher than the characters combat level, we don't want to level it up
@@ -280,7 +288,7 @@ export class IdleFishermanObjective extends Objective {
       logger.info(
         `${skill} level (${this.character.getCharacterLevel(this.character.data, skill)}) is more than 10 levels higher than combat level ${this.character.getCharacterLevel(this.character.data)}. Not training`,
       );
-      return true;
+      return ObjectiveCancelled;
     }
 
     const resourceTypes: StaticDataPageResourceSchema | ApiError =
@@ -289,7 +297,8 @@ export class IdleFishermanObjective extends Objective {
         max_level: this.character.getCharacterLevel(this.character.data, skill),
       });
     if (resourceTypes instanceof ApiError) {
-      return this.character.handleErrors(resourceTypes);
+      await this.character.handleErrors(resourceTypes);
+      return ObjectiveFailed;
     }
 
     let resourceToGather = resourceTypes.data.at(-1).drops[0].code;

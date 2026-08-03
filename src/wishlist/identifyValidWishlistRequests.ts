@@ -1,11 +1,17 @@
 import { getItemInformation } from '../api_calls/Items.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import { getOpenWishlistRequests } from './functions.js';
 import { AcquisitionMethod } from './types.js';
 import { FulfillWishlistRequestObjective } from './fulfillWishlistRequest.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class IdentifyValidWishlistRequestsObjective extends Objective {
   acquisitionMethod: AcquisitionMethod;
@@ -19,8 +25,8 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
     this.acquisitionMethod = acquisitionMethod;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return ObjectiveCompleted;
   }
 
   /**
@@ -30,10 +36,10 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
    * Alchemist looks at alchemy
    * Fisherman looks at fishing + cooking
    * @param acquisitionMethod The way to retrieve the requested item
-   * @returns true if successful, false if encounter some failure along the way
+   * @returns the result of identifying and dispatching the requests
    */
-  async run(): Promise<boolean> {
-    if (!(await this.checkStatus())) return false;
+  async run(): Promise<ObjectiveResult> {
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     const wishlistRequests = await getOpenWishlistRequests(
       this.acquisitionMethod,
@@ -41,14 +47,14 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
 
     if (wishlistRequests.length === 0) {
       logger.info(`No ${this.acquisitionMethod} wishlist requests to fulfill`);
-      return true;
+      return ObjectiveCompleted;
     }
 
     for (const request of wishlistRequests) {
       const itemInformation = await getItemInformation(request.item_code);
       if (itemInformation instanceof ApiError) {
         logger.warn(`Item information not found for ${request.item_code}`);
-        return false;
+        return ObjectiveFailed;
       }
 
       logger.debug(
@@ -90,6 +96,6 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
       }
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 }

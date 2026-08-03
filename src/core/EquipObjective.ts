@@ -1,9 +1,10 @@
 import { actionEquipItem } from '../api_calls/Items.js';
 import { EquipSchema, ItemSlot } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/characterClass.js';
+import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
+import { ObjectiveCancelled, ObjectiveResult } from '../types/ObjectiveData.js';
 
 /**
  * Equips the specified item into the specified slot
@@ -27,16 +28,16 @@ export class EquipObjective extends Objective {
     this.quantity = quantity;
   }
 
-  async runPrerequisiteChecks(): Promise<boolean> {
-    return true;
+  async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    return { complete: true, success: true, reason: 'complete' };
   }
 
   /**
    * @description equip the item
    */
-  async run(): Promise<boolean> {
+  async run(): Promise<ObjectiveResult> {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return false;
+      if (!(await this.checkStatus())) return ObjectiveCancelled;
 
       logger.debug(`Equip attempt ${attempt}/${this.maxRetries}`);
 
@@ -49,7 +50,7 @@ export class EquipObjective extends Objective {
         logger.warn(
           `Quantity can only be provided for utility slots and must be less than 100`,
         );
-        return false;
+        return { complete: true, success: false, reason: 'failed' };
       }
 
       if (this.character.checkQuantityOfItemInInv(this.itemCode) === 0) {
@@ -60,7 +61,7 @@ export class EquipObjective extends Objective {
           await this.character.withdrawNow(this.quantity || 1, this.itemCode);
         } else {
           logger.warn(`No potions found in bank. Not equipping anything`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
       }
 
@@ -83,7 +84,7 @@ export class EquipObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Equip failed after ${attempt} attempts`);
-          return false;
+          return { complete: true, success: false, reason: 'failed' };
         }
       } else {
         if (response.data.character) {
@@ -91,7 +92,7 @@ export class EquipObjective extends Objective {
         } else {
           logger.error('Equip response missing character data');
         }
-        return true;
+        return { complete: true, success: true, reason: 'complete' };
       }
     }
   }
