@@ -60,6 +60,7 @@ export default function CharacterRouter(char: Character) {
         },
         numJobsInQueue: char.jobList.length,
         jobs: char.listObjectivesWithParents(),
+        onHold: char.listOnHoldJobs(),
         itemsToKeep: char.itemsToKeep,
       });
     } catch (error) {
