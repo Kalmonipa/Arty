@@ -14,7 +14,6 @@ import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/characterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { addToWishlist } from '../wishlist/functions.js';
 import { selectResourceNode } from './resourceNodeSelection.js';
 
 export class GatherObjective extends Objective {
@@ -378,15 +377,12 @@ export class GatherObjective extends Objective {
 
     if (!resource) {
       logger.warn(
-        `${this.character.data.name} ${skillNeeded} level is not high enough to gather ${code}. Adding to wishlist`,
+        `${this.character.data.name} ${skillNeeded} level is not high enough to gather ${code}`,
       );
-      await addToWishlist({
-        itemCode: code,
-        quantity: quantity,
-        characterName: this.character.data.name,
-        acquisitionMethod: skillNeeded,
-        minLevel: levelNeeded,
-      });
+      await this.requestIngredientFromWishlist(
+        { code, quantity },
+        { acquisitionMethod: skillNeeded, minLevel: levelNeeded },
+      );
       return false;
     }
 

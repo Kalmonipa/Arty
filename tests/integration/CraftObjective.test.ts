@@ -4,6 +4,7 @@ import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
 import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
+import { WishlistRequestRef } from '../../src/types/ObjectiveData.js';
 import { ApiError } from '../../src/core/Error.js';
 
 // Mock the API modules
@@ -74,7 +75,13 @@ class SimpleMockCharacter {
   );
 
   craftNow = jest.fn(
-    async (quantity: number, code: string): Promise<boolean> => {
+    async (
+      quantity: number,
+      code: string,
+      checkBank?: boolean,
+      includeInventory?: boolean,
+      blockOnMissing?: boolean,
+    ): Promise<boolean> => {
       // Simulate successful crafting
       this.addItemToInventory(code, quantity);
       return true;
@@ -157,7 +164,23 @@ class SimpleMockCharacter {
     return 10;
   });
 
-  addBlockingWishlistRequest = jest.fn();
+  pendingWishlistRequests: WishlistRequestRef[] = [];
+
+  addBlockingWishlistRequest = jest.fn(
+    (requestId: number | null, itemCode: string, quantity: number): void => {
+      if (requestId == null) return;
+      if (
+        !this.pendingWishlistRequests.some((r) => r.requestId === requestId)
+      ) {
+        this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
+      }
+    },
+  );
+
+  findOpenWishlistRequest = jest.fn(
+    async (itemCode: string): Promise<WishlistRequestRef | undefined> =>
+      this.pendingWishlistRequests.find((r) => r.itemCode === itemCode),
+  );
 }
 
 // Mock response data
@@ -940,6 +963,25 @@ describe('CraftObjective Integration Tests', () => {
       expect(actionCraft).not.toHaveBeenCalled();
     });
 
+    it('records the role-gated request as blocking so the owning job is parked', async () => {
+      // Arrange — an untracked request is never waited on nor cleaned up, so the
+      // row is orphaned and re-added on every cycle
+      mockCharacter.role = 'healer';
+      (
+        addToWishlist as jest.MockedFunction<typeof addToWishlist>
+      ).mockResolvedValue(501);
+
+      // Act
+      await craftObjective.run();
+
+      // Assert
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
+        501,
+        'iron_sword',
+        5,
+      );
+    });
+
     it('crafts without posting to the wishlist when the role matches the craft skill', async () => {
       // Arrange — iron_sword needs weaponcrafting, and this is a crafter
       mockCharacter.role = 'crafter';
@@ -1103,6 +1145,93 @@ describe('CraftObjective Integration Tests', () => {
       expect(result).toBe(false);
       expect(addToWishlist).not.toHaveBeenCalled();
       expect(mockCharacter.addBlockingWishlistRequest).not.toHaveBeenCalled();
+    });
+
+    it('adds a single request when an ingredient craft is gated on another role', async () => {
+      // Arrange — a crafter crafting steel_ring needs steel_bar, which only a
+      // labourer can smelt. The nested steel_bar craft is role-gated and this
+      // job then can't obtain it either; both layers used to post their own row.
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      const steelRing: ItemSchema = {
+        ...mockCustomItem,
+        name: 'Steel Ring',
+        code: 'steel_ring',
+        craft: {
+          skill: 'jewelrycrafting',
+          level: 20,
+          items: [{ code: 'steel_bar', quantity: 7 }],
+          quantity: 1,
+        },
+      };
+      const steelBar: ItemSchema = {
+        ...mockCustomItem,
+        name: 'Steel Bar',
+        code: 'steel_bar',
+        type: 'resource',
+        craft: {
+          skill: 'mining',
+          level: 20,
+          items: [{ code: 'iron_ore', quantity: 5 }],
+          quantity: 1,
+        },
+      };
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'steel_ring') return Promise.resolve(steelRing);
+        if (code === 'steel_bar') return Promise.resolve(steelBar);
+        return Promise.resolve(gatherableOre(code));
+      });
+      // Carrying 25 of the 35 steel_bar needed for 5 rings, none in the bank
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'steel_bar' ? 25 : 0),
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      (
+        addToWishlist as jest.MockedFunction<typeof addToWishlist>
+      ).mockResolvedValue(601);
+      // Nest a real craft job so the role gate runs the way it does in production
+      mockCharacter.craftNow.mockImplementation(
+        async (
+          quantity: number,
+          code: string,
+          checkBank?: boolean,
+          includeInventory?: boolean,
+          blockOnMissing?: boolean,
+        ) =>
+          new CraftObjective(
+            mockCharacter as any,
+            { code, quantity },
+            checkBank,
+            includeInventory,
+            blockOnMissing,
+          ).run(),
+      );
+
+      const objective = new CraftObjective(
+        mockCharacter as any,
+        { code: 'steel_ring', quantity: 5 },
+        undefined,
+        undefined,
+        true, // blockOnMissing
+      );
+
+      // Act
+      const result = await objective.run();
+
+      // Assert — one row for the 10 steel_bar actually missing, and the job
+      // still fails so it gets parked until that request is fulfilled
+      expect(result).toBe(false);
+      expect(addToWishlist).toHaveBeenCalledTimes(1);
+      expect(addToWishlist).toHaveBeenCalledWith({
+        itemCode: 'steel_bar',
+        quantity: 10,
+        characterName: 'TestCharacter',
+        acquisitionMethod: 'mining',
+      });
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledTimes(1);
+      expect(actionCraft).not.toHaveBeenCalled();
     });
   });
 

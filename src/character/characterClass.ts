@@ -92,7 +92,10 @@ import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from '../fights/FightSimulator.js';
 import { IdleObjective } from '../idleObjectives/IdleObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
-import { deleteWishlistRequest } from '../wishlist/functions.js';
+import {
+  deleteWishlistRequest,
+  getWishlistRequestsByIds,
+} from '../wishlist/functions.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
 import { ExpandBankObjective } from '../core/BankExpansion.js';
@@ -1043,6 +1046,40 @@ export class Character {
     if (!this.pendingWishlistRequests.some((r) => r.requestId === requestId)) {
       this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
     }
+  }
+
+  /**
+   * @description Finds a still-open request this run already raised for an item,
+   * so a job that needs it doesn't add a second row for the same need. Several
+   * layers can hit the same missing item in one chain: the nested craft that's
+   * gated on another role, and the caller that then can't obtain it either.
+   *
+   * Entries whose row has since been fulfilled or deleted are pruned, so a later
+   * need for the same item raises a fresh request rather than waiting on a row
+   * that's already gone.
+   */
+  async findOpenWishlistRequest(
+    itemCode: string,
+  ): Promise<WishlistRequestRef | undefined> {
+    const raisedForItem = this.pendingWishlistRequests.filter(
+      (request) => request.itemCode === itemCode,
+    );
+    if (raisedForItem.length === 0) return undefined;
+
+    const rows = await getWishlistRequestsByIds(
+      raisedForItem.map((request) => request.requestId),
+    );
+    const openIds = new Set(
+      rows.filter((row) => !row.fulfilled).map((row) => row.id),
+    );
+    this.pendingWishlistRequests = this.pendingWishlistRequests.filter(
+      (request) =>
+        request.itemCode !== itemCode || openIds.has(request.requestId),
+    );
+
+    return this.pendingWishlistRequests.find(
+      (request) => request.itemCode === itemCode,
+    );
   }
 
   /**
