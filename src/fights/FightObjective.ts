@@ -179,7 +179,7 @@ export class FightObjective extends Objective {
         }
       }
     }
-    return { complete: true, success: true, reason: 'complete' };
+    return ObjectiveCompleted;
   }
 
   /**
