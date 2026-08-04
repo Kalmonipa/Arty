@@ -8,7 +8,8 @@ import { GetCharacterData } from '../../src/utils.js';
 import { CharacterSchema } from '../../src/types/types.js';
 import {
   deleteExpiredWishlistRequests,
-  getWishlistRequestsByIds,
+  deleteOrphanedWishlistRequests,
+  getWishlistRequestsForJob,
   deleteWishlistRequest,
 } from '../../src/wishlist/functions.js';
 
@@ -31,7 +32,8 @@ jest.mock('../../src/utils.js', () => {
 
 jest.mock('../../src/wishlist/functions.js', () => ({
   deleteExpiredWishlistRequests: jest.fn(async () => 0),
-  getWishlistRequestsByIds: jest.fn(async () => []),
+  deleteOrphanedWishlistRequests: jest.fn(async () => 0),
+  getWishlistRequestsForJob: jest.fn(async () => []),
   deleteWishlistRequest: jest.fn(async () => true),
 }));
 
@@ -42,15 +44,23 @@ const mockedDeleteExpired =
   deleteExpiredWishlistRequests as jest.MockedFunction<
     typeof deleteExpiredWishlistRequests
   >;
-const mockedGetByIds = getWishlistRequestsByIds as jest.MockedFunction<
-  typeof getWishlistRequestsByIds
+const mockedRequestsForJob = getWishlistRequestsForJob as jest.MockedFunction<
+  typeof getWishlistRequestsForJob
 >;
+const mockedDeleteOrphaned =
+  deleteOrphanedWishlistRequests as jest.MockedFunction<
+    typeof deleteOrphanedWishlistRequests
+  >;
 const mockedDeleteRequest = deleteWishlistRequest as jest.MockedFunction<
   typeof deleteWishlistRequest
 >;
 
 class MockOnHoldCharacter {
+  data = { name: 'TimidTom' };
   onHold: any[] = [];
+  activeJobIds = jest.fn(() =>
+    this.onHold.map((entry) => entry.job.objectiveId),
+  );
   resumeOnHoldJob = jest.fn(async (entry: any) => {
     this.onHold = this.onHold.filter((e) => e !== entry);
   });
@@ -61,18 +71,18 @@ class MockOnHoldCharacter {
   clearOnHoldRetried = jest.fn();
 }
 
-function refs(...ids: number[]) {
-  return ids.map((requestId) => ({
-    requestId,
-    itemCode: `item_${requestId}`,
-    quantity: requestId,
-  }));
+function rows(...specs: [number, boolean][]) {
+  return specs.map(([id, fulfilled]) => ({
+    id,
+    item_code: `item_${id}`,
+    quantity: id,
+    fulfilled,
+  })) as any;
 }
 
 function onHoldEntry(overrides: Partial<any> = {}) {
   return {
     job: { objectiveId: 'craft_5_iron_sword_abcd' },
-    waitingOn: refs(1, 2),
     parkedAt: '2026-07-14T00:00:00.000Z',
     retried: false,
     ...overrides,
@@ -130,17 +140,31 @@ describe('checkOnHoldQueue', () => {
     expect(mockedDeleteExpired).toHaveBeenCalledTimes(1);
   });
 
-  it('resumes a job and cleans up its rows once every request is fulfilled', async () => {
+  it('clears requests left behind by a job that is no longer queued or parked', async () => {
     const character = new MockOnHoldCharacter();
-    const entry = onHoldEntry({ waitingOn: refs(1, 2) });
-    character.onHold = [entry];
-    mockedGetByIds.mockResolvedValue([
-      { id: 1, fulfilled: true },
-      { id: 2, fulfilled: true },
-    ] as any);
+    character.onHold = [onHoldEntry()];
+    mockedRequestsForJob.mockResolvedValue(rows([1, false]));
 
     await checkOnHoldQueue(character as any);
 
+    // Parked jobs count as active, or this would delete what they wait on
+    expect(mockedDeleteOrphaned).toHaveBeenCalledWith('TimidTom', [
+      'craft_5_iron_sword_abcd',
+    ]);
+  });
+
+  it('resumes a job and cleans up its rows once every request is fulfilled', async () => {
+    const character = new MockOnHoldCharacter();
+    const entry = onHoldEntry();
+    character.onHold = [entry];
+    mockedRequestsForJob.mockResolvedValue(rows([1, true], [2, true]));
+
+    await checkOnHoldQueue(character as any);
+
+    expect(mockedRequestsForJob).toHaveBeenCalledWith(
+      'TimidTom',
+      'craft_5_iron_sword_abcd',
+    );
     expect(character.resumeOnHoldJob).toHaveBeenCalledWith(entry);
     expect(mockedDeleteRequest).toHaveBeenCalledWith(1);
     expect(mockedDeleteRequest).toHaveBeenCalledWith(2);
@@ -149,11 +173,8 @@ describe('checkOnHoldQueue', () => {
 
   it('keeps waiting while a request exists but is not yet fulfilled', async () => {
     const character = new MockOnHoldCharacter();
-    character.onHold = [onHoldEntry({ waitingOn: refs(1, 2) })];
-    mockedGetByIds.mockResolvedValue([
-      { id: 1, fulfilled: true },
-      { id: 2, fulfilled: false },
-    ] as any);
+    character.onHold = [onHoldEntry()];
+    mockedRequestsForJob.mockResolvedValue(rows([1, true], [2, false]));
 
     await checkOnHoldQueue(character as any);
 
@@ -161,11 +182,11 @@ describe('checkOnHoldQueue', () => {
     expect(character.dropOnHoldJob).not.toHaveBeenCalled();
   });
 
-  it('retries once when a request has disappeared', async () => {
+  it('retries once when the requests it was waiting on have gone', async () => {
     const character = new MockOnHoldCharacter();
-    const entry = onHoldEntry({ waitingOn: refs(1, 2), retried: false });
+    const entry = onHoldEntry({ retried: false });
     character.onHold = [entry];
-    mockedGetByIds.mockResolvedValue([{ id: 1, fulfilled: true }] as any); // id 2 gone
+    mockedRequestsForJob.mockResolvedValue([]);
 
     await checkOnHoldQueue(character as any);
 
@@ -176,11 +197,11 @@ describe('checkOnHoldQueue', () => {
     expect(character.dropOnHoldJob).not.toHaveBeenCalled();
   });
 
-  it('drops a job whose request disappeared after it was already retried', async () => {
+  it('drops a job whose requests are gone after it was already retried', async () => {
     const character = new MockOnHoldCharacter();
-    const entry = onHoldEntry({ waitingOn: refs(1, 2), retried: true });
+    const entry = onHoldEntry({ retried: true });
     character.onHold = [entry];
-    mockedGetByIds.mockResolvedValue([{ id: 1, fulfilled: true }] as any); // id 2 gone
+    mockedRequestsForJob.mockResolvedValue([]);
 
     await checkOnHoldQueue(character as any);
 

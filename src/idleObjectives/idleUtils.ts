@@ -12,7 +12,8 @@ import {
 } from '../utils.js';
 import {
   deleteExpiredWishlistRequests,
-  getWishlistRequestsByIds,
+  deleteOrphanedWishlistRequests,
+  getWishlistRequestsForJob,
   deleteWishlistRequest,
 } from '../wishlist/functions.js';
 import { AcquisitionMethod } from '../wishlist/types.js';
@@ -56,52 +57,59 @@ export async function completeTasksFarmerAchievement(
 }
 
 /**
- * @description Housekeeping run during idle jobs: deletes expired wishlist
- * requests, then resumes or drops the character's parked (onHold) jobs.
+ * @description Housekeeping run during idle jobs: clears out wishlist requests
+ * nothing can consume any more, then resumes or drops the character's parked
+ * (onHold) jobs.
  *
- * For each parked job: if every request it's waiting on is fulfilled, its rows
- * are cleaned up and the job is re-enqueued (it restarts and picks up the items
- * now in the bank). If any request has expired or disappeared, the job is
- * retried once, then dropped if it still can't be fulfilled.
+ * A parked job's requests are the wishlist rows recorded against its objectiveId.
+ * If they've all been delivered, they're cleaned up and the job is re-enqueued (it
+ * restarts and picks up the items now in the bank). If they've all gone — expired
+ * and swept, or deleted — nothing will ever deliver them, so the job is retried
+ * once and dropped if that doesn't help. Anything in between is still in flight.
  */
 export async function checkOnHoldQueue(character: Character): Promise<void> {
   await deleteExpiredWishlistRequests();
+  // Runs before the loop reads them, so parked jobs must count as active
+  const orphaned = await deleteOrphanedWishlistRequests(
+    character.data.name,
+    character.activeJobIds(),
+  );
+  if (orphaned > 0) {
+    logger.info(
+      `Cleared ${orphaned} wishlist request(s) whose job is no longer queued or parked`,
+    );
+  }
 
   // Snapshot because resume/drop mutate character.onHold
   for (const entry of [...character.onHold]) {
-    const requestIds = entry.waitingOn.map((r) => r.requestId);
-    const rows = await getWishlistRequestsByIds(requestIds);
+    const jobId = entry.job.objectiveId;
+    const rows = await getWishlistRequestsForJob(character.data.name, jobId);
 
-    const allFulfilled =
-      rows.length === requestIds.length && rows.every((r) => r.fulfilled);
-
-    if (allFulfilled) {
-      for (const id of requestIds) {
-        logger.info(`Clearing fulfilled request with ID ${id}`);
-        await deleteWishlistRequest(id);
-      }
-      character.clearOnHoldRetried(entry.job.objectiveId);
-      await character.resumeOnHoldJob(entry);
-      continue;
-    }
-
-    // A row is gone (expired and cleaned up, or deleted) — it can't be fulfilled
-    const someRequestsGone = rows.length < entry.waitingOn.length;
-    if (someRequestsGone) {
+    if (rows.length === 0) {
       if (!entry.retried) {
         logger.info(
-          `On-hold job ${entry.job.objectiveId} has an unfulfillable request; retrying once`,
+          `On-hold job ${jobId} has no request left to wait on; retrying once`,
         );
-        character.markOnHoldRetried(entry.job.objectiveId);
+        character.markOnHoldRetried(jobId);
         await character.resumeOnHoldJob(entry);
       } else {
         logger.warn(
-          `Dropping on-hold job ${entry.job.objectiveId}; requests could not be fulfilled`,
+          `Dropping on-hold job ${jobId}; requests could not be fulfilled`,
         );
         await character.dropOnHoldJob(entry);
       }
+      continue;
     }
-    // Otherwise every request still exists but isn't fulfilled yet — keep waiting
+
+    if (rows.every((row) => row.fulfilled)) {
+      for (const row of rows) {
+        logger.info(`Clearing fulfilled request with ID ${row.id}`);
+        await deleteWishlistRequest(row.id);
+      }
+      character.clearOnHoldRetried(jobId);
+      await character.resumeOnHoldJob(entry);
+    }
+    // Otherwise something is still on its way — keep waiting
   }
 }
 

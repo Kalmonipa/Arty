@@ -12,7 +12,6 @@ import {
 } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { WishlistRequestRef } from '../../src/types/ObjectiveData.js';
 
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
@@ -120,10 +119,31 @@ jest.mock('../../src/api_calls/Resources', () => ({
   getAllResourceInformation: jest.fn(),
 }));
 
-jest.mock('../../src/wishlist/functions', () => ({
-  addToWishlist: jest.fn(async () => 701),
-  getWishlistRequestsByIds: jest.fn(async () => []),
-}));
+// A stand-in wishlist table: the rows are the inserts recorded on addToWishlist,
+// so jest.clearAllMocks() empties it between tests
+jest.mock('../../src/wishlist/functions', () => {
+  const addToWishlist = jest.fn(async () => 701);
+  return {
+    addToWishlist,
+    getWishlistRequestsForJob: jest.fn(async () => []),
+    findOpenWishlistRequest: jest.fn(
+      async (filter: { itemCode: string; jobId?: string }) => {
+        const match = addToWishlist.mock.calls.find(
+          ([request]: any[]) =>
+            request.itemCode === filter.itemCode &&
+            request.jobId === filter.jobId,
+        );
+        if (!match) return undefined;
+        const request = (match as any[])[0];
+        return {
+          id: 701,
+          item_code: request.itemCode,
+          quantity: request.quantity,
+        };
+      },
+    ),
+  };
+});
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -243,23 +263,7 @@ class SimpleMockCharacter {
     }
   };
 
-  pendingWishlistRequests: WishlistRequestRef[] = [];
-
-  addBlockingWishlistRequest = jest.fn(
-    (requestId: number | null, itemCode: string, quantity: number): void => {
-      if (requestId == null) return;
-      if (
-        !this.pendingWishlistRequests.some((r) => r.requestId === requestId)
-      ) {
-        this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
-      }
-    },
-  );
-
-  findOpenWishlistRequest = jest.fn(
-    async (itemCode: string): Promise<WishlistRequestRef | undefined> =>
-      this.pendingWishlistRequests.find((r) => r.itemCode === itemCode),
-  );
+  wishlistRequestOwnerId = 'idle_labourer_objective_7f21';
 }
 
 describe('GatherObjective Integration Tests (Minimal)', () => {
@@ -751,14 +755,10 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
         itemCode: 'mithril_ore',
         quantity: 10,
         characterName: 'TestCharacter',
+        jobId: 'idle_labourer_objective_7f21',
         acquisitionMethod: 'mining',
         minLevel: 40,
       });
-      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
-        701,
-        'mithril_ore',
-        10,
-      );
     });
   });
 });

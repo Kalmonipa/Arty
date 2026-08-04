@@ -95,7 +95,7 @@ export class TrainCraftingSkillObjective extends Objective {
       // If a previous iteration wishlisted ingredients it couldn't obtain, stop
       // so this job gets parked (onHold) until they're fulfilled — otherwise the
       // loop would spin without ever levelling up.
-      if (this.character.pendingWishlistRequests.length > 0) {
+      if (await this.hasUnfulfilledRequests()) {
         return ObjectiveFailed;
       }
 

@@ -16,7 +16,11 @@ import {
 import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
 import { ApiError } from './Error.js';
 import { SimpleItemSchema, Skill, TaskType } from '../types/types.js';
-import { addToWishlist } from '../wishlist/functions.js';
+import {
+  addToWishlist,
+  findOpenWishlistRequest,
+  getWishlistRequestsForJob,
+} from '../wishlist/functions.js';
 import { WishlistRequest } from '../wishlist/types.js';
 import { TasksCoin } from '../names.js';
 
@@ -96,33 +100,36 @@ export abstract class Objective {
 
     this.startJob();
 
-    // Start from a clean slate so only requests raised by this job's run park it
+    // Requests raised by the nested jobs this one runs belong to it, so it owns
+    // them for the duration. Restored afterwards rather than cleared, so an
+    // outer parking job keeps the requests it raised before this one started.
+    const outerOwner = this.character.wishlistRequestOwnerId;
     if (this.parkOnWishlistRequest) {
-      this.character.pendingWishlistRequests = [];
+      this.character.wishlistRequestOwnerId = this.objectiveId;
     }
 
-    await this.runSharedPrereqChecks();
-    let result = await this.runPrerequisiteChecks();
-    // If prerequisite checks fail then we should stop the job
-    if (result.success) {
-      result = await this.run();
-    } else {
-      this.log.warn(
-        `Prerequisite checks for ${this.objectiveId} failed. Stopping job`,
-      );
+    let result: ObjectiveResult;
+    try {
+      await this.runSharedPrereqChecks();
+      result = await this.runPrerequisiteChecks();
+      // If prerequisite checks fail then we should stop the job
+      if (result.success) {
+        result = await this.run();
+      } else {
+        this.log.warn(
+          `Prerequisite checks for ${this.objectiveId} failed. Stopping job`,
+        );
+      }
+    } finally {
+      this.character.wishlistRequestOwnerId = outerOwner;
     }
 
     // If this job wishlisted things it needs, park it (instead of completing)
     // so it resumes once those requests are fulfilled. Only jobs that opt in
     // park: nested helpers return 'on_hold' too, and parking them as well would
-    // put every job in the chain on hold and clear the pending requests their
-    // owning job still needs to wait on.
-    if (
-      this.parkOnWishlistRequest &&
-      this.character.pendingWishlistRequests.length > 0
-    ) {
+    // put every job in the chain on hold.
+    if (this.parkOnWishlistRequest && (await this.hasUnfulfilledRequests())) {
       const parked = await this.character.parkJob(this);
-      this.character.pendingWishlistRequests = [];
       if (parked) {
         return ObjectiveOnHold;
       }
@@ -130,6 +137,19 @@ export abstract class Objective {
 
     this.completeJob(result.success);
     return result;
+  }
+
+  /**
+   * @description Whether this job is still waiting on an item it asked another
+   * character for. Read from the wishlist table rather than tracked in memory, so
+   * it survives a restart and can't drift from the rows that actually exist.
+   */
+  protected async hasUnfulfilledRequests(): Promise<boolean> {
+    const raised = await getWishlistRequestsForJob(
+      this.character.data.name,
+      this.objectiveId,
+    );
+    return raised.some((request) => !request.fulfilled);
   }
 
   /**
@@ -457,10 +477,21 @@ export abstract class Objective {
   }
 
   /**
-   * @description Adds a missing item to the wishlist and records it as a blocking
-   * request so the root job gets parked until it's fulfilled. This is the single
-   * entry point for "this character can't get this item": an item already
-   * requested during this run is waited on again rather than requested twice.
+   * @description The job a request raised here belongs to, i.e. the one that gets
+   * parked until the item arrives. Nested helpers raise requests on behalf of the
+   * parking ancestor running them, so that ancestor's id is what gets recorded.
+   * Overridden to return undefined by jobs whose requests are wishes rather than
+   * blockers, so nothing waits on them.
+   */
+  protected wishlistRequestOwner(): string | undefined {
+    return this.character.wishlistRequestOwnerId;
+  }
+
+  /**
+   * @description Adds a missing item to the wishlist, recorded against the job
+   * that needs it so that job gets parked until it's fulfilled. This is the single
+   * entry point for "this character can't get this item": a need already covered
+   * by an open row is waited on rather than requested twice.
    * @param overrides Details the caller knows better than they can be derived
    * from the item's data, e.g. the skill and level a fulfiller needs
    */
@@ -468,32 +499,31 @@ export abstract class Objective {
     craftingItem: SimpleItemSchema,
     overrides?: Pick<WishlistRequest, 'acquisitionMethod' | 'minLevel'>,
   ): Promise<void> {
-    const alreadyRequested = await this.character.findOpenWishlistRequest(
-      craftingItem.code,
-    );
+    const jobId = this.wishlistRequestOwner();
+    const alreadyRequested = await findOpenWishlistRequest({
+      character: this.character.data.name,
+      itemCode: craftingItem.code,
+      jobId,
+    });
     if (alreadyRequested) {
       logger.info(
-        `${this.character.data.name} already requested ${alreadyRequested.quantity} ${craftingItem.code} (#${alreadyRequested.requestId}); waiting on that instead of adding another`,
+        `${this.character.data.name} already requested ${alreadyRequested.quantity} ${craftingItem.code} (#${alreadyRequested.id}); waiting on that instead of adding another`,
       );
-      this.raisedBlockingRequest = true;
+      if (jobId) this.raisedBlockingRequest = true;
       return;
     }
 
     logger.info(
       `${this.character.data.name} can't obtain ${craftingItem.quantity} ${craftingItem.code}; adding to wishlist`,
     );
-    const requestId = await addToWishlist({
+    await addToWishlist({
       itemCode: craftingItem.code,
       quantity: craftingItem.quantity,
       characterName: this.character.data.name,
+      jobId,
       ...overrides,
     });
-    this.character.addBlockingWishlistRequest(
-      requestId,
-      craftingItem.code,
-      craftingItem.quantity,
-    );
-    this.raisedBlockingRequest = true;
+    if (jobId) this.raisedBlockingRequest = true;
   }
 
   /**

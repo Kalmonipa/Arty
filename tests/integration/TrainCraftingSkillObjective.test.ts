@@ -21,8 +21,15 @@ jest.mock('../../src/api_calls/Items', () => ({
   getAllItemInformation: jest.fn(),
 }));
 
+jest.mock('../../src/wishlist/functions', () => ({
+  addToWishlist: jest.fn(async () => 1),
+  findOpenWishlistRequest: jest.fn(async () => undefined),
+  getWishlistRequestsForJob: jest.fn(async () => []),
+}));
+
 // Import the mocked functions
 import { getAllItemInformation } from '../../src/api_calls/Items.js';
+import { getWishlistRequestsForJob } from '../../src/wishlist/functions.js';
 import {
   Alchemy,
   Cooking,
@@ -57,11 +64,6 @@ const createMockCraftableItem = (
 // Simple mock character
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
-  pendingWishlistRequests: {
-    requestId: number;
-    itemCode: string;
-    quantity: number;
-  }[] = [];
 
   getCharacterLevel = jest.fn(
     (char: CharacterSchema, skillName?: string): number => {
@@ -1145,10 +1147,14 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
             ? mockCharacter.data.alchemy_level
             : mockCharacter.data.level,
       );
-      // A blocking request is already pending from a prior craft attempt
-      mockCharacter.pendingWishlistRequests = [
-        { requestId: 1, itemCode: 'iron_ore', quantity: 5 },
-      ];
+      // A request from a prior craft attempt is still undelivered
+      (
+        getWishlistRequestsForJob as jest.MockedFunction<
+          typeof getWishlistRequestsForJob
+        >
+      ).mockResolvedValue([
+        { id: 1, item_code: 'iron_ore', quantity: 5, fulfilled: false },
+      ] as any);
 
       const objective = new TrainCraftingSkillObjective(
         mockCharacter as any,

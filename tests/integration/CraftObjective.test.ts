@@ -10,7 +10,6 @@ import {
 import { MapSchema, ItemSchema } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { WishlistRequestRef } from '../../src/types/ObjectiveData.js';
 import { ApiError } from '../../src/core/Error.js';
 
 // Mock the API modules
@@ -22,15 +21,40 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
-jest.mock('../../src/wishlist/functions', () => ({
-  addToWishlist: jest.fn(),
-}));
+// A stand-in wishlist table: the rows are the inserts recorded on addToWishlist,
+// so jest.clearAllMocks() empties it between tests
+jest.mock('../../src/wishlist/functions', () => {
+  const addToWishlist = jest.fn(async () => 701);
+  return {
+    addToWishlist,
+    getWishlistRequestsForJob: jest.fn(async () => []),
+    findOpenWishlistRequest: jest.fn(
+      async (filter: { itemCode: string; jobId?: string }) => {
+        const match = addToWishlist.mock.calls.find(
+          ([request]: any[]) =>
+            request.itemCode === filter.itemCode &&
+            request.jobId === filter.jobId,
+        );
+        if (!match) return undefined;
+        const request = (match as any[])[0];
+        return {
+          id: 701,
+          item_code: request.itemCode,
+          quantity: request.quantity,
+        };
+      },
+    ),
+  };
+});
 
 // Import the mocked functions
 import { actionCraft } from '../../src/api_calls/Actions.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { addToWishlist } from '../../src/wishlist/functions.js';
 import { Role } from '../../src/types/CharacterData.js';
+
+/** The parking job that owns any request these craft jobs raise */
+const OwningJobId = 'train_29_weaponcrafting_26dd';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -170,23 +194,7 @@ class SimpleMockCharacter {
     return 10;
   });
 
-  pendingWishlistRequests: WishlistRequestRef[] = [];
-
-  addBlockingWishlistRequest = jest.fn(
-    (requestId: number | null, itemCode: string, quantity: number): void => {
-      if (requestId == null) return;
-      if (
-        !this.pendingWishlistRequests.some((r) => r.requestId === requestId)
-      ) {
-        this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
-      }
-    },
-  );
-
-  findOpenWishlistRequest = jest.fn(
-    async (itemCode: string): Promise<WishlistRequestRef | undefined> =>
-      this.pendingWishlistRequests.find((r) => r.itemCode === itemCode),
-  );
+  wishlistRequestOwnerId = OwningJobId;
 
   jobList = [];
 
@@ -974,28 +982,28 @@ describe('CraftObjective Integration Tests', () => {
         itemCode: 'iron_sword',
         quantity: 5,
         characterName: 'TestCharacter',
+        jobId: OwningJobId,
         acquisitionMethod: 'weaponcrafting',
       });
       expect(actionCraft).not.toHaveBeenCalled();
     });
 
-    it('records the role-gated request as blocking so the owning job is parked', async () => {
-      // Arrange — an untracked request is never waited on nor cleaned up, so the
+    it('records the role-gated request against the owning job so it is parked', async () => {
+      // Arrange — an unowned request is never waited on nor cleaned up, so the
       // row is orphaned and re-added on every cycle
       mockCharacter.role = 'healer';
-      (
-        addToWishlist as jest.MockedFunction<typeof addToWishlist>
-      ).mockResolvedValue(501);
 
       // Act
       await craftObjective.run();
 
       // Assert
-      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
-        501,
-        'iron_sword',
-        5,
+      expect(addToWishlist).toHaveBeenCalledWith(
+        expect.objectContaining({
+          itemCode: 'iron_sword',
+          jobId: OwningJobId,
+        }),
       );
+      expect(craftObjective.raisedBlockingRequest).toBe(true);
     });
 
     it('crafts without posting to the wishlist when the role matches the craft skill', async () => {
@@ -1122,15 +1130,11 @@ describe('CraftObjective Integration Tests', () => {
       // Assert — both ingredients requested (didn't bail on the first), job fails
       expect(result.success).toBe(false);
       expect(addToWishlist).toHaveBeenCalledTimes(2);
-      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
-        101,
-        'ore_a',
-        1,
+      expect(addToWishlist).toHaveBeenCalledWith(
+        expect.objectContaining({ itemCode: 'ore_a', jobId: OwningJobId }),
       );
-      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
-        102,
-        'ore_b',
-        1,
+      expect(addToWishlist).toHaveBeenCalledWith(
+        expect.objectContaining({ itemCode: 'ore_b', jobId: OwningJobId }),
       );
       expect(actionCraft).not.toHaveBeenCalled();
     });
@@ -1160,7 +1164,7 @@ describe('CraftObjective Integration Tests', () => {
       // Assert — bails on the first missing ingredient, no wishlist
       expect(result.success).toBe(false);
       expect(addToWishlist).not.toHaveBeenCalled();
-      expect(mockCharacter.addBlockingWishlistRequest).not.toHaveBeenCalled();
+      expect(objective.raisedBlockingRequest).toBe(false);
     });
 
     it('adds a single request when an ingredient craft is gated on another role', async () => {
@@ -1244,9 +1248,9 @@ describe('CraftObjective Integration Tests', () => {
         itemCode: 'steel_bar',
         quantity: 10,
         characterName: 'TestCharacter',
+        jobId: OwningJobId,
         acquisitionMethod: 'mining',
       });
-      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledTimes(1);
       expect(actionCraft).not.toHaveBeenCalled();
     });
 
@@ -1322,13 +1326,13 @@ describe('CraftObjective Integration Tests', () => {
       // Act
       const result = await objective.execute();
 
-      // Assert — nothing in the chain parks itself, one row is posted, and the
-      // request is still pending for the job that owns this chain to park on
+      // Assert — nothing in the chain parks itself, and the single row posted is
+      // recorded against the job that owns this chain, for it to park on
       expect(mockCharacter.parkJob).not.toHaveBeenCalled();
       expect(addToWishlist).toHaveBeenCalledTimes(1);
-      expect(mockCharacter.pendingWishlistRequests).toEqual([
-        { requestId: 601, itemCode: 'steel_bar', quantity: 10 },
-      ]);
+      expect(addToWishlist).toHaveBeenCalledWith(
+        expect.objectContaining({ itemCode: 'steel_bar', jobId: OwningJobId }),
+      );
       expect(result.reason).toBe('on_hold');
     });
   });

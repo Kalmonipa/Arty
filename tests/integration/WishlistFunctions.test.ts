@@ -10,8 +10,11 @@ import { getItemInformation } from '../../src/api_calls/Items.js';
 import {
   addToWishlist,
   claimWishlistRequest,
+  deleteOrphanedWishlistRequests,
+  deleteWishlistRequestsForJob,
+  findOpenWishlistRequest,
   getOpenWishlistRequests,
-  getWishlistRequestsByIds,
+  getWishlistRequestsForJob,
   deleteExpiredWishlistRequests,
   markAsFulfilled,
   markAsNotExecuting,
@@ -72,6 +75,33 @@ describe('wishlist functions', () => {
       }
     });
 
+    it('records the job the request was raised for', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ id: 51 }] } as any);
+
+      await addToWishlist({
+        itemCode: 'steel_bar',
+        quantity: 25,
+        characterName: 'LongLegLarry',
+        jobId: 'train_28_gearcrafting_d194',
+      });
+
+      expect(mockedQuery.mock.calls[0][1]).toContain(
+        'train_28_gearcrafting_d194',
+      );
+    });
+
+    it('leaves the job id empty for a request nothing is waiting on', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ id: 52 }] } as any);
+
+      await addToWishlist({
+        itemCode: 'gold_helm',
+        quantity: 1,
+        characterName: 'LongLegLarry',
+      });
+
+      expect(mockedQuery.mock.calls[0][1]).toContain(null);
+    });
+
     it('returns null when the insert fails', async () => {
       mockedQuery.mockRejectedValueOnce(new Error('db down'));
 
@@ -86,6 +116,181 @@ describe('wishlist functions', () => {
     });
   });
 
+  describe('findOpenWishlistRequest', () => {
+    it('returns the open row already raised by the same job for the item', async () => {
+      mockedQuery.mockResolvedValue({
+        rows: [{ id: 88, item_code: 'steel_bar', quantity: 25 }],
+      } as any);
+
+      const found = await findOpenWishlistRequest({
+        character: 'LongLegLarry',
+        itemCode: 'steel_bar',
+        jobId: 'train_28_gearcrafting_d194',
+      });
+
+      expect(found).toEqual({
+        id: 88,
+        item_code: 'steel_bar',
+        quantity: 25,
+      });
+      expect(mockedQuery.mock.calls[0][1]).toEqual([
+        'LongLegLarry',
+        'steel_bar',
+        'train_28_gearcrafting_d194',
+      ]);
+    });
+
+    it('returns nothing when the job has not asked for the item', async () => {
+      mockedQuery.mockResolvedValue({ rows: [] } as any);
+
+      const found = await findOpenWishlistRequest({
+        character: 'LongLegLarry',
+        itemCode: 'steel_bar',
+        jobId: 'train_28_gearcrafting_d194',
+      });
+
+      expect(found).toBeUndefined();
+    });
+
+    it('matches only unowned rows when no job is given', async () => {
+      mockedQuery.mockResolvedValue({ rows: [] } as any);
+
+      await findOpenWishlistRequest({
+        character: 'LongLegLarry',
+        itemCode: 'gold_helm',
+      });
+
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/job_id IS NULL/i);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([
+        'LongLegLarry',
+        'gold_helm',
+      ]);
+    });
+
+    it('counts a claimed row as still open so the caller waits instead of asking again', async () => {
+      mockedQuery.mockResolvedValue({ rows: [] } as any);
+
+      await findOpenWishlistRequest({
+        character: 'LongLegLarry',
+        itemCode: 'gold_helm',
+      });
+
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).not.toMatch(/executing = (true|false)/i);
+      expect(sql).toMatch(/fulfilled = false/i);
+      expect(sql).toMatch(/expiration_date/i);
+    });
+
+    it('returns nothing when the lookup fails', async () => {
+      mockedQuery.mockRejectedValue(new Error('db down'));
+
+      const found = await findOpenWishlistRequest({
+        character: 'LongLegLarry',
+        itemCode: 'gold_helm',
+      });
+
+      expect(found).toBeUndefined();
+    });
+  });
+
+  describe('getWishlistRequestsForJob', () => {
+    it("returns the job's live rows, fulfilled ones included", async () => {
+      mockedQuery.mockResolvedValue({
+        rows: [
+          { id: 1, fulfilled: true },
+          { id: 2, fulfilled: false },
+        ],
+      } as any);
+
+      const rows = await getWishlistRequestsForJob(
+        'LongLegLarry',
+        'train_28_gearcrafting_d194',
+      );
+
+      expect(rows).toEqual([
+        { id: 1, fulfilled: true },
+        { id: 2, fulfilled: false },
+      ]);
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).not.toMatch(/fulfilled = false/i);
+      expect(sql).toMatch(/expiration_date/i);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([
+        'LongLegLarry',
+        'train_28_gearcrafting_d194',
+      ]);
+    });
+
+    it('returns an empty array when the lookup fails', async () => {
+      mockedQuery.mockRejectedValue(new Error('db down'));
+
+      const rows = await getWishlistRequestsForJob('LongLegLarry', 'job_1');
+
+      expect(rows).toEqual([]);
+    });
+  });
+
+  describe('deleteWishlistRequestsForJob', () => {
+    it("deletes the job's rows and returns the count", async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 20 } as any);
+
+      const deleted = await deleteWishlistRequestsForJob(
+        'LongLegLarry',
+        'train_28_gearcrafting_d194',
+      );
+
+      expect(deleted).toBe(20);
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/DELETE FROM wishlist/i);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([
+        'LongLegLarry',
+        'train_28_gearcrafting_d194',
+      ]);
+    });
+
+    it('returns 0 when the delete fails', async () => {
+      mockedQuery.mockRejectedValue(new Error('db down'));
+
+      const deleted = await deleteWishlistRequestsForJob('LongLegLarry', 'j');
+
+      expect(deleted).toBe(0);
+    });
+  });
+
+  describe('deleteOrphanedWishlistRequests', () => {
+    it('deletes owned rows whose job is no longer around', async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 4 } as any);
+
+      const deleted = await deleteOrphanedWishlistRequests('LongLegLarry', [
+        'train_28_gearcrafting_d194',
+      ]);
+
+      expect(deleted).toBe(4);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([
+        'LongLegLarry',
+        ['train_28_gearcrafting_d194'],
+      ]);
+    });
+
+    it('leaves the aspirational rows nothing is waiting on alone', async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 0 } as any);
+
+      await deleteOrphanedWishlistRequests('LongLegLarry', []);
+
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/job_id IS NOT NULL/i);
+      expect(sql).toMatch(/fulfilled = false/i);
+    });
+
+    it('returns 0 when the delete fails', async () => {
+      mockedQuery.mockRejectedValue(new Error('db down'));
+
+      const deleted = await deleteOrphanedWishlistRequests('LongLegLarry', []);
+
+      expect(deleted).toBe(0);
+    });
+  });
+
   describe('getOpenWishlistRequests', () => {
     it('excludes expired requests', async () => {
       mockedQuery.mockResolvedValue({ rows: [] } as any);
@@ -94,26 +299,6 @@ describe('wishlist functions', () => {
 
       const sql = mockedQuery.mock.calls[0][0] as string;
       expect(sql).toMatch(/expiration_date/i);
-    });
-  });
-
-  describe('getWishlistRequestsByIds', () => {
-    it('returns an empty array without querying when given no ids', async () => {
-      const rows = await getWishlistRequestsByIds([]);
-
-      expect(rows).toEqual([]);
-      expect(mockedQuery).not.toHaveBeenCalled();
-    });
-
-    it('fetches the rows for the given ids', async () => {
-      mockedQuery.mockResolvedValue({
-        rows: [{ id: 1, fulfilled: true }],
-      } as any);
-
-      const rows = await getWishlistRequestsByIds([1, 2]);
-
-      expect(rows).toEqual([{ id: 1, fulfilled: true }]);
-      expect(mockedQuery.mock.calls[0][1]).toEqual([[1, 2]]);
     });
   });
 

@@ -54,6 +54,16 @@ export class EvaluateGearObjective extends Objective {
   }
 
   /**
+   * @description Better gear is a wish, not a blocker: the character equips the
+   * best it can lay hands on and gets on with the work. Leaving these requests
+   * unowned keeps them from parking whatever job asked for the gear check, which
+   * would otherwise stall on a full set of equipment nobody has crafted yet.
+   */
+  protected wishlistRequestOwner(): undefined {
+    return undefined;
+  }
+
+  /**
    * @description Check current gear and equip anything that we're missing
    */
   async run(): Promise<ObjectiveResult> {

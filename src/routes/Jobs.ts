@@ -46,7 +46,7 @@ export default function JobsRouter(char: Character) {
       }
 
       const jobs = char.listObjectivesWithParents();
-      const onHold = char.listOnHoldJobs();
+      const onHold = await char.listOnHoldJobs();
 
       return res.status(201).json({
         message: `${char.data.name} has ${jobs.length} jobs in queue`,
@@ -209,14 +209,14 @@ export default function JobsRouter(char: Character) {
           return res.status(404).json({
             message: `On-hold job ${objId} not found`,
             character: char.data.name,
-            onHold: char.listOnHoldJobs(),
+            onHold: await char.listOnHoldJobs(),
           });
         }
 
         return res.status(200).json({
           message: `Dropped on-hold job ${objId}`,
           character: char.data.name,
-          onHold: char.listOnHoldJobs(),
+          onHold: await char.listOnHoldJobs(),
         });
       } catch (error) {
         return res

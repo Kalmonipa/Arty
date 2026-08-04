@@ -1,8 +1,9 @@
 import { jest } from '@jest/globals';
 
 jest.mock('../../src/wishlist/functions.js', () => ({
-  deleteWishlistRequest: jest.fn(async () => true),
   addToWishlist: jest.fn(async () => null),
+  deleteWishlistRequestsForJob: jest.fn(async () => 0),
+  getWishlistRequestsForJob: jest.fn(async () => []),
 }));
 
 import { Character } from '../../src/character/CharacterClass.js';

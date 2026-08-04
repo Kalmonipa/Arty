@@ -65,7 +65,6 @@ import {
   OnHoldJob,
   OnHoldJobInfo,
   SimpleObjectiveInfo,
-  WishlistRequestRef,
   ObjectiveResult as ObjectiveResult,
   ObjectiveFailed,
   ObjectiveCompleted,
@@ -96,8 +95,8 @@ import { FightSimulator } from '../fights/FightSimulator.js';
 import { IdleObjective } from '../idleObjectives/IdleObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import {
-  deleteWishlistRequest,
-  getWishlistRequestsByIds,
+  deleteWishlistRequestsForJob,
+  getWishlistRequestsForJob,
 } from '../wishlist/functions.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
@@ -188,10 +187,12 @@ export class Character {
   /** The most parked jobs a character may hold at once */
   maxOnHoldJobs = 10;
   /**
-   * Wishlist requests raised during the current root job that should cause the
-   * job to be parked when it finishes. Reset before each root job runs.
+   * The job that a wishlist request raised right now belongs to, i.e. the one
+   * that gets parked until the item arrives. Set while a job that parks on
+   * requests is running, so the nested helpers it runs record their requests
+   * against it. The requests themselves live in the wishlist table.
    */
-  pendingWishlistRequests: WishlistRequestRef[] = [];
+  wishlistRequestOwnerId?: string;
   /**
    * Objective ids of on-hold jobs that have already been retried once, so a
    * re-parked job is dropped (rather than retried again) if it can't be
@@ -490,16 +491,24 @@ export class Character {
    * @description Lists the jobs parked on the onHold queue, flattened to the same
    * shape as listObjectivesWithParents plus the requests each job is waiting on.
    */
-  listOnHoldJobs(): OnHoldJobInfo[] {
-    return this.onHold.map((entry) => ({
-      id: entry.job.objectiveId,
-      status: entry.job.status,
-      progress: entry.job.progress,
-      parentId: entry.job.parentId,
-      childId: entry.job.childId,
-      waitingOn: entry.waitingOn,
-      parkedAt: entry.parkedAt,
-    }));
+  async listOnHoldJobs(): Promise<OnHoldJobInfo[]> {
+    return await Promise.all(
+      this.onHold.map(async (entry) => ({
+        id: entry.job.objectiveId,
+        status: entry.job.status,
+        progress: entry.job.progress,
+        parentId: entry.job.parentId,
+        childId: entry.job.childId,
+        waitingOn: (
+          await getWishlistRequestsForJob(this.data.name, entry.job.objectiveId)
+        ).map((row) => ({
+          requestId: row.id,
+          itemCode: row.item_code,
+          quantity: row.quantity,
+        })),
+        parkedAt: entry.parkedAt,
+      })),
+    );
   }
 
   /**
@@ -1061,53 +1070,22 @@ export class Character {
   }
 
   /**
-   * @description Records a wishlist request that the running job needs fulfilled
-   * before it can continue, so the job gets parked when it finishes. A null id
-   * (failed request) is ignored.
+   * @description Every job id that could still be waiting on a wishlist request:
+   * queued, parked, or running. A request recorded against anything else is the
+   * leftover of a job that was cancelled or couldn't be rebuilt.
    */
-  addBlockingWishlistRequest(
-    requestId: number | null,
-    itemCode: string,
-    quantity: number,
-  ): void {
-    if (requestId == null) return;
-    if (!this.pendingWishlistRequests.some((r) => r.requestId === requestId)) {
-      this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
+  activeJobIds(): string[] {
+    const ids = [
+      ...this.jobList.map((job) => job.objectiveId),
+      ...this.onHold.map((entry) => entry.job.objectiveId),
+    ];
+    if (this.currentExecutingJob) {
+      ids.push(this.currentExecutingJob.objectiveId);
     }
-  }
-
-  /**
-   * @description Finds a still-open request this run already raised for an item,
-   * so a job that needs it doesn't add a second row for the same need. Several
-   * layers can hit the same missing item in one chain: the nested craft that's
-   * gated on another role, and the caller that then can't obtain it either.
-   *
-   * Entries whose row has since been fulfilled or deleted are pruned, so a later
-   * need for the same item raises a fresh request rather than waiting on a row
-   * that's already gone.
-   */
-  async findOpenWishlistRequest(
-    itemCode: string,
-  ): Promise<WishlistRequestRef | undefined> {
-    const raisedForItem = this.pendingWishlistRequests.filter(
-      (request) => request.itemCode === itemCode,
-    );
-    if (raisedForItem.length === 0) return undefined;
-
-    const rows = await getWishlistRequestsByIds(
-      raisedForItem.map((request) => request.requestId),
-    );
-    const openIds = new Set(
-      rows.filter((row) => !row.fulfilled).map((row) => row.id),
-    );
-    this.pendingWishlistRequests = this.pendingWishlistRequests.filter(
-      (request) =>
-        request.itemCode !== itemCode || openIds.has(request.requestId),
-    );
-
-    return this.pendingWishlistRequests.find(
-      (request) => request.itemCode === itemCode,
-    );
+    if (this.wishlistRequestOwnerId) {
+      ids.push(this.wishlistRequestOwnerId);
+    }
+    return [...new Set(ids)];
   }
 
   /**
@@ -1125,24 +1103,24 @@ export class Character {
       // The job already created its wishlist requests; since it won't be parked,
       // nothing will ever consume them, so roll them back rather than leaving
       // orphaned rows that only expiry can clean up.
-      await this.deleteUnreferencedWishlistRequests(
-        this.pendingWishlistRequests,
-      );
+      await deleteWishlistRequestsForJob(this.data.name, job.objectiveId);
       return false;
     }
 
-    const waitingOn = [...this.pendingWishlistRequests];
+    const waitingOn = await getWishlistRequestsForJob(
+      this.data.name,
+      job.objectiveId,
+    );
     job.setOnHold();
 
     this.onHold.push({
       job: this.serializeJob(job),
-      waitingOn,
       parkedAt: new Date().toISOString(),
       retried: this.onHoldRetriedIds.has(job.objectiveId),
     });
     logger.info(
       `Parked ${job.objectiveId} on hold, waiting on wishlist request(s) ${waitingOn
-        .map((r) => `${r.quantity} ${r.itemCode} (#${r.requestId})`)
+        .map((row) => `${row.quantity} ${row.item_code} (#${row.id})`)
         .join(', ')}`,
     );
     await this.saveJobQueue();
@@ -1176,27 +1154,9 @@ export class Character {
   async dropOnHoldJob(entry: OnHoldJob): Promise<void> {
     this.onHold = this.onHold.filter((e) => e !== entry);
     this.onHoldRetriedIds.delete(entry.job.objectiveId);
-    await this.deleteUnreferencedWishlistRequests(entry.waitingOn);
+    // No other job can be waiting on these: a request belongs to one job
+    await deleteWishlistRequestsForJob(this.data.name, entry.job.objectiveId);
     await this.saveJobQueue();
-  }
-
-  /**
-   * @description Deletes the given wishlist requests, skipping any still
-   * referenced by an on-hold job. Requests can be shared between jobs (an open
-   * request is reused rather than duplicated), so we only remove rows nothing is
-   * still waiting on. Callers must remove their own entry from `onHold` first.
-   */
-  private async deleteUnreferencedWishlistRequests(
-    refs: WishlistRequestRef[],
-  ): Promise<void> {
-    const stillReferenced = new Set(
-      this.onHold.flatMap((e) => e.waitingOn.map((r) => r.requestId)),
-    );
-    for (const ref of refs) {
-      if (!stillReferenced.has(ref.requestId)) {
-        await deleteWishlistRequest(ref.requestId);
-      }
-    }
   }
 
   /**

@@ -16,7 +16,6 @@ import {
 } from '../../src/types/types.js';
 import { GearEffects, WeaponFlavours } from '../../src/types/ItemData.js';
 import { BankCache } from '../../src/core/BankCache.js';
-import { WishlistRequestRef } from '../../src/types/ObjectiveData.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Monsters', () => ({
@@ -27,9 +26,31 @@ jest.mock('../../src/api_calls/Resources', () => ({
   getAllResourceInformation: jest.fn(),
 }));
 
-jest.mock('../../src/wishlist/functions', () => ({
-  addToWishlist: jest.fn(),
-}));
+// A stand-in wishlist table: the rows are the inserts recorded on addToWishlist,
+// so jest.clearAllMocks() empties it between tests
+jest.mock('../../src/wishlist/functions', () => {
+  const addToWishlist = jest.fn(async () => 701);
+  return {
+    addToWishlist,
+    getWishlistRequestsForJob: jest.fn(async () => []),
+    findOpenWishlistRequest: jest.fn(
+      async (filter: { itemCode: string; jobId?: string }) => {
+        const match = addToWishlist.mock.calls.find(
+          ([request]: any[]) =>
+            request.itemCode === filter.itemCode &&
+            request.jobId === filter.jobId,
+        );
+        if (!match) return undefined;
+        const request = (match as any[])[0];
+        return {
+          id: 701,
+          item_code: request.itemCode,
+          quantity: request.quantity,
+        };
+      },
+    ),
+  };
+});
 
 // Import the mocked functions
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
@@ -160,6 +181,9 @@ const createMockArtifact = (
 });
 
 // Simple mock character
+/** The parking job running when gear is evaluated */
+const OwningJobId = 'train_28_gearcrafting_d194';
+
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
   minEquippedUtilities = 20;
@@ -573,23 +597,7 @@ class SimpleMockCharacter {
     return null;
   };
 
-  pendingWishlistRequests: WishlistRequestRef[] = [];
-
-  addBlockingWishlistRequest = jest.fn(
-    (requestId: number | null, itemCode: string, quantity: number): void => {
-      if (requestId == null) return;
-      if (
-        !this.pendingWishlistRequests.some((r) => r.requestId === requestId)
-      ) {
-        this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
-      }
-    },
-  );
-
-  findOpenWishlistRequest = jest.fn(
-    async (itemCode: string): Promise<WishlistRequestRef | undefined> =>
-      this.pendingWishlistRequests.find((r) => r.itemCode === itemCode),
-  );
+  wishlistRequestOwnerId = OwningJobId;
 }
 
 describe('EvaluateGearObjective Integration Tests', () => {
@@ -597,9 +605,9 @@ describe('EvaluateGearObjective Integration Tests', () => {
   let nextWishlistRequestId: number;
 
   const wishlistedItems = (): string[] =>
-    (
-      addToWishlist as jest.MockedFunction<typeof addToWishlist>
-    ).mock.calls.map(([request]) => request.itemCode);
+    (addToWishlist as jest.MockedFunction<typeof addToWishlist>).mock.calls.map(
+      ([request]) => request.itemCode,
+    );
 
   beforeEach(() => {
     // Reset all mocks
@@ -1162,13 +1170,25 @@ describe('EvaluateGearObjective Integration Tests', () => {
         itemCode: 'hp_boots',
         quantity: 1,
         characterName: mockCharacter.data.name,
+        jobId: undefined,
       });
-      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
-        expect.any(Number),
-        'hp_boots',
-        1,
+    });
+
+    it('leaves the gear request unowned so it parks nothing', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
       );
-      expect(objective.raisedBlockingRequest).toBe(true);
+
+      await objective.run();
+
+      // The gear check runs inside whatever job wanted the character equipped;
+      // owning these requests would park that job on a full set of equipment
+      expect(addToWishlist).not.toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: OwningJobId }),
+      );
+      expect(objective.raisedBlockingRequest).toBe(false);
     });
 
     it('only ever asks for one of each item', async () => {
@@ -1248,9 +1268,6 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       await objective.run();
 
-      expect(mockCharacter.findOpenWishlistRequest).toHaveBeenCalledWith(
-        'dmg_ring',
-      );
       const ringRequests = wishlistedItems().filter(
         (code) => code === 'dmg_ring',
       );

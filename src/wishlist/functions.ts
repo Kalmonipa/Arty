@@ -44,10 +44,10 @@ export function deriveRequiredLevel(item: ItemSchema): number {
  * derived from the item's data so fulfillers can filter reliably; a caller may
  * still override them explicitly (e.g. to force "buy" for a craftable item).
  *
- * Every call inserts its own row, even when an identical open request already
- * exists. A row is the blocking token for one job: sharing one between jobs
- * delivers a single quantity for all of them and lets the first job to resume
- * delete the row the others are still waiting on.
+ * A row belongs to at most one job (`job_id`), because it is that job's blocking
+ * token: sharing a row between jobs would deliver a single quantity for all of
+ * them and let the first to resume delete what the others still wait on. Callers
+ * dedupe within a job via findOpenWishlistRequest rather than at insert time.
  * @param wishlistInfo The information for the request so other characters can understand what's required
  * @returns the new request's id, or null if the insert failed
  */
@@ -75,9 +75,9 @@ export async function addToWishlist(
         item_code, quantity, character,
         min_level, max_level, expiration_date,
         cost, currency, acquisition_method,
-        executing, fulfilled
+        job_id, executing, fulfilled
       )
-      VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW() + INTERVAL '7 days'), $7, $8, $9, false, false)
+      VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW() + INTERVAL '7 days'), $7, $8, $9, $10, false, false)
       RETURNING id;
       `,
       [
@@ -90,6 +90,7 @@ export async function addToWishlist(
         wishlistInfo.cost ?? null,
         wishlistInfo.currency ?? null,
         acquisitionMethod,
+        wishlistInfo.jobId ?? null,
       ],
     );
     return result.rows[0].id;
@@ -112,7 +113,7 @@ export async function getOpenWishlistRequests(
   const query = `
     SELECT id, item_code, quantity, character,
            min_level, max_level, expiration_date,
-           cost, currency, acquisition_method,
+           cost, currency, acquisition_method, job_id,
            executing, executing_by, claimed_at, fulfilled, created_at
     FROM wishlist
     WHERE acquisition_method = $1
@@ -157,7 +158,7 @@ export async function listOpenWishlistRequests(filter?: {
   const query = `
     SELECT id, item_code, quantity, character,
            min_level, max_level, expiration_date,
-           cost, currency, acquisition_method,
+           cost, currency, acquisition_method, job_id,
            executing, executing_by, claimed_at, fulfilled, created_at
     FROM wishlist
     WHERE ${conditions.join(' AND ')}
@@ -306,34 +307,140 @@ export async function reclaimExecutingWishlistRequests(
   }
 }
 
+/** A row that hasn't been delivered yet and hasn't run out of time */
+const OpenRequest = `fulfilled = false
+      AND (expiration_date IS NULL OR expiration_date > NOW())`;
+
+/** Every row still worth looking at, delivered or not */
+const LiveRequest = `(expiration_date IS NULL OR expiration_date > NOW())`;
+
 /**
- * Fetches wishlist rows by their ids. Used to check the status of the requests
- * an onHold job is waiting on.
- * @param ids The wishlist row ids
- * @returns matching rows, or an empty array (also when given no ids or on error)
+ * Finds a request for an item that the same asker already has outstanding, so a
+ * need met by a row already in the table doesn't add a second one. A claimed
+ * (`executing`) row counts: the item is on its way, so waiting on it beats
+ * asking again.
+ *
+ * Scoped to one job, because a row is that job's blocking token — two jobs each
+ * needing 25 steel bars need a row each, or one delivery of 25 resumes both and
+ * leaves the second short. Omit `jobId` to look up the requests nothing is
+ * waiting on, which are shared across the character's whole run.
+ * @returns the open row, or undefined if there isn't one (also on error)
  */
-export async function getWishlistRequestsByIds(
-  ids: number[],
-): Promise<WishlistRow[]> {
-  if (ids.length === 0) {
-    return [];
+export async function findOpenWishlistRequest(filter: {
+  character: string;
+  itemCode: string;
+  jobId?: string;
+}): Promise<WishlistRow | undefined> {
+  const params: string[] = [filter.character, filter.itemCode];
+  if (filter.jobId) {
+    params.push(filter.jobId);
   }
 
   const query = `
     SELECT id, item_code, quantity, character,
            min_level, max_level, expiration_date,
-           cost, currency, acquisition_method,
+           cost, currency, acquisition_method, job_id,
            executing, executing_by, claimed_at, fulfilled, created_at
     FROM wishlist
-    WHERE id = ANY($1);
+    WHERE character = $1
+      AND item_code = $2
+      AND ${filter.jobId ? 'job_id = $3' : 'job_id IS NULL'}
+      AND ${OpenRequest}
+    ORDER BY created_at ASC
+    LIMIT 1;
   `;
 
   try {
-    const result = await db.query<WishlistRow>(query, [ids]);
+    const result = await db.query<WishlistRow>(query, params);
+    return result.rows[0];
+  } catch (err) {
+    logger.error(
+      `Failed to look up an open request for ${filter.itemCode}: ${err}`,
+    );
+    return undefined;
+  }
+}
+
+/**
+ * Fetches the requests a job raised, fulfilled ones included, so callers can
+ * tell "still waiting" from "everything arrived" from "the rows are gone".
+ * @returns matching rows, or an empty array (also on error)
+ */
+export async function getWishlistRequestsForJob(
+  character: string,
+  jobId: string,
+): Promise<WishlistRow[]> {
+  const query = `
+    SELECT id, item_code, quantity, character,
+           min_level, max_level, expiration_date,
+           cost, currency, acquisition_method, job_id,
+           executing, executing_by, claimed_at, fulfilled, created_at
+    FROM wishlist
+    WHERE character = $1
+      AND job_id = $2
+      AND ${LiveRequest}
+    ORDER BY created_at ASC;
+  `;
+
+  try {
+    const result = await db.query<WishlistRow>(query, [character, jobId]);
     return result.rows;
   } catch (err) {
-    logger.error(`Failed to fetch wishlist requests by id: ${err}`);
+    logger.error(`Failed to fetch wishlist requests for job ${jobId}: ${err}`);
     return [];
+  }
+}
+
+/**
+ * Deletes the requests a job raised. Used when the job is dropped or can't be
+ * parked: nothing else will ever consume them, and no other job can be waiting
+ * on them because a row belongs to a single job.
+ * @returns the number of rows deleted
+ */
+export async function deleteWishlistRequestsForJob(
+  character: string,
+  jobId: string,
+): Promise<number> {
+  const query = `
+    DELETE FROM wishlist
+    WHERE character = $1 AND job_id = $2;
+  `;
+
+  try {
+    const result = await db.query(query, [character, jobId]);
+    return result.rowCount ?? 0;
+  } catch (err) {
+    logger.error(`Failed to delete wishlist requests for job ${jobId}: ${err}`);
+    return 0;
+  }
+}
+
+/**
+ * Deletes undelivered requests whose owning job is neither queued nor parked —
+ * jobs that were cancelled, or lost because their saved form couldn't be rebuilt.
+ * Requests nothing is waiting on (`job_id IS NULL`) are left to expire on their
+ * own; they're wishes, not the leftovers of a dead job.
+ * @param activeJobIds Every job id currently queued, parked or running
+ * @returns the number of rows deleted
+ */
+export async function deleteOrphanedWishlistRequests(
+  character: string,
+  activeJobIds: string[],
+): Promise<number> {
+  const query = `
+    DELETE FROM wishlist
+    WHERE character = $1
+      AND job_id IS NOT NULL
+      AND NOT (job_id = ANY($2))
+      AND fulfilled = false;
+  `;
+
+  try {
+    const result = await db.query(query, [character, activeJobIds]);
+    return result.rowCount ?? 0;
+  } catch (err) {
+    logger.error(`Failed to delete orphaned wishlist requests: ${err}`);
+    return 0;
   }
 }
 

@@ -17,21 +17,28 @@ CREATE TABLE wishlist (
     item_code TEXT NOT NULL,
     quantity INT NOT NULL,
     character TEXT NOT NULL,
+    executing BOOLEAN,
+    fulfilled BOOLEAN,
+    executing_by TEXT,
+    acquisition_method TEXT,
     min_level INT,
     max_level INT,
-    expiration_date TIMESTAMPTZ,
     cost INT,
     currency TEXT,
-    acquisition_method TEXT,
-    executing BOOLEAN,
-    executing_by TEXT,
     claimed_at TIMESTAMPTZ,
-    fulfilled BOOLEAN,
     created_at TIMESTAMPTZ DEFAULT NOW(),
+    expiration_date TIMESTAMPTZ,
+    job_id TEXT,
 
     -- Safety check: Ensure min_level is never greater than max_level
     CONSTRAINT chk_level_range CHECK (min_level <= max_level)
 );
+```
+
+Adding `job_id` to an existing table:
+
+```sql
+ALTER TABLE wishlist ADD COLUMN job_id TEXT;
 ```
 
 ## Columns
@@ -52,6 +59,29 @@ CREATE TABLE wishlist (
 | `claimed_at`         | `TIMESTAMPTZ` | When the claim was taken. NULL when the request is open                                                                     |
 | `fulfilled`          | `BOOLEAN`     | True if a character has completed the request                                                                               |
 | `created_at`         | `TIMESTAMPTZ` | When the request was made. Defaults to now                                                                                  |
+| `job_id`             | `TEXT`        | ID of the job that this request stems from. NULL when nothing is waiting on it                                              |
+
+## Who a request belongs to
+
+`job_id` is the objectiveId of the job that can't continue without the item, and
+it decides what happens to the row:
+
+- **Set** — the job is parked (onHold) until the row is fulfilled. A row is that
+  job's blocking token, so it belongs to exactly one job: two jobs each needing
+  25 steel bars need a row each, or one delivery of 25 resumes both and leaves the
+  second short. Cleaning up after a job is `DELETE ... WHERE job_id = $1`, with no
+  need to check whether anything else still wants the row.
+- **NULL** — nothing is waiting on it. A character wishing for better gear posts
+  these: it equips the best it can lay hands on and carries on working, and the
+  request sits there until someone crafts one or it expires.
+
+Both cases are deduped before inserting, scoped to the same `character`: within a
+job for owned rows, across the whole run for unowned ones. The check counts a
+claimed (`executing`) row as still open, because the item is on its way.
+
+Because the column is what associates a request with a job, there's no in-process
+record of "requests I'm waiting on" to be lost on restart or to drift from the
+rows that actually exist.
 
 ## Claiming a request
 

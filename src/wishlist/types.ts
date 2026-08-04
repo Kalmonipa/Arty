@@ -8,6 +8,11 @@ export type WishlistRequest = {
   cost?: number;
   currency?: string;
   acquisitionMethod?: AcquisitionMethod;
+  /**
+   * The job that can't continue without this item. Left unset for a request
+   * nothing is waiting on, e.g. a character wishing for better gear.
+   */
+  jobId?: string;
 };
 
 export interface WishlistRow {
@@ -26,6 +31,7 @@ export interface WishlistRow {
   claimed_at: Date | null;
   fulfilled: boolean;
   created_at: Date;
+  job_id: string | null;
 }
 
 /**

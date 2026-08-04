@@ -75,12 +75,12 @@ export interface WishlistRequestRef {
 
 /**
  * A job parked because it raised one or more wishlist requests it needs
- * fulfilled before it can continue. Resumed when every `waitingOn` request is
- * fulfilled; retried once (then dropped) if a request expires or disappears.
+ * fulfilled before it can continue. The requests are the wishlist rows recorded
+ * against its objectiveId, not a copy held here. Resumed when every one of them
+ * is fulfilled; retried once (then dropped) if they expire or disappear.
  */
 export interface OnHoldJob {
   job: SerializedJob;
-  waitingOn: WishlistRequestRef[];
   parkedAt: string;
   retried: boolean;
 }
