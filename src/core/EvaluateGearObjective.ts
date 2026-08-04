@@ -24,7 +24,8 @@ import {
 
 /**
  * @description Evaluates which gear is the best to use for the upcoming fight
- * Should take in the
+ * @todo: This should request the best gear from the wishlist if we don't have it
+ * and continue on to equip the best gear that we have
  */
 
 export class EvaluateGearObjective extends Objective {
@@ -82,11 +83,11 @@ export class EvaluateGearObjective extends Objective {
         await this.checkGatheringWeapon(this.activityType, charLevel);
         await this.checkGatheringEquipment(gatheringStat, overallLevel);
         await this.checkGatheringArtifacts(gatheringStat, overallLevel);
-        return { complete: true, success: true, reason: 'complete' };
+        return ObjectiveCompleted;
       }
 
       if (await this.evaluateCombatGear(charLevel, this.targetMob)) {
-        return { complete: true, success: true, reason: 'complete' };
+        return ObjectiveCompleted;
       }
 
       logger.warn(
@@ -687,31 +688,31 @@ export class EvaluateGearObjective extends Objective {
     charLevel: number,
     allocated: Map<string, number>,
   ): Promise<string | undefined> {
-    let map: ItemSchema[];
+    let gearMap: ItemSchema[];
     switch (gearType) {
       case 'amulet':
-        map = this.character.amuletMap[targetEffect];
+        gearMap = this.character.amuletMap[targetEffect];
         break;
       case 'body_armor':
-        map = this.character.armorMap[targetEffect];
+        gearMap = this.character.armorMap[targetEffect];
         break;
       case 'boots':
-        map = this.character.bootsMap[targetEffect];
+        gearMap = this.character.bootsMap[targetEffect];
         break;
       case 'helmet':
-        map = this.character.helmetMap[targetEffect];
+        gearMap = this.character.helmetMap[targetEffect];
         break;
       case 'leg_armor':
-        map = this.character.legsArmorMap[targetEffect];
+        gearMap = this.character.legsArmorMap[targetEffect];
         break;
       case 'ring1':
-        map = this.character.ringsMap[targetEffect];
+        gearMap = this.character.ringsMap[targetEffect];
         break;
       case 'ring2':
-        map = this.character.ringsMap[targetEffect];
+        gearMap = this.character.ringsMap[targetEffect];
         break;
       case 'shield':
-        map = this.character.shieldMap[targetEffect];
+        gearMap = this.character.shieldMap[targetEffect];
         break;
       default:
         logger.warn(
@@ -721,7 +722,7 @@ export class EvaluateGearObjective extends Objective {
     }
 
     const bestGear = await this.identifyBestGear(
-      map,
+      gearMap,
       targetEffect,
       charLevel,
       gearType,
@@ -740,50 +741,78 @@ export class EvaluateGearObjective extends Objective {
    * @todo Make this work better. I've commented out the code that finds the best weapon because it wasn't working
    * as well as I'd like. Now it just gets the first, highest level weapon we have in inventory or bank and sets that
    * as the best, regardless of target mob strengths/weaknesses.
-   * @param map
+   * @param gearMap
    * @param targetEffect
    * @param charLevel
    * @returns
    */
   private async identifyBestGear(
-    map: ItemSchema[],
+    gearMap: ItemSchema[],
     targetEffect: GearEffects,
     charLevel: number,
     gearSlot: ItemSlot,
     allocated: Map<string, number>,
   ): Promise<ItemSchema> {
     let bestGear: ItemSchema;
+    /**
+     * Marks whether we've requested a wishlist item for this gear slot. We only want to request one wishlist item per
+     * gear slot, so we don't spam the wishlist with multiple requests for the same gear slot.
+     */
+    let wishlistRequested = false;
 
-    for (let ind = map.length - 1; ind >= 0; ind--) {
-      if (map[ind].level <= charLevel && map[ind].level > charLevel - 15) {
-        logger.debug(`Checking ${map[ind].code} for ${targetEffect}`);
+    for (let ind = gearMap.length - 1; ind >= 0; ind--) {
+      if (
+        gearMap[ind].level <= charLevel &&
+        gearMap[ind].level > charLevel - 15
+      ) {
+        logger.debug(`Checking ${gearMap[ind].code} for ${targetEffect}`);
         if (
           bestGear === undefined &&
-          map[ind].effects &&
-          map[ind].effects.find((effect) => effect.code === targetEffect)
+          gearMap[ind].effects &&
+          gearMap[ind].effects.find((effect) => effect.code === targetEffect)
         ) {
-          if (this.character.getCharacterGearIn(gearSlot) === map[ind].code) {
-            logger.info(`${map[ind].code} already equipped`);
-            return map[ind];
+          if (
+            this.character.getCharacterGearIn(gearSlot) === gearMap[ind].code
+          ) {
+            logger.info(`${gearMap[ind].code} already equipped`);
+            return gearMap[ind];
           }
 
-          let numHeld = this.character.checkQuantityOfItemInInv(map[ind].code);
+          let numHeld = this.character.checkQuantityOfItemInInv(
+            gearMap[ind].code,
+          );
           if (numHeld === 0) {
             numHeld = await this.character.checkQuantityOfItemInBank(
-              map[ind].code,
+              gearMap[ind].code,
               this.bankCache,
             );
           }
 
-          const available = numHeld - (allocated.get(map[ind].code) ?? 0);
+          const available = numHeld - (allocated.get(gearMap[ind].code) ?? 0);
           if (available > 0) {
-            logger.debug(`bestGear not set yet. Setting to ${map[ind].code}`);
-            allocated.set(
-              map[ind].code,
-              (allocated.get(map[ind].code) ?? 0) + 1,
+            logger.debug(
+              `bestGear not set yet. Setting to ${gearMap[ind].code}`,
             );
-            bestGear = map[ind];
+            allocated.set(
+              gearMap[ind].code,
+              (allocated.get(gearMap[ind].code) ?? 0) + 1,
+            );
+            bestGear = gearMap[ind];
           } else {
+            if (!wishlistRequested) {
+              logger.info(
+                `Requesting ${gearMap[ind].code} from wishlist for ${gearSlot}`,
+              );
+              await this.requestIngredientFromWishlist({
+                code: gearMap[ind].code,
+                quantity: 1,
+              });
+              wishlistRequested = true;
+            } else {
+              logger.debug(
+                `Already requested a wishlist item for ${gearSlot}, skipping ${gearMap[ind].code}`,
+              );
+            }
             continue;
           }
         }

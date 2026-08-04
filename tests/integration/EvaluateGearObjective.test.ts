@@ -16,6 +16,7 @@ import {
 } from '../../src/types/types.js';
 import { GearEffects, WeaponFlavours } from '../../src/types/ItemData.js';
 import { BankCache } from '../../src/core/BankCache.js';
+import { WishlistRequestRef } from '../../src/types/ObjectiveData.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Monsters', () => ({
@@ -26,9 +27,14 @@ jest.mock('../../src/api_calls/Resources', () => ({
   getAllResourceInformation: jest.fn(),
 }));
 
+jest.mock('../../src/wishlist/functions', () => ({
+  addToWishlist: jest.fn(),
+}));
+
 // Import the mocked functions
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
+import { addToWishlist } from '../../src/wishlist/functions.js';
 
 // Mock monster data
 const mockMonsterData = {
@@ -566,10 +572,34 @@ class SimpleMockCharacter {
   getEquippedSlot = (itemCode: string): string => {
     return null;
   };
+
+  pendingWishlistRequests: WishlistRequestRef[] = [];
+
+  addBlockingWishlistRequest = jest.fn(
+    (requestId: number | null, itemCode: string, quantity: number): void => {
+      if (requestId == null) return;
+      if (
+        !this.pendingWishlistRequests.some((r) => r.requestId === requestId)
+      ) {
+        this.pendingWishlistRequests.push({ requestId, itemCode, quantity });
+      }
+    },
+  );
+
+  findOpenWishlistRequest = jest.fn(
+    async (itemCode: string): Promise<WishlistRequestRef | undefined> =>
+      this.pendingWishlistRequests.find((r) => r.itemCode === itemCode),
+  );
 }
 
 describe('EvaluateGearObjective Integration Tests', () => {
   let mockCharacter: SimpleMockCharacter;
+  let nextWishlistRequestId: number;
+
+  const wishlistedItems = (): string[] =>
+    (
+      addToWishlist as jest.MockedFunction<typeof addToWishlist>
+    ).mock.calls.map(([request]) => request.itemCode);
 
   beforeEach(() => {
     // Reset all mocks
@@ -578,6 +608,13 @@ describe('EvaluateGearObjective Integration Tests', () => {
     // Create fresh mock character with clean data
     mockCharacter = new SimpleMockCharacter();
     mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
+
+    // Each insert gets its own row id, so a second need for the same item finds
+    // the open request instead of adding another row
+    nextWishlistRequestId = 900;
+    (
+      addToWishlist as jest.MockedFunction<typeof addToWishlist>
+    ).mockImplementation(async () => nextWishlistRequestId++);
 
     // Set up default mock responses
     (
@@ -1107,6 +1144,164 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Assert
       expect(result.success).toBe(true);
       // Should still return true even if some gear is missing
+    });
+  });
+
+  describe('Wishlisting gear it cannot find', () => {
+    it('wishlists the best missing candidate for a slot', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(true);
+      expect(addToWishlist).toHaveBeenCalledWith({
+        itemCode: 'hp_boots',
+        quantity: 1,
+        characterName: mockCharacter.data.name,
+      });
+      expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledWith(
+        expect.any(Number),
+        'hp_boots',
+        1,
+      );
+      expect(objective.raisedBlockingRequest).toBe(true);
+    });
+
+    it('only ever asks for one of each item', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      const quantities = (
+        addToWishlist as jest.MockedFunction<typeof addToWishlist>
+      ).mock.calls.map(([request]) => request.quantity);
+      expect(quantities.length).toBeGreaterThan(0);
+      expect(quantities.every((quantity) => quantity === 1)).toBe(true);
+    });
+
+    it('does not wishlist gear held in the inventory or the bank', async () => {
+      mockCharacter.addItemToInventory('hp_boots', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(wishlistedItems()).not.toContain('hp_boots');
+      // fire_sword and res_fire_shield are both banked
+      expect(wishlistedItems()).not.toContain('fire_sword');
+      expect(wishlistedItems()).not.toContain('res_fire_shield');
+    });
+
+    it('does not wishlist gear that is already equipped', async () => {
+      mockCharacter.data.boots_slot = 'hp_boots';
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(wishlistedItems()).not.toContain('hp_boots');
+    });
+
+    it('asks for a single item per gear map even when several are missing', async () => {
+      mockCharacter.bootsMap.hp = [
+        createMockGear('weak_hp_boots', 'Weak HP Boots', 5, 'hp'),
+        createMockGear('strong_hp_boots', 'Strong HP Boots', 10, 'hp'),
+      ];
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      const bootsRequests = wishlistedItems().filter((code) =>
+        ['weak_hp_boots', 'strong_hp_boots'].includes(code),
+      );
+      expect(bootsRequests).toEqual(['strong_hp_boots']);
+    });
+
+    it('waits on the open request rather than adding a second row for the same item', async () => {
+      // ring1 and ring2 share ringsMap, so ring2 re-checks everything ring1 asked for
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(mockCharacter.findOpenWishlistRequest).toHaveBeenCalledWith(
+        'dmg_ring',
+      );
+      const ringRequests = wishlistedItems().filter(
+        (code) => code === 'dmg_ring',
+      );
+      expect(ringRequests).toEqual(['dmg_ring']);
+    });
+
+    it('does not wishlist gear outside the usable level window', async () => {
+      mockCharacter.data.level = 30;
+      mockCharacter.bootsMap.hp = [
+        createMockGear('old_boots', 'Old Boots', 5, 'hp'),
+        createMockGear('mid_boots', 'Mid Boots', 20, 'hp'),
+        createMockGear('future_boots', 'Future Boots', 40, 'hp'),
+      ];
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      // Every other mapped item is level 10, i.e. more than 15 levels below a
+      // level 30 character, so mid_boots is the only candidate in the window
+      expect(wishlistedItems()).toEqual(['mid_boots']);
+    });
+
+    it('does not wishlist anything when evaluating gathering gear', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'woodcutting',
+      );
+
+      await objective.run();
+
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(objective.raisedBlockingRequest).toBe(false);
+    });
+
+    // proposeCombatLoadout shares chooseCombatGear with the equipping path, so
+    // simulating a loadout also posts requests for gear the character lacks
+    it('wishlists missing gear while proposing a loadout', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.proposeCombatLoadout(10, 'red_slime');
+
+      expect(wishlistedItems()).toContain('hp_boots');
     });
   });
 
