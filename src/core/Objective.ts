@@ -293,6 +293,26 @@ export abstract class Objective {
   }
 
   /**
+   * @description Restores the ids of a job rebuilt from its serialized form. The
+   * constructor can't derive them: it generates a fresh objectiveId, and with the
+   * parent absent from the job list it treats the job as its own root. Both are
+   * set here and the logger rebound so resumed jobs log against the right tree.
+   */
+  restoreIdentity(
+    objectiveId: string,
+    parentId?: string,
+    rootId?: string,
+  ): void {
+    this.objectiveId = objectiveId;
+    this.parentId = parentId;
+    this.rootId = rootId ?? parentId ?? objectiveId;
+    this.log = logger.child({
+      objectiveId: this.objectiveId,
+      rootId: this.rootId,
+    });
+  }
+
+  /**
    * @description Updates rootId when parentId is set after construction
    */
   updateRootId(): void {

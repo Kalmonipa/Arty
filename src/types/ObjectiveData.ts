@@ -58,6 +58,7 @@ export interface SerializedJob {
   progress: number;
   parentId?: string;
   childId?: string;
+  rootId?: string;
   maxRetries: number;
   [key: string]: unknown;
 }

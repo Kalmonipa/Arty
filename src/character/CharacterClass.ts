@@ -639,6 +639,7 @@ export class Character {
       progress: job.progress,
       parentId: job.parentId,
       childId: job.childId,
+      rootId: job.rootId,
       maxRetries: job.maxRetries,
       // Add type-specific data
       ...this.getJobSpecificData(job),
@@ -735,6 +736,7 @@ export class Character {
         progress,
         parentId,
         childId,
+        rootId,
         maxRetries,
         ...specificData
       } = jobData;
@@ -892,12 +894,11 @@ export class Character {
       }
 
       // Restore job properties
-      job.objectiveId = objectiveId;
       job.status = status as ObjectiveStatus;
       job.progress = progress;
-      job.parentId = parentId;
       job.childId = childId;
       job.maxRetries = maxRetries;
+      job.restoreIdentity(objectiveId, parentId, rootId);
 
       return job;
     } catch (error) {
