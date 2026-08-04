@@ -97,8 +97,10 @@ export class IdleCrafterObjective extends Objective {
     await this.craftMissingTools();
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
-    await this.craftMissingWeapons();
-    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+    // Commenting this out because I don't think it's necessary. Characters should request
+    // things via the wishlist if they need gear for a fight
+    //await this.craftMissingWeapons();
+    //if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // If crafter, train weapon gear and jewelrycrafting
     if (this.role === 'crafter') {
@@ -392,6 +394,10 @@ export class IdleCrafterObjective extends Objective {
     }
   }
 
+  /**
+   * Crafts 1 of each weapon that is missing from the bank
+   * @returns
+   */
   private async craftMissingWeapons(): Promise<ObjectiveResult> {
     const levelRange = 9;
     const skill = Weaponcrafting;
