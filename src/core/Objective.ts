@@ -113,9 +113,12 @@ export abstract class Objective {
     }
 
     // If this job wishlisted things it needs, park it (instead of completing)
-    // so it resumes once those requests are fulfilled.
+    // so it resumes once those requests are fulfilled. Only jobs that opt in
+    // park: nested helpers return 'on_hold' too, and parking them as well would
+    // put every job in the chain on hold and clear the pending requests their
+    // owning job still needs to wait on.
     if (
-      result.reason === 'on_hold' &&
+      this.parkOnWishlistRequest &&
       this.character.pendingWishlistRequests.length > 0
     ) {
       const parked = await this.character.parkJob(this);

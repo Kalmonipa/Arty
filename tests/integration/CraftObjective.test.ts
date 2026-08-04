@@ -187,6 +187,16 @@ class SimpleMockCharacter {
     async (itemCode: string): Promise<WishlistRequestRef | undefined> =>
       this.pendingWishlistRequests.find((r) => r.itemCode === itemCode),
   );
+
+  jobList = [];
+
+  enableEvents = false;
+
+  cooldownStatus = jest.fn(async (): Promise<void> => {
+    // Mock implementation
+  });
+
+  parkJob = jest.fn(async (): Promise<boolean> => true);
 }
 
 // Mock response data
@@ -1238,6 +1248,88 @@ describe('CraftObjective Integration Tests', () => {
       });
       expect(mockCharacter.addBlockingWishlistRequest).toHaveBeenCalledTimes(1);
       expect(actionCraft).not.toHaveBeenCalled();
+    });
+
+    it('parks neither layer of the chain, so the owning job keeps the request', async () => {
+      // Arrange — same chain as above, but the nested craft runs through
+      // execute() the way craftNow does in production. Each layer used to park
+      // itself and clear the pending requests, so the next layer up posted a
+      // duplicate row and the onHold queue filled with the whole chain.
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      const steelRing: ItemSchema = {
+        ...mockCustomItem,
+        name: 'Steel Ring',
+        code: 'steel_ring',
+        craft: {
+          skill: 'jewelrycrafting',
+          level: 20,
+          items: [{ code: 'steel_bar', quantity: 7 }],
+          quantity: 1,
+        },
+      };
+      const steelBar: ItemSchema = {
+        ...mockCustomItem,
+        name: 'Steel Bar',
+        code: 'steel_bar',
+        type: 'resource',
+        craft: {
+          skill: 'mining',
+          level: 20,
+          items: [{ code: 'iron_ore', quantity: 5 }],
+          quantity: 1,
+        },
+      };
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'steel_ring') return Promise.resolve(steelRing);
+        if (code === 'steel_bar') return Promise.resolve(steelBar);
+        return Promise.resolve(gatherableOre(code));
+      });
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'steel_bar' ? 25 : 0),
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      (
+        addToWishlist as jest.MockedFunction<typeof addToWishlist>
+      ).mockResolvedValue(601);
+      mockCharacter.craftNow.mockImplementation(
+        async (
+          quantity: number,
+          code: string,
+          checkBank?: boolean,
+          includeInventory?: boolean,
+          blockOnMissing?: boolean,
+        ) =>
+          new CraftObjective(
+            mockCharacter as any,
+            { code, quantity },
+            checkBank,
+            includeInventory,
+            blockOnMissing,
+          ).execute(),
+      );
+
+      const objective = new CraftObjective(
+        mockCharacter as any,
+        { code: 'steel_ring', quantity: 5 },
+        undefined,
+        undefined,
+        true, // blockOnMissing
+      );
+
+      // Act
+      const result = await objective.execute();
+
+      // Assert — nothing in the chain parks itself, one row is posted, and the
+      // request is still pending for the job that owns this chain to park on
+      expect(mockCharacter.parkJob).not.toHaveBeenCalled();
+      expect(addToWishlist).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.pendingWishlistRequests).toEqual([
+        { requestId: 601, itemCode: 'steel_bar', quantity: 10 },
+      ]);
+      expect(result.reason).toBe('on_hold');
     });
   });
 
