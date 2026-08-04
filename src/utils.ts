@@ -180,19 +180,23 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-  const allWeapons: ApiError | StaticDataPageItemSchema =
-    await getAllItemInformation({ type: 'weapon', size: 100 });
-  if (allWeapons instanceof ApiError) {
-    logger.error(`Failed to build list of useful weapons: ${allWeapons}`);
-    return;
-  }
-  if (allWeapons.pages > 1) {
-    logger.error(
-      `Weapon list in buildListOfWeapons is ${allWeapons.pages} long. I should add logic to check multiple pages`,
-    );
-  }
+  /**
+   * Path to the game state file containing items
+   */
+  const itemStateFilePath: string = path.join(
+    process.cwd(),
+    'data',
+    'items-data.json',
+  );
 
-  allWeapons.data.forEach((weapon) => {
+  const fileContent = await fs.readFile(itemStateFilePath, 'utf-8');
+  const itemData = JSON.parse(fileContent);
+
+  const allWeapons: ItemSchema[] = itemData.filter(
+    (item) => item.type === 'weapon',
+  );
+
+  allWeapons.forEach((weapon) => {
     if (weapon.subtype === '') {
       const combatArray = weaponMap['combat'];
       // Excluding wooden stick here because I don't think it needs to be in the map
@@ -313,9 +317,6 @@ export async function buildListOf(
   //     `Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`,
   //   );
   // }
-  logger.debug(
-    `Found ${allItems.length} total ${itemType}. Item 1 is ${allItems[0].code}`,
-  );
 
   allItems.forEach((item) => {
     if (item.effects) {

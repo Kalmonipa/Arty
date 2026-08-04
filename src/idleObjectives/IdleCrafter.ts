@@ -91,6 +91,27 @@ export class IdleCrafterObjective extends Objective {
     await checkWishlistToFulfill(this.character, 'fight', this.objectiveId);
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
+    await checkWishlistToFulfill(
+      this.character,
+      Weaponcrafting,
+      this.objectiveId,
+    );
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+
+    await checkWishlistToFulfill(
+      this.character,
+      Gearcrafting,
+      this.objectiveId,
+    );
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+
+    await checkWishlistToFulfill(
+      this.character,
+      Jewelrycrafting,
+      this.objectiveId,
+    );
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+
     await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
