@@ -500,6 +500,7 @@ export class EventObjective extends Objective {
 
       // Equip the item
       // ToDo: associate 'bag' with 'bag_slot' somehow
+      // ToDo: Equip new bag if it provides more inventory space than the current
       if (item === 'backpack') {
         logger.debug(`Bag slot is ${this.character.data.bag_slot}`);
         if (this.character.data.bag_slot === '') {
