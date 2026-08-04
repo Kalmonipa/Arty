@@ -62,7 +62,7 @@ export class ExpandBankObjective extends Objective {
       logger.debug(
         `Purchasing an upgrade would leave us with ${leftoverGold}. Not purchasing`,
       );
-      return { complete: true, success: false, reason: 'failed' };
+      return { complete: true, success: false, reason: 'complete' };
     }
 
     const maps = await this.character.getAvailableBanks();

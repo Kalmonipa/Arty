@@ -4,7 +4,7 @@ import { logger } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { ObjectiveCancelled, ObjectiveResult } from '../types/ObjectiveData.js';
+import { ObjectiveCancelled, ObjectiveCompleted, ObjectiveResult } from '../types/ObjectiveData.js';
 
 /**
  * Equips the specified item into the specified slot
@@ -29,7 +29,7 @@ export class EquipObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
-    return { complete: true, success: true, reason: 'complete' };
+    return ObjectiveCompleted;
   }
 
   /**
