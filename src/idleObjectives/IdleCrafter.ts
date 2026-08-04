@@ -18,7 +18,7 @@ import {
   ItemSchema,
   Skill,
 } from '../types/types.js';
-import { isGatheringSkill, logger } from '../utils.js';
+import { isGatheringSkill, logger, sleep } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
@@ -186,6 +186,11 @@ export class IdleCrafterObjective extends Objective {
     } else if (await this.isLowOnTaskCoins()) {
       // If the idle job hasn't really triggered any other jobs, we want to do a monster task
       await doMonsterTask(this.character, this, 1);
+    } else {
+      logger.info(
+        `Nothing to do for ${this.character.data.name}. Sleeping for 2 minutes`,
+      );
+      await sleep(120, 'crafter_idle', false);
     }
 
     return ObjectiveCompleted;
