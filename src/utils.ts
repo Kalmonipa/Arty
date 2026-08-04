@@ -15,8 +15,7 @@ import { WeaponFlavours } from './types/ItemData.js';
 import { Role, ROLES } from './types/CharacterData.js';
 import { getCharacter } from './character/ApiCalls.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
-import { getAllMaps, getMaps } from './api_calls/Maps.js';
-import { Character } from './character/CharacterClass.js';
+import { getAllMaps } from './api_calls/Maps.js';
 import {
   Alchemy,
   Cooking,
@@ -26,6 +25,8 @@ import {
   Weaponcrafting,
   Woodcutting,
 } from './names.js';
+import * as fs from 'node:fs/promises';
+import path from 'node:path';
 
 /**
  * @description Array of all maps
@@ -127,25 +128,12 @@ export const logger = winston.createLogger({
 });
 
 /**
- * @description Checks that the env variables are set. If any are undefined, throw an error
- * @param name
- * @returns the env var value
- */
-export function getEnv(name: string): string {
-  if (typeof process.env[name] === 'undefined') {
-    throw new Error(`Variable ${name} undefined.`);
-  }
-
-  return process.env[name];
-}
-
-/**
  * Gets a random number between the two values
  * @param min Lowest value
  * @param max Highest value
  * @returns A random number between the min and max
  */
-export function getRandomInt(min, max) {
+export function getRandomInt(min: number, max: number) {
   const minCeiled = Math.ceil(min);
   const maxFloored = Math.floor(max);
   return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
@@ -292,26 +280,44 @@ export async function buildListOf(
 ): Promise<Record<string, ItemSchema[]>> {
   logger.info(`Building map of ${itemType}`);
 
+  /**
+   * Path to the game state file containing items
+   */
+  const itemStateFilePath: string = path.join(
+    process.cwd(),
+    'data',
+    'item-data.json',
+  );
+
   const itemMap: Record<string, ItemSchema[]> = {};
 
-  const allItems: ApiError | StaticDataPageItemSchema =
-    await getAllItemInformation({
-      type: itemType,
-      size: 100,
-    });
-  if (allItems instanceof ApiError) {
-    logger.error(
-      `Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`,
-    );
-    return {};
-  }
-  if (allItems.pages > 1) {
-    logger.error(
-      `Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`,
-    );
-  }
+  const fileContent = await fs.readFile(itemStateFilePath, 'utf-8');
+  const itemData = JSON.parse(fileContent);
 
-  allItems.data.forEach((item) => {
+  const allItems: ItemSchema[] = itemData.filter(
+    (item) => item.type === itemType,
+  );
+  // const allItems: ApiError | StaticDataPageItemSchema =
+  //   await getAllItemInformation({
+  //     type: itemType,
+  //     size: 100,
+  //   });
+  // if (allItems instanceof ApiError) {
+  //   logger.error(
+  //     `Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`,
+  //   );
+  //   return {};
+  // }
+  // if (allItems.pages > 1) {
+  //   logger.error(
+  //     `Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`,
+  //   );
+  // }
+  logger.debug(
+    `Found ${allItems.length} total ${itemType}. Item 1 is ${allItems[0].code}`,
+  );
+
+  allItems.forEach((item) => {
     if (item.effects) {
       item.effects.forEach((effect) => {
         if (itemMap[effect.code]) {

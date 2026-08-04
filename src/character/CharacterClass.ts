@@ -214,6 +214,30 @@ export class Character {
    * Path to the job queue persistence file
    */
   private jobQueueFilePath: string;
+  /**
+   * Path to the game state file containing maps
+   */
+  private mapStateFilePath: string = path.join(
+    process.cwd(),
+    'data',
+    'maps-data.json',
+  );
+  /**
+   * Path to the game state file containing monsters
+   */
+  private monsterStateFilePath: string = path.join(
+    process.cwd(),
+    'data',
+    'monsters-data.json',
+  );
+  /**
+   * Path to the game state file containing resources
+   */
+  private resourceStateFilePath: string = path.join(
+    process.cwd(),
+    'data',
+    'resources-data.json',
+  );
 
   /**
    * Game state that we can refer to without API calls

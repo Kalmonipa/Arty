@@ -23,8 +23,6 @@ export class ItemTaskObjective extends Objective {
     this.jobFlavour = 'ItemTask';
     this.quantity = quantity;
     this.shouldEmitMetrics = true;
-    // A task item this character can't gather itself is wishlisted, so this job
-    // parks until it's fulfilled rather than cancelling the task.
     this.parkOnWishlistRequest = true;
   }
 

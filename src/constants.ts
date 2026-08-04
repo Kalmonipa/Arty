@@ -1,5 +1,5 @@
 import { Role } from './types/CharacterData.js';
-import { getEnv } from './utils.js';
+import { getEnv } from './getEnv.js';
 import dotenv from 'dotenv';
 
 dotenv.config({ quiet: true });

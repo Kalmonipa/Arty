@@ -4,7 +4,7 @@ This is my client for ArtifactsMMO written in Typescript. It exposes an API that
 and send it HTTP requests to get characters to do stuff.
 ToDo: write up docs on the API
 
-It can be run standalone with
+It can be run standalone with (ToDo: add notes on running a local database)
 
 ```
 npm run install
@@ -13,6 +13,7 @@ npm run start
 ```
 
 or in a Docker container. Example Docker compose file:
+ToDo: Update the example docker-compose
 
 ```
 services:
@@ -30,6 +31,8 @@ services:
 ```
 
 ### API Endpoints
+
+ToDo: Update this endpoint table. It is out of date on 4/8/26 (and has been for a while...)
 
 | Type | Endpoint                  | Description                                                                                      | Body                                                                             |
 | ---- | ------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
@@ -51,6 +54,12 @@ services:
 | POST | /trade/:tradeType         | Trades with the relevant NPC. tradeType must be 'buy' or 'sell'                                  | quantity: number itemCode: string                                                |
 | POST | /train                    | Trains the requested skill to the requested level                                                | quantity: number skill: string                                                   |
 | POST | /withdraw                 | Withdraws the requested items from the bank                                                      | quantity: number itemCode: string                                                |
+
+### Saving game data
+
+To save on API calls, the containers read from game data saved locally. This game data is basically static all season so shouldn't need updating,
+until a new season starts. To get fresh game data, run `npm run pull-gamestate` and then copy the created `*-data.json` files to a directory
+that the containers have mounted.
 
 ### To run locally:
 

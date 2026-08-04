@@ -33,6 +33,7 @@
     "start:debug": "LOG_LEVEL=debug node dist/main.js",
     "prettier:fix": "npx prettier . --write --log-level silent",
     "create-characters": "tsx scripts/create-characters.ts",
+    "pull-gamestate": "tsx scripts/update-local-gamestate.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

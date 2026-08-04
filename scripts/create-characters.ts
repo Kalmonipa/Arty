@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { ApiUrl } from '../src/constants.js';
 import { CharacterSchema } from '../src/types/types.js';
 
 /**
@@ -7,7 +8,7 @@ import { CharacterSchema } from '../src/types/types.js';
  */
 
 // Character names to create
-const characters = [
+const characters: CreateCharacterRequest[] = [
   {
     name: 'LongLegLarry',
     skin: 'vip_founder',
@@ -18,7 +19,7 @@ const characters = [
   },
   {
     name: 'ZippyZoe',
-    skin: 'necromancer',
+    skin: 'robin_hood',
   },
   {
     name: 'TimidTom',
@@ -26,12 +27,9 @@ const characters = [
   },
   {
     name: 'BouncyBella',
-    skin: 'women3',
+    skin: 'necromancer',
   },
 ];
-
-// Set the API_URL if you want to use another endpoint (i.e. the test server)
-const API_BASE_URL = 'https://api.artifactsmmo.com/';
 
 interface CreateCharacterRequest {
   name: string;
@@ -49,7 +47,7 @@ async function createCharacter(
   try {
     console.log(`Creating character: ${name} with skin: ${skin}`);
 
-    const response = await fetch(`${API_BASE_URL}/characters/create`, {
+    const response = await fetch(`${ApiUrl}/characters/create`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',

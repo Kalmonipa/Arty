@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from 'pg';
-import { getEnv } from './utils.js';
+import { getEnv } from './getEnv.js';
 
 export interface GlobalConfig {
   key: string;
