@@ -55,12 +55,15 @@ async function getGameData(itemType: string): Promise<void> {
 
   console.log(`Fetched ${gameData.data.length} ${itemType} in total`);
 
-  const fs = await import('fs');
-  fs.writeFileSync(
-    `${itemType}-data.json`,
-    JSON.stringify(gameData.data, null, 2),
-  );
-  console.log(`Saved ${itemType} data to ${itemType}-data.json`);
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+
+  const dataDir = path.join(process.cwd(), 'data');
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  const outputPath = path.join(dataDir, `${itemType}-data.json`);
+  fs.writeFileSync(outputPath, JSON.stringify(gameData.data, null, 2));
+  console.log(`Saved ${itemType} data to ${outputPath}`);
 }
 
 await getGameData('items');

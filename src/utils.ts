@@ -286,7 +286,7 @@ export async function buildListOf(
   const itemStateFilePath: string = path.join(
     process.cwd(),
     'data',
-    'item-data.json',
+    'items-data.json',
   );
 
   const itemMap: Record<string, ItemSchema[]> = {};
