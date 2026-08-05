@@ -1090,55 +1090,55 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
-    it('should skip fight simulation for boss monsters with no participants', async () => {
-      // Arrange
-      mockCharacter.addItemToInventory('apple', 20);
-      const bossMonsterData = {
-        data: {
-          name: 'Dragon Boss',
-          code: 'dragon_boss',
-          level: 50,
-          type: 'boss' as const,
-          hp: 5000,
-          attack_fire: 100,
-          attack_earth: 0,
-          attack_water: 0,
-          attack_air: 0,
-          res_fire: 50,
-          res_earth: 0,
-          res_water: 0,
-          res_air: 0,
-          critical_strike: 0,
-          initiative: 100,
-          effects: [],
-          min_gold: 0,
-          max_gold: 5,
-          drops: [],
-        },
-      };
-      (
-        getMonsterInformation as jest.MockedFunction<
-          typeof getMonsterInformation
-        >
-      ).mockResolvedValue(bossMonsterData);
+    // it('should skip fight simulation for boss monsters with no participants', async () => {
+    //   // Arrange
+    //   mockCharacter.addItemToInventory('apple', 20);
+    //   const bossMonsterData = {
+    //     data: {
+    //       name: 'Dragon Boss',
+    //       code: 'dragon_boss',
+    //       level: 50,
+    //       type: 'boss' as const,
+    //       hp: 5000,
+    //       attack_fire: 100,
+    //       attack_earth: 0,
+    //       attack_water: 0,
+    //       attack_air: 0,
+    //       res_fire: 50,
+    //       res_earth: 0,
+    //       res_water: 0,
+    //       res_air: 0,
+    //       critical_strike: 0,
+    //       initiative: 100,
+    //       effects: [],
+    //       min_gold: 0,
+    //       max_gold: 5,
+    //       drops: [],
+    //     },
+    //   };
+    //   (
+    //     getMonsterInformation as jest.MockedFunction<
+    //       typeof getMonsterInformation
+    //     >
+    //   ).mockResolvedValue(bossMonsterData);
 
-      const bossTarget: ObjectiveTargets = {
-        code: 'dragon_boss',
-        quantity: 1,
-      };
-      const bossObjective = new FightObjective(
-        mockCharacter as any,
-        bossTarget,
-        //['testchar1', 'testChar2'],
-      );
+    //   const bossTarget: ObjectiveTargets = {
+    //     code: 'dragon_boss',
+    //     quantity: 1,
+    //   };
+    //   const bossObjective = new FightObjective(
+    //     mockCharacter as any,
+    //     bossTarget,
+    //     //['testchar1', 'testChar2'],
+    //   );
 
-      // Act
-      const result = await bossObjective.runPrerequisiteChecks();
+    //   // Act
+    //   const result = await bossObjective.runPrerequisiteChecks();
 
-      // Assert
-      expect(result.success).toBe(false);
-      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
-    });
+    //   // Assert
+    //   expect(result.success).toBe(false);
+    //   expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+    // });
 
     it('should run fight simulation for elite monsters', async () => {
       // Arrange
@@ -1189,54 +1189,54 @@ describe('FightObjective Integration Tests', () => {
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
     });
 
-    it('should return false if attempting to fight boss alone', async () => {
-      // Arrange
-      mockCharacter.addItemToInventory('apple', 20);
-      const bossMonsterData = {
-        data: {
-          name: 'Dragon Boss',
-          code: 'dragon_boss',
-          level: 50,
-          type: 'boss' as const,
-          hp: 5000,
-          attack_fire: 100,
-          attack_earth: 0,
-          attack_water: 0,
-          attack_air: 0,
-          res_fire: 50,
-          res_earth: 0,
-          res_water: 0,
-          res_air: 0,
-          critical_strike: 0,
-          initiative: 100,
-          effects: [],
-          min_gold: 0,
-          max_gold: 5,
-          drops: [],
-        },
-      };
-      (
-        getMonsterInformation as jest.MockedFunction<
-          typeof getMonsterInformation
-        >
-      ).mockResolvedValue(bossMonsterData);
+    //   it('should return false if attempting to fight boss alone', async () => {
+    //     // Arrange
+    //     mockCharacter.addItemToInventory('apple', 20);
+    //     const bossMonsterData = {
+    //       data: {
+    //         name: 'Dragon Boss',
+    //         code: 'dragon_boss',
+    //         level: 50,
+    //         type: 'boss' as const,
+    //         hp: 5000,
+    //         attack_fire: 100,
+    //         attack_earth: 0,
+    //         attack_water: 0,
+    //         attack_air: 0,
+    //         res_fire: 50,
+    //         res_earth: 0,
+    //         res_water: 0,
+    //         res_air: 0,
+    //         critical_strike: 0,
+    //         initiative: 100,
+    //         effects: [],
+    //         min_gold: 0,
+    //         max_gold: 5,
+    //         drops: [],
+    //       },
+    //     };
+    //     (
+    //       getMonsterInformation as jest.MockedFunction<
+    //         typeof getMonsterInformation
+    //       >
+    //     ).mockResolvedValue(bossMonsterData);
 
-      const eliteTarget: ObjectiveTargets = {
-        code: 'elite_orc',
-        quantity: 1,
-      };
-      const eliteObjective = new FightObjective(
-        mockCharacter as any,
-        eliteTarget,
-      );
+    //     const eliteTarget: ObjectiveTargets = {
+    //       code: 'elite_orc',
+    //       quantity: 1,
+    //     };
+    //     const eliteObjective = new FightObjective(
+    //       mockCharacter as any,
+    //       eliteTarget,
+    //     );
 
-      // Act
-      const result = await eliteObjective.runPrerequisiteChecks();
+    //     // Act
+    //     const result = await eliteObjective.runPrerequisiteChecks();
 
-      // Assert
-      expect(result.success).toBe(false);
-      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
-    });
+    //     // Assert
+    //     expect(result.success).toBe(false);
+    //     expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+    //   });
   });
 
   //describe('Parent-child job relationships', () => {

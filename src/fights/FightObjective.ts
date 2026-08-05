@@ -58,15 +58,15 @@ export class FightObjective extends Objective {
       return { complete: true, success: false, reason: 'failed' };
     }
 
-    if (
-      (!this.participants || this.participants.length === 0) &&
-      mobInfo.data.type === 'boss'
-    ) {
-      logger.info(
-        `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
-      );
-      return { complete: true, success: false, reason: 'failed' };
-    }
+    // if (
+    //   (!this.participants || this.participants.length === 0) &&
+    //   mobInfo.data.type === 'boss'
+    // ) {
+    //   logger.info(
+    //     `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
+    //   );
+    //   return { complete: true, success: false, reason: 'failed' };
+    // }
 
     if (this.runFightSim) {
       const fakeSchema = this.character.createFakeCharacterSchema(
@@ -79,7 +79,7 @@ export class FightObjective extends Objective {
       if (
         await this.character.simulateFightNow([fakeSchema], this.target.code)
       ) {
-        return { complete: true, success: true, reason: 'complete' };
+        return ObjectiveCompleted;
       }
 
       // Check if the mob has poison effect and check if we can win without antidotes
@@ -106,7 +106,7 @@ export class FightObjective extends Objective {
         if (
           await this.character.simulateFightNow([fakeSchema], this.target.code)
         ) {
-          return { complete: true, success: true, reason: 'complete' };
+          return ObjectiveCompleted;
         } else {
           await this.topUpSecondaryPots(mobInfo.data);
         }
@@ -144,7 +144,7 @@ export class FightObjective extends Objective {
         logger.info(
           `Fight sim against ${this.target.code} was a failure. Skipping`,
         );
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       if (shouldFightWithHealthPots) {
