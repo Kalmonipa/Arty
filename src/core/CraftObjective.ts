@@ -5,6 +5,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import {
   ObjectiveCancelled,
+  ObjectiveCompleted,
   ObjectiveOnHold,
   ObjectiveResult,
   ObjectiveTargets,
@@ -134,7 +135,15 @@ export class CraftObjective extends Objective {
          * ToDo: Check all the skills required and wishlist any that don't belong to the crafter
          * After this we loop through again and do the ones that the crafter can do
          */
-        if (targetItem.craft?.skill) {
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          targetItem.code,
+        );
+        if (numInBank >= this.target.quantity) {
+          logger.info(
+            `Already have ${numInBank} ${targetItem.code} in the bank. No need to craft`,
+          );
+          return ObjectiveCompleted;
+        } else if (targetItem.craft?.skill) {
           const skillNeeded = targetItem.craft.skill;
 
           const requiredRole = SKILL_ROLE[skillNeeded];
