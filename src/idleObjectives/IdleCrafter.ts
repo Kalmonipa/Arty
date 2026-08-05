@@ -214,7 +214,7 @@ export class IdleCrafterObjective extends Objective {
       logger.info(
         `Nothing to do for ${this.character.data.name}. Sleeping for ${minutesToSleep} minutes`,
       );
-      await sleep(minutesToSleep * 60, 'crafter_idle', false);
+      await sleep(minutesToSleep * 60, 'crafter_idle');
     }
 
     return ObjectiveCompleted;
