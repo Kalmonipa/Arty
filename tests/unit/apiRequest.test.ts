@@ -256,7 +256,7 @@ describe('apiRequest', () => {
       expect(rateLimitDelays(sleep)).toEqual([1, 2, 4, 8]);
     });
 
-    it('uses full jitter, so a delay can be as low as 0', async () => {
+    it('jitters down to the floor rather than to zero', async () => {
       jest
         .spyOn(global, 'fetch')
         .mockResolvedValueOnce(jsonResponse(429, {}))
@@ -268,12 +268,46 @@ describe('apiRequest', () => {
         {
           url: 'https://api/action/fight',
           method: 'POST',
-          retry: { baseDelaySeconds: 10 },
+          retry: { baseDelaySeconds: 10, minDelaySeconds: 2 },
         },
         { sleep },
       );
 
-      expect(rateLimitDelays(sleep)[0]).toBe(0);
+      expect(rateLimitDelays(sleep)[0]).toBe(2);
+    });
+
+    it('never retries instantly on any attempt, at minimum jitter', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        { url: 'https://api/action/fight', method: 'POST' },
+        { sleep },
+      );
+
+      const delays = rateLimitDelays(sleep);
+      expect(delays.length).toBeGreaterThan(0);
+      for (const delay of delays) {
+        expect(delay).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it('clamps the floor to the window so a small base is not inflated', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        {
+          url: 'https://api/action/fight',
+          method: 'POST',
+          retry: { maxRetries: 1, baseDelaySeconds: 1, minDelaySeconds: 5 },
+        },
+        { sleep },
+      );
+
+      expect(rateLimitDelays(sleep)[0]).toBe(1);
     });
 
     it('never sleeps longer than the cap, even at maximum jitter', async () => {
@@ -297,7 +331,7 @@ describe('apiRequest', () => {
       expect(Math.max(...delays)).toBe(60);
     });
 
-    it('defaults to base 1s, a 60s cap, and 10 retries', async () => {
+    it('defaults to base 3s, a 60s cap, and 5 retries', async () => {
       jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
       jest.spyOn(Math, 'random').mockReturnValue(1);
       const sleep = makeSleep();
@@ -307,10 +341,21 @@ describe('apiRequest', () => {
         { sleep },
       );
 
-      const delays = rateLimitDelays(sleep);
-      expect(delays).toHaveLength(10);
-      expect(delays[0]).toBe(1);
-      expect(Math.max(...delays)).toBe(60);
+      expect(rateLimitDelays(sleep)).toEqual([3, 6, 12, 24, 48]);
+    });
+
+    it('gives up well inside two minutes so a storm cannot park a character', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(1);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        { url: 'https://api/action/fight', method: 'POST' },
+        { sleep },
+      );
+
+      const totalSeconds = rateLimitDelays(sleep).reduce((a, b) => a + b, 0);
+      expect(totalSeconds).toBeLessThanOrEqual(120);
     });
   });
 });

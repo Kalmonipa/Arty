@@ -35,9 +35,24 @@ describe('BankCache', () => {
     expect(cache!.quantityOf('skull_ring')).toBe(5);
   });
 
-  it('returns undefined when the bank fetch fails', async () => {
+  it('marks the cache stale when the bank fetch fails', async () => {
     const cache = await BankCache.create(characterWithBank(undefined));
-    expect(cache).toBeUndefined();
+
+    expect(cache.stale).toBe(true);
+  });
+
+  it('reports a successful snapshot as not stale', async () => {
+    const cache = await BankCache.create(
+      characterWithBank([{ code: 'copper_ore', quantity: 1 }]),
+    );
+
+    expect(cache.stale).toBe(false);
+  });
+
+  it('reports 0 for every code in a stale cache rather than guessing', async () => {
+    const cache = await BankCache.create(characterWithBank(undefined));
+
+    expect(cache.quantityOf('skull_ring')).toBe(0);
   });
 
   it('remove decrements the cached quantity', async () => {

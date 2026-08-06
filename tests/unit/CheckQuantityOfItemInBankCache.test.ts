@@ -30,6 +30,20 @@ describe('Character.checkQuantityOfItemInBank with a BankCache', () => {
     expect(getBankItems).not.toHaveBeenCalled();
   });
 
+  // The amplification this guards against: a rate-limited snapshot used to
+  // yield undefined, which sent every subsequent lookup back to the API one
+  // item at a time — so being rate limited made us issue more requests.
+  it('does not fall back to the bank API when the cache is stale', async () => {
+    const cache = await BankCache.create({
+      getAllBankItems: async () => undefined,
+    } as unknown as Character);
+
+    const qty = await character.checkQuantityOfItemInBank('skull_ring', cache);
+
+    expect(qty).toBe(0);
+    expect(getBankItems).not.toHaveBeenCalled();
+  });
+
   it('falls back to a live bank API call when no cache is provided', async () => {
     jest.mocked(getBankItems).mockResolvedValue({
       data: [{ code: 'skull_ring', quantity: 4 }],
