@@ -2045,6 +2045,7 @@ export class Character {
         }
       }
     }
+    return ObjectiveFailed;
   }
 
   /**
