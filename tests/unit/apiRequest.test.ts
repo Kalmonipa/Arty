@@ -344,6 +344,54 @@ describe('apiRequest', () => {
       expect(rateLimitDelays(sleep)).toEqual([3, 6, 12, 24, 48]);
     });
 
+    // The simulation bucket is 1/s, so its window clears in under a second and
+    // the 3s base the shared-hourly buckets need is pure over-waiting here.
+    it('backs off the simulation bucket from a 1s base', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(1);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        {
+          url: 'https://api.artifactsmmo.com/simulation/fight',
+          method: 'POST',
+        },
+        { sleep },
+      );
+
+      expect(rateLimitDelays(sleep)).toEqual([1, 2, 4, 8, 10]);
+    });
+
+    it('leaves the data bucket on the slower shared-budget schedule', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(1);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        { url: 'https://api.artifactsmmo.com/my/bank/items' },
+        { sleep },
+      );
+
+      expect(rateLimitDelays(sleep)).toEqual([3, 6, 12, 24, 48]);
+    });
+
+    it('still lets an explicit retry override beat the bucket default', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
+      jest.spyOn(Math, 'random').mockReturnValue(1);
+      const sleep = makeSleep();
+
+      await apiRequest(
+        {
+          url: 'https://api.artifactsmmo.com/simulation/fight',
+          method: 'POST',
+          retry: { maxRetries: 2, baseDelaySeconds: 5 },
+        },
+        { sleep },
+      );
+
+      expect(rateLimitDelays(sleep)).toEqual([5, 10]);
+    });
+
     it('gives up well inside two minutes so a storm cannot park a character', async () => {
       jest.spyOn(global, 'fetch').mockResolvedValue(jsonResponse(429, {}));
       jest.spyOn(Math, 'random').mockReturnValue(1);

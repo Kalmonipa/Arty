@@ -2,7 +2,7 @@ import { ApiError, toApiError } from '../core/Error.js';
 import { logger, MyHeaders, sleep as defaultSleep } from '../utils.js';
 import { CharName } from '../constants.js';
 import { apiRequestsCounter, rateLimitBackoffSeconds } from '../metrics.js';
-import { classifyRequest } from './rateLimitBuckets.js';
+import { classifyRequest, RateLimitBucket } from './rateLimitBuckets.js';
 
 /**
  * HTTP 429. ArtifactsMMO budgets requests per IP, so every character's
@@ -42,6 +42,17 @@ const DEFAULT_RETRY: RetryConfig = {
   baseDelaySeconds: 3,
   maxDelaySeconds: 60,
   minDelaySeconds: 1,
+};
+
+/**
+ * Buckets whose window clears on a different timescale to the shared hourly
+ * budgets. `simulation` is capped at 1/s with no minute or hour limit, so its
+ * rejection is over within a second — every observed simulation 429 succeeded
+ * on the first retry. Backing it off from the 3s base above would spend more
+ * time waiting than the limit it's waiting on.
+ */
+const BUCKET_RETRY: Partial<Record<RateLimitBucket, Partial<RetryConfig>>> = {
+  simulation: { baseDelaySeconds: 1, maxDelaySeconds: 10 },
 };
 
 export interface ApiRequestOptions<T = unknown> {
@@ -149,7 +160,6 @@ export async function apiRequest<T>(
     awaitCooldown = true,
     onSuccess,
   } = options;
-  const retry = { ...DEFAULT_RETRY, ...options.retry };
   const { sleep } = deps;
 
   const requestOptions: RequestInit = {
@@ -159,6 +169,11 @@ export async function apiRequest<T>(
   };
 
   const { bucket, endpoint } = classifyRequest(url, method);
+  const retry = {
+    ...DEFAULT_RETRY,
+    ...BUCKET_RETRY[bucket],
+    ...options.retry,
+  };
   const labels = { character: CharName, bucket, endpoint };
   const record = (
     outcome: 'ok' | 'rate_limited' | 'error' | 'transport_error',

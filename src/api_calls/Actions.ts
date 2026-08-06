@@ -14,8 +14,14 @@ import {
   SkillResponseSchema,
 } from '../types/types.js';
 import { logger } from '../utils.js';
-import { ApiUrl } from '../constants.js';
+import { ApiUrl, CharName } from '../constants.js';
 import { invalidateBankQuantities } from '../core/bankQuantityCache.js';
+import {
+  cacheFightSimulation,
+  fightSimulationKey,
+  readCachedFightSimulation,
+} from '../core/fightSimulationCache.js';
+import { fightSimulationCacheCounter } from '../metrics.js';
 import { apiRequest } from './request.js';
 
 /**
@@ -265,7 +271,18 @@ export async function fightSimulator(
   monsterCode: string,
   iterations: number,
 ): Promise<CombatSimulationResponseSchema | ApiError> {
-  return apiRequest<CombatSimulationResponseSchema>({
+  const key = fightSimulationKey(characters, monsterCode, iterations);
+  const cached = readCachedFightSimulation(key);
+  if (cached) {
+    fightSimulationCacheCounter.inc({ character: CharName, outcome: 'hit' });
+    logger.debug(
+      `Reusing the simulation of ${iterations} fights vs ${monsterCode}`,
+    );
+    return cached;
+  }
+  fightSimulationCacheCounter.inc({ character: CharName, outcome: 'miss' });
+
+  const response = await apiRequest<CombatSimulationResponseSchema>({
     url: `${ApiUrl}/simulation/fight`,
     method: 'POST',
     body: {
@@ -280,4 +297,12 @@ export async function fightSimulator(
     },
     fallbackMessage: 'Unknown error from /simulation/fight',
   });
+
+  // A rate-limited or rejected simulation is an absence of a verdict, not a
+  // verdict of its own; caching it would freeze a failure into a decision.
+  if (!(response instanceof ApiError)) {
+    cacheFightSimulation(key, response);
+  }
+
+  return response;
 }

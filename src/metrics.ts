@@ -49,6 +49,18 @@ export const rateLimitBackoffSeconds = new Counter({
   registers: [register],
 });
 
+/**
+ * Hit rate of the fight simulation memo. The logs put the duplicate rate at
+ * 99%, so a hit rate well below that means loadouts are churning more than
+ * expected and the simulator is being asked genuinely new questions.
+ */
+export const fightSimulationCacheCounter = new Counter({
+  name: 'arty_fight_simulation_cache_total',
+  help: 'Fight simulation lookups, by whether the result was already known',
+  labelNames: ['character', 'outcome'] as const,
+  registers: [register],
+});
+
 export const jobActiveGauge = new Gauge({
   name: 'arty_job_active',
   help: 'Whether a job type is currently active for a character (1=active, 0=inactive)',
