@@ -199,15 +199,15 @@ export async function claimWishlistRequest(
     const result = await db.query(query, [id, characterName]);
     const claimed = (result.rowCount ?? 0) > 0;
     if (claimed) {
-      logger.info(`Claimed request ${id} for ${characterName}`);
+      logger.info(`Claimed request #${id} for ${characterName}`);
     } else {
       logger.info(
-        `Could not claim request ${id} for ${characterName}; another character got there first`,
+        `Could not claim request #${id} for ${characterName}; another character got there first`,
       );
     }
     return claimed;
   } catch (err) {
-    logger.error(`Failed to claim wishlist request ${id}: ${err}`);
+    logger.error(`Failed to claim wishlist request #${id}: ${err}`);
     return false;
   }
 }
@@ -224,7 +224,7 @@ export async function markAsFulfilled(
   id: number,
   characterName: string,
 ): Promise<boolean> {
-  logger.debug(`Marking request ${id} as fulfilled`);
+  logger.debug(`Marking request #${id} as fulfilled`);
   const query = `
     UPDATE wishlist
     SET fulfilled = true, executing = false, executing_by = NULL, claimed_at = NULL

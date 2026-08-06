@@ -1337,6 +1337,225 @@ describe('CraftObjective Integration Tests', () => {
     });
   });
 
+  describe('Up-front requests for role-gated ingredients', () => {
+    // steel_ring needs 7 steel_bar per craft, and steel_bar is smelted with
+    // mining, so only a labourer can make it. A crafter asks for it up front
+    // rather than discovering it can't smelt them once gathering starts.
+    const steelRing: ItemSchema = {
+      name: 'Steel Ring',
+      code: 'steel_ring',
+      level: 20,
+      type: 'ring',
+      subtype: '',
+      description: '',
+      conditions: [],
+      effects: [],
+      craft: {
+        skill: 'jewelrycrafting',
+        level: 20,
+        items: [{ code: 'steel_bar', quantity: 7 }],
+        quantity: 1,
+      },
+      tradeable: true,
+    };
+    const steelBar: ItemSchema = {
+      name: 'Steel Bar',
+      code: 'steel_bar',
+      level: 20,
+      type: 'resource',
+      subtype: 'bar',
+      description: '',
+      conditions: [],
+      effects: [],
+      craft: {
+        skill: 'mining',
+        level: 20,
+        items: [{ code: 'iron_ore', quantity: 5 }],
+        quantity: 1,
+      },
+      tradeable: true,
+    };
+
+    /** Nests a real craft job so the role gate runs the way it does in production */
+    const nestRealCraftJob = () =>
+      mockCharacter.craftNow.mockImplementation(
+        async (
+          quantity: number,
+          code: string,
+          checkBank?: boolean,
+          includeInventory?: boolean,
+          blockOnMissing?: boolean,
+        ) =>
+          new CraftObjective(
+            mockCharacter as any,
+            { code, quantity },
+            checkBank,
+            includeInventory,
+            blockOnMissing,
+          ).run(),
+      );
+
+    beforeEach(() => {
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'steel_ring') return Promise.resolve(steelRing);
+        if (code === 'steel_bar') return Promise.resolve(steelBar);
+        return Promise.resolve(mockIngredientItemData);
+      });
+      (
+        addToWishlist as jest.MockedFunction<typeof addToWishlist>
+      ).mockResolvedValue(601);
+    });
+
+    const craftRings = (quantity: number, blockOnMissing = true) =>
+      new CraftObjective(
+        mockCharacter as any,
+        { code: 'steel_ring', quantity },
+        undefined,
+        undefined,
+        blockOnMissing,
+      );
+
+    it('crafts the batches it can supply before parking on the request', async () => {
+      // Arrange — 10 rings needs 70 bars and splits into 2 batches of 5 crafts
+      // (35 bars each). Only batch 1 is covered by what's carried. The up-front
+      // request must not stop batch 1: raisedBlockingRequest stays set for the
+      // rest of the job, so reading it per batch forfeits this progress.
+      mockCharacter.data.inventory_max_items = 40;
+      let bars = 35;
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'steel_bar' ? bars : 0),
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      (
+        actionCraft as jest.MockedFunction<typeof actionCraft>
+      ).mockImplementation(async (_character, payload) => {
+        bars -= 7 * (payload.quantity ?? 0);
+        return mockCraftResponse;
+      });
+      nestRealCraftJob();
+
+      // Act
+      const objective = craftRings(10);
+      const result = await objective.run();
+
+      // Assert — batch 1 crafted, then parked with batch 2 outstanding
+      expect(actionCraft).toHaveBeenCalledTimes(1);
+      expect(actionCraft).toHaveBeenCalledWith(expect.anything(), {
+        code: 'steel_ring',
+        quantity: 5,
+      });
+      expect(objective.progress).toBe(5);
+      expect(result.reason).toBe('on_hold');
+    });
+
+    it('requests enough for the whole order, not a single craft', async () => {
+      // Arrange — 5 rings at 7 bars each is 35 bars. Requesting one craft's
+      // worth parks the job on a request that can never satisfy it, because
+      // gatherIngredients' correctly-sized request is deduplicated away.
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      nestRealCraftJob();
+
+      // Act
+      const result = await craftRings(5).run();
+
+      // Assert
+      expect(addToWishlist).toHaveBeenCalledTimes(1);
+      expect(addToWishlist).toHaveBeenCalledWith({
+        itemCode: 'steel_bar',
+        quantity: 35,
+        characterName: 'TestCharacter',
+        jobId: OwningJobId,
+        acquisitionMethod: 'mining',
+      });
+      expect(result.reason).toBe('on_hold');
+      expect(actionCraft).not.toHaveBeenCalled();
+    });
+
+    it('requests nothing when the bank and inventory already cover the order', async () => {
+      // Arrange — 25 of the 35 bars carried and the other 10 banked, so no
+      // other character is needed even though the ingredient is role-gated
+      let steelBarInInv = 25;
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'steel_bar' ? steelBarInInv : 0),
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockImplementation(
+        async (code: string) => (code === 'steel_bar' ? 10 : 0),
+      );
+      mockCharacter.withdrawNow.mockImplementation(
+        async (quantity: number, code: string) => {
+          if (code === 'steel_bar') steelBarInInv += quantity;
+          return ObjectiveCompleted;
+        },
+      );
+
+      // Act
+      const result = await craftRings(5).run();
+
+      // Assert
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(10, 'steel_bar');
+      expect(result.success).toBe(true);
+      expect(actionCraft).toHaveBeenCalled();
+    });
+
+    it('requests nothing when the job did not opt into blocking', async () => {
+      // Arrange — most craftNow callers omit blockOnMissing, and they expect a
+      // missing ingredient to fail the craft rather than post a request.
+      // craftNow succeeds here so the up-front check is the only thing that
+      // could post a row; a nested craft failing on the role gate posts its own.
+      let steelBarInInv = 0;
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'steel_bar' ? steelBarInInv : 0),
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.craftNow.mockImplementation(
+        async (quantity: number, code: string) => {
+          if (code === 'steel_bar') steelBarInInv += quantity;
+          return ObjectiveCompleted;
+        },
+      );
+
+      // Act
+      const result = await craftRings(5, false).run();
+
+      // Assert
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
+    });
+
+    it('requests nothing when no job owns the request', async () => {
+      // Arrange — with no owning job the row is never waited on nor cleaned up,
+      // so it would be orphaned and re-added on every cycle. craftNow succeeds
+      // here, so the up-front check is the only thing that could post a row.
+      mockCharacter.wishlistRequestOwnerId = undefined;
+      let steelBarInInv = 0;
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'steel_bar' ? steelBarInInv : 0),
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.craftNow.mockImplementation(
+        async (quantity: number, code: string) => {
+          if (code === 'steel_bar') steelBarInInv += quantity;
+          return ObjectiveCompleted;
+        },
+      );
+
+      // Act
+      const objective = craftRings(5);
+      const result = await objective.run();
+
+      // Assert
+      expect(addToWishlist).not.toHaveBeenCalled();
+      expect(objective.raisedBlockingRequest).toBe(false);
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('Error handling', () => {
     it('does not attempt to craft when moving to the workshop fails', async () => {
       // Arrange — ingredients present, but the workshop is unreachable (move returns false).

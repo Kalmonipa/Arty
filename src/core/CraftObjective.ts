@@ -6,6 +6,7 @@ import { Objective } from './Objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveOnHold,
   ObjectiveResult,
   ObjectiveTargets,
@@ -111,10 +112,10 @@ export class CraftObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       logger.debug(`Craft attempt ${attempt}/${this.maxRetries}`);
 
-      const targetItem = await getItemInformation(this.target.code);
+      const itemToCraft = await getItemInformation(this.target.code);
 
-      if (targetItem instanceof ApiError) {
-        const shouldRetry = await this.character.handleErrors(targetItem);
+      if (itemToCraft instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(itemToCraft);
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Craft failed after ${attempt} attempts`);
@@ -123,11 +124,11 @@ export class CraftObjective extends Objective {
       } else {
         if (!(await this.checkStatus())) return ObjectiveCancelled;
 
-        if (!targetItem.craft) {
+        if (!itemToCraft.craft) {
           logger.warn(
-            `Item ${targetItem.code} has no craft information. Failing`,
+            `Item ${itemToCraft.code} has no craft information. Failing`,
           );
-          this.character.removeItemFromItemsToKeep(targetItem.code);
+          this.character.removeItemFromItemsToKeep(itemToCraft.code);
           return { complete: true, success: false, reason: 'failed' };
         }
 
@@ -136,23 +137,23 @@ export class CraftObjective extends Objective {
          * After this we loop through again and do the ones that the crafter can do
          */
         const numInBank = this.checkBank
-          ? await this.character.checkQuantityOfItemInBank(targetItem.code)
+          ? await this.character.checkQuantityOfItemInBank(itemToCraft.code)
           : 0;
         if (numInBank >= this.target.quantity) {
           logger.info(
-            `Already have ${numInBank} ${targetItem.code} in the bank. No need to craft`,
+            `Already have ${numInBank} ${itemToCraft.code} in the bank. No need to craft`,
           );
           return ObjectiveCompleted;
-        } else if (targetItem.craft?.skill) {
-          const skillNeeded = targetItem.craft.skill;
+        } else if (itemToCraft.craft?.skill) {
+          const skillNeeded = itemToCraft.craft.skill;
 
           const requiredRole = SKILL_ROLE[skillNeeded];
           if (requiredRole && this.character.role !== requiredRole) {
             logger.warn(
-              `${this.character.data.name} (${this.character.role}) needs ${skillNeeded} to craft ${targetItem.code}`,
+              `${this.character.data.name} (${this.character.role}) needs ${skillNeeded} to craft ${itemToCraft.code}`,
             );
             await this.requestIngredientFromWishlist(
-              { code: targetItem.code, quantity: this.target.quantity },
+              { code: itemToCraft.code, quantity: this.target.quantity },
               { acquisitionMethod: skillNeeded },
             );
             return ObjectiveOnHold;
@@ -162,22 +163,33 @@ export class CraftObjective extends Objective {
         // One craft consumes a single set of ingredients and provides
         // craft.quantity output items, so the number of crafts needed is the
         // requested item count divided by the results per-craft (rounded up).
-        const outputPerCraft = targetItem.craft.quantity ?? 1;
+        const outputPerCraft = itemToCraft.craft.quantity ?? 1;
         const outstanding = this.target.quantity - this.progress;
         const craftsNeeded = Math.ceil(outstanding / outputPerCraft);
+
+        // Only jobs that opted into blocking should raise requests, and only a
+        // request recorded against an owning job is ever waited on or cleaned
+        // up — an unowned row would be orphaned and re-added every cycle.
+        if (this.blockOnMissing && this.wishlistRequestOwner()) {
+          const failure = await this.requestRoleGatedIngredients(
+            itemToCraft.craft.items,
+            craftsNeeded,
+          );
+          if (failure) return failure;
+        }
 
         // Build shopping list so that we can ensure we have enough inventory space to collect everything
         // If not enough inv space, split it into 2 jobs, craft half as much at once
         // If still not enough, keep splitting in half until we have enough inv space
         const batchInfo = this.calculateNumBatches(
-          targetItem.craft.items,
+          itemToCraft.craft.items,
           craftsNeeded,
         );
         this.numBatches = batchInfo.numBatches;
         this.numCraftsPerBatch = batchInfo.numPerBatch;
 
         const maps = this.character.findMaps({
-          content_code: targetItem.craft.skill,
+          content_code: itemToCraft.craft.skill,
           content_type: 'workshop',
         });
         if (maps.length === 0) {
@@ -213,15 +225,15 @@ export class CraftObjective extends Objective {
           const itemsThisBatch = craftsThisBatch * outputPerCraft;
 
           const gathered = await this.gatherIngredients(
-            targetItem.craft.items,
+            itemToCraft.craft.items,
             craftsThisBatch,
           );
           if (!gathered.success) {
-            logger.warn(`Gathering ingredients for ${targetItem.code} failed`);
+            logger.warn(`Gathering ingredients for ${itemToCraft.code} failed`);
             return gathered;
           }
 
-          for (const craftItem of targetItem.craft.items) {
+          for (const craftItem of itemToCraft.craft.items) {
             this.character.addItemToItemsToKeep(craftItem.code);
 
             const numInInvAfterGathering =
@@ -235,12 +247,12 @@ export class CraftObjective extends Objective {
               );
 
               const gathered = await this.gatherIngredients(
-                targetItem.craft.items,
+                itemToCraft.craft.items,
                 craftsThisBatch,
               );
               if (!gathered.success) {
                 logger.warn(
-                  `Regathering ingredients for ${targetItem.code} has failed`,
+                  `Regathering ingredients for ${itemToCraft.code} has failed`,
                 );
                 this.character.removeItemFromItemsToKeep(craftItem.code);
                 break;
@@ -284,7 +296,7 @@ export class CraftObjective extends Objective {
               logger.error('Craft response missing character data');
             }
 
-            for (const ingredient of targetItem.craft?.items) {
+            for (const ingredient of itemToCraft.craft?.items) {
               this.character.removeItemFromItemsToKeep(ingredient.code);
             }
 
@@ -338,10 +350,69 @@ export class CraftObjective extends Objective {
     await this.character.withdrawNow(toWithdraw, this.target.code);
   }
 
+  /**
+   * @description Requests any ingredient whose craft skill belongs to another
+   * role up front, before gathering starts, so the fulfiller can work on it
+   * while this character collects what it can get itself (i.e. the labourer
+   * smelts bars while the crafter farms mob drops).
+   *
+   * Requests only the shortfall: an ingredient already covered by the bank or
+   * inventory needs no help, and an oversized row parks the job on a request
+   * larger than it needs. gatherIngredients' own request for the same ingredient
+   * is deduplicated against this one, so the quantity here is the one that counts.
+   * @returns a failing result if an ingredient couldn't be looked up, otherwise
+   * undefined so the caller carries on
+   */
+  private async requestRoleGatedIngredients(
+    ingredients: SimpleItemSchema[],
+    craftsNeeded: number,
+  ): Promise<ObjectiveResult | undefined> {
+    for (const ingredient of ingredients) {
+      const ingredientInfo = await getItemInformation(ingredient.code);
+
+      if (ingredientInfo instanceof ApiError) {
+        await this.character.handleErrors(ingredientInfo);
+        return ObjectiveFailed;
+      }
+
+      const skillNeeded = ingredientInfo.craft?.skill;
+      const requiredRole = skillNeeded ? SKILL_ROLE[skillNeeded] : undefined;
+      if (!requiredRole || requiredRole === this.character.role) {
+        continue;
+      }
+
+      const totalNeeded = ingredient.quantity * craftsNeeded;
+      const shortfall =
+        totalNeeded -
+        this.character.checkQuantityOfItemInInv(ingredient.code) -
+        (await this.character.checkQuantityOfItemInBank(ingredient.code));
+
+      if (shortfall <= 0) {
+        continue;
+      }
+
+      logger.info(
+        `${this.character.data.name} (${this.character.role}) needs ${skillNeeded} for ${shortfall} ${ingredient.code}; requesting it before gathering starts`,
+      );
+      await this.requestIngredientFromWishlist(
+        { code: ingredient.code, quantity: shortfall },
+        { acquisitionMethod: skillNeeded },
+      );
+    }
+
+    return undefined;
+  }
+
   private async gatherIngredients(
     craftingItems: SimpleItemSchema[],
     numCrafts: number,
   ): Promise<ObjectiveResult> {
+    // Whether this call had to give up on an ingredient, as opposed to
+    // raisedBlockingRequest, which stays set for the rest of the job once any
+    // request is raised. A request raised before the batches start (or by an
+    // earlier batch) must not stop a later batch that is fully supplied.
+    let gaveUpOnIngredient = false;
+
     for (const craftingItem of craftingItems) {
       const craftingItemInfo: ItemSchema | ApiError = await getItemInformation(
         craftingItem.code,
@@ -409,6 +480,7 @@ export class CraftObjective extends Objective {
                 code: craftingItem.code,
                 quantity: totalIngredNeededToCraft,
               });
+              gaveUpOnIngredient = true;
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
@@ -441,6 +513,7 @@ export class CraftObjective extends Objective {
                 code: craftingItem.code,
                 quantity: totalIngredNeededToCraft,
               });
+              gaveUpOnIngredient = true;
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
@@ -470,6 +543,7 @@ export class CraftObjective extends Objective {
                 code: craftingItem.code,
                 quantity: totalIngredNeededToCraft,
               });
+              gaveUpOnIngredient = true;
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
@@ -500,12 +574,14 @@ export class CraftObjective extends Objective {
       }
     }
 
-    // If we wishlisted any ingredient we can't complete the craft now — fail so
-    // the job is parked until the requests are fulfilled.
+    // If we gave up on an ingredient we can't craft this batch — report on_hold
+    // so the caller stops, and the job is parked until the requests are
+    // fulfilled. A batch we did fully supply still reports complete, even when
+    // an earlier request means the job will be parked once it runs out.
     return {
-      complete: !this.raisedBlockingRequest, // If we raised a blocking request, the job is parked (onHold) until the requests are fulfilled
-      success: !this.raisedBlockingRequest,
-      reason: this.raisedBlockingRequest ? 'on_hold' : 'complete',
+      complete: !gaveUpOnIngredient,
+      success: !gaveUpOnIngredient,
+      reason: gaveUpOnIngredient ? 'on_hold' : 'complete',
     };
   }
 
