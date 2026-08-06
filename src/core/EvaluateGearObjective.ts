@@ -69,6 +69,14 @@ export class EvaluateGearObjective extends Objective {
   async run(): Promise<ObjectiveResult> {
     this.bankCache = await BankCache.create(this.character);
 
+    // A stale snapshot reads as an empty bank, so every slot would conclude we
+    // own nothing and the whole retry loop could only ever decide to change
+    // nothing. Give the shared request budget room to recover instead.
+    if (this.bankCache.stale) {
+      logger.warn('Could not read the bank; skipping this gear evaluation');
+      return ObjectiveFailed;
+    }
+
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (!(await this.checkStatus())) return ObjectiveCancelled;
 
@@ -456,6 +464,15 @@ export class EvaluateGearObjective extends Objective {
     cache?: BankCache,
   ): Promise<Partial<FakeCharacterSchema>> {
     this.bankCache = cache ?? (await BankCache.create(this.character));
+
+    // Simulating against a loadout picked from an unreadable bank would claim
+    // the character owns nothing; the current equipment is the honest fallback.
+    if (this.bankCache.stale) {
+      logger.warn(
+        `Could not read the bank, simulating ${targetMob} with current equipment instead`,
+      );
+      return {};
+    }
 
     const chosen = await this.chooseCombatGear(charLevel, targetMob);
     if (chosen instanceof ApiError) {

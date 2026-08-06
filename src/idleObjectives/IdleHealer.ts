@@ -305,6 +305,15 @@ export class IdleHealerObjective extends Objective {
 
     const bankContents = await BankCache.create(this.character);
 
+    // Every code in a stale snapshot reads 0, which here would mean crafting a
+    // full batch of every tier on top of whatever is already banked.
+    if (bankContents.stale) {
+      logger.warn(
+        'Could not read the bank; skipping the teleport potion top-up',
+      );
+      return false;
+    }
+
     const teleportPotions = this.character.consumablesMap['teleport'];
 
     for (const potion of teleportPotions) {

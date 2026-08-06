@@ -59,6 +59,13 @@ export class TrainCombatObjective extends Objective {
       // this iteration; the bank is not mutated until we commit to a fight.
       const bankCache = await BankCache.create(this.character);
 
+      // Simulating every candidate mob against an empty-looking bank would
+      // conclude the character can beat none of them.
+      if (bankCache.stale) {
+        logger.warn('Could not read the bank; retrying this iteration later');
+        return ObjectiveFailed;
+      }
+
       let foundSuitableMob = false;
       let fightSuccessful = false;
 

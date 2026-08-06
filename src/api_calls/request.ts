@@ -2,9 +2,16 @@ import { ApiError, toApiError } from '../core/Error.js';
 import { logger, MyHeaders, sleep as defaultSleep } from '../utils.js';
 
 /**
- * HTTP 429. ArtifactsMMO enforces a per-account request budget shared across
- * all of an account's characters (action: 20/2s, data: 20/s, account: 10/s).
- * The API does not send a Retry-After header, so we back off client-side.
+ * HTTP 429. ArtifactsMMO budgets requests per IP, so every character's
+ * container on this host draws from one shared pool:
+ *   data    10/s, 200/min, 2000/hour  (/my/bank/items, /items, /maps, ...)
+ *   action  10/s, 100/min, 5000/hour  (/my/{name}/action/*)
+ *   account 10/s,          300/hour
+ * The hourly caps bind long before the per-second ones — five characters share
+ * 2000 data requests an hour, so a single uncached full-bank scan loop can
+ * starve the whole fleet.
+ *
+ * The API sends no Retry-After header, so we back off client-side.
  * See https://docs.artifactsmmo.com/api_guide/rate_limits/
  */
 const RATE_LIMITED = 429;
@@ -16,12 +23,22 @@ interface RetryConfig {
   baseDelaySeconds: number;
   /** Cap on a single backoff delay, in seconds. */
   maxDelaySeconds: number;
+  /** Lower bound of every backoff delay, in seconds. */
+  minDelaySeconds: number;
 }
 
+/**
+ * Retries cost requests from the same per-IP budget that rejected us, so the
+ * schedule is deliberately short: five attempts spanning at most ~93s. Beyond
+ * that we're almost certainly against an hourly cap that no amount of waiting
+ * inside one call will clear, and the caller retrying its job later is cheaper
+ * than a character sitting blocked.
+ */
 const DEFAULT_RETRY: RetryConfig = {
-  maxRetries: 10,
-  baseDelaySeconds: 1,
+  maxRetries: 5,
+  baseDelaySeconds: 3,
   maxDelaySeconds: 60,
+  minDelaySeconds: 1,
 };
 
 export interface ApiRequestOptions<T = unknown> {
@@ -79,18 +96,26 @@ async function fieldErrors(response: Response): Promise<string> {
 }
 
 /**
- * Full-jitter backoff: pick a delay uniformly from [0, window], where the
+ * Jittered backoff: pick a delay uniformly from [floor, window], where the
  * window grows exponentially per attempt and is capped at maxDelaySeconds.
- * Randomising across the whole window (rather than adding jitter on top of a
- * fixed floor) decorrelates retries from the account's other characters, so a
- * shared-budget 429 storm disperses instead of retrying in lockstep.
+ * Randomising across the window decorrelates retries from the account's other
+ * characters, so a shared-budget 429 storm disperses instead of retrying in
+ * lockstep.
+ *
+ * The floor matters as much as the jitter. Textbook full jitter draws from
+ * [0, window], which at a 1s base made the first attempts round down to 0 and
+ * retry instantly — five containers each firing three near-instant retries is
+ * what turned a brief 429 into a sustained one. The budget we're waiting on is
+ * per-IP and shared, so a retry that costs a request but cannot plausibly
+ * succeed is pure damage.
  */
 function backoffSeconds(attempt: number, retry: RetryConfig): number {
   const window = Math.min(
     retry.baseDelaySeconds * 2 ** attempt,
     retry.maxDelaySeconds,
   );
-  return Math.round(Math.random() * window);
+  const floor = Math.min(retry.minDelaySeconds, window);
+  return Math.round(floor + Math.random() * (window - floor));
 }
 
 /**

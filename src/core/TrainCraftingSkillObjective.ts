@@ -6,10 +6,10 @@ import {
   CraftSkill,
   GetAllItemsItemsGetParams,
   ItemSchema,
-  SimpleItemSchema,
 } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
+import { BankCache } from './BankCache.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
@@ -99,8 +99,13 @@ export class TrainCraftingSkillObjective extends Objective {
         return ObjectiveFailed;
       }
 
-      // Get bank items so we don't need to make lots of bank calls
-      const allBankItems = await this.character.getAllBankItems();
+      // One snapshot for the whole scoring pass, which reads the bank once for
+      // work that would otherwise re-read it per candidate ingredient.
+      const bankSnapshot = await BankCache.create(this.character);
+      if (bankSnapshot.stale) {
+        logger.warn('Could not read the bank; deferring this crafting pass');
+        return ObjectiveFailed;
+      }
 
       logger.debug(
         `Finding craftable ${this.skill} items between ${Math.max(charLevel - this.levelRange, 0)} and ${charLevel}`,
@@ -131,7 +136,7 @@ export class TrainCraftingSkillObjective extends Objective {
       const itemToCraft = await calculateBestCraftingItem(
         this.character,
         craftableItemsList,
-        allBankItems,
+        bankSnapshot,
       );
 
       logger.debug(
@@ -177,10 +182,10 @@ export class TrainCraftingSkillObjective extends Objective {
  * @todo - Make the scores based on actual figures and calculations
  * Gathering: Factor skill level and equipment cooldown in
  */
-async function calculateBestCraftingItem(
+export async function calculateBestCraftingItem(
   character: Character,
   craftableItemList: ItemSchema[],
-  bankItems: SimpleItemSchema[],
+  bankSnapshot: BankCache,
 ): Promise<{ code: string; score: number }> {
   let bestScore = 1000000;
   let bestItem = 'no_item';
@@ -191,7 +196,7 @@ async function calculateBestCraftingItem(
 
   for (const item of craftableItemList) {
     logger.debug(`Calculating score of ${item.code}`);
-    const currentScore = await calculateScore(item, bankItems, character);
+    const currentScore = await calculateScore(item, bankSnapshot, character);
 
     if (currentScore < bestScore) {
       logger.debug(
@@ -207,12 +212,16 @@ async function calculateBestCraftingItem(
 
 /**
  * Returns the score of the craftable item
- * Takes in the bank items as input so we don't repeat calls to get bank items
+ *
+ * Takes the bank snapshot as input and passes it on to every loadout proposal,
+ * so scoring a whole candidate list costs one bank read rather than one per
+ * mob-drop ingredient. Scoring is read-only, so one snapshot stays valid for
+ * the pass.
  * @param craftableItem
  */
 async function calculateScore(
   craftableItem: ItemSchema,
-  bankItems: SimpleItemSchema[],
+  bankSnapshot: BankCache,
   character: Character,
 ): Promise<number> {
   let score = 0;
@@ -270,6 +279,7 @@ async function calculateScore(
 
       const proposedLoadout = await character.proposeCombatLoadout(
         monsterToKill.code,
+        bankSnapshot,
       );
 
       const fightSimResult = await character.simulateFightNow(
@@ -307,7 +317,7 @@ async function calculateScore(
           );
           continue;
         }
-        score += await calculateScore(subIngredient, bankItems, character);
+        score += await calculateScore(subIngredient, bankSnapshot, character);
       }
     }
   }
