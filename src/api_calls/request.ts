@@ -1,5 +1,8 @@
 import { ApiError, toApiError } from '../core/Error.js';
 import { logger, MyHeaders, sleep as defaultSleep } from '../utils.js';
+import { CharName } from '../constants.js';
+import { apiRequestsCounter, rateLimitBackoffSeconds } from '../metrics.js';
+import { classifyRequest } from './rateLimitBuckets.js';
 
 /**
  * HTTP 429. ArtifactsMMO budgets requests per IP, so every character's
@@ -155,11 +158,18 @@ export async function apiRequest<T>(
     ...(body !== undefined && { body: JSON.stringify(body) }),
   };
 
+  const { bucket, endpoint } = classifyRequest(url, method);
+  const labels = { character: CharName, bucket, endpoint };
+  const record = (
+    outcome: 'ok' | 'rate_limited' | 'error' | 'transport_error',
+  ) => apiRequestsCounter.inc({ ...labels, outcome });
+
   for (let attempt = 0; ; attempt++) {
     try {
       const response = await fetch(url, requestOptions);
 
       if (response.status === RATE_LIMITED) {
+        record('rate_limited');
         if (attempt >= retry.maxRetries) {
           logger.error(
             `Rate limited (429) and out of retries for ${url.toString()}`,
@@ -173,11 +183,13 @@ export async function apiRequest<T>(
         logger.error(
           `Rate limited (429); backing off ${delay}s (retry ${attempt + 1}/${retry.maxRetries})`,
         );
+        rateLimitBackoffSeconds.inc(labels, delay);
         await sleep(delay, 'rate limit', false);
         continue;
       }
 
       if (!response.ok) {
+        record('error');
         throw new ApiError({
           code: response.status,
           message:
@@ -187,6 +199,8 @@ export async function apiRequest<T>(
             (await fieldErrors(response)),
         });
       }
+
+      record('ok');
 
       const parsed = (await response.json()) as T;
 
@@ -201,6 +215,11 @@ export async function apiRequest<T>(
 
       return parsed;
     } catch (error) {
+      // A non-OK response is raised as an ApiError above and already counted;
+      // anything else never got an answer out of the API at all.
+      if (!(error instanceof ApiError)) {
+        record('transport_error');
+      }
       return toApiError(error);
     }
   }
