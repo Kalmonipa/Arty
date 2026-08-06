@@ -147,7 +147,7 @@ export class TrainCraftingSkillObjective extends Objective {
         await this.character.craftNow(
           numToCraft,
           itemToCraft.code,
-          undefined,
+          false,
           undefined,
           true,
         )
