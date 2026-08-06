@@ -12,6 +12,15 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
+import {
+  Alchemy,
+  Fishing,
+  Gearcrafting,
+  Jewelrycrafting,
+  Mining,
+  Weaponcrafting,
+  Woodcutting,
+} from '../names.js';
 
 export class IdentifyValidWishlistRequestsObjective extends Objective {
   acquisitionMethod: AcquisitionMethod;
@@ -63,10 +72,13 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
 
       let levelRequired: number;
       switch (this.acquisitionMethod) {
-        case 'mining':
-        case 'woodcutting':
-        case 'fishing':
-        case 'alchemy':
+        case Mining:
+        case Woodcutting:
+        case Fishing:
+        case Alchemy:
+        case Jewelrycrafting:
+        case Gearcrafting:
+        case Weaponcrafting:
           levelRequired = this.character.getCharacterLevel(
             this.character.data,
             this.acquisitionMethod,
