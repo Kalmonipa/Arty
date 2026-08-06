@@ -315,7 +315,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
-        undefined,
+        false,
         undefined,
         true,
       );
@@ -351,7 +351,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
-        undefined,
+        false,
         undefined,
         true,
       );
@@ -387,7 +387,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
-        undefined,
+        false,
         undefined,
         true,
       );
@@ -423,7 +423,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         10,
         expect.any(String),
-        undefined,
+        false,
         undefined,
         true,
       );
@@ -459,7 +459,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         5,
         expect.any(String),
-        undefined,
+        false,
         undefined,
         true,
       );
@@ -495,7 +495,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         5,
         expect.any(String),
-        undefined,
+        false,
         undefined,
         true,
       );
@@ -531,7 +531,7 @@ describe('TrainCraftingSkillObjective Integration Tests', () => {
       expect(mockCharacter.craftNow).toHaveBeenCalledWith(
         5,
         expect.any(String),
-        undefined,
+        false,
         undefined,
         true,
       );

@@ -135,9 +135,9 @@ export class CraftObjective extends Objective {
          * ToDo: Check all the skills required and wishlist any that don't belong to the crafter
          * After this we loop through again and do the ones that the crafter can do
          */
-        const numInBank = await this.character.checkQuantityOfItemInBank(
-          targetItem.code,
-        );
+        const numInBank = this.checkBank
+          ? await this.character.checkQuantityOfItemInBank(targetItem.code)
+          : 0;
         if (numInBank >= this.target.quantity) {
           logger.info(
             `Already have ${numInBank} ${targetItem.code} in the bank. No need to craft`,
