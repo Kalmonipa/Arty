@@ -124,6 +124,26 @@ export class IdleLabourerObjective extends Objective {
         `Idle job has been running for more than 10 minutes. Ending it to let the next idle job run`,
       );
       return ObjectiveCompleted;
+    } else {
+      return await this.findTaskToDo();
+    }
+  }
+
+  private async findTaskToDo(): Promise<ObjectiveResult> {
+    if (this.character.data.task) {
+      switch (this.character.data.task_type) {
+        case 'monsters':
+          logger.info(
+            `Already has a task to kill ${this.character.data.task_progress}/${this.character.data.task_total}x ${this.character.data.task}. Resuming`,
+          );
+          return await doMonsterTask(this.character, this, 1);
+
+        case 'items':
+          logger.info(
+            `Already has a task to gather ${this.character.data.task_progress}/${this.character.data.task_total}x ${this.character.data.task}. Resuming`,
+          );
+          return await doItemTask(this.character, this, 1);
+      }
     } else if (
       this.character.getCharacterLevel(this.character.data) <
       this.character.highestCharLevel - 5
@@ -131,15 +151,13 @@ export class IdleLabourerObjective extends Objective {
       logger.info(
         `Combat level is more than 5 levels below highest character level. Doing monster task to train combat`,
       );
-      await doMonsterTask(this.character, this, 1);
+      return await doMonsterTask(this.character, this, 1);
     } else {
       logger.info(
         `Combat level is within 5 levels of highest character level. Doing item task`,
       );
-      await doItemTask(this.character, this, 1);
-      if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+      return await doItemTask(this.character, this, 1);
     }
-    return ObjectiveCompleted;
   }
 
   /**
