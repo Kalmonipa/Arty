@@ -543,8 +543,14 @@ export class EventObjective extends Objective {
    * keep all if utility or consumable, otherwise sell everything.
    */
   private async sellToMerchant(npcCode: string): Promise<ObjectiveResult> {
-    const keepEquipmentTypes = ['weapon', 'helmet', 'body_armor', 'ring'];
-    const keepAllTypes = ['utility', 'consumable'];
+    const keepEquipmentTypes = new Set([
+      'helmet', // Wolf ears are the best wisdom/prospecting head piece until lvl ~50 gear so we want to keep them
+      // Originally thought we should keep these as well but now I'm not so sure
+      // 'weapon',
+      // 'body_armor',
+      // 'ring',
+    ]);
+    const keepAllTypes = new Set(['utility', 'consumable']);
     const keepQuantity = 5;
 
     const npcResponse = await getNpc(npcCode);
@@ -575,7 +581,7 @@ export class EventObjective extends Objective {
 
       const itemType = itemInfoResponse.type;
 
-      if (keepAllTypes.includes(itemType)) {
+      if (keepAllTypes.has(itemType)) {
         logger.debug(`Keeping all ${numInBank} ${npcItem.code} (${itemType})`);
         continue;
       }
@@ -609,7 +615,7 @@ export class EventObjective extends Objective {
         continue;
       }
 
-      const numToSell = keepEquipmentTypes.includes(itemType)
+      const numToSell = keepEquipmentTypes.has(itemType)
         ? Math.max(0, numAvailableToSell - keepQuantity)
         : numAvailableToSell;
 
