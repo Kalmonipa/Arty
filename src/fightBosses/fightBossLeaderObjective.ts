@@ -15,7 +15,12 @@ import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { requestLoadout } from '../api_calls/Account.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { simulateBossFight } from './bossfightPreRequisite.js';
-import { registerBossFight, registerBossFightParticipants } from './bossfightUtils.js';
+import {
+  checkAllParticipantsReady,
+  registerBossFight,
+  registerBossFightParticipants,
+} from './bossfightUtils.js';
+import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -49,9 +54,9 @@ export class FightBossLeaderObjective extends Objective {
    * - Resume the participants activities so they can go back to what they were doing
    */
   async run(): Promise<ObjectiveResult> {
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return ObjectiveCancelled;
-    }
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
+
+    const participants = [BouncyBella, JumpyJimmy];
 
     const fightSimResult = await simulateBossFight(this.character, this.target);
 
@@ -62,12 +67,50 @@ export class FightBossLeaderObjective extends Objective {
       return ObjectiveFailed;
     }
 
-    const registerFight = await registerBossFight(this.character, this.target)
+    const fightId = await registerBossFight(this.character, this.target);
 
-    const registerFightParticipants = await registerBossFightParticipants(registerFight, [
-      BouncyBella,
-      JumpyJimmy,
-    ]);
+    const registerFightParticipants = await registerBossFightParticipants(
+      fightId,
+      participants,
+    );
+
+    // [x] Gear up for the fight
+    //    - Equip gear, potions etc
+    // [x] Move to the mob location
+    // [] Check for ready status from both other participants
+    // [] If not ready, sleep for 30 seconds (adjust as necessary)
+    // [] If ready initiate fight
+    // [] Set status of participants to unready in boss_fight_participants
+    // [] Increment fights_done counter in boss_fights
+    // [] If fights_done >= quantity:
+    //    - set state to complete
+    //    - delete rows from boss_fight_participants
+    // [] If fights_done < quantity:
+    //    - go back to step 1
+
+    logger.info(`Attempting to gear up for ${this.target.code} fight`);
+    const gearUpJob = await this.character.executeJobNow(
+      new EvaluateGearObjective(this.character, 'combat', this.target.code),
+    );
+    if (!gearUpJob.success) {
+      logger.warn(`Gearing up for ${this.target.code} fight has failed`);
+      return ObjectiveFailed;
+    }
+
+    logger.info(`Finding location of ${this.target.code}`);
+
+    const maps = this.character.findMaps({ content_code: this.target.code });
+    if (maps.length === 0) {
+      logger.error(`Cannot find any maps for ${this.target.code}`);
+      return { complete: true, success: false, reason: 'failed' };
+    }
+
+    const contentLocation = this.character.evaluateClosestMap(maps);
+
+    await this.character.move(contentLocation);
+
+    // Check statuses
+    const allReady = await checkAllParticipantsReady(fightId, participants);
 
     return ObjectiveCompleted;
   }
