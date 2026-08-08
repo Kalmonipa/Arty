@@ -16,12 +16,13 @@ import { requestLoadout } from '../api_calls/Account.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { simulateBossFight } from './bossfightPreRequisite.js';
 import {
-  checkAllParticipantsReady,
+  incrementBossFightCounter,
+  markBossFightComplete,
   registerBossFight,
-  registerBossFightParticipants,
-} from './bossfightUtils.js';
+} from './bossfightFunctions.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import { actionFight } from '../api_calls/Actions.js';
+import { checkAllParticipantsReady, registerBossFightParticipants, setAllParticipantsUnready } from './bossFightParticipantFunctions.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -57,7 +58,9 @@ export class FightBossLeaderObjective extends Objective {
   async run(): Promise<ObjectiveResult> {
     if (!(await this.checkStatus())) return ObjectiveCancelled;
 
+    let progress = 0;
     const participants = [BouncyBella, JumpyJimmy];
+  
 
     const fightSimResult = await simulateBossFight(this.character, this.target);
 
@@ -81,8 +84,8 @@ export class FightBossLeaderObjective extends Objective {
     // [x] Check for ready status from both other participants
     // [x] If not ready, sleep for 30 seconds (adjust as necessary)
     // [x] If ready initiate fight
-    // [] Set status of participants to unready in boss_fight_participants
-    // [] Increment fights_done counter in boss_fights
+    // [x] Set status of participants to unready in boss_fight_participants
+    // [x] Increment fights_done counter in boss_fights
     // [] If fights_done >= quantity:
     //    - set state to complete
     //    - delete rows from boss_fight_participants
@@ -123,13 +126,22 @@ export class FightBossLeaderObjective extends Objective {
       }
     }
 
-    const response = await actionFight(this.character.data, participants);
+    const response = await actionFight(this.character.data, []);
 
     if (response instanceof ApiError) {
       logger.warn(
         `Fight responded with an [${response.error.code}] error: ${response.error.message}`,
       );
       return ObjectiveFailed;
+    }
+
+    await setAllParticipantsUnready(fightId, participants)
+    progress = await incrementBossFightCounter(fightId)
+
+    if (progress >= this.target.quantity) {
+      logger.info(`Successfully fought ${progress}/${this.target.quantity}x ${this.target.code}`)
+      await markBossFightComplete(fightId)
+      return ObjectiveCompleted
     }
 
     return ObjectiveCompleted;
