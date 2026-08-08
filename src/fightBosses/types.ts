@@ -6,3 +6,5 @@ export interface BossFightParticipantsRow {
   reason: string | null;
   updated_at: Date;
 }
+
+export type ParticipantStatus = 'ready' | 'unready' | 'completed' | 'accepted';

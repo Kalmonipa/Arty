@@ -22,7 +22,11 @@ import {
 } from './bossfightFunctions.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import { actionFight } from '../api_calls/Actions.js';
-import { checkAllParticipantsReady, registerBossFightParticipants, setAllParticipantsUnready } from './bossFightParticipantFunctions.js';
+import {
+  checkAllParticipantsReady,
+  registerBossFightParticipants,
+  setAllParticipantsUnready,
+} from './bossFightParticipantFunctions.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -60,7 +64,6 @@ export class FightBossLeaderObjective extends Objective {
 
     let progress = 0;
     const participants = [BouncyBella, JumpyJimmy];
-  
 
     const fightSimResult = await simulateBossFight(this.character, this.target);
 
@@ -135,13 +138,15 @@ export class FightBossLeaderObjective extends Objective {
       return ObjectiveFailed;
     }
 
-    await setAllParticipantsUnready(fightId, participants)
-    progress = await incrementBossFightCounter(fightId)
+    await setAllParticipantsUnready(fightId, participants);
+    progress = await incrementBossFightCounter(fightId);
 
     if (progress >= this.target.quantity) {
-      logger.info(`Successfully fought ${progress}/${this.target.quantity}x ${this.target.code}`)
-      await markBossFightComplete(fightId)
-      return ObjectiveCompleted
+      logger.info(
+        `Successfully fought ${progress}/${this.target.quantity}x ${this.target.code}`,
+      );
+      await markBossFightComplete(fightId);
+      return ObjectiveCompleted;
     }
 
     return ObjectiveCompleted;
