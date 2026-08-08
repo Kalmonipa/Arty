@@ -89,64 +89,67 @@ export class FightBossLeaderObjective extends Objective {
     // [x] If ready initiate fight
     // [x] Set status of participants to unready in boss_fight_participants
     // [x] Increment fights_done counter in boss_fights
-    // [] If fights_done >= quantity:
+    // [x] If fights_done >= quantity:
     //    - set state to complete
     //    - delete rows from boss_fight_participants
     // [] If fights_done < quantity:
     //    - go back to step 1
 
-    logger.info(`Attempting to gear up for ${this.target.code} fight`);
-    const gearUpJob = await this.character.executeJobNow(
-      new EvaluateGearObjective(this.character, 'combat', this.target.code),
-    );
-    if (!gearUpJob.success) {
-      logger.warn(`Gearing up for ${this.target.code} fight has failed`);
-      return ObjectiveFailed;
-    }
-
-    logger.info(`Finding location of ${this.target.code}`);
-
-    const maps = this.character.findMaps({ content_code: this.target.code });
-    if (maps.length === 0) {
-      logger.error(`Cannot find any maps for ${this.target.code}`);
-      return { complete: true, success: false, reason: 'failed' };
-    }
-
-    const contentLocation = this.character.evaluateClosestMap(maps);
-
-    await this.character.move(contentLocation);
-
-    // If there's just one participant we don't need to check statuses
-    if (participants.length > 0) {
-      // Check statuses
-      let allReady = await checkAllParticipantsReady(fightId, participants);
-
-      // Sleep for a period until all participants are ready
-      while (!allReady) {
-        await sleep(30, 'waiting_for_boss_fight');
-
-        allReady = await checkAllParticipantsReady(fightId, participants);
+    if (progress < this.target.quantity) {
+      logger.info(`Attempting to gear up for ${this.target.code} fight`);
+      const gearUpJob = await this.character.executeJobNow(
+        new EvaluateGearObjective(this.character, 'combat', this.target.code),
+      );
+      if (!gearUpJob.success) {
+        logger.warn(`Gearing up for ${this.target.code} fight has failed`);
+        return ObjectiveFailed;
       }
-    }
 
-    const response = await actionFight(this.character.data, []);
+      logger.info(`Finding location of ${this.target.code}`);
 
-    if (response instanceof ApiError) {
-      logger.warn(
-        `Fight responded with an [${response.error.code}] error: ${response.error.message}`,
-      );
-      return ObjectiveFailed;
-    }
+      const maps = this.character.findMaps({ content_code: this.target.code });
+      if (maps.length === 0) {
+        logger.error(`Cannot find any maps for ${this.target.code}`);
+        return { complete: true, success: false, reason: 'failed' };
+      }
 
-    await setAllParticipantsUnready(fightId, participants);
-    progress = await incrementBossFightCounter(fightId);
+      const contentLocation = this.character.evaluateClosestMap(maps);
 
-    if (progress >= this.target.quantity) {
-      logger.info(
-        `Successfully fought ${progress}/${this.target.quantity}x ${this.target.code}`,
-      );
-      await markBossFightComplete(fightId);
-      return ObjectiveCompleted;
+      await this.character.move(contentLocation);
+
+      // If there's just one participant we don't need to check statuses
+      if (participants.length > 0) {
+        // Check statuses
+        let allReady = await checkAllParticipantsReady(fightId, participants);
+
+        // Sleep for a period until all participants are ready
+        while (!allReady) {
+          await sleep(30, 'waiting_for_boss_fight');
+
+          allReady = await checkAllParticipantsReady(fightId, participants);
+        }
+      }
+
+      const response = await actionFight(this.character.data, []);
+
+      if (response instanceof ApiError) {
+        logger.warn(
+          `Fight responded with an [${response.error.code}] error: ${response.error.message}`,
+        );
+        return ObjectiveFailed;
+      }
+
+      await setAllParticipantsUnready(fightId, participants);
+      progress = await incrementBossFightCounter(fightId);
+
+      if (progress >= this.target.quantity) {
+        logger.info(
+          `Successfully fought ${progress}/${this.target.quantity}x ${this.target.code}`,
+        );
+        await markBossFightComplete(fightId);
+        // ToDo: wait for acknowledgement then delete participant rows from boss_fight_participants
+        return ObjectiveCompleted;
+      }
     }
 
     return ObjectiveCompleted;

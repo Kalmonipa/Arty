@@ -7,4 +7,12 @@ export interface BossFightParticipantsRow {
   updated_at: Date;
 }
 
-export type ParticipantStatus = 'ready' | 'unready' | 'completed' | 'accepted';
+/**
+ * ready = participant is ready to fight
+ *          - equipped all gear for mob
+ *          - has food & potions
+ *          - standing on the correct map
+ * unready = preparing for the fight
+ * acknowledged = acknowledgement that the fight sequence is complete
+ */
+export type ParticipantStatus = 'ready' | 'unready' | 'acknowledged';

@@ -15,7 +15,7 @@ export async function deregisterBossFightParticipants(
     const result = await db.query<{}>(
       `
       DELETE FROM boss_fight_participants 
-      WHERE fight_id = $1 AND state = "accepted"
+      WHERE fight_id = $1 AND state = "acknowledged"
       `,
       [bossFightId],
     );
@@ -89,6 +89,7 @@ export async function setAllParticipantsUnready(
       UPDATE boss_fight_participants
       SET state = 'unready'
       WHERE fight_id = $1 AND character_name = $2
+      RETURNING state;
       `,
         [bossFightId, participant],
       );
@@ -152,7 +153,7 @@ export async function acceptBossFightCompletion(
     const result = await db.query<{}>(
       `
       UPDATE boss_fight_participants
-      SET state = 'accepted'
+      SET state = 'acknowledged'
       WHERE fight_id = $1 AND character_name = $2
       `,
       [bossFightId, participant],
