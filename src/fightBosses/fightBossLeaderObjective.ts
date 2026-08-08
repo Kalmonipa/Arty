@@ -15,7 +15,7 @@ import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { requestLoadout } from '../api_calls/Account.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { simulateBossFight } from './bossfightPreRequisite.js';
-import { registerBossFight } from './bossfightUtils.js';
+import { registerBossFight, registerBossFightParticipants } from './bossfightUtils.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -62,7 +62,12 @@ export class FightBossLeaderObjective extends Objective {
       return ObjectiveFailed;
     }
 
-    const registerFight = await registerBossFight([BouncyBella, JumpyJimmy]);
+    const registerFight = await registerBossFight(this.character, this.target)
+
+    const registerFightParticipants = await registerBossFightParticipants(registerFight, [
+      BouncyBella,
+      JumpyJimmy,
+    ]);
 
     return ObjectiveCompleted;
   }

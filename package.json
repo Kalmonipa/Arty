@@ -34,6 +34,7 @@
     "prettier:fix": "npx prettier . --write --log-level silent",
     "create-characters": "tsx scripts/create-characters.ts",
     "pull-gamestate": "tsx scripts/update-local-gamestate.ts",
+    "run-local": "tsx scripts/run-local-db.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
