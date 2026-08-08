@@ -105,7 +105,7 @@ export async function actionFight(
   return apiRequest<CharacterFightResponseSchema>({
     url: `${ApiUrl}/my/${character.name}/action/fight`,
     method: 'POST',
-    body: participants,
+    body: { participants: participants },
     errorMessages: {
       422: 'Request could not be processed due to an invalid payload.',
       486: 'An action is already in progress for this character.',

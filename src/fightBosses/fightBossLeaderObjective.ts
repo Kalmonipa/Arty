@@ -79,8 +79,8 @@ export class FightBossLeaderObjective extends Objective {
     //    - Equip gear, potions etc
     // [x] Move to the mob location
     // [x] Check for ready status from both other participants
-    // [] If not ready, sleep for 30 seconds (adjust as necessary)
-    // [] If ready initiate fight
+    // [x] If not ready, sleep for 30 seconds (adjust as necessary)
+    // [x] If ready initiate fight
     // [] Set status of participants to unready in boss_fight_participants
     // [] Increment fights_done counter in boss_fights
     // [] If fights_done >= quantity:
@@ -126,11 +126,11 @@ export class FightBossLeaderObjective extends Objective {
     const response = await actionFight(this.character.data, participants);
 
     if (response instanceof ApiError) {
-      logger.warn(`Fight responded with an [${response.error.code}] error: ${response.error.message}`)
-      return ObjectiveFailed
+      logger.warn(
+        `Fight responded with an [${response.error.code}] error: ${response.error.message}`,
+      );
+      return ObjectiveFailed;
     }
-
-    
 
     return ObjectiveCompleted;
   }
