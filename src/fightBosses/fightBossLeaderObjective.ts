@@ -1,4 +1,4 @@
-import { logger } from '../utils.js';
+import { logger, sleep } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
@@ -21,6 +21,7 @@ import {
   registerBossFightParticipants,
 } from './bossfightUtils.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
+import { actionFight } from '../api_calls/Actions.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -77,7 +78,7 @@ export class FightBossLeaderObjective extends Objective {
     // [x] Gear up for the fight
     //    - Equip gear, potions etc
     // [x] Move to the mob location
-    // [] Check for ready status from both other participants
+    // [x] Check for ready status from both other participants
     // [] If not ready, sleep for 30 seconds (adjust as necessary)
     // [] If ready initiate fight
     // [] Set status of participants to unready in boss_fight_participants
@@ -109,8 +110,27 @@ export class FightBossLeaderObjective extends Objective {
 
     await this.character.move(contentLocation);
 
-    // Check statuses
-    const allReady = await checkAllParticipantsReady(fightId, participants);
+    // If there's just one participant we don't need to check statuses
+    if (participants.length > 0) {
+      // Check statuses
+      let allReady = await checkAllParticipantsReady(fightId, participants);
+
+      // Sleep for a period until all participants are ready
+      while (!allReady) {
+        await sleep(30, 'waiting_for_boss_fight');
+
+        allReady = await checkAllParticipantsReady(fightId, participants);
+      }
+    }
+
+    const response = await actionFight(this.character.data, participants);
+
+    if (response instanceof ApiError) {
+      logger.warn(`Fight responded with an [${response.error.code}] error: ${response.error.message}`)
+      return ObjectiveFailed
+    }
+
+    
 
     return ObjectiveCompleted;
   }

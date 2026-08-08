@@ -77,8 +77,6 @@ export async function checkAllParticipantsReady(
         `
       SELECT state FROM boss_fight_participants
       WHERE fight_id = $1 AND character_name = $2
-      VALUES ($1, $2)
-      RETURNING state;
       `,
         [bossFightId, participant],
       );
