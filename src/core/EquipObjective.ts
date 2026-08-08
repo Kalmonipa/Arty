@@ -4,7 +4,11 @@ import { logger } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { ObjectiveCancelled, ObjectiveCompleted, ObjectiveResult } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 /**
  * Equips the specified item into the specified slot

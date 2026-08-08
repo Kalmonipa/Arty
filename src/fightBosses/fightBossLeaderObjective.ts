@@ -5,6 +5,7 @@ import { Objective } from '../core/Objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
@@ -13,6 +14,8 @@ import { getMyCharacters } from '../character/ApiCalls.js';
 import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { requestLoadout } from '../api_calls/Account.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
+import { simulateBossFight } from './bossfightPreRequisite.js';
+import { registerBossFight } from './bossfightUtils.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -49,6 +52,18 @@ export class FightBossLeaderObjective extends Objective {
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       if (!(await this.checkStatus())) return ObjectiveCancelled;
     }
+
+    const fightSimResult = await simulateBossFight(this.character, this.target);
+
+    if (!fightSimResult.success) {
+      logger.warn(
+        `Boss fight against ${this.target.code} isn't winnable. Exiting`,
+      );
+      return ObjectiveFailed;
+    }
+
+    const registerFight = await registerBossFight([BouncyBella, JumpyJimmy]);
+
     return ObjectiveCompleted;
   }
 }

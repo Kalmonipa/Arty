@@ -4,23 +4,28 @@ import { getMyCharacters } from '../character/ApiCalls.js';
 import { Character } from '../character/CharacterClass.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { ApiError } from '../core/Error.js';
-import { ObjectiveTargets } from '../types/ObjectiveData.js';
+import {
+  ObjectiveFailed,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../types/ObjectiveData.js';
 import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 
 export async function simulateBossFight(
   character: Character,
   target: ObjectiveTargets,
-) {
+): Promise<ObjectiveResult> {
   const mobInfo = await getMonsterInformation(target.code);
   if (mobInfo instanceof ApiError) {
-    return character.handleErrors(mobInfo);
+    await character.handleErrors(mobInfo);
+    return ObjectiveFailed;
   }
 
   const participants = await findBestParticipants();
   if (!participants) {
     logger.warn(`No participants found for fight against ${target.code}`);
-    return false;
+    return ObjectiveFailed;
   }
 
   // Build FakeCharacterSchemas to run a fight sim
@@ -63,7 +68,7 @@ export async function simulateBossFight(
     target.quantity,
   );
 
-  logger.info(`Sim result was a ${simResult ? 'win' : 'loss'}`);
+  logger.info(`Sim result was a ${simResult.success ? 'win' : 'loss'}`);
 
   return simResult;
 }
