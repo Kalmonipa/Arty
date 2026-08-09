@@ -1,7 +1,5 @@
-import { actionFight } from '../api_calls/Actions.js';
 import { logger, sleep } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
-import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {
   ObjectiveCompleted,
@@ -9,8 +7,6 @@ import {
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
-import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { MinEquippedUtilities } from '../constants.js';
 import {
   getBossFightState,
   getCurrentNumFights,

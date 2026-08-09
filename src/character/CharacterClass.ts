@@ -1439,6 +1439,18 @@ export class Character {
    * Objective because Objective is the base class of the job it creates.
    */
   async checkForBossFightParticipation(): Promise<ObjectiveResult> {
+    // This for loop avoids creating an infinite loop
+    for (const job of this.jobList) {
+      logger.debug(`Checking Job ${job.objectiveId}`);
+      if (job instanceof FightBossParticipantObjective) {
+        logger.info(
+          `Boss fight job ${job.objectiveId} already in queue. Not starting a new event`,
+        );
+
+        return ObjectiveFailed;
+      }
+    }
+
     const bossFightId = await this.findEnlistedBossFight(this.data.name);
     if (bossFightId === 0) {
       return ObjectiveFailed;
