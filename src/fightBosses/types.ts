@@ -1,5 +1,5 @@
 export interface BossFightParticipantsRow {
-  ight_id: number;
+  fight_id: number;
   character_name: string;
   role: string;
   state: string;

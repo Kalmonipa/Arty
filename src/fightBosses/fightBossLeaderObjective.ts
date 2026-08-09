@@ -22,6 +22,7 @@ import {
   registerBossFightParticipants,
   setParticipantsState,
 } from './bossFightParticipantFunctions.js';
+import { BouncyBella, JumpyJimmy } from '../constants.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -58,7 +59,7 @@ export class FightBossLeaderObjective extends Objective {
     if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     let progress = 0;
-    const participants = [];
+    const participants = [BouncyBella, JumpyJimmy];
 
     const fightSimResult = await simulateBossFight(this.character, this.target);
 
