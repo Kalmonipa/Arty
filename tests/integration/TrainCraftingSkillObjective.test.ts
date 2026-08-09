@@ -21,6 +21,12 @@ jest.mock('../../src/api_calls/Items', () => ({
   getAllItemInformation: jest.fn(),
 }));
 
+// Crafting scores price gathered ingredients from the resource table. Without
+// this the scoring pass reaches the live API and the suite crawls.
+jest.mock('../../src/api_calls/Resources', () => ({
+  getResourceNodesDropping: jest.fn(async () => []),
+}));
+
 jest.mock('../../src/wishlist/functions', () => ({
   addToWishlist: jest.fn(async () => 1),
   findOpenWishlistRequest: jest.fn(async () => undefined),

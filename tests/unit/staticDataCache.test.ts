@@ -3,6 +3,7 @@ import {
   clearResourceCache,
   getAllResourceInformation,
   getResourceInformation,
+  getResourceNodesDropping,
 } from '../../src/api_calls/Resources.js';
 import {
   clearNpcItemsCache,
@@ -70,6 +71,55 @@ describe('resource caching', () => {
     expect(first).toBeInstanceOf(ApiError);
     expect(second).toEqual({ data: resource('gold_rocks') });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('answers every drop lookup from a single warmed fetch', async () => {
+    const node = (code: string, drop: string) => ({
+      code,
+      name: code,
+      skill: 'mining',
+      level: 30,
+      drops: [{ code: drop, rate: 1, min_quantity: 1, max_quantity: 1 }],
+    });
+
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue(
+      jsonResponse(200, {
+        data: [node('gold_rocks', 'gold_ore'), node('dead_tree', 'dead_wood')],
+        total: 2,
+        page: 1,
+        size: 100,
+        pages: 1,
+      }),
+    );
+
+    const gold = await getResourceNodesDropping('gold_ore');
+    const wood = await getResourceNodesDropping('dead_wood');
+
+    expect(gold).not.toBeInstanceOf(ApiError);
+    expect((gold as { code: string }[]).map((n) => n.code)).toEqual([
+      'gold_rocks',
+    ]);
+    expect((wood as { code: string }[]).map((n) => n.code)).toEqual([
+      'dead_tree',
+    ]);
+    // The whole table is 26 rows, so one page covers every future lookup
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports nothing drops an item without claiming an API error', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      jsonResponse(200, {
+        data: [],
+        total: 0,
+        page: 1,
+        size: 100,
+        pages: 1,
+      }),
+    );
+
+    const nodes = await getResourceNodesDropping('cyclops_eye');
+
+    expect(nodes).toEqual([]);
   });
 });
 

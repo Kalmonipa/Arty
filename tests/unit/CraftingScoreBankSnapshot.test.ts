@@ -60,7 +60,7 @@ describe('crafting score reuses the caller bank snapshot', () => {
       .mocked(getItemInformation)
       .mockImplementation(async (code: string) => mobDrop(code));
 
-    const snapshot = BankCache.fromItems([{ code: 'feather', quantity: 3 }]);
+    const snapshot = BankCache.fromItems([{ code: 'copper_ore', quantity: 3 }]);
 
     await calculateBestCraftingItem(
       character,
@@ -71,10 +71,11 @@ describe('crafting score reuses the caller bank snapshot', () => {
       snapshot,
     );
 
-    // Four mob-drop ingredients across two candidates. A proposal without a
-    // snapshot builds its own — two paginated requests apiece — against a
-    // fleet-wide budget of 2000 data requests an hour.
-    expect(proposeCombatLoadout).toHaveBeenCalledTimes(4);
+    // Two distinct mob drops shared across two candidates, each costed once for
+    // the pass. The bank holds none of them, so both are actually fought for.
+    // A proposal without a snapshot builds its own — two paginated requests
+    // apiece — against a fleet-wide budget of 2000 data requests an hour.
+    expect(proposeCombatLoadout).toHaveBeenCalledTimes(2);
     for (const call of proposeCombatLoadout.mock.calls) {
       expect(call[1]).toBe(snapshot);
     }
@@ -103,7 +104,7 @@ describe('crafting score reuses the caller bank snapshot', () => {
       .mocked(getItemInformation)
       .mockImplementation(async (code: string) => mobDrop(code));
 
-    const snapshot = BankCache.fromItems([{ code: 'feather', quantity: 3 }]);
+    const snapshot = BankCache.fromItems([{ code: 'copper_ore', quantity: 3 }]);
 
     await calculateBestCraftingItem(
       character,

@@ -4,15 +4,16 @@ import {
 } from '../api_calls/Items.js';
 import {
   CraftSkill,
+  DropRateSchema,
   GetAllItemsItemsGetParams,
   ItemSchema,
 } from '../types/types.js';
+import { getResourceNodesDropping } from '../api_calls/Resources.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
 import { BankCache } from './BankCache.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import {
   Alchemy,
   Cooking,
@@ -169,26 +170,49 @@ export class TrainCraftingSkillObjective extends Objective {
 }
 
 /**
- * Calculates the 'cheapest' item to craft. These scorings are somewhat arbitrary at
- * the moment and will be adjusted.
- * Scoring is based on the following criteria (lowest score is best):
- * - All ingredients in bank/inv: 0
- * - Some ingredients in bank/inv: 1 per ingredient
- * - Gathering: 30 per item needed (approx time to gather 1 resource)
- * - Mob Drop: 30 per fight * (100 - drop rate %)
- * - Task Reward: 200 items * 30 seconds = 6000 score
- * - Event drops: amount needed * (30 seconds if event is active OR 1000 if event is not active)
+ * Cost of an item we have no way to obtain: no dropper, no node, or a fight we
+ * lose. Large enough to lose to any real recipe but still finite, so a recipe
+ * with one unobtainable ingredient can still be compared against another.
+ */
+export const UNATTAINABLE = 1000000;
+
+/** Rough cost of grinding a task to completion for one reward item. */
+const TASK_REWARD_ACTIONS = 150;
+
+/** The craft itself is one action on top of gathering the ingredients. */
+const CRAFT_ACTION = 1;
+
+/**
+ * Per-pass memo of item code -> expected actions for one unit. Scoring a whole
+ * candidate list revisits the same bars and ores repeatedly, and each mob drop
+ * costs a fight simulation, so this is what keeps a pass affordable.
+ */
+export type CraftCostMemo = Map<string, number>;
+
+/** Expected actions to obtain one unit, given a drop's rate and yield. */
+function actionsPerUnit(drop: DropRateSchema): number {
+  const averageYield = (drop.min_quantity + drop.max_quantity) / 2;
+  return drop.rate / averageYield;
+}
+
+/**
+ * Calculates the 'cheapest' item to craft, measured in expected game actions
+ * (fights, gathers and crafts), counting what the bank already holds as free.
+ * Lowest wins.
  *
- * @todo - Make the scores based on actual figures and calculations
- * Gathering: Factor skill level and equipment cooldown in
+ * Scores one of each candidate even though the caller crafts several, so a bank
+ * holding enough for a single craft flatters an item the fleet can't repeat.
+ *
+ * @todo Weight actions by cooldown so a 25s fight outranks a 5s gather
  */
 export async function calculateBestCraftingItem(
   character: Character,
   craftableItemList: ItemSchema[],
   bankSnapshot: BankCache,
 ): Promise<{ code: string; score: number }> {
-  let bestScore = 1000000;
+  let bestScore = Infinity;
   let bestItem = 'no_item';
+  const memo: CraftCostMemo = new Map();
 
   logger.debug(
     `Example items in craftable list: ${craftableItemList[0].code}, ${craftableItemList.at(-1).code}`,
@@ -196,7 +220,12 @@ export async function calculateBestCraftingItem(
 
   for (const item of craftableItemList) {
     logger.debug(`Calculating score of ${item.code}`);
-    const currentScore = await calculateScore(item, bankSnapshot, character);
+    const currentScore = await calculateScore(
+      item,
+      bankSnapshot,
+      character,
+      memo,
+    );
 
     if (currentScore < bestScore) {
       logger.debug(
@@ -211,116 +240,229 @@ export async function calculateBestCraftingItem(
 }
 
 /**
- * Returns the score of the craftable item
+ * Quantities this candidate's costing has already claimed off the bank. Kept
+ * separate from the snapshot so scoring never mutates the caller's copy, and so
+ * one banked stack can't be counted against two parts of the same recipe.
+ */
+type Ledger = Map<string, number>;
+
+type CostContext = {
+  bank: BankCache;
+  character: Character;
+  memo: CraftCostMemo;
+  ledger: Ledger;
+  /** Recipes part-way through costing, so a cyclic recipe can't recurse forever. */
+  inProgress: Set<string>;
+};
+
+/** Materials we obtain by fighting or questing rather than by crafting. */
+function isFarmed(item: ItemSchema): boolean {
+  return item.subtype === 'task' || item.subtype === 'mob';
+}
+
+function isCraftable(item: ItemSchema): boolean {
+  return !isFarmed(item) && Boolean(item.craft?.items?.length);
+}
+
+/**
+ * Expected actions to obtain one of this item, given what the bank already holds.
+ *
+ * Every material in the game is `type: 'resource'`; the `subtype` is what says
+ * whether it is fought for, gathered or handed out by a task, so dispatch is on
+ * subtype. Ingredients are costed by this same walk at every depth, which is what
+ * stops a rare drop hiding behind a bar from looking free.
  *
  * Takes the bank snapshot as input and passes it on to every loadout proposal,
  * so scoring a whole candidate list costs one bank read rather than one per
  * mob-drop ingredient. Scoring is read-only, so one snapshot stays valid for
  * the pass.
- * @param craftableItem
  */
-async function calculateScore(
+export async function calculateScore(
   craftableItem: ItemSchema,
   bankSnapshot: BankCache,
   character: Character,
+  memo: CraftCostMemo = new Map(),
 ): Promise<number> {
-  let score = 0;
+  const context: CostContext = {
+    bank: bankSnapshot,
+    character,
+    memo,
+    // A fresh ledger per candidate. We only ever craft one of them, so each is
+    // costed against the whole bank rather than an earlier candidate's leftovers.
+    ledger: new Map(),
+    inProgress: new Set(),
+  };
 
-  if (craftableItem.type === 'resource') {
-    logger.debug(`${craftableItem.code} is a resource. Adding score 1`);
-    score += 1;
-    return score;
+  // Never discounted against itself — earning the XP is the point of the craft.
+  return isCraftable(craftableItem)
+    ? await costToCraft(craftableItem, 1, context)
+    : await rawMaterialCost(craftableItem, context);
+}
+
+/** Actions to put `needed` of an item in hand, spending the bank before working. */
+async function costToObtain(
+  item: ItemSchema,
+  needed: number,
+  context: CostContext,
+): Promise<number> {
+  const banked = Math.max(
+    0,
+    context.bank.quantityOf(item.code) - (context.ledger.get(item.code) ?? 0),
+  );
+  const fromBank = Math.min(needed, banked);
+  if (fromBank > 0) {
+    context.ledger.set(
+      item.code,
+      (context.ledger.get(item.code) ?? 0) + fromBank,
+    );
+    logger.debug(
+      `Bank covers ${fromBank} of the ${needed} ${item.code} needed`,
+    );
   }
 
-  let ingredients = craftableItem.craft.items;
+  const shortfall = needed - fromBank;
+  if (shortfall <= 0) {
+    return 0;
+  }
 
-  /**
-   * Check how to retrieve each ingredient and update score based on each type
-   * Check inventory
-   * Check bank
-   * Check item type
-   */
-  for (const simpleIngredient of ingredients) {
-    const ingredSchema = await getItemInformation(simpleIngredient.code);
-    if (ingredSchema instanceof ApiError) {
-      logger.warn(
-        `Failed to load ingredient ${simpleIngredient.code}: ${ingredSchema.message}`,
+  return isCraftable(item)
+    ? await costToCraft(item, shortfall, context)
+    : shortfall * (await rawMaterialCost(item, context));
+}
+
+async function costToCraft(
+  item: ItemSchema,
+  count: number,
+  context: CostContext,
+): Promise<number> {
+  if (context.inProgress.has(item.code)) {
+    logger.warn(
+      `${item.code} is an ingredient of itself. Marking unattainable`,
+    );
+    return UNATTAINABLE;
+  }
+  context.inProgress.add(item.code);
+
+  try {
+    const crafts = count / (item.craft.quantity ?? 1);
+    let total = crafts * CRAFT_ACTION;
+
+    for (const ingredient of item.craft.items) {
+      const ingredSchema = await getItemInformation(ingredient.code);
+      if (ingredSchema instanceof ApiError) {
+        logger.warn(
+          `Failed to load ingredient ${ingredient.code}: ${ingredSchema.message}`,
+        );
+        return UNATTAINABLE;
+      }
+      total += await costToObtain(
+        ingredSchema,
+        crafts * ingredient.quantity,
+        context,
       );
-      continue;
     }
 
-    const numNeeded = simpleIngredient.quantity;
+    logger.debug(`${count} ${item.code} costs ${total} actions to craft`);
+    return total;
+  } finally {
+    context.inProgress.delete(item.code);
+  }
+}
 
-    if (ingredSchema.subtype === 'task') {
+/**
+ * Cost of one unit of something we can't craft. Independent of the bank and of
+ * the recipe asking for it, so it is memoised for the whole pass — which also
+ * means one fight simulation per monster rather than one per candidate.
+ */
+async function rawMaterialCost(
+  item: ItemSchema,
+  context: CostContext,
+): Promise<number> {
+  const memoised = context.memo.get(item.code);
+  if (memoised !== undefined) {
+    return memoised;
+  }
+
+  let cost: number;
+  if (item.subtype === 'task') {
+    logger.debug(
+      `${item.code} is a task reward, costing ${TASK_REWARD_ACTIONS}`,
+    );
+    cost = TASK_REWARD_ACTIONS;
+  } else if (item.subtype === 'mob') {
+    cost = await mobDropCost(item, context.bank, context.character);
+  } else {
+    cost = await gatherCost(item);
+  }
+
+  context.memo.set(item.code, cost);
+  return cost;
+}
+
+/**
+ * Cost of fighting for a drop, taking the cheapest mob we can actually beat.
+ * Bosses are excluded outright — the fleet has no reliable way to farm them.
+ */
+async function mobDropCost(
+  item: ItemSchema,
+  bankSnapshot: BankCache,
+  character: Character,
+): Promise<number> {
+  const droppers = character.monsterData
+    .filter((mob) => mob.type !== 'boss')
+    .flatMap((mob) => {
+      const drop = mob.drops.find((d) => d.code === item.code);
+      return drop ? [{ mob, cost: actionsPerUnit(drop) }] : [];
+    })
+    .sort((a, b) => a.cost - b.cost);
+
+  if (droppers.length === 0) {
+    logger.debug(`Nothing farmable drops ${item.code}. Marking unattainable`);
+    return UNATTAINABLE;
+  }
+
+  for (const { mob, cost } of droppers) {
+    const proposedLoadout = await character.proposeCombatLoadout(
+      mob.code,
+      bankSnapshot,
+    );
+
+    const canWin = await character.simulateFightNow(
+      [proposedLoadout],
+      mob.code,
+      10, // Iterations
+    );
+
+    if (canWin) {
       logger.debug(
-        `${ingredSchema.code} is a task reward, adding ${150 * numNeeded} to score (${score})`,
+        `${mob.code} drops ${item.code} every ${cost} fights on average`,
       );
-      score += 150 * numNeeded;
-    } else if (ingredSchema.subtype === 'mob') {
-      const droppingMonsters = character.monsterData.filter((mob) =>
-        mob.drops.some((drop) => drop.code === ingredSchema.code),
-      );
+      return cost;
+    }
 
-      if (droppingMonsters.some((mob) => mob.type === 'boss')) {
-        logger.debug(
-          `${ingredSchema.code} drops from a boss. Marking ${craftableItem.code} as unattainable`,
-        );
-        score += 1000000;
-        continue;
-      }
+    logger.debug(`${character.data.name} cannot kill ${mob.name}`);
+  }
 
-      // ToDo: Change this so that it looks at all mobs that drop it
-      // and find the best mob to fight
-      const monsterToKill = droppingMonsters[0];
-      if (!monsterToKill) {
-        score += 1000000;
-        continue;
-      }
+  return UNATTAINABLE;
+}
 
-      const proposedLoadout = await character.proposeCombatLoadout(
-        monsterToKill.code,
-        bankSnapshot,
-      );
+/** Cost of gathering a raw material from the most productive node dropping it. */
+async function gatherCost(item: ItemSchema): Promise<number> {
+  const nodes = await getResourceNodesDropping(item.code);
+  if (nodes instanceof ApiError) {
+    logger.warn(`Failed to load nodes dropping ${item.code}: ${nodes.message}`);
+    return UNATTAINABLE;
+  }
 
-      const fightSimResult = await character.simulateFightNow(
-        [proposedLoadout],
-        monsterToKill.code,
-        10, // Iterations
-      );
-
-      if (!fightSimResult) {
-        logger.debug(
-          `${character.data.name} cannot kill ${monsterToKill.name}. Won't craft this item`,
-        );
-        score += 100000;
-        continue;
-      }
-
-      const dropRate = monsterToKill.drops.find(
-        (drop) => drop.code === ingredSchema.code,
-      );
-      const scoreToAdd = 2 * dropRate.rate * numNeeded;
-      logger.debug(
-        `${monsterToKill.code} drops ${ingredSchema.code}. Adding ${scoreToAdd} to score (${score})`,
-      );
-      score += scoreToAdd;
-    } else if (ingredSchema.craft) {
-      logger.debug(`Calculating sub-ingredients of ${ingredSchema.code}`);
-      for (const simpleSubIngredient of ingredSchema.craft.items) {
-        logger.debug(`Calculating ${simpleSubIngredient.code} score`);
-        const subIngredient = await getItemInformation(
-          simpleSubIngredient.code,
-        );
-        if (subIngredient instanceof ApiError) {
-          logger.warn(
-            `Failed to load sub-ingredient ${simpleSubIngredient.code}: ${subIngredient.message}`,
-          );
-          continue;
-        }
-        score += await calculateScore(subIngredient, bankSnapshot, character);
+  let cheapest = UNATTAINABLE;
+  for (const node of nodes) {
+    for (const drop of node.drops) {
+      if (drop.code === item.code) {
+        cheapest = Math.min(cheapest, actionsPerUnit(drop));
       }
     }
   }
 
-  return score;
+  logger.debug(`${item.code} takes ${cheapest} gathers per unit`);
+  return cheapest;
 }
