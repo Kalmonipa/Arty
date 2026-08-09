@@ -185,7 +185,7 @@ export class Character {
    */
   onHold: OnHoldJob[] = [];
   /** The most parked jobs a character may hold at once */
-  maxOnHoldJobs = 6;
+  maxOnHoldJobs = 10;
   /**
    * The job that a wishlist request raised right now belongs to, i.e. the one
    * that gets parked until the item arrives. Set while a job that parks on
