@@ -227,6 +227,10 @@ class SimpleMockCharacter {
     return true;
   });
 
+  checkForBossFightParticipation = jest.fn((): boolean => {
+    return false;
+  });
+
   getCharacterLevel = jest.fn(
     (char?: CharacterSchema, skillName?: string): number => {
       switch (skillName) {

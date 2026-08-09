@@ -109,6 +109,10 @@ class MockCharacter {
     if (!this.itemsToKeep.includes(code)) this.itemsToKeep.push(code);
   });
 
+  checkForBossFightParticipation = jest.fn((): boolean => {
+    return false;
+  });
+
   removeItemFromItemsToKeep = jest.fn((code: string): void => {
     const index = this.itemsToKeep.indexOf(code);
     if (index !== -1) this.itemsToKeep.splice(index, 1);
