@@ -256,6 +256,7 @@ export class GatherObjective extends Objective {
           await this.character.checkForActiveEvents();
         }
 
+        // ToDo: remove this log once debugging is done
         logger.info(`Checking for boss fights`);
         await this.character.checkForBossFightParticipation();
       }

@@ -165,8 +165,10 @@ export async function getCurrentNumFights(
 
     const numFights = result.rows[0];
 
-    logger.info(`Number of fights completed for #${bossFightId}: ${numFights}`);
-    return numFights;
+    logger.info(
+      `Number of fights completed for #${bossFightId}: ${numFights.fights_done}`,
+    );
+    return numFights.fights_done;
   } catch (err) {
     logger.error(`Failed to get number of fights completed: ${err}`);
     return undefined;

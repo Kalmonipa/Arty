@@ -54,6 +54,7 @@ export class FightBossParticipantObjective extends Objective {
 
     // Checks progress against target number but maybe should just be while true
     // and rely on the 'complete' state update from the leader?
+    logger.info(`Progress: ${progress}, Target: ${this.target.quantity}`);
     while (progress < this.target.quantity) {
       logger.info(`Started boss fight preparation against ${this.target.code}`);
 

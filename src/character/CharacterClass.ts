@@ -1443,7 +1443,7 @@ export class Character {
       logger.debug(`Checking Job ${job.objectiveId}`);
       if (job instanceof FightBossParticipantObjective) {
         logger.info(
-          `Boss fight job ${job.objectiveId} already in queue. Not starting a new event`,
+          `Boss fight job ${job.objectiveId} already in queue. Not starting a new boss fight`,
         );
 
         return ObjectiveFailed;
