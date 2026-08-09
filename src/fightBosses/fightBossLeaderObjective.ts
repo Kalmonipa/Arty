@@ -120,7 +120,7 @@ export class FightBossLeaderObjective extends Objective {
 
         // Sleep for a period until all participants are ready
         while (!allReady) {
-          await sleep(30, 'waiting_for_boss_fight');
+          await sleep(30, 'waiting_for_participants');
 
           allReady = await checkAllParticipantsReady(fightId, participants);
         }

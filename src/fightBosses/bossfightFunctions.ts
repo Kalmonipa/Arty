@@ -138,8 +138,8 @@ export async function getBossFightState(
 
     const state = result.rows[0];
 
-    logger.info(`State of fight #${bossFightId}: ${state}`);
-    return state;
+    logger.info(`State of fight #${bossFightId}: ${state.state}`);
+    return state.state;
   } catch (err) {
     logger.error(`Failed to get boss fight state: ${err}`);
     return undefined;
