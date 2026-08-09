@@ -12,10 +12,11 @@ import {
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { MinEquippedUtilities } from '../constants.js';
 
+/**
+ * Gets initialised when the character has been selected to participate in a boss fight
+ */
 export class FightBossParticipantObjective extends Objective {
   target: ObjectiveTargets;
-  participants?: string[];
-  runFightSim?: boolean;
 
   constructor(
     character: Character,
@@ -31,32 +32,27 @@ export class FightBossParticipantObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'FightBossParticipant';
     this.target = target;
-    this.participants = participants;
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
-    // Get all food items to deposit
-    const foodItems = this.character.findFoodInInventory();
-    const foodCodes = foodItems.map((food) => food.code);
-    const itemsToKeep = [...foodCodes];
-
-    await this.character.evaluateDepositItemsInBank(itemsToKeep);
-
-    await this.character.evaluateGear('combat', this.target.code);
-
-    const mobInfo = await getMonsterInformation(this.target.code);
-    if (mobInfo instanceof ApiError) {
-      await this.character.handleErrors(mobInfo);
-      return ObjectiveFailed;
-    }
 
     return ObjectiveCompleted;
   }
 
   /**
-   * @description Fight the requested amount of mobs
+   * @description Gear up for a fight and move to the location of the mob
    */
   async run(): Promise<ObjectiveResult> {
+
+    // [] Gear up for the fight
+    // [] Get food and potions
+    // [] Move to the location of the boss
+    // [] Mark themselves as ready in the boss_fight_participants table
+    // [] ToDo: Some way for char to know fight has been initiated
+    // [] Check fight count vs target count
+    //    - If fights_done >= target then finish job and go back to prior job
+    //    - If not, start from step 1 again
+
     return ObjectiveCompleted;
   }
 }
