@@ -72,7 +72,7 @@ export class FightBossLeaderObjective extends Objective {
 
     const fightId = await registerBossFight(this.character, this.target);
 
-    if (await registerBossFightParticipants(fightId, participants)) {
+    if (!(await registerBossFightParticipants(fightId, participants))) {
       logger.error(`Failed to register participants`);
       return ObjectiveFailed;
     }

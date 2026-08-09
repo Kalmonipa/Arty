@@ -255,6 +255,9 @@ export class GatherObjective extends Objective {
         if (this.character.enableEvents) {
           await this.character.checkForActiveEvents();
         }
+
+        logger.info(`Checking for boss fights`);
+        await this.character.checkForBossFightParticipation();
       }
 
       // Check inventory space to make sure we are less than 90% full
