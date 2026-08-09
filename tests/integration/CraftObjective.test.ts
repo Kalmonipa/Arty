@@ -204,6 +204,10 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
+  checkForBossFightParticipation = jest.fn(async (): Promise<void> => {
+    // Not enlisted in a boss fight
+  });
+
   parkJob = jest.fn(async (): Promise<boolean> => true);
 }
 

@@ -179,6 +179,8 @@ export abstract class Objective {
       await this.character.checkForActiveEvents();
     }
 
+    await this.character.checkForBossFightParticipation();
+
     return true;
   }
 

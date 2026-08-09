@@ -49,6 +49,8 @@ import {
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { CraftObjective } from '../core/CraftObjective.js';
+import { FightBossParticipantObjective } from '../fightBosses/fightBossParticipantObjecive.js';
+import { getBossFightTarget } from '../fightBosses/bossfightFunctions.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
 import type { BankCache } from '../core/BankCache.js';
@@ -156,6 +158,7 @@ import { IdleFishermanObjective } from '../idleObjectives/IdleFisherman.js';
 import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.js';
 import { AcquisitionMethod, WishlistRow } from '../wishlist/types.js';
 import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
+import { checkEnlistments } from '../fightBosses/bossFightParticipantFunctions.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -1419,6 +1422,41 @@ export class Character {
     }
 
     this.lastEventCheckTimestamp = currentTimestamp;
+    return ObjectiveCompleted;
+  }
+
+  /**
+   * @description The ID of the boss fight this character has been called up to
+   * join, or 0 when it has not been enlisted
+   */
+  async findEnlistedBossFight(charName: string): Promise<number> {
+    return await checkEnlistments(charName);
+  }
+
+  /**
+   * @description Runs the boss fight this character has been called up for,
+   * ahead of whatever job it was about to start. Lives here rather than on
+   * Objective because Objective is the base class of the job it creates.
+   */
+  async checkForBossFightParticipation(): Promise<ObjectiveResult> {
+    const bossFightId = await this.findEnlistedBossFight(this.data.name);
+    if (bossFightId === 0) {
+      return ObjectiveFailed;
+    }
+
+    logger.info(`Found boss fight #${bossFightId}. Retrieving data`);
+    const targetData = await getBossFightTarget(bossFightId);
+    if (!targetData) {
+      logger.warn(`No target data for boss fight #${bossFightId}. Skipping`);
+      return ObjectiveFailed;
+    }
+
+    const bossFightJob = new FightBossParticipantObjective(
+      this,
+      targetData,
+      bossFightId,
+    );
+    await this.executeJobNow(bossFightJob, true, true);
     return ObjectiveCompleted;
   }
 

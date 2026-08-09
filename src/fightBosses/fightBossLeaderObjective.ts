@@ -9,11 +9,6 @@ import {
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
-import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { getMyCharacters } from '../character/ApiCalls.js';
-import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
-import { requestLoadout } from '../api_calls/Account.js';
-import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { simulateBossFight } from './bossfightPreRequisite.js';
 import {
   incrementBossFightCounter,
@@ -25,7 +20,7 @@ import { actionFight } from '../api_calls/Actions.js';
 import {
   checkAllParticipantsReady,
   registerBossFightParticipants,
-  setAllParticipantsUnready,
+  setParticipantsState,
 } from './bossFightParticipantFunctions.js';
 
 export class FightBossLeaderObjective extends Objective {
@@ -63,7 +58,7 @@ export class FightBossLeaderObjective extends Objective {
     if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     let progress = 0;
-    const participants = [BouncyBella, JumpyJimmy];
+    const participants = [];
 
     const fightSimResult = await simulateBossFight(this.character, this.target);
 
@@ -76,10 +71,10 @@ export class FightBossLeaderObjective extends Objective {
 
     const fightId = await registerBossFight(this.character, this.target);
 
-    const registerFightParticipants = await registerBossFightParticipants(
-      fightId,
-      participants,
-    );
+    if (await registerBossFightParticipants(fightId, participants)) {
+      logger.error(`Failed to register participants`);
+      return ObjectiveFailed;
+    }
 
     // [x] Gear up for the fight
     //    - Equip gear, potions etc
@@ -92,7 +87,7 @@ export class FightBossLeaderObjective extends Objective {
     // [x] If fights_done >= quantity:
     //    - set state to complete
     //    - delete rows from boss_fight_participants
-    // [] If fights_done < quantity:
+    // [x] If fights_done < quantity:
     //    - go back to step 1
 
     while (progress < this.target.quantity) {
@@ -139,17 +134,24 @@ export class FightBossLeaderObjective extends Objective {
         return ObjectiveFailed;
       }
 
-      await setAllParticipantsUnready(fightId, participants);
+      for (const participant of participants) {
+        await setParticipantsState(fightId, participant, 'unready');
+      }
+
       progress = await incrementBossFightCounter(fightId);
 
-      logger.info(`Fought ${progress}/${this.target.quantity} ${this.target.code}`)
+      logger.info(
+        `Fought ${progress}/${this.target.quantity} ${this.target.code}`,
+      );
 
       if (progress >= this.target.quantity) {
         logger.info(
           `Successfully fought ${progress}/${this.target.quantity}x ${this.target.code}`,
         );
+        // Participant rows are left in place. Each participant sees this state
+        // change, acknowledges it and moves on, and its row stays as the record
+        // of the fight.
         await markBossFightComplete(fightId);
-        // ToDo: wait for acknowledgement then delete participant rows from boss_fight_participants
         return ObjectiveCompleted;
       }
     }

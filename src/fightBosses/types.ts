@@ -13,6 +13,10 @@ export interface BossFightParticipantsRow {
  *          - has food & potions
  *          - standing on the correct map
  * unready = preparing for the fight
- * acknowledged = acknowledgement that the fight sequence is complete
+ * acknowledged = acknowledgement that the fight sequence is complete. Terminal:
+ *          the row is kept as the record of the fight rather than deleted, and
+ *          the character is never enlisted back into it.
  */
 export type ParticipantStatus = 'ready' | 'unready' | 'acknowledged';
+
+export type BossFightStatus = 'in_progress' | 'complete' | 'aborted';

@@ -2,6 +2,7 @@ import { Character } from '../character/CharacterClass.js';
 import { db } from '../db.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { logger } from '../utils.js';
+import { BossFightStatus } from './types.js';
 
 /**
  * Registers the boss fight in the boss_fights table
@@ -71,7 +72,7 @@ export async function markBossFightComplete(
     const result = await db.query<{}>(
       `
       UPDATE boss_fights 
-      SET state = "complete"
+      SET state = 'complete'
       WHERE id = $1
       `,
       [bossFightId],
@@ -82,5 +83,92 @@ export async function markBossFightComplete(
   } catch (err) {
     logger.error(`Failed to mark boss fight as complete: ${err}`);
     return false;
+  }
+}
+
+/**
+ * Takes in the boss fight ID and returns the monster code and quantity
+ * @param bossFightId ID of the fight
+ * @returns
+ */
+export async function getBossFightTarget(
+  bossFightId: number,
+): Promise<ObjectiveTargets | undefined> {
+  try {
+    const result = await db.query<ObjectiveTargets>(
+      `
+      SELECT boss_code AS code, quantity FROM boss_fights
+      WHERE id = $1;
+      `,
+      [bossFightId],
+    );
+
+    const target = result.rows[0];
+    if (!target) {
+      logger.warn(`No boss fight found for #${bossFightId}`);
+      return undefined;
+    }
+
+    logger.info(
+      `Retrieved info for fight #${bossFightId}: ${target.quantity}x ${target.code}`,
+    );
+    return target;
+  } catch (err) {
+    logger.error(`Failed to get boss fight target info: ${err}`);
+    return undefined;
+  }
+}
+
+/**
+ * Retrieves the state of the fight
+ * @param bossFightId ID of the fight
+ * @returns {BossFightStatus} status of the fight
+ */
+export async function getBossFightState(
+  bossFightId: number,
+): Promise<BossFightStatus> {
+  try {
+    const result = await db.query<{ state: BossFightStatus }>(
+      `
+      SELECT state FROM boss_fights
+      WHERE id = $1;
+      `,
+      [bossFightId],
+    );
+
+    const state = result.rows[0];
+
+    logger.info(`State of fight #${bossFightId}: ${state}`);
+    return state;
+  } catch (err) {
+    logger.error(`Failed to get boss fight state: ${err}`);
+    return undefined;
+  }
+}
+
+/**
+ * Retrieves the number of fights done
+ * @param bossFightId ID of the fight
+ * @returns number of fights_done
+ */
+export async function getCurrentNumFights(
+  bossFightId: number,
+): Promise<number> {
+  try {
+    const result = await db.query<{ numFights: number }>(
+      `
+      SELECT fights_done FROM boss_fights
+      WHERE id = $1;
+      `,
+      [bossFightId],
+    );
+
+    const numFights = result.rows[0];
+
+    logger.info(`Number of fights completed for #${bossFightId}: ${numFights}`);
+    return numFights;
+  } catch (err) {
+    logger.error(`Failed to get number of fights completed: ${err}`);
+    return undefined;
   }
 }
