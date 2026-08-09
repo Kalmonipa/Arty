@@ -95,7 +95,7 @@ export class FightBossLeaderObjective extends Objective {
     // [] If fights_done < quantity:
     //    - go back to step 1
 
-    if (progress < this.target.quantity) {
+    while (progress < this.target.quantity) {
       logger.info(`Attempting to gear up for ${this.target.code} fight`);
       const gearUpJob = await this.character.executeJobNow(
         new EvaluateGearObjective(this.character, 'combat', this.target.code),
@@ -141,6 +141,8 @@ export class FightBossLeaderObjective extends Objective {
 
       await setAllParticipantsUnready(fightId, participants);
       progress = await incrementBossFightCounter(fightId);
+
+      logger.info(`Fought ${progress}/${this.target.quantity} ${this.target.code}`)
 
       if (progress >= this.target.quantity) {
         logger.info(
