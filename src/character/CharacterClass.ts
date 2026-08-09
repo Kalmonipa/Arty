@@ -1434,9 +1434,8 @@ export class Character {
   }
 
   /**
-   * @description Runs the boss fight this character has been called up for,
-   * ahead of whatever job it was about to start. Lives here rather than on
-   * Objective because Objective is the base class of the job it creates.
+   * @description Finds any boss fights this character has been called up for,
+   * ahead of whatever job it was about to start.
    */
   async checkForBossFightParticipation(): Promise<ObjectiveResult> {
     // This for loop avoids creating an infinite loop
@@ -1453,6 +1452,7 @@ export class Character {
 
     const bossFightId = await this.findEnlistedBossFight(this.data.name);
     if (bossFightId === 0) {
+      logger.debug(`No boss fights requested for ${this.data.name}`);
       return ObjectiveFailed;
     }
 
