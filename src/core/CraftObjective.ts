@@ -75,6 +75,8 @@ export class CraftObjective extends Objective {
     this.checkBank = checkBank;
     this.includeInventory = includeInventory ?? true;
     this.blockOnMissing = blockOnMissing ?? false;
+    this.parkOnWishlistRequest =
+      this.blockOnMissing && !character.wishlistRequestOwnerId;
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
@@ -561,7 +563,6 @@ export class CraftObjective extends Objective {
       );
       if (numInInv >= totalIngredNeededToCraft) {
         logger.info(`${numInInv} in inventory. Moving on to craft`);
-        continue;
       } else if (numInBank >= totalIngredNeededToCraft - numInInv) {
         return await this.character.withdrawNow(
           totalIngredNeededToCraft - numInInv,

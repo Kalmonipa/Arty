@@ -520,6 +520,44 @@ describe('DepositObjective Integration Tests', () => {
     });
   });
 
+  describe('Prerequisite checks', () => {
+    // Gold isn't an inventory slot, it's a field on the character, so checking
+    // the inventory for it always finds none and rejects every gold deposit
+    const goldDeposit = (quantity: number) =>
+      new DepositObjective(mockCharacter as any, { code: 'gold', quantity });
+
+    it('passes when the character is holding the gold to deposit', async () => {
+      mockCharacter.data.gold = 277;
+
+      const result = await goldDeposit(277).runPrerequisiteChecks();
+
+      expect(result.success).toBe(true);
+    });
+
+    it('fails when the character is short of the gold to deposit', async () => {
+      mockCharacter.data.gold = 100;
+
+      const result = await goldDeposit(277).runPrerequisiteChecks();
+
+      expect(result.success).toBe(false);
+    });
+
+    it('still checks the inventory for ordinary items', async () => {
+      mockCharacter.data.gold = 5000;
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(2);
+
+      const result = await new DepositObjective(mockCharacter as any, {
+        code: 'iron_ore',
+        quantity: 10,
+      }).runPrerequisiteChecks();
+
+      expect(result.success).toBe(false);
+      expect(mockCharacter.checkQuantityOfItemInInv).toHaveBeenCalledWith(
+        'iron_ore',
+      );
+    });
+  });
+
   describe('Movement and location', () => {
     it('should move to bank location before depositing', async () => {
       mockCharacter.evaluateClosestMap.mockReturnValue({ x: 200, y: 300 });

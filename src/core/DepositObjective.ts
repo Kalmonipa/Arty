@@ -52,8 +52,12 @@ export class DepositObjective extends Objective {
       await this.depositGoldIntoBank();
     }
 
-    // Check if we're actually holding the items to deposit
-    const numInInv = this.character.checkQuantityOfItemInInv(this.target.code);
+    // Gold is a field on the character rather than an inventory slot, so
+    // checking the inventory for it always finds none and rejects the deposit
+    const numInInv =
+      this.target.code === 'gold'
+        ? this.character.data.gold
+        : this.character.checkQuantityOfItemInInv(this.target.code);
     if (numInInv < this.target.quantity) {
       logger.warn(
         `Found ${numInInv}/${this.target.quantity} ${this.target.code} in inventory. Exiting`,

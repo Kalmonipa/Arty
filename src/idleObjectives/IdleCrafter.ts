@@ -400,13 +400,15 @@ export class IdleCrafterObjective extends Objective {
           `Crafting ${craftableItem.code} because there aren't enough in bank`,
         );
         if (
-          await this.character.craftNow(
-            1,
-            craftableItem.code,
-            undefined,
-            undefined,
-            true,
-          )
+          (
+            await this.character.craftNow(
+              1,
+              craftableItem.code,
+              undefined,
+              undefined,
+              true,
+            )
+          ).success
         ) {
           // Only deposit if the craft was successful
           return await this.character.depositNow(1, craftableItem.code);
@@ -474,13 +476,15 @@ export class IdleCrafterObjective extends Objective {
           `Crafting ${craftableItem.code} because there aren't enough in bank`,
         );
         if (
-          await this.character.craftNow(
-            1,
-            craftableItem.code,
-            undefined,
-            undefined,
-            true,
-          )
+          (
+            await this.character.craftNow(
+              1,
+              craftableItem.code,
+              undefined,
+              undefined,
+              true,
+            )
+          ).success
         ) {
           // Only deposit if the craft was successful
           return await this.character.depositNow(1, craftableItem.code);

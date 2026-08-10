@@ -1143,6 +1143,70 @@ describe('CraftObjective Integration Tests', () => {
       expect(actionCraft).not.toHaveBeenCalled();
     });
 
+    it('owns and parks on its own requests when no ancestor is doing it', async () => {
+      // Arrange — the idle crafter starts a blocking craft directly, so there is
+      // no parking ancestor to bubble the requests up to.
+      mockCharacter.wishlistRequestOwnerId = undefined;
+      mockCharacter.role = 'crafter';
+      mockCharacter.data.inventory_max_items = 100;
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockImplementation((code: string) => {
+        if (code === 'custom_item') return Promise.resolve(mockCustomItem);
+        return Promise.resolve(gatherableOre(code));
+      });
+      mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      mockCharacter.gatherNow.mockResolvedValue(ObjectiveFailed);
+
+      const objective = new CraftObjective(
+        mockCharacter as any,
+        { code: 'custom_item', quantity: 1 },
+        undefined,
+        undefined,
+        true, // blockOnMissing
+      );
+
+      // Act
+      mockCharacter.wishlistRequestOwnerId = objective.objectiveId;
+      const result = await objective.run();
+
+      // Assert — the job opts into parking and stamps the rows with its own id,
+      // so Objective.execute finds them and parks it instead of failing it
+      expect(objective.parkOnWishlistRequest).toBe(true);
+      expect(result.reason).toBe('on_hold');
+      expect(addToWishlist).toHaveBeenCalledWith(
+        expect.objectContaining({
+          itemCode: 'ore_a',
+          jobId: objective.objectiveId,
+        }),
+      );
+    });
+
+    it('leaves parking to the ancestor that already owns the requests', () => {
+      const objective = new CraftObjective(
+        mockCharacter as any,
+        { code: 'custom_item', quantity: 1 },
+        undefined,
+        undefined,
+        true, // blockOnMissing
+      );
+
+      expect(mockCharacter.wishlistRequestOwnerId).toBe(OwningJobId);
+      expect(objective.parkOnWishlistRequest).toBe(false);
+    });
+
+    it('does not park a craft that did not opt into blocking', () => {
+      mockCharacter.wishlistRequestOwnerId = undefined;
+
+      const objective = new CraftObjective(mockCharacter as any, {
+        code: 'custom_item',
+        quantity: 1,
+      });
+
+      expect(objective.parkOnWishlistRequest).toBe(false);
+    });
+
     it('does not wishlist ingredients when blockOnMissing is false (default)', async () => {
       // Arrange
       mockCharacter.role = 'crafter';
