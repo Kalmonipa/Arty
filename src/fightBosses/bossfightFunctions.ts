@@ -69,7 +69,7 @@ export async function markBossFightComplete(
   bossFightId: number,
 ): Promise<boolean> {
   try {
-    const result = await db.query<{}>(
+    await db.query<{}>(
       `
       UPDATE boss_fights 
       SET state = 'complete'

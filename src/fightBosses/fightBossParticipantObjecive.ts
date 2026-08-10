@@ -75,7 +75,7 @@ export class FightBossParticipantObjective extends Objective {
         // [x] Get food and potions
         // [x] Move to the location of the boss
         // [x] Mark themselves as ready in the boss_fight_participants table
-        // [x] ToDo: Some way for char to know fight has been initiated
+        // [x] Some way for char to know fight has been initiated
         // [x] Check fight count vs target count
         //    - If fights_done >= target then finish job and go back to prior job
         //    - If not, start from step 1 again

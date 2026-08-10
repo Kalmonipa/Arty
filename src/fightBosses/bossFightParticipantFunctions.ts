@@ -128,7 +128,7 @@ export async function acceptBossFightCompletion(
   participant: string,
 ): Promise<boolean> {
   try {
-    const result = await db.query<{}>(
+    await db.query<{}>(
       `
       UPDATE boss_fight_participants
       SET state = 'acknowledged'

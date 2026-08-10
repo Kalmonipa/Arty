@@ -585,6 +585,7 @@ export class EvaluateGearObjective extends Objective {
     activityType: WeaponFlavours,
     charLevel: number,
   ): Promise<ObjectiveResult> {
+    let wishlistRequested = false;
     const weapons = this.character.weaponMap?.[activityType];
     if (!weapons) {
       logger.warn(
@@ -610,7 +611,14 @@ export class EvaluateGearObjective extends Objective {
         ) {
           return await this.character.equipNow(weapons[ind].code, 'weapon');
         } else {
-          logger.debug(`Can't find any ${weapons[ind].name}`);
+          if (!wishlistRequested) {
+            logger.info(`Requesting ${weapons[ind].code} from wishlist`);
+            await this.requestIngredientFromWishlist({
+              code: weapons[ind].code,
+              quantity: 1,
+            });
+            wishlistRequested = true;
+          }
         }
       }
     }
