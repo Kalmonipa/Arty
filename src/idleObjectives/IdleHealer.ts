@@ -209,7 +209,7 @@ export class IdleHealerObjective extends Objective {
    */
   private async topUpPotionsInBank(): Promise<boolean> {
     // The lowest amount of an item we'd like in the bank
-    const minPotionsToCraft = 500;
+    const minPotionsInBank = 500;
 
     // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
     // and the ceiling being either the alchemists alchemy level or the highest character level
@@ -231,8 +231,8 @@ export class IdleHealerObjective extends Objective {
       if (!tiersToCraft.has(potion.code)) {
         continue;
       }
-      logger.info(`Crafting ${minPotionsToCraft} ${potion.code}`);
-      await this.character.craftNow(minPotionsToCraft, potion.code);
+      logger.info(`Crafting ${minPotionsInBank} ${potion.code}`);
+      await this.character.craftNow(minPotionsInBank, potion.code);
     }
 
     for (const potion of this.character.utilitiesMap['antipoison']) {
@@ -241,22 +241,20 @@ export class IdleHealerObjective extends Objective {
           this.character.getCharacterLevel(this.character.data, 'alchemy') &&
         potion.craft.level <= this.character.highestCharLevel
       ) {
-        let numInBank = await this.character.checkQuantityOfItemInBank(
-          potion.code,
-        );
+        // Craft minPotionsInBank and move on. Previously I had the commented code
+        // but that meant the healer would be non-stop crafting and quite often not
+        // break out of the while loop for weeks
 
-        // We want the healer to keep crafting potions. If someone is using them then
-        // the num in bank will decrease so we should create more
-        while (numInBank < minPotionsToCraft) {
-          await this.character.craftNow(
-            minPotionsToCraft - numInBank,
-            potion.code,
-          );
+        // let numInBank = await this.character.checkQuantityOfItemInBank(
+        //   potion.code,
+        // );
+        //while (numInBank < minPotionsInBank) {
+        await this.character.craftNow(minPotionsInBank, potion.code);
 
-          numInBank = await this.character.checkQuantityOfItemInBank(
-            potion.code,
-          );
-        }
+        //   numInBank = await this.character.checkQuantityOfItemInBank(
+        //     potion.code,
+        //   );
+        // }
       }
     }
 
