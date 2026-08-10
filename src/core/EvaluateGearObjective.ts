@@ -610,15 +610,13 @@ export class EvaluateGearObjective extends Objective {
           )) > 0
         ) {
           return await this.character.equipNow(weapons[ind].code, 'weapon');
-        } else {
-          if (!wishlistRequested) {
-            logger.info(`Requesting ${weapons[ind].code} from wishlist`);
-            await this.requestIngredientFromWishlist({
-              code: weapons[ind].code,
-              quantity: 1,
-            });
-            wishlistRequested = true;
-          }
+        } else if (!wishlistRequested) {
+          logger.info(`Requesting ${weapons[ind].code} from wishlist`);
+          await this.requestIngredientFromWishlist({
+            code: weapons[ind].code,
+            quantity: 1,
+          });
+          wishlistRequested = true;
         }
       }
     }
