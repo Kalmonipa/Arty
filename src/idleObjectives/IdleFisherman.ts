@@ -71,8 +71,8 @@ export class IdleFishermanObjective extends Objective {
     await checkWishlistToFulfill(this.character, 'cooking', this.objectiveId);
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
-    await checkWishlistToFulfill(this.character, 'tasks', this.objectiveId);
-    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+    // await checkWishlistToFulfill(this.character, 'tasks', this.objectiveId);
+    // if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await checkOnHoldQueue(this.character);
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
