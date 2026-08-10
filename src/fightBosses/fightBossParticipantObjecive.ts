@@ -106,12 +106,12 @@ export class FightBossParticipantObjective extends Objective {
         await setParticipantsState(this.fightId, charName, 'ready');
 
         // Once the fights_done has been incremented by the leader we break out of this loop and start the prep process
-        // fights_done will get incremented after the fight cooldown has completed for the leader (current char will
-        // also be in cooldown so I could maybe just check cooldown status instead?)
+        // fights_done will get incremented after the fight cooldown has completed for the leader
         while (progress >= currentNumFights) {
           await sleep(10, 'boss_fight_sleep', true); // ToDo: doesn't need to log after debugging
           currentNumFights = await getCurrentNumFights(this.fightId);
         }
+        progress = currentNumFights;
       }
     }
 

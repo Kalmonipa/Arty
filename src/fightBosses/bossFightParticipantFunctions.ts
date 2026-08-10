@@ -101,7 +101,10 @@ export async function checkAllParticipantsReady(
       logger.info(
         `${participant} is ${result.rows[0].state} for fight #${bossFightId}`,
       );
-      allReady = result.rows[0].state === 'ready' ? true : false;
+      allReady = result.rows[0].state === 'ready';
+      if (!allReady) {
+        return false;
+      }
     }
     return allReady;
   } catch (err) {
