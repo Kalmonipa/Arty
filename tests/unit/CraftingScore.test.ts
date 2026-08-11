@@ -9,11 +9,17 @@ jest.mock('../../src/api_calls/Resources.js', () => ({
   getResourceNodesDropping: jest.fn(),
 }));
 
+jest.mock('../../src/api_calls/NPC.js', () => ({
+  getAllNpcItems: jest.fn(),
+}));
+
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { getResourceNodesDropping } from '../../src/api_calls/Resources.js';
+import { getAllNpcItems } from '../../src/api_calls/NPC.js';
 import {
   calculateScore,
   calculateBestCraftingItem,
+  GOLD_PER_ACTION,
   UNATTAINABLE,
 } from '../../src/core/TrainCraftingSkillObjective.js';
 import { BankCache } from '../../src/core/BankCache.js';
@@ -21,6 +27,7 @@ import { Character } from '../../src/character/CharacterClass.js';
 import {
   ItemSchema,
   MonsterSchema,
+  NPCItemSchema,
   ResourceSchema,
 } from '../../src/types/types.js';
 
@@ -99,16 +106,24 @@ const node = (
     })),
   }) as ResourceSchema;
 
+const offer = (
+  code: string,
+  buy_price: number,
+  currency: string,
+): NPCItemSchema => ({ code, npc: 'tailor', currency, buy_price });
+
 /** Wires the mocked item/resource lookups to a fixed world and returns a character. */
 const world = ({
   items,
   monsters = [],
   nodes = [],
+  offers = [],
   canFight = true,
 }: {
   items: ItemSchema[];
   monsters?: MonsterSchema[];
   nodes?: ResourceSchema[];
+  offers?: NPCItemSchema[];
   canFight?: boolean;
 }): Character => {
   const byCode = new Map(items.map((i) => [i.code, i]));
@@ -122,6 +137,17 @@ const world = ({
     .mockImplementation(async (code: string) =>
       nodes.filter((n) => n.drops.some((d) => d.code === code)),
     );
+
+  jest.mocked(getAllNpcItems).mockImplementation(async ({ code }) => {
+    const matching = offers.filter((o) => o.code === code);
+    return {
+      data: matching,
+      total: matching.length,
+      page: 1,
+      size: 50,
+      pages: 1,
+    };
+  });
 
   return {
     data: { name: 'LongLegLarry' },
@@ -281,6 +307,125 @@ describe('crafting cost model', () => {
 
     const score = await calculateScore(
       (await getItemInformation('piece_of_obsidian')) as ItemSchema,
+      emptyBank(),
+      character,
+    );
+
+    expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
+  });
+
+  it('prices an npc-bought material by the cost of the currency it asks for', async () => {
+    const character = world({
+      items: [material('snake_hide', 'mob'), material('snakeskin', 'npc')],
+      monsters: [monster('flying_snake', [{ code: 'snake_hide', rate: 12 }])],
+      offers: [offer('snakeskin', 4, 'snake_hide')],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('snakeskin')) as ItemSchema,
+      emptyBank(),
+      character,
+    );
+
+    // 1 buy action + 4 hides at 12 fights each
+    expect(score).toBe(1 + 4 * 12);
+  });
+
+  it('prices an npc-bought material nested inside a recipe', async () => {
+    const character = world({
+      items: [
+        material('snake_hide', 'mob'),
+        material('snakeskin', 'npc'),
+        equipment('snakeskin_boots', [['snakeskin', 2]]),
+      ],
+      monsters: [monster('flying_snake', [{ code: 'snake_hide', rate: 12 }])],
+      offers: [offer('snakeskin', 4, 'snake_hide')],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('snakeskin_boots')) as ItemSchema,
+      emptyBank(),
+      character,
+    );
+
+    expect(score).toBe(1 + 2 * 49);
+  });
+
+  it('converts a gold price into actions rather than treating gold as free', async () => {
+    const character = world({
+      items: [material('cloth', 'npc')],
+      offers: [offer('cloth', 100, 'gold')],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('cloth')) as ItemSchema,
+      emptyBank(),
+      character,
+    );
+
+    expect(score).toBe(1 + 100 / GOLD_PER_ACTION);
+  });
+
+  it('takes the cheapest offer when several npcs sell the same material', async () => {
+    const character = world({
+      items: [material('rat_hide', 'mob'), material('vermin_leather', 'npc')],
+      monsters: [monster('rat', [{ code: 'rat_hide', rate: 10 }])],
+      offers: [
+        offer('vermin_leather', 8, 'rat_hide'),
+        offer('vermin_leather', 3, 'rat_hide'),
+      ],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('vermin_leather')) as ItemSchema,
+      emptyBank(),
+      character,
+    );
+
+    expect(score).toBe(1 + 3 * 10);
+  });
+
+  it('marks an npc-subtype material unattainable when no npc sells it', async () => {
+    const character = world({
+      items: [material('unsold_thing', 'npc')],
+      offers: [],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('unsold_thing')) as ItemSchema,
+      emptyBank(),
+      character,
+    );
+
+    expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
+  });
+
+  it('marks an npc material unattainable when its currency cannot be obtained', async () => {
+    const character = world({
+      items: [material('boss_hide', 'mob'), material('boss_leather', 'npc')],
+      monsters: [
+        monster('king_slime', [{ code: 'boss_hide', rate: 12 }], 'boss'),
+      ],
+      offers: [offer('boss_leather', 2, 'boss_hide')],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('boss_leather')) as ItemSchema,
+      emptyBank(),
+      character,
+    );
+
+    expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
+  });
+
+  it('does not recurse forever when two npc materials buy each other', async () => {
+    const character = world({
+      items: [material('yin', 'npc'), material('yang', 'npc')],
+      offers: [offer('yin', 2, 'yang'), offer('yang', 2, 'yin')],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('yin')) as ItemSchema,
       emptyBank(),
       character,
     );

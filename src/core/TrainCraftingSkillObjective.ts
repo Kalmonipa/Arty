@@ -7,8 +7,10 @@ import {
   DropRateSchema,
   GetAllItemsItemsGetParams,
   ItemSchema,
+  NPCItemSchema,
 } from '../types/types.js';
 import { getResourceNodesDropping } from '../api_calls/Resources.js';
+import { getAllNpcItems } from '../api_calls/NPC.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
 import { BankCache } from './BankCache.js';
@@ -179,8 +181,18 @@ export const UNATTAINABLE = 1000000;
 /** Rough cost of grinding a task to completion for one reward item. */
 const TASK_REWARD_ACTIONS = 150;
 
+/**
+ * Rough gold a single action earns, for pricing NPC offers sold for gold rather
+ * than for a material. Roughly what selling a mob drop fetches, so a few hundred
+ * gold of ingredients reads as the couple of actions it really costs.
+ */
+export const GOLD_PER_ACTION = 200;
+
 /** The craft itself is one action on top of gathering the ingredients. */
 const CRAFT_ACTION = 1;
+
+/** The purchase itself is one action on top of earning the currency. */
+const BUY_ACTION = 1;
 
 /**
  * Per-pass memo of item code -> expected actions for one unit. Scoring a whole
@@ -391,6 +403,8 @@ async function rawMaterialCost(
     cost = TASK_REWARD_ACTIONS;
   } else if (item.subtype === 'mob') {
     cost = await mobDropCost(item, context.bank, context.character);
+  } else if (item.subtype === 'npc') {
+    cost = await npcPurchaseCost(item, context);
   } else {
     cost = await gatherCost(item);
   }
@@ -444,6 +458,79 @@ async function mobDropCost(
   }
 
   return UNATTAINABLE;
+}
+
+/**
+ * Cost of buying a material from a merchant, taking the cheapest offer.
+ */
+async function npcPurchaseCost(
+  item: ItemSchema,
+  context: CostContext,
+): Promise<number> {
+  // A merchant priced in a currency that is itself bought back with this item
+  // would get stuck in a loop
+  if (context.inProgress.has(item.code)) {
+    logger.warn(`${item.code} is bought with itself. Marking unattainable`);
+    return UNATTAINABLE;
+  }
+  context.inProgress.add(item.code);
+
+  try {
+    const offers = await getAllNpcItems({ code: item.code });
+    if (offers instanceof ApiError) {
+      logger.warn(
+        `Failed to load NPC offers for ${item.code}: ${offers.message}`,
+      );
+      return UNATTAINABLE;
+    }
+
+    const forSale = offers.data.filter((offer) => offer.buy_price != null);
+    if (forSale.length === 0) {
+      logger.debug(`No NPC sells ${item.code}. Marking unattainable`);
+      return UNATTAINABLE;
+    }
+
+    let cheapest = UNATTAINABLE;
+    for (const offer of forSale) {
+      cheapest = Math.min(cheapest, await offerCost(offer, context));
+    }
+
+    logger.debug(`${item.code} costs ${cheapest} actions to buy`);
+    return cheapest;
+  } finally {
+    context.inProgress.delete(item.code);
+  }
+}
+
+/**
+ * Actions behind one merchant offer: the buy, plus earning what it asks for.
+ * A currency that isn't gold is an item code, costed by the same walk so a mob
+ * drop hiding behind a merchant doesn't look free.
+ */
+async function offerCost(
+  offer: NPCItemSchema,
+  context: CostContext,
+): Promise<number> {
+  const price = offer.buy_price;
+
+  // ToDo: Should get the actual gold cost of the item instead of hardocding 200
+  if (offer.currency === 'gold') {
+    return BUY_ACTION + price / GOLD_PER_ACTION;
+  }
+
+  const currency = await getItemInformation(offer.currency);
+  if (currency instanceof ApiError) {
+    logger.warn(
+      `Failed to load currency ${offer.currency}: ${currency.message}`,
+    );
+    return UNATTAINABLE;
+  }
+
+  const perUnit = isCraftable(currency)
+    ? await costToCraft(currency, 1, context)
+    : await rawMaterialCost(currency, context);
+
+  return BUY_ACTION + price * perUnit;
 }
 
 /** Cost of gathering a raw material from the most productive node dropping it. */
