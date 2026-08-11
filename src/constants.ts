@@ -29,7 +29,11 @@ export const CRITICAL_MODIFIER = 0.5;
 /**
  * Bank stock of task coins to keep.
  */
-export const MIN_TASK_COINS_IN_BANK = 25;
+export const MIN_TASK_COINS_IN_BANK = 50;
+/**
+ * The minimum coins we want in the bank before we start gambling
+ */
+export const MIN_TASK_COINS_BEFORE_GAMBLING = 100;
 
 /**
  * How long a monster task is allowed to take before it's worth cancelling for a
@@ -40,8 +44,14 @@ export const MIN_TASK_COINS_IN_BANK = 25;
 export const MAX_MONSTER_TASK_SECONDS = 2.5 * 60 * 60;
 /** Each cancel costs a task coin, so don't chase a good draw forever */
 export const MAX_TASK_REROLLS = 3;
-/** Leave enough coins that rerolling can't strand us without any */
-export const MIN_TASK_COINS_TO_REROLL = 10;
+/**
+ * Coins to hold before rerolling a task that is merely slow. A reroll costs one,
+ * so this leaves a coin spare to abandon whatever we end up keeping. Kept just
+ * above that cost because rerolls are capped at MAX_TASK_REROLLS and a task pays
+ * 3-5 coins, so they fund themselves; a higher floor left characters grinding
+ * 11h tasks they had already priced as too expensive.
+ */
+export const MIN_TASK_COINS_TO_REROLL = 2;
 /** Fights to simulate when estimating how long a task will take */
 export const TASK_ESTIMATE_SIM_ITERATIONS = 10;
 

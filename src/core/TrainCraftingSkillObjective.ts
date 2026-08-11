@@ -139,6 +139,7 @@ export class TrainCraftingSkillObjective extends Objective {
       const itemToCraft = await calculateBestCraftingItem(
         this.character,
         craftableItemsList,
+        numToCraft,
         bankSnapshot,
       );
 
@@ -179,7 +180,7 @@ export class TrainCraftingSkillObjective extends Objective {
 export const UNATTAINABLE = 1000000;
 
 /** Rough cost of grinding a task to completion for one reward item. */
-const TASK_REWARD_ACTIONS = 150;
+export const TASK_REWARD_ACTIONS = 150;
 
 /**
  * Rough gold a single action earns, for pricing NPC offers sold for gold rather
@@ -212,14 +213,15 @@ function actionsPerUnit(drop: DropRateSchema): number {
  * (fights, gathers and crafts), counting what the bank already holds as free.
  * Lowest wins.
  *
- * Scores one of each candidate even though the caller crafts several, so a bank
- * holding enough for a single craft flatters an item the fleet can't repeat.
- *
+ * @param numToCraft how many of the winner the caller will craft. Costing one
+ * unit lets a bank holding enough for a single craft flatter a recipe whose
+ * remaining units need an ingredient we have to grind for.
  * @todo Weight actions by cooldown so a 25s fight outranks a 5s gather
  */
 export async function calculateBestCraftingItem(
   character: Character,
   craftableItemList: ItemSchema[],
+  numToCraft: number,
   bankSnapshot: BankCache,
 ): Promise<{ code: string; score: number }> {
   let bestScore = Infinity;
@@ -236,6 +238,7 @@ export async function calculateBestCraftingItem(
       item,
       bankSnapshot,
       character,
+      numToCraft,
       memo,
     );
 
@@ -277,22 +280,18 @@ function isCraftable(item: ItemSchema): boolean {
 }
 
 /**
- * Expected actions to obtain one of this item, given what the bank already holds.
+ * Expected actions to obtain `numCrafts` of this item, given what the bank holds.
  *
  * Every material in the game is `type: 'resource'`; the `subtype` is what says
  * whether it is fought for, gathered or handed out by a task, so dispatch is on
  * subtype. Ingredients are costed by this same walk at every depth, which is what
  * stops a rare drop hiding behind a bar from looking free.
- *
- * Takes the bank snapshot as input and passes it on to every loadout proposal,
- * so scoring a whole candidate list costs one bank read rather than one per
- * mob-drop ingredient. Scoring is read-only, so one snapshot stays valid for
- * the pass.
  */
 export async function calculateScore(
   craftableItem: ItemSchema,
   bankSnapshot: BankCache,
   character: Character,
+  numCrafts: number,
   memo: CraftCostMemo = new Map(),
 ): Promise<number> {
   const context: CostContext = {
@@ -307,8 +306,8 @@ export async function calculateScore(
 
   // Never discounted against itself — earning the XP is the point of the craft.
   return isCraftable(craftableItem)
-    ? await costToCraft(craftableItem, 1, context)
-    : await rawMaterialCost(craftableItem, context);
+    ? await costToCraft(craftableItem, numCrafts, context)
+    : numCrafts * (await rawMaterialCost(craftableItem, context));
 }
 
 /** Actions to put `needed` of an item in hand, spending the bank before working. */

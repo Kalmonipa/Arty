@@ -46,7 +46,7 @@ export class MonsterTaskObjective extends Objective {
 
         result = await this.doTask();
 
-        if (result) {
+        if (result.success) {
           this.progress++;
           break; // Exit the retry loop on success
         }
@@ -63,7 +63,7 @@ export class MonsterTaskObjective extends Objective {
       }
 
       // If we failed all retries, exit the main loop
-      if (!result) {
+      if (!result.success) {
         break;
       }
     }
@@ -145,7 +145,7 @@ export class MonsterTaskObjective extends Objective {
         return;
       }
 
-      if (!(await this.canAffordToReroll())) {
+      if (!(await this.canAffordToReroll(estimate === null))) {
         logger.warn(
           `Task of ${this.remainingFights()} ${this.character.data.task} ${reason}, but there aren't enough ${TasksCoin} to reroll. Keeping it`,
         );
@@ -189,11 +189,19 @@ export class MonsterTaskObjective extends Objective {
     return this.character.data.task_total - this.character.data.task_progress;
   }
 
-  private async canAffordToReroll(): Promise<boolean> {
+  /**
+   * @description Whether we can spare the coin a cancel costs. A task we can't
+   * win is a blocker rather than an expense: keeping it means losing fights until
+   * the job gives up and cancels anyway, so it only has to cover the cancel
+   * itself. A merely slow task still pays out, so that one leaves the reserve be.
+   */
+  private async canAffordToReroll(
+    taskIsUnwinnable: boolean,
+  ): Promise<boolean> {
     const coins =
       this.character.checkQuantityOfItemInInv(TasksCoin) +
       (await this.character.checkQuantityOfItemInBank(TasksCoin));
 
-    return coins >= MIN_TASK_COINS_TO_REROLL;
+    return coins >= (taskIsUnwinnable ? 1 : MIN_TASK_COINS_TO_REROLL);
   }
 }

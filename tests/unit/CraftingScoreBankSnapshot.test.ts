@@ -68,6 +68,7 @@ describe('crafting score reuses the caller bank snapshot', () => {
         craftable('wooden_club', ['feather', 'cowhide']),
         craftable('copper_dagger', ['feather', 'cowhide']),
       ],
+      1,
       snapshot,
     );
 
@@ -109,6 +110,7 @@ describe('crafting score reuses the caller bank snapshot', () => {
     await calculateBestCraftingItem(
       character,
       [craftable('wooden_club', ['feather'])],
+      1,
       snapshot,
     );
 

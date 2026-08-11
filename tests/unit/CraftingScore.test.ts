@@ -20,6 +20,7 @@ import {
   calculateScore,
   calculateBestCraftingItem,
   GOLD_PER_ACTION,
+  TASK_REWARD_ACTIONS,
   UNATTAINABLE,
 } from '../../src/core/TrainCraftingSkillObjective.js';
 import { BankCache } from '../../src/core/BankCache.js';
@@ -178,6 +179,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('nested_amulet')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     // 1 craft action for the amulet + (1 craft action for the bar + 4 pieces x 12 fights)
@@ -199,11 +201,13 @@ describe('crafting cost model', () => {
       (await getItemInformation('one_bar')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
     const four = await calculateScore(
       (await getItemInformation('four_bars')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(one).toBe(1 + 49);
@@ -230,11 +234,13 @@ describe('crafting cost model', () => {
       (await getItemInformation('gold_amulet')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
     const rare = await calculateScore(
       (await getItemInformation('rare_amulet')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(gold).toBe(1 + 1 + 10 * 1);
@@ -253,6 +259,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('piece_of_obsidian')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     // 1/12 chance of 1-2 pieces averages 1.5 per drop, so 8 fights per piece
@@ -272,6 +279,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('piece_of_obsidian')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBe(12);
@@ -293,6 +301,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('greater_dreadful_amulet')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
@@ -309,6 +318,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('piece_of_obsidian')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
@@ -325,6 +335,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('snakeskin')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     // 1 buy action + 4 hides at 12 fights each
@@ -346,6 +357,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('snakeskin_boots')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBe(1 + 2 * 49);
@@ -361,6 +373,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('cloth')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBe(1 + 100 / GOLD_PER_ACTION);
@@ -380,6 +393,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('vermin_leather')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBe(1 + 3 * 10);
@@ -395,6 +409,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('unsold_thing')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
@@ -413,6 +428,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('boss_leather')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
@@ -428,6 +444,7 @@ describe('crafting cost model', () => {
       (await getItemInformation('yin')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
@@ -450,6 +467,7 @@ describe('crafting cost model', () => {
         (await getItemInformation('amulet_a')) as ItemSchema,
         (await getItemInformation('amulet_b')) as ItemSchema,
       ],
+      1,
       emptyBank(),
     );
 
@@ -482,6 +500,7 @@ describe('ingredients already in the bank', () => {
       (await getItemInformation('four_bar_amulet')) as ItemSchema,
       bank,
       character,
+      1,
     );
 
     expect(score).toBe(1);
@@ -495,6 +514,7 @@ describe('ingredients already in the bank', () => {
       (await getItemInformation('four_bar_amulet')) as ItemSchema,
       bank,
       character,
+      1,
     );
 
     // 1 craft + the 3 bars we still have to make, at 49 each
@@ -511,6 +531,7 @@ describe('ingredients already in the bank', () => {
       (await getItemInformation('one_bar_amulet')) as ItemSchema,
       bank,
       character,
+      1,
     );
 
     // The pieces are free, so all that is left is smelting the bar and crafting
@@ -527,6 +548,7 @@ describe('ingredients already in the bank', () => {
       (await getItemInformation('mixed_amulet')) as ItemSchema,
       bank,
       character,
+      1,
     );
 
     // Needs 6 pieces in total (2 loose, 4 in the bar) and the bank covers 4,
@@ -542,11 +564,13 @@ describe('ingredients already in the bank', () => {
       (await getItemInformation('four_bar_amulet')) as ItemSchema,
       bank,
       character,
+      1,
     );
     const second = await calculateScore(
       (await getItemInformation('four_bar_amulet')) as ItemSchema,
       bank,
       character,
+      1,
     );
 
     expect(second).toBe(first);
@@ -562,6 +586,7 @@ describe('ingredients already in the bank', () => {
       (await getItemInformation('four_bar_amulet')) as ItemSchema,
       stocked,
       character,
+      1,
     );
 
     // We craft to earn the XP, so owning one already saves nothing
@@ -576,9 +601,88 @@ describe('ingredients already in the bank', () => {
       (await getItemInformation('four_bar_amulet')) as ItemSchema,
       bank,
       character,
+      1,
     );
 
     expect(bank.quantityOf('obsidian_bar')).toBe(4);
+  });
+});
+
+describe('scoring the whole batch', () => {
+  /**
+   * A wand needing one task-reward crystal each, against a bow of the same level
+   * that needs none. This is the skull_wand shortlist: the bank held one crystal.
+   */
+  const wandWorld = () =>
+    world({
+      items: [
+        material('jasper_crystal', 'task'),
+        material('spider_leg', 'mob'),
+        equipment('skull_wand', [
+          ['jasper_crystal', 1],
+          ['spider_leg', 3],
+        ]),
+        equipment('vampire_bow', [['spider_leg', 4]]),
+      ],
+      monsters: [monster('spider', [{ code: 'spider_leg', rate: 10 }])],
+    });
+
+  const oneCrystal = () =>
+    BankCache.fromItems([{ code: 'jasper_crystal', quantity: 1 }]);
+
+  it('charges for the units the bank cannot cover', async () => {
+    const character = wandWorld();
+    const wand = (await getItemInformation('skull_wand')) as ItemSchema;
+
+    const score = await calculateScore(wand, oneCrystal(), character, 5);
+
+    // 5 crafts + 15 spider legs at 10 fights + the 4 crystals the bank is short
+    expect(score).toBe(5 + 15 * 10 + 4 * TASK_REWARD_ACTIONS);
+  });
+
+  it('no longer reads as free when the bank covers a single unit', async () => {
+    const character = wandWorld();
+    const wand = (await getItemInformation('skull_wand')) as ItemSchema;
+
+    const oneUnit = await calculateScore(wand, oneCrystal(), character, 1);
+    const batch = await calculateScore(wand, oneCrystal(), character, 5);
+
+    expect(oneUnit).toBe(1 + 3 * 10);
+    expect(batch).toBeGreaterThan(5 * oneUnit);
+  });
+
+  it('prefers the recipe whose ingredients the fleet can actually repeat', async () => {
+    const character = wandWorld();
+    const shortlist = [
+      (await getItemInformation('skull_wand')) as ItemSchema,
+      (await getItemInformation('vampire_bow')) as ItemSchema,
+    ];
+
+    const best = await calculateBestCraftingItem(
+      character,
+      shortlist,
+      5,
+      oneCrystal(),
+    );
+
+    expect(best.code).toBe('vampire_bow');
+  });
+
+  it('still picks the wand when the bank covers the whole batch', async () => {
+    const character = wandWorld();
+    const shortlist = [
+      (await getItemInformation('skull_wand')) as ItemSchema,
+      (await getItemInformation('vampire_bow')) as ItemSchema,
+    ];
+
+    const best = await calculateBestCraftingItem(
+      character,
+      shortlist,
+      5,
+      BankCache.fromItems([{ code: 'jasper_crystal', quantity: 5 }]),
+    );
+
+    expect(best.code).toBe('skull_wand');
   });
 });
 
@@ -639,6 +743,7 @@ describe('the lost_amulet regression', () => {
       (await getItemInformation('obsidian_bar')) as ItemSchema,
       emptyBank(),
       character,
+      1,
     );
 
     // 4 pieces at 8 fights each, plus the smelt
@@ -654,6 +759,7 @@ describe('the lost_amulet regression', () => {
         (await getItemInformation('lost_amulet')) as ItemSchema,
         (await getItemInformation('gold_ring')) as ItemSchema,
       ],
+      1,
       emptyBank(),
     );
 

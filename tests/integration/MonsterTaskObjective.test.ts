@@ -38,10 +38,12 @@ class SimpleMockCharacter {
 
   findMaps = jest.fn((): MapSchema[] => mockMonsterMapData.data as MapSchema[]);
 
-  fightNow = jest.fn(async (quantity: number): Promise<boolean> => {
+  // Returns an ObjectiveResult like the real fightNow: a bare boolean here let a
+  // truthiness bug in the retry loop pass unnoticed
+  fightNow = jest.fn(async (quantity: number): Promise<ObjectiveResult> => {
     // Mock fighting monsters
     this.data.task_progress += quantity;
-    return true;
+    return ObjectiveCompleted;
   });
 
   // Stands in for really running the job: the fight simulator records its
@@ -62,12 +64,12 @@ class SimpleMockCharacter {
 
   checkQuantityOfItemInBank = jest.fn(async (): Promise<number> => 39);
 
-  completeTask = jest.fn(async (): Promise<boolean> => {
+  completeTask = jest.fn(async (): Promise<ObjectiveResult> => {
     this.data.task = '';
     this.data.task_type = '';
     this.data.task_progress = 0;
     this.data.task_total = 0;
-    return true;
+    return ObjectiveCompleted;
   });
 }
 
@@ -188,7 +190,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(startNewTaskSpy).not.toHaveBeenCalled();
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(3, 'red_slime'); // 5 - 2 = 3 remaining
     });
@@ -208,7 +210,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(objective.progress).toBe(1);
     });
 
@@ -218,7 +220,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_type = 'monsters';
       mockCharacter.data.task_progress = 0;
       mockCharacter.data.task_total = 5;
-      mockCharacter.fightNow.mockResolvedValue(false); // Fight fails
+      mockCharacter.fightNow.mockResolvedValue(ObjectiveFailed); // Fight fails
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
 
@@ -226,7 +228,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(objective.progress).toBe(0); // Progress should not increment on failure
     });
 
@@ -243,7 +245,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(objective.progress).toBe(2);
     });
   });
@@ -256,8 +258,8 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_progress = 0;
       mockCharacter.data.task_total = 5;
       mockCharacter.fightNow
-        .mockResolvedValueOnce(false) // First attempt fails
-        .mockResolvedValueOnce(true); // Second attempt succeeds
+        .mockResolvedValueOnce(ObjectiveFailed) // First attempt fails
+        .mockResolvedValueOnce(ObjectiveCompleted); // Second attempt succeeds
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
 
@@ -265,7 +267,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(2);
     });
 
@@ -277,7 +279,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = 5;
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.lostTooManyFights = true;
-        return false;
+        return ObjectiveFailed;
       });
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
@@ -289,7 +291,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(cancelTaskSpy).toHaveBeenCalledWith('monsters');
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1); // No retries after bailing
     });
@@ -300,7 +302,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_type = 'monsters';
       mockCharacter.data.task_progress = 0;
       mockCharacter.data.task_total = 5;
-      mockCharacter.fightNow.mockResolvedValue(false); // All attempts fail
+      mockCharacter.fightNow.mockResolvedValue(ObjectiveFailed); // All attempts fail
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
 
@@ -308,7 +310,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(3); // maxRetries = 3
     });
   });
@@ -350,7 +352,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
         if (fightCount === 1) {
           objective.cancelJob();
         }
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -424,7 +426,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
         const result = await objective.run();
 
         // Assert
-        expect(result).toBe(true);
+        expect(result.success).toBe(true);
         expect(mockCharacter.fightNow).toHaveBeenCalledWith(
           test.total,
           test.task,
@@ -449,7 +451,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(true);
+      expect(result.success).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(3, 'red_slime'); // 5 - 2 = 3 remaining
     });
   });
@@ -464,6 +466,14 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_total = total;
       mockCharacter.data.task_progress = progress;
       mockCharacter.data.haste = 9;
+    };
+
+    /** Total coins the character can reach, split across inventory and bank */
+    const setCoins = (total: number) => {
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
+        code === 'tasks_coin' ? total : 0,
+      );
+      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
     };
 
     const spyOnTaskChanges = (objective: MonsterTaskObjective) => ({
@@ -527,13 +537,53 @@ describe('MonsterTaskObjective Integration Tests', () => {
       expect(spies.cancel.mock.calls.length).toBeLessThanOrEqual(3);
     });
 
-    it('will not reroll when task coins are nearly out', async () => {
+    // The coin the reserve holds back is what lets us abandon whatever we keep
+    it('will not spend its last coin rerolling a task it can still finish', async () => {
       setTask('imp', 400);
       mockCharacter.simTurns = 74;
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
-        (code: string) => (code === 'tasks_coin' ? 1 : 0),
-      );
-      mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
+      setCoins(1);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
+      const spies = spyOnTaskChanges(objective);
+
+      await objective.run();
+
+      expect(spies.cancel).not.toHaveBeenCalled();
+    });
+
+    it('rerolls an expensive task on a handful of coins', async () => {
+      setTask('imp', 400);
+      mockCharacter.simTurns = 74;
+      setCoins(5);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
+      const spies = spyOnTaskChanges(objective);
+
+      await objective.run();
+
+      expect(spies.cancel).toHaveBeenCalledWith('monsters');
+    });
+
+    // Keeping one means losing fights until the job bails and cancels anyway, so
+    // the reserve doesn't apply: Larry sat on an unwinnable goblin_guard task for
+    // 48 minutes across five failed jobs waiting for a tenth coin
+    it('clears a task it cannot win even on its last coin', async () => {
+      setTask('goblin_guard', 372);
+      mockCharacter.simTurns = 0;
+      setCoins(1);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
+      const spies = spyOnTaskChanges(objective);
+
+      await objective.run();
+
+      expect(spies.cancel).toHaveBeenCalledWith('monsters');
+    });
+
+    it('cannot clear an unwinnable task with no coins at all', async () => {
+      setTask('goblin_guard', 372);
+      mockCharacter.simTurns = 0;
+      setCoins(0);
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
       jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
       const spies = spyOnTaskChanges(objective);
@@ -564,7 +614,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       mockCharacter.data.task_type = 'monsters';
       mockCharacter.data.task_progress = 2;
       mockCharacter.data.task_total = 5;
-      mockCharacter.fightNow.mockResolvedValue(false); // Fight fails
+      mockCharacter.fightNow.mockResolvedValue(ObjectiveFailed); // Fight fails
 
       const objective = new MonsterTaskObjective(mockCharacter as any, 1);
 
@@ -577,7 +627,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
       const result = await objective.run();
 
       // Assert
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
       expect(handInTaskSpy).not.toHaveBeenCalled();
     });
 

@@ -23,6 +23,7 @@ import {
 } from '../wishlist/functions.js';
 import { WishlistRequest } from '../wishlist/types.js';
 import { TasksCoin } from '../names.js';
+import { MAX_TASK_REROLLS } from '../constants.js';
 
 export abstract class Objective {
   character: Character;
@@ -389,11 +390,14 @@ export abstract class Objective {
    ********/
 
   /**
-   * @description Withdraws a task coin, moves to the task master and cancels the current task
+   * @description Withdraws MAX_TASK_REROLLS task coins, moves to the task master and cancels the current task
+   * Withdraws multiple task coins to save time going back to the bank
    */
   async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
     if (this.character.checkQuantityOfItemInInv(TasksCoin) < 1) {
-      if (!(await this.character.withdrawNow(1, TasksCoin)).success) {
+      if (
+        !(await this.character.withdrawNow(MAX_TASK_REROLLS, TasksCoin)).success
+      ) {
         return false;
       }
     }

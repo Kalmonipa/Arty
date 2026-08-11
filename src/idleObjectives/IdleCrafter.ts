@@ -4,7 +4,11 @@ import {
   getItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { MAX_SKILL_LEVEL, MIN_TASK_COINS_IN_BANK } from '../constants.js';
+import {
+  MAX_SKILL_LEVEL,
+  MIN_TASK_COINS_BEFORE_GAMBLING,
+  MIN_TASK_COINS_IN_BANK,
+} from '../constants.js';
 import {
   Gearcrafting,
   Jewelrycrafting,
@@ -13,7 +17,6 @@ import {
 } from '../names.js';
 import { Role } from '../types/CharacterData.js';
 import {
-  CraftSkill,
   GetAllItemsItemsGetParams,
   ItemSchema,
   Skill,
@@ -289,14 +292,15 @@ export class IdleCrafterObjective extends Objective {
   }
 
   /**
-   * If we have excess (>maxCoinsInBank) task coins in the bank, gamble the excess to get rewards
+   * If we have excess (>MIN_TASK_COINS_BEFORE_GAMBLING) task coins in the bank, gamble the excess to get rewards
    * @returns True if successful
    */
   private async gambleExcessTaskCoins(): Promise<boolean> {
     // The number of task coins needed to exchange. Pretty sure this won't change but who knows
     const costToExchange = 6;
-    // Arbitrary number for now. Might adjust as I see fit
-    const maxCoinsInBank = MIN_TASK_COINS_IN_BANK + costToExchange;
+    // Minimum required for us to gamble. If we have 50 coins, we shouldn't. 106 we can gamble once
+    // 160 coins, we can gamble 10 times, etc
+    const maxCoinsInBank = MIN_TASK_COINS_BEFORE_GAMBLING + costToExchange;
     const coinsInBank =
       await this.character.checkQuantityOfItemInBank(TasksCoin);
 
@@ -308,7 +312,7 @@ export class IdleCrafterObjective extends Objective {
     }
 
     const numExchangesToMake = Math.floor(
-      (coinsInBank - MIN_TASK_COINS_IN_BANK) / costToExchange,
+      (coinsInBank - MIN_TASK_COINS_BEFORE_GAMBLING) / costToExchange,
     );
     const coinsToSpend = numExchangesToMake * costToExchange;
 
