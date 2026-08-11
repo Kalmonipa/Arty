@@ -2,7 +2,6 @@ import {
   actionClaimPendingItems,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import {
@@ -10,18 +9,10 @@ import {
   Skill,
   StaticDataPageResourceSchema,
 } from '../types/types.js';
-import {
-  GetCharacterData,
-  getHighestCharLevel,
-  isGatheringSkill,
-  logger,
-} from '../utils.js';
+import { logger } from '../utils.js';
 import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
-import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
-import { TradeObjective } from '../core/TradeWithNPCObjective.js';
-import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,
@@ -29,7 +20,6 @@ import {
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
 } from './idleUtils.js';
-import { GatherObjective } from '../core/GatherObjective.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { BankCache } from '../core/BankCache.js';
 import {
@@ -60,6 +50,8 @@ export class IdleHealerObjective extends Objective {
    * The type of task varies depending on the role of the character
    */
   async run(): Promise<ObjectiveResult> {
+    let startTime = Date.now();
+
     await completeTasksFarmerAchievement(this.character, this.role);
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
@@ -75,7 +67,10 @@ export class IdleHealerObjective extends Objective {
     await this.topUpTeleportPotionsInBank();
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
-    await this.topUpPotionsInBank();
+    await this.topUpAntipoisonPotionsInBank();
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+
+    await this.topUpRestorePotionsInBank();
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpFishInBank();
@@ -105,6 +100,16 @@ export class IdleHealerObjective extends Objective {
       await this.trainSkill('fishing');
     }
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+
+    if (Date.now() - startTime > 10 * 60 * 1000) {
+      logger.info(
+        `Idle job has been running for more than 10 minutes. Ending it to see if there's something we need to do`,
+      );
+      return ObjectiveCompleted;
+    } else {
+      // If the idle job hasn't really triggered any other jobs, we want to top up craft some extra potions
+      await this.topUpRestorePotionsInBank();
+    }
 
     return ObjectiveCompleted;
   }
@@ -207,9 +212,9 @@ export class IdleHealerObjective extends Objective {
   /**
    * Ensure that we have a minimum amount of certain items in the bank
    */
-  private async topUpPotionsInBank(): Promise<boolean> {
+  private async topUpRestorePotionsInBank(): Promise<ObjectiveResult> {
     // The lowest amount of an item we'd like in the bank
-    const minPotionsInBank = 500;
+    const minPotionsInBank = 100;
 
     // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
     // and the ceiling being either the alchemists alchemy level or the highest character level
@@ -227,38 +232,34 @@ export class IdleHealerObjective extends Objective {
       alchemyLevel,
     );
 
-    for (const potion of restorePotions) {
-      if (!tiersToCraft.has(potion.code)) {
+    for (const healingPotion of restorePotions) {
+      if (!tiersToCraft.has(healingPotion.code)) {
         continue;
       }
-      logger.info(`Crafting ${minPotionsInBank} ${potion.code}`);
-      await this.character.craftNow(minPotionsInBank, potion.code);
+      logger.info(`Crafting ${minPotionsInBank} ${healingPotion.code}`);
+      await this.character.craftNow(minPotionsInBank, healingPotion.code);
     }
 
-    for (const potion of this.character.utilitiesMap['antipoison']) {
+    return ObjectiveCompleted;
+  }
+
+  /**
+   * Crafts numWantedInBank antipoison potions
+   * @returns
+   */
+  async topUpAntipoisonPotionsInBank(): Promise<ObjectiveResult> {
+    const numWantedInBank = 50;
+    for (const antiPoisonpotion of this.character.utilitiesMap['antipoison']) {
       if (
-        potion.craft.level <
+        antiPoisonpotion.craft.level <
           this.character.getCharacterLevel(this.character.data, 'alchemy') &&
-        potion.craft.level <= this.character.highestCharLevel
+        antiPoisonpotion.craft.level <= this.character.highestCharLevel
       ) {
-        // Craft minPotionsInBank and move on. Previously I had the commented code
-        // but that meant the healer would be non-stop crafting and quite often not
-        // break out of the while loop for weeks
-
-        // let numInBank = await this.character.checkQuantityOfItemInBank(
-        //   potion.code,
-        // );
-        //while (numInBank < minPotionsInBank) {
-        await this.character.craftNow(minPotionsInBank, potion.code);
-
-        //   numInBank = await this.character.checkQuantityOfItemInBank(
-        //     potion.code,
-        //   );
-        // }
+        await this.character.craftNow(numWantedInBank, antiPoisonpotion.code);
       }
     }
 
-    return true;
+    return ObjectiveCompleted;
   }
 
   /**
