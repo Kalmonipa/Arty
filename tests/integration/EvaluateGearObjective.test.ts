@@ -515,8 +515,6 @@ class SimpleMockCharacter {
     artifact1_slot: charData.artifact1_slot,
     artifact2_slot: charData.artifact2_slot,
     artifact3_slot: charData.artifact3_slot,
-    utility1_slot: charData.utility1_slot,
-    utility2_slot: charData.utility2_slot,
   }));
 
   equipUtility = jest.fn(async (): Promise<ObjectiveResult> => {
@@ -1939,6 +1937,24 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(schema.shield_slot).toBe('res_fire_shield');
       expect(schema.artifact1_slot).toBe('novice_guide');
       expect(schema.level).toBe(mockCharacter.data.level);
+    });
+
+    it('leaves out the equipped utilities so the sim gets no free potions', async () => {
+      mockCharacter.data.utility1_slot = 'minor_health_potion';
+      mockCharacter.data.utility1_slot_quantity = 100;
+      mockCharacter.data.utility2_slot = 'small_antidote';
+      mockCharacter.data.utility2_slot_quantity = 100;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const schema = await objective.proposeCombatLoadout(10, 'red_slime');
+
+      expect(schema).not.toHaveProperty('utility1_slot');
+      expect(schema).not.toHaveProperty('utility2_slot');
     });
   });
 

@@ -16,7 +16,8 @@ import { MinEquippedUtilities } from '../constants.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
-  shouldEquipHealthPots = true;
+  useHealthPots: boolean;
+  shouldEquipHealthPots: boolean;
   maxConsecutiveLosses = 3;
   lostTooManyFights = false;
   participants?: string[];
@@ -29,6 +30,7 @@ export class FightObjective extends Objective {
     target: ObjectiveTargets,
     participants?: string[],
     runFightSim?: boolean,
+    useHealthPots?: boolean,
   ) {
     super(character, `fight_${target.quantity}_${target.code}`, 'not_started');
 
@@ -39,6 +41,8 @@ export class FightObjective extends Objective {
     this.shouldEmitMetrics = true;
     this.metricLabel = target.code;
     this.runFightSim = runFightSim ?? true;
+    this.useHealthPots = useHealthPots ?? true;
+    this.shouldEquipHealthPots = this.useHealthPots;
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
@@ -110,6 +114,13 @@ export class FightObjective extends Objective {
         } else {
           await this.topUpSecondaryPots(mobInfo.data);
         }
+      }
+
+      if (!this.useHealthPots) {
+        logger.info(
+          `Cannot beat ${this.target.code} without restore potions. Skipping`,
+        );
+        return ObjectiveFailed;
       }
 
       // Find the highest potion that we could equip for the fight
@@ -276,9 +287,12 @@ export class FightObjective extends Objective {
           if (response.data.fight.result === 'loss') {
             consecutiveLosses++;
             logger.info(
-              `Lost fight ${consecutiveLosses}/${this.maxConsecutiveLosses} against ${this.target.code}. Will equip health potions for future fights`,
+              `Lost fight ${consecutiveLosses}/${this.maxConsecutiveLosses} against ${this.target.code}`,
             );
-            this.shouldEquipHealthPots = true;
+            if (this.useHealthPots) {
+              logger.info(`Will equip health potions for future fights`);
+              this.shouldEquipHealthPots = true;
+            }
             // Don't count a lost fight toward progress
             this.progress--;
 

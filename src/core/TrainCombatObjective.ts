@@ -92,6 +92,7 @@ export class TrainCombatObjective extends Objective {
             mob.code,
             undefined,
             false,
+            false,
           );
 
           if (fightResult) {

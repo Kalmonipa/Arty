@@ -489,6 +489,14 @@ export class EvaluateGearObjective extends Objective {
     return loadout;
   }
 
+  /**
+   * @description Proposes the best combat gear the character can assemble from
+   * the bank.
+   * Note: The loadout is deliberately potion-free. Neither the base schema nor
+   * chooseCombatGear supplies a utility, and the sim API defaults an omitted
+   * utility quantity to 1, so passing one on would mean the fight sim defaults
+   * to having 1 potion which we don't want
+   */
   async proposeCombatLoadout(
     charLevel: number,
     targetMob: string,

@@ -1742,7 +1742,13 @@ export class Character {
   }
 
   /**
-   * @description Creates a FakeCharacterSchema of the current character
+   * @description Creates a FakeCharacterSchema of the current character.
+   *
+   * The utility slots are deliberately left out. The sim API treats an omitted
+   * utility quantity as 1 rather than 0, so carrying the equipped potion code
+   * across without a quantity would hand the sim a free potion and make it
+   * answer a question nobody asked. Callers that want potions modelled must set
+   * the slot and a real quantity themselves.
    */
   createFakeCharacterSchema(character: CharacterSchema): FakeCharacterSchema {
     const fakeChar: FakeCharacterSchema = {
@@ -1760,15 +1766,7 @@ export class Character {
       artifact1_slot: character.artifact1_slot,
       artifact2_slot: character.artifact2_slot,
       artifact3_slot: character.artifact3_slot,
-      utility1_slot: character.utility1_slot,
-      utility2_slot: character.utility2_slot,
     };
-    // if (includeUtility1 && character.utility1_slot) {
-    //   fakeChar.utility1_slot_quantity = character.utility1_slot_quantity;
-    // }
-    // if (character.utility2_slot) {
-    //   fakeChar.utility2_slot_quantity = character.utility2_slot_quantity;
-    // }
     logger.debug(JSON.stringify(fakeChar));
     return fakeChar;
   }
@@ -3284,6 +3282,7 @@ export class Character {
     code: string,
     participants?: string[],
     runFightSim?: boolean,
+    useHealthPots?: boolean,
   ): Promise<ObjectiveResult> {
     const fightJob = new FightObjective(
       this,
@@ -3293,6 +3292,7 @@ export class Character {
       },
       participants,
       runFightSim,
+      useHealthPots,
     );
 
     const result = await this.executeJobNow(

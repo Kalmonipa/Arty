@@ -490,6 +490,7 @@ describe('TrainCombatObjective Integration Tests', () => {
         expect.any(String),
         undefined,
         false,
+        false,
       );
     });
 
@@ -669,6 +670,28 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       expect(mockCharacter.evaluateGear).not.toHaveBeenCalled();
       expect(mockCharacter.fightNow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Restore potions during combat training', () => {
+    it('tells the fight job not to equip restore potions', async () => {
+      mockCharacter.data.level = 10;
+      mockCharacter.getCharacterLevel.mockReturnValue(10);
+      mockCharacter.fightNow.mockImplementation(async () => {
+        mockCharacter.data.level = 15;
+        mockCharacter.getCharacterLevel.mockReturnValue(15);
+        return true;
+      });
+
+      await trainCombatObjective.run();
+
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        10,
+        expect.any(String),
+        undefined,
+        false,
+        false,
+      );
     });
   });
 });
