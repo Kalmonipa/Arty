@@ -54,6 +54,12 @@ export const MAX_TASK_REROLLS = 3;
 export const MIN_TASK_COINS_TO_REROLL = 2;
 /** Fights to simulate when estimating how long a task will take */
 export const TASK_ESTIMATE_SIM_ITERATIONS = 10;
+/**
+ * How many of a task's monsters to fight per round when a monster task has been
+ * given a yield check. The check only runs between rounds, so this sets how long
+ * work that's ready to run can be left waiting — a few minutes of fighting.
+ */
+export const FIGHTS_PER_YIELD_CHECK = 25;
 
 /**
  * Max default number of slots

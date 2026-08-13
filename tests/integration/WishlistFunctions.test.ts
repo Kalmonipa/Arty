@@ -350,6 +350,22 @@ describe('wishlist functions', () => {
       expect(claimed).toBe(false);
     });
 
+    // A fulfil job re-enters this after a child gather job finishes, so it has to
+    // be able to re-claim the row it already holds. Requiring executing = false
+    // made it lose the race to itself and fail, stranding the row as
+    // executing = true forever so nobody could ever pick it up.
+    it('lets the holder re-claim a request it already holds', async () => {
+      mockedQuery.mockResolvedValue({
+        rowCount: 1,
+        rows: [{ id: 340 }],
+      } as any);
+
+      await claimWishlistRequest(340, 'BouncyBella');
+
+      const sql = (mockedQuery.mock.calls[0][0] as string).replace(/\s+/g, ' ');
+      expect(sql).toMatch(/executing = false OR executing_by = \$2/i);
+    });
+
     it('returns false when the update fails', async () => {
       mockedQuery.mockRejectedValue(new Error('db down'));
 

@@ -3,7 +3,7 @@ import { Character } from '../character/CharacterClass.js';
 import { ApiError } from '../core/Error.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { Role } from '../types/CharacterData.js';
-import { ItemSchema, ItemSlot } from '../types/types.js';
+import { ItemSchema, ItemSlot, Skill } from '../types/types.js';
 import {
   effectValueOf,
   GetCharacterData,
@@ -66,8 +66,12 @@ export async function completeTasksFarmerAchievement(
  * restarts and picks up the items now in the bank). If they've all gone — expired
  * and swept, or deleted — nothing will ever deliver them, so the job is retried
  * once and dropped if that doesn't help. Anything in between is still in flight.
+ *
+ * @returns how many parked jobs were re-enqueued, so a long-running job can tell
+ * that work is now waiting on it and stop to let that work run
  */
-export async function checkOnHoldQueue(character: Character): Promise<void> {
+export async function checkOnHoldQueue(character: Character): Promise<number> {
+  let resumed = 0;
   await deleteExpiredWishlistRequests();
   // Runs before the loop reads them, so parked jobs must count as active
   const orphaned = await deleteOrphanedWishlistRequests(
@@ -83,6 +87,24 @@ export async function checkOnHoldQueue(character: Character): Promise<void> {
   // Snapshot because resume/drop mutate character.onHold
   for (const entry of [...character.onHold]) {
     const jobId = entry.job.objectiveId;
+
+    // A train job whose target level the character has since reached (levelled by
+    // another route, or by an earlier copy of this job) can never do anything
+    // useful, but it holds a slot in the fixed-size onHold queue and makes the
+    // idle loop skip that skill as "already being worked on"
+    const trainTarget = parseTrainJobId(jobId);
+    if (
+      trainTarget &&
+      character.getCharacterLevel(character.data, trainTarget.skill) >=
+        trainTarget.targetLevel
+    ) {
+      logger.info(
+        `Dropping on-hold job ${jobId}; ${trainTarget.skill ?? 'combat'} is already level ${character.getCharacterLevel(character.data, trainTarget.skill)}`,
+      );
+      await character.dropOnHoldJob(entry);
+      continue;
+    }
+
     const rows = await getWishlistRequestsForJob(character.data.name, jobId);
 
     if (rows.length === 0) {
@@ -92,6 +114,7 @@ export async function checkOnHoldQueue(character: Character): Promise<void> {
         );
         character.markOnHoldRetried(jobId);
         await character.resumeOnHoldJob(entry);
+        resumed++;
       } else {
         logger.warn(
           `Dropping on-hold job ${jobId}; requests could not be fulfilled`,
@@ -108,9 +131,12 @@ export async function checkOnHoldQueue(character: Character): Promise<void> {
       }
       character.clearOnHoldRetried(jobId);
       await character.resumeOnHoldJob(entry);
+      resumed++;
     }
     // Otherwise something is still on its way — keep waiting
   }
+
+  return resumed;
 }
 
 export async function checkWithinLevelRange(
@@ -284,6 +310,12 @@ export async function checkWishlistToFulfill(
 
 /**
  * Completes a monster task
+ *
+ * The idle loops only reach for a monster task when there's nothing better to do,
+ * so it gives way as soon as there is something better. A task runs for hours,
+ * and the on-hold queue used to be checked only at the top of an idle cycle,
+ * which meant a parked crafting job whose materials had already arrived waited
+ * for the whole task to finish before it could carry on.
  * @returns the result of the monster task job
  */
 export async function doMonsterTask(
@@ -291,12 +323,11 @@ export async function doMonsterTask(
   parentObj?: Objective,
   num?: number,
 ): Promise<ObjectiveResult> {
-  return await character.executeJobNow(
-    new MonsterTaskObjective(character, num ?? 1),
-    true,
-    true,
-    parentObj?.objectiveId,
-  );
+  const job = new MonsterTaskObjective(character, num ?? 1);
+  job.shouldYieldBetweenFights = async () =>
+    (await checkOnHoldQueue(character)) > 0;
+
+  return await character.executeJobNow(job, true, true, parentObj?.objectiveId);
 }
 
 /**
@@ -334,4 +365,41 @@ export function shuffle(array: AcquisitionMethod[]): AcquisitionMethod[] {
   }
 
   return shuffledArray;
+}
+
+/**
+ * Matches the `train_<targetLevel>_<skill>` ids the train objectives build, plus
+ * the short random suffix every objective id carries.
+ */
+const TrainJobId = /^train_(\d+)_([a-z]+)_[a-z0-9]+$/;
+
+/**
+ * @description Reads the target level and skill back out of a train job's id.
+ * `skill` is undefined for combat, which is what getCharacterLevel expects.
+ * @returns undefined when the id isn't a train job
+ */
+export function parseTrainJobId(
+  objectiveId: string,
+): { targetLevel: number; skill?: Skill } | undefined {
+  const match = TrainJobId.exec(objectiveId);
+  if (!match) return undefined;
+
+  return {
+    targetLevel: Number(match[1]),
+    skill: match[2] === 'combat' ? undefined : (match[2] as Skill),
+  };
+}
+
+/**
+ * @description Orders crafting skill by level, lowest first so when training
+ * crafting skills, the crafter can start at the bottom
+ */
+export function craftingSkillsToTrain(
+  skillLevels: { skill: Skill; level: number }[],
+  combatLevel: number,
+): Skill[] {
+  return skillLevels
+    .filter(({ level }) => level < combatLevel)
+    .sort((a, b) => a.level - b.level)
+    .map(({ skill }) => skill);
 }

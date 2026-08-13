@@ -4,17 +4,29 @@ import { DepositObjective } from './DepositObjective.js';
 import { FightSimulator } from '../fights/FightSimulator.js';
 import { Objective } from './Objective.js';
 import {
+  FIGHTS_PER_YIELD_CHECK,
   MAX_MONSTER_TASK_SECONDS,
   MAX_TASK_REROLLS,
   MIN_TASK_COINS_TO_REROLL,
   TASK_ESTIMATE_SIM_ITERATIONS,
 } from '../constants.js';
 import { TasksCoin } from '../names.js';
-import { ObjectiveCancelled, ObjectiveResult } from '../types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveResult,
+} from '../types/ObjectiveData.js';
 
 export class MonsterTaskObjective extends Objective {
   type = 'monster' as const;
   quantity: number;
+
+  /**
+   * Asked between rounds of fighting whether something more useful is now ready
+   * to do, such as crafting gear if ingredients are ready
+   * Left unset, the char will fight the full amount required for the task.
+   */
+  shouldYieldBetweenFights?: () => Promise<boolean>;
 
   constructor(character: Character, quantity: number) {
     super(character, `task_${quantity}_monsters`, 'not_started');
@@ -108,10 +120,55 @@ export class MonsterTaskObjective extends Objective {
 
     await this.rerollTasksThatCostTooMuch();
 
-    const result = await this.character.fightNow(
-      this.character.data.task_total - this.character.data.task_progress,
-      this.character.data.task,
-    );
+    return await this.fightOffRemainingTask();
+  }
+
+  /**
+   * @description Fights what's left of the current task.
+   * shouldYieldBetweenFights = true means this job checks the onHold
+   * queue every FIGHTS_PER_YIELD_CHECK fights
+   * shouldYieldBetweenFights = false means the char will fight all the
+   * mobs in one go uninterrupted
+   */
+  private async fightOffRemainingTask(): Promise<ObjectiveResult> {
+    const remaining = () =>
+      this.character.data.task_total - this.character.data.task_progress;
+
+    if (!this.shouldYieldBetweenFights) {
+      return await this.character.fightNow(
+        remaining(),
+        this.character.data.task,
+      );
+    }
+
+    let result: ObjectiveResult = ObjectiveCompleted;
+
+    while (remaining() > 0) {
+      const before = this.character.data.task_progress;
+
+      result = await this.character.fightNow(
+        Math.min(FIGHTS_PER_YIELD_CHECK, remaining()),
+        this.character.data.task,
+      );
+
+      if (!result.success) return result;
+
+      // A round that reports success without moving the task on would otherwise
+      // spin here forever
+      if (this.character.data.task_progress === before) {
+        logger.warn(
+          `Fighting ${this.character.data.task} made no progress. Stopping this task`,
+        );
+        return result;
+      }
+
+      if (remaining() > 0 && (await this.shouldYieldBetweenFights())) {
+        logger.info(
+          `Pausing task after ${this.character.data.task_progress}/${this.character.data.task_total} ${this.character.data.task}; other work is ready to run`,
+        );
+        return result;
+      }
+    }
 
     return result;
   }
@@ -195,9 +252,7 @@ export class MonsterTaskObjective extends Objective {
    * the job gives up and cancels anyway, so it only has to cover the cancel
    * itself. A merely slow task still pays out, so that one leaves the reserve be.
    */
-  private async canAffordToReroll(
-    taskIsUnwinnable: boolean,
-  ): Promise<boolean> {
+  private async canAffordToReroll(taskIsUnwinnable: boolean): Promise<boolean> {
     const coins =
       this.character.checkQuantityOfItemInInv(TasksCoin) +
       (await this.character.checkQuantityOfItemInBank(TasksCoin));

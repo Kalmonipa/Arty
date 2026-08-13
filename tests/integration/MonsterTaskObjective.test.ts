@@ -6,6 +6,7 @@ import {
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
 import { MonsterTaskObjective } from '../../src/core/MonsterTaskObjective.js';
+import { FIGHTS_PER_YIELD_CHECK } from '../../src/constants.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
 
@@ -470,8 +471,8 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
     /** Total coins the character can reach, split across inventory and bank */
     const setCoins = (total: number) => {
-      mockCharacter.checkQuantityOfItemInInv.mockImplementation((code: string) =>
-        code === 'tasks_coin' ? total : 0,
+      mockCharacter.checkQuantityOfItemInInv.mockImplementation(
+        (code: string) => (code === 'tasks_coin' ? total : 0),
       );
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
     };
@@ -673,6 +674,110 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Assert
       expect(result.success).toBe(false);
       expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
+    });
+  });
+
+  // A monster task is filler work, and its progress is held server side, so
+  // stopping part way through costs nothing and can be picked up later. Without
+  // this the character fought a whole task (measured: up to 19 hours of them
+  // back to back) while a parked crafting job sat waiting on materials that had
+  // already been delivered.
+  describe('yielding to parked work that is ready to resume', () => {
+    const setUpTask = (total: number) => {
+      mockCharacter.data.task = 'mushmush';
+      mockCharacter.data.task_type = 'monsters';
+      mockCharacter.data.task_progress = 0;
+      mockCharacter.data.task_total = total;
+    };
+
+    it('fights the whole task in one go when no yield check is installed', async () => {
+      setUpTask(128);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
+
+      await objective.run();
+
+      expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(128, 'mushmush');
+    });
+
+    it('stops after the current chunk when parked work became ready', async () => {
+      setUpTask(128);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(ObjectiveCompleted);
+      objective.shouldYieldBetweenFights = jest.fn(async () => true);
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(true);
+      expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        FIGHTS_PER_YIELD_CHECK,
+        'mushmush',
+      );
+      // The task isn't finished, so it must not be handed in
+      expect(handInTaskSpy).not.toHaveBeenCalled();
+      expect(mockCharacter.data.task_progress).toBe(FIGHTS_PER_YIELD_CHECK);
+    });
+
+    it('works through the whole task in chunks while nothing is waiting', async () => {
+      setUpTask(60);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      const handInTaskSpy = jest
+        .spyOn(objective, 'handInTask')
+        .mockResolvedValue(ObjectiveCompleted);
+      objective.shouldYieldBetweenFights = jest.fn(async () => false);
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(true);
+      expect(mockCharacter.fightNow).toHaveBeenCalledTimes(3);
+      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(1, 25, 'mushmush');
+      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(2, 25, 'mushmush');
+      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(3, 10, 'mushmush');
+      expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
+    });
+
+    it('does not check for parked work once the task is finished', async () => {
+      setUpTask(10);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
+      const shouldYield = jest.fn(async () => true);
+      objective.shouldYieldBetweenFights = shouldYield;
+
+      await objective.run();
+
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'mushmush');
+      expect(shouldYield).not.toHaveBeenCalled();
+    });
+
+    it('gives up on a chunk that failed rather than looping on it', async () => {
+      setUpTask(128);
+      mockCharacter.fightNow.mockResolvedValue(ObjectiveFailed);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      objective.shouldYieldBetweenFights = jest.fn(async () => false);
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(false);
+      expect(mockCharacter.fightNow).toHaveBeenCalledTimes(
+        objective.maxRetries,
+      );
+    });
+
+    it('stops if a chunk reports success but makes no progress', async () => {
+      setUpTask(128);
+      mockCharacter.fightNow.mockResolvedValue(ObjectiveCompleted);
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      objective.shouldYieldBetweenFights = jest.fn(async () => false);
+
+      await objective.run();
+
+      // task_progress never moves, so the chunk loop has to break out instead of
+      // spinning forever
+      expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1);
     });
   });
 });

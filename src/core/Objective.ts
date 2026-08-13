@@ -534,13 +534,20 @@ export abstract class Objective {
 
   /**
    * Returns true if there is an instance of the specified job in the on hold queue
+   *
+   * One parked job per skill is enough. Each duplicate raises its own wishlist
+   * request for the same materials, so several parked copies inflate demand on a
+   * shared supply and fill the fixed-size onHold queue, which then refuses to
+   * park the other skills at all.
    */
   checkForJobInOnHoldQueue(jobType: Skill): boolean {
     const numCurrentJobsInQueue = this.character.onHold.filter((job) =>
       job.job.objectiveId.includes(jobType),
     ).length;
-    if (numCurrentJobsInQueue > 2) {
-      logger.info(`2 train ${jobType} jobs already on hold. Skipping`);
+    if (numCurrentJobsInQueue >= 1) {
+      logger.info(
+        `${numCurrentJobsInQueue} train ${jobType} job(s) already on hold. Skipping`,
+      );
       return true;
     } else {
       return false;

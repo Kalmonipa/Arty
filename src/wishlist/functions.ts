@@ -180,6 +180,11 @@ export async function listOpenWishlistRequests(filter?: {
  * table, so the claim has to be the atomic check — a row read as open earlier in
  * the cycle may have been taken since. The update only succeeds while the row is
  * still open, and the returned boolean says whether this character won it.
+ *
+ * Re-claiming a row this character already holds counts as winning: a fulfil job
+ * runs this again when it re-enters after a child gather job, and treating that
+ * as a lost race failed the job and stranded the row as executing forever, so
+ * neither the holder nor anyone else could finish it.
  * @param id The wishlist row id
  * @param characterName The character claiming the request
  * @returns true if the claim was won, false if the row is taken, done or gone
@@ -191,7 +196,9 @@ export async function claimWishlistRequest(
   const query = `
     UPDATE wishlist
     SET executing = true, executing_by = $2, claimed_at = NOW()
-    WHERE id = $1 AND executing = false AND fulfilled = false
+    WHERE id = $1
+      AND fulfilled = false
+      AND (executing = false OR executing_by = $2)
     RETURNING id;
   `;
 

@@ -35,6 +35,7 @@ import {
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
   doMonsterTask,
+  craftingSkillsToTrain,
 } from './idleUtils.js';
 import { actionTasksExchange } from '../api_calls/Tasks.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
@@ -129,33 +130,19 @@ export class IdleCrafterObjective extends Objective {
     // If crafter, train weapon gear and jewelrycrafting
     if (this.role === 'crafter') {
       const combatLevel = this.character.getCharacterLevel(this.character.data);
-      const weaponLevel = this.character.getCharacterLevel(
-        this.character.data,
-        Weaponcrafting,
+      const skillsToTrain = craftingSkillsToTrain(
+        ([Weaponcrafting, Gearcrafting, Jewelrycrafting] as Skill[]).map(
+          (skill) => ({
+            skill,
+            level: this.character.getCharacterLevel(this.character.data, skill),
+          }),
+        ),
+        combatLevel,
       );
-      const gearLevel = this.character.getCharacterLevel(
-        this.character.data,
-        Gearcrafting,
-      );
-      const jewelryLevel = this.character.getCharacterLevel(
-        this.character.data,
-        Jewelrycrafting,
-      );
-      if (weaponLevel < combatLevel) {
-        if (!this.checkForJobInOnHoldQueue(Weaponcrafting)) {
-          await this.trainSkill(Weaponcrafting);
-        }
-        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
-      }
-      if (gearLevel < combatLevel) {
-        if (!this.checkForJobInOnHoldQueue(Gearcrafting)) {
-          await this.trainSkill(Gearcrafting);
-        }
-        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
-      }
-      if (jewelryLevel < combatLevel) {
-        if (!this.checkForJobInOnHoldQueue(Jewelrycrafting)) {
-          await this.trainSkill(Jewelrycrafting);
+
+      for (const skill of skillsToTrain) {
+        if (!this.checkForJobInOnHoldQueue(skill)) {
+          await this.trainSkill(skill);
         }
         if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
       }
