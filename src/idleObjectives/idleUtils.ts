@@ -22,6 +22,7 @@ import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { Objective } from '../core/Objective.js';
 import { ObjectiveCompleted, ObjectiveResult } from '../types/ObjectiveData.js';
+import { MAX_LEVEL_DISPARITY } from '../constants.js';
 
 /**
  * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
@@ -139,17 +140,26 @@ export async function checkOnHoldQueue(character: Character): Promise<number> {
   return resumed;
 }
 
+/**
+ * Each character should be within MAX_LEVEL_DISPARITY levels. If they are more than that
+ * number lower, then level up to (MAX_LEVEL_DISPARITY / 2)
+ * e.g.: char1 is lvl 27, char2 is level 12. MAX_LEVEL_DISPARITY = 10
+ * char2 will notice they are behind and train combat up to level 22 (5 levels below highest)
+ * @param character
+ * @returns
+ */
 export async function checkWithinLevelRange(
   character: Character,
 ): Promise<ObjectiveResult> {
   const allCharacterDetails = await GetCharacterData();
   character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
 
-  if (character.data.level < character.highestCharLevel - 10) {
+  if (character.data.level < character.highestCharLevel - MAX_LEVEL_DISPARITY) {
+    const targetLevel = character.highestCharLevel - MAX_LEVEL_DISPARITY / 2;
     logger.info(
-      `Character level (${character.data.level}) is more than 10 levels behind the leader (${character.highestCharLevel}). Training ${character.highestCharLevel - character.data.level} levels`,
+      `${character.data.name}s level (${character.data.level}) is more than 10 levels behind the highest (${character.highestCharLevel}). Training to level ${targetLevel}`,
     );
-    return await character.trainCombatLevelNow(character.highestCharLevel - 10);
+    return await character.trainCombatLevelNow(targetLevel);
   }
 
   return ObjectiveCompleted;

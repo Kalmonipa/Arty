@@ -62,6 +62,11 @@ export const TASK_ESTIMATE_SIM_ITERATIONS = 10;
 export const FIGHTS_PER_YIELD_CHECK = 25;
 
 /**
+ * The max level difference between a character and the highest level character
+ */
+export const MAX_LEVEL_DISPARITY = 10;
+
+/**
  * Max default number of slots
  */
 export const MaxInventorySlots = 20;

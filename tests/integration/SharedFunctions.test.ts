@@ -125,7 +125,7 @@ describe('checkWithinLevelRange', () => {
     await checkWithinLevelRange(character as any);
 
     expect(character.highestCharLevel).toBe(40);
-    expect(character.trainCombatLevelNow).toHaveBeenCalledWith(30);
+    expect(character.trainCombatLevelNow).toHaveBeenCalledWith(35);
   });
 });
 
