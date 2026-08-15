@@ -26,11 +26,14 @@ import {
 import { BankCache } from '../../src/core/BankCache.js';
 import { Character } from '../../src/character/CharacterClass.js';
 import {
+  EventSchema,
   ItemSchema,
   MonsterSchema,
   NPCItemSchema,
   ResourceSchema,
 } from '../../src/types/types.js';
+import * as fs from 'node:fs/promises';
+import { clearEventContentCache } from '../../src/events/eventContent.js';
 
 type Ingredient = [code: string, quantity: number];
 
@@ -160,8 +163,18 @@ const world = ({
 
 const emptyBank = () => BankCache.fromItems([]);
 
+/** The events the pull-gamestate script would have written to disk. */
+const withEventsFile = (events: EventSchema[]) => {
+  clearEventContentCache();
+  (fs.readFile as jest.MockedFunction<typeof fs.readFile>).mockResolvedValue(
+    JSON.stringify(events) as never,
+  );
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
+  // Every other test in here costs items without any event in play
+  withEventsFile([]);
 });
 
 describe('crafting cost model', () => {
@@ -299,6 +312,52 @@ describe('crafting cost model', () => {
 
     const score = await calculateScore(
       (await getItemInformation('greater_dreadful_amulet')) as ItemSchema,
+      emptyBank(),
+      character,
+      1,
+    );
+
+    expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
+  });
+
+  it('marks an event mob drop unattainable, however killable the mob is', async () => {
+    withEventsFile([
+      {
+        code: 'portal_demon',
+        name: 'Portal',
+        content: { type: 'monster', code: 'demon' },
+      } as EventSchema,
+    ]);
+    const character = world({
+      items: [material('demon_horn', 'mob')],
+      monsters: [monster('demon', [{ code: 'demon_horn', rate: 10 }])],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('demon_horn')) as ItemSchema,
+      emptyBank(),
+      character,
+      1,
+    );
+
+    expect(score).toBeGreaterThanOrEqual(UNATTAINABLE);
+  });
+
+  it('marks an event resource node unattainable', async () => {
+    withEventsFile([
+      {
+        code: 'magic_apparition',
+        name: 'Magic apparition',
+        content: { type: 'resource', code: 'magic_tree' },
+      } as EventSchema,
+    ]);
+    const character = world({
+      items: [material('magic_wood', 'woodcutting')],
+      nodes: [node('magic_tree', [{ code: 'magic_wood', rate: 10 }])],
+    });
+
+    const score = await calculateScore(
+      (await getItemInformation('magic_wood')) as ItemSchema,
       emptyBank(),
       character,
       1,

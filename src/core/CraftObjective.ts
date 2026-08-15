@@ -14,6 +14,7 @@ import {
 import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
 import { Role } from '../types/CharacterData.js';
+import { eventBlockedIngredients } from '../events/eventContent.js';
 
 /**
  * Maps a craft skill to the role responsible for it. Skills without an entry
@@ -168,6 +169,19 @@ export class CraftObjective extends Objective {
         const outputPerCraft = itemToCraft.craft.quantity ?? 1;
         const outstanding = this.target.quantity - this.progress;
         const craftsNeeded = Math.ceil(outstanding / outputPerCraft);
+
+        const blockedByEvent = await eventBlockedIngredients(
+          itemToCraft.code,
+          outstanding,
+          this.character,
+        );
+        if (blockedByEvent.length > 0) {
+          logger.warn(
+            `Cannot craft ${itemToCraft.code}: ${blockedByEvent.join(', ')} only drops from event content and isn't in the bank`,
+          );
+          this.character.removeItemFromItemsToKeep(itemToCraft.code);
+          return ObjectiveFailed;
+        }
 
         // Only jobs that opted into blocking should raise requests, and only a
         // request recorded against an owning job is ever waited on or cleaned

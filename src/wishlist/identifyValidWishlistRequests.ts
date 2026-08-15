@@ -5,6 +5,7 @@ import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import { getOpenWishlistRequests } from './functions.js';
 import { AcquisitionMethod } from './types.js';
+import { eventBlockedIngredients } from '../events/eventContent.js';
 import { FulfillWishlistRequestObjective } from './fulfillWishlistRequest.js';
 import {
   ObjectiveCancelled,
@@ -87,6 +88,18 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
         default:
           levelRequired = this.character.getCharacterLevel(this.character.data);
           break;
+      }
+
+      const blockedByEvent = await eventBlockedIngredients(
+        request.item_code,
+        request.quantity,
+        this.character,
+      );
+      if (blockedByEvent.length > 0) {
+        logger.info(
+          `Skipping request #${request.id} for ${request.quantity}x ${request.item_code} - ${blockedByEvent.join(', ')} only drops from event content and isn't in the bank`,
+        );
+        continue;
       }
 
       if (itemInformation.level <= levelRequired) {

@@ -19,6 +19,7 @@ import { Character } from '../character/CharacterClass.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { selectResourceNode } from './resourceNodeSelection.js';
+import { isEventOnlyDrop } from '../events/eventContent.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -150,6 +151,11 @@ export class GatherObjective extends Objective {
           return { complete: true, success: false, reason: 'failed' };
         }
         continue;
+      } else if (await isEventOnlyDrop(code, this.character)) {
+        logger.warn(
+          `${code} only drops from event content, which isn't reliably available. Failing`,
+        );
+        return { complete: true, success: false, reason: 'failed' };
       } else if (isGatheringSkill(resourceDetails.subtype)) {
         await this.character.evaluateGear(
           resourceDetails.subtype as WeaponFlavours,

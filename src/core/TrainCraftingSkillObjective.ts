@@ -7,8 +7,10 @@ import {
   DropRateSchema,
   GetAllItemsItemsGetParams,
   ItemSchema,
+  MonsterSchema,
   NPCItemSchema,
 } from '../types/types.js';
+import { isEventContent } from '../events/eventContent.js';
 import { getResourceNodesDropping } from '../api_calls/Resources.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { logger } from '../utils.js';
@@ -414,20 +416,28 @@ async function rawMaterialCost(
 
 /**
  * Cost of fighting for a drop, taking the cheapest mob we can actually beat.
- * Bosses are excluded outright — the fleet has no reliable way to farm them.
+ * Bosses and event mobs are excluded outright — the fleet has no reliable way
+ * to farm either.
  */
 async function mobDropCost(
   item: ItemSchema,
   bankSnapshot: BankCache,
   character: Character,
 ): Promise<number> {
-  const droppers = character.monsterData
-    .filter((mob) => mob.type !== 'boss')
-    .flatMap((mob) => {
-      const drop = mob.drops.find((d) => d.code === item.code);
-      return drop ? [{ mob, cost: actionsPerUnit(drop) }] : [];
-    })
-    .sort((a, b) => a.cost - b.cost);
+  const droppers: { mob: MonsterSchema; cost: number }[] = [];
+
+  for (const mob of character.monsterData) {
+    if (mob.type === 'boss' || (await isEventContent(mob.code))) {
+      continue;
+    }
+
+    const drop = mob.drops.find((d) => d.code === item.code);
+    if (drop) {
+      droppers.push({ mob, cost: actionsPerUnit(drop) });
+    }
+  }
+
+  droppers.sort((a, b) => a.cost - b.cost);
 
   if (droppers.length === 0) {
     logger.debug(`Nothing farmable drops ${item.code}. Marking unattainable`);
@@ -532,7 +542,10 @@ async function offerCost(
   return BUY_ACTION + price * perUnit;
 }
 
-/** Cost of gathering a raw material from the most productive node dropping it. */
+/**
+ * Cost of gathering a raw material from the most productive node dropping it.
+ * Event nodes are skipped — they only exist while their event is running.
+ */
 async function gatherCost(item: ItemSchema): Promise<number> {
   const nodes = await getResourceNodesDropping(item.code);
   if (nodes instanceof ApiError) {
@@ -542,6 +555,10 @@ async function gatherCost(item: ItemSchema): Promise<number> {
 
   let cheapest = UNATTAINABLE;
   for (const node of nodes) {
+    if (await isEventContent(node.code)) {
+      continue;
+    }
+
     for (const drop of node.drops) {
       if (drop.code === item.code) {
         cheapest = Math.min(cheapest, actionsPerUnit(drop));

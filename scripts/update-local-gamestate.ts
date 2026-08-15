@@ -70,3 +70,4 @@ await getGameData('items');
 await getGameData('maps');
 await getGameData('monsters');
 await getGameData('resources');
+await getGameData('events');
