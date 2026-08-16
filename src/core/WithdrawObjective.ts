@@ -50,6 +50,7 @@ export class WithdrawObjective extends Objective {
       const contentLocation = this.character.evaluateClosestMap(maps);
 
       await this.character.move(contentLocation);
+      await this.character.topUpTeleportPotions();
 
       // If we're withdrawing gold, do it and return early
       if (this.target.code === 'gold') {

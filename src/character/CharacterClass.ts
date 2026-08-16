@@ -121,6 +121,7 @@ import { Fishing } from '../names.js';
 import {
   BankFullRetryMs,
   CharRole,
+  TeleportPotionStock,
   DesiredFoodCount,
   MaxEquippedUtilities,
   MinEquippedUtilities,
@@ -280,6 +281,10 @@ export class Character {
   // When this character last tried to expand a full bank. Expanding needs gold
   // it must go and earn, so retrying per failed deposit only burns API budget.
   private lastBankExpansionAttempt = 0;
+
+  // Guards the potion top-up against itself: withdrawing walks to a bank, which
+  // is the very thing that asks for a top-up.
+  private toppingUpTeleportPotions = false;
 
   allCharacterDetails?: CharacterSchema[];
 
@@ -2377,6 +2382,7 @@ export class Character {
       const contentLocation = this.evaluateClosestMap(maps);
 
       await this.move(contentLocation);
+      await this.topUpTeleportPotions();
 
       const keep = [...new Set([...(itemsToKeep ?? []), ...this.itemsToKeep])];
 
@@ -3678,6 +3684,44 @@ export class Character {
 
     this.lastBankExpansionAttempt = Date.now();
     return (await this.executeJobNow(new ExpandBankObjective(this))).success;
+  }
+
+  /**
+   * @description Makes sure the character leaves a bank carrying teleport potions.
+   */
+  async topUpTeleportPotions(): Promise<void> {
+    // Without the map snapshot there is no way to tell a bank tile from any
+    // other, and guessing wrong would withdraw potions in the middle of nowhere
+    if (this.toppingUpTeleportPotions || !this.allMaps) return;
+
+    const onBank = this.findMaps({ content_type: 'bank' }).some(
+      (bank) => bank.map_id === this.data.map_id,
+    );
+    if (!onBank) return;
+
+    this.toppingUpTeleportPotions = true;
+    try {
+      const characterLevel = this.getCharacterLevel(this.data);
+
+      for (const potion of buildTeleportTable(
+        this.consumablesMap?.teleport ?? [],
+      )) {
+        if (potion.level > characterLevel) continue;
+
+        const shortfall =
+          TeleportPotionStock - this.checkQuantityOfItemInInv(potion.code);
+        if (shortfall <= 0) continue;
+
+        if ((await this.checkQuantityOfItemInBank(potion.code)) < shortfall) {
+          continue;
+        }
+
+        logger.info(`Picking up ${shortfall} ${potion.code} for travelling`);
+        await this.withdrawNow(shortfall, potion.code);
+      }
+    } finally {
+      this.toppingUpTeleportPotions = false;
+    }
   }
 
   async computeUnsatisfiableTransitions(): Promise<Set<number>> {
