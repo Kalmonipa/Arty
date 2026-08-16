@@ -296,7 +296,7 @@ export class IdleHealerObjective extends Objective {
    * @returns
    */
   private async topUpTeleportPotionsInBank(): Promise<boolean> {
-    const minPotionsToCraft = 50;
+    const minPotionsToCraft = 100;
     const alchemyLevel = this.character.getCharacterLevel(
       this.character.data,
       'alchemy',
@@ -304,8 +304,6 @@ export class IdleHealerObjective extends Objective {
 
     const bankContents = await BankCache.create(this.character);
 
-    // Every code in a stale snapshot reads 0, which here would mean crafting a
-    // full batch of every tier on top of whatever is already banked.
     if (bankContents.stale) {
       logger.warn(
         'Could not read the bank; skipping the teleport potion top-up',
