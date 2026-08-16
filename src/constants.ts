@@ -105,6 +105,14 @@ export const TransitionSeconds = 5;
 export const UseItemSeconds = 3;
 
 /**
+ * How much travel time a teleport potion has to save before it is worth
+ * drinking. A potion is not free: someone has to gather its ingredients and brew
+ * it, so shaving a few tiles off a walk costs the fleet more time than it
+ * returns. Only savings beyond this are real.
+ */
+export const TeleportMinimumSavingSeconds = 60;
+
+/**
  * How long a character waits before trying to expand a full bank again. The
  * gold for an expansion has to be earned, so a bank that was full a moment ago
  * still is; anything shorter just spends API budget confirming it.

@@ -94,18 +94,17 @@ describe('choosing a potion for each zone, standing at spawn', () => {
   });
 
   it('drinks a potion even for a destination in its own zone, when that is quicker', () => {
-    // The standard-access part of the Enchanted Forest shares spawn's zone, so
-    // no transition is needed — but it is thirteen tiles away, and the
-    // enchanted potion lands next door for three seconds plus one transition.
-    // Counting transitions rather than seconds could never see this.
-    const walkable = mapById(718);
-    expect(graph.zoneOfMapId.get(718)).toBe(graph.zoneOfMapId.get(SPAWN));
-    expect(journeySeconds(SPAWN, walkable, graph)).toBe(65);
+    // Spawn and the item task master share a zone, so no transition is needed
+    // and hop counting saw nothing to do — but it is a seventeen tile walk, and
+    // the forest bank potion lands three tiles away.
+    const taskMaster = mapById(946);
+    expect(graph.zoneOfMapId.get(946)).toBe(graph.zoneOfMapId.get(SPAWN));
+    expect(journeySeconds(SPAWN, taskMaster, graph)).toBe(85);
 
-    const chosen = chooseTeleportPotion(SPAWN, walkable, graph, allPotions);
+    const chosen = chooseTeleportPotion(SPAWN, taskMaster, graph, allPotions);
 
-    expect(chosen?.code).toBe('enchanted_potion');
-    expect(journeySeconds(chosen!.mapId, walkable, graph)).toBe(15);
+    expect(chosen?.code).toBe('forest_bank_potion');
+    expect(journeySeconds(chosen!.mapId, taskMaster, graph)).toBe(15);
   });
 
   it('leaves a potion alone when walking is already quicker', () => {
@@ -237,5 +236,44 @@ describe('mining gold at map 83, handing in at the task master on map 946', () =
     );
 
     expect(tilesBetween(mapById(chosen!.mapId), taskMaster)).toBe(bankWalk);
+  });
+});
+
+describe('only drinking when the saving is worth the potion', () => {
+  it('declines a saving too small to pay for crafting the potion', () => {
+    // Spawn to the walkable part of the Enchanted Forest: 65s on foot against
+    // 18s with the potion. A 47s saving does not cover replacing the potion.
+    const walkable = mapById(718);
+
+    expect(journeySeconds(SPAWN, walkable, graph)).toBe(65);
+    expect(
+      chooseTeleportPotion(SPAWN, walkable, graph, allPotions),
+    ).toBeUndefined();
+  });
+
+  it('still drinks when the saving is large', () => {
+    // Gold rocks to the item task master: 95s on foot against 18s, a 77s saving
+    const taskMaster = mapById(946);
+
+    expect(journeySeconds(83, taskMaster, graph)).toBe(95);
+    expect(chooseTeleportPotion(83, taskMaster, graph, allPotions)?.code).toBe(
+      'forest_bank_potion',
+    );
+  });
+
+  it('drinks regardless of the saving when there is no way to walk there', () => {
+    // A threshold that talked the character out of the only route would strand
+    // it, so an impossible walk still takes any potion that reaches
+    const gated = new Set(
+      maps
+        .filter((map) => map.interactions.transition?.conditions?.length)
+        .map((map) => map.map_id),
+    );
+    const forest = mapById(potion('enchanted_potion').mapId);
+
+    expect(journeySeconds(SPAWN, forest, graph, gated)).toBeNull();
+    expect(
+      chooseTeleportPotion(SPAWN, forest, graph, allPotions, gated)?.code,
+    ).toBe('enchanted_potion');
   });
 });
