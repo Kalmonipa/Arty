@@ -113,6 +113,9 @@ export default function FightRouter(char: Character) {
       return res.status(200).json({
         message: `Boss fight sim against ${targetMob} was a ${result.success ? 'win' : 'loss'}`,
         character: char.data.name,
+        winRate: result.winRate,
+        averageTurns: result.averageTurns,
+        loadouts: result.loadouts,
       });
     } catch (error) {
       return res

@@ -48,11 +48,21 @@ describe('POST /fight/boss/simulate', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetMob: 'lich', quantity: 10 }),
     });
-    return (await response.json()) as { message: string };
+    return (await response.json()) as {
+      message: string;
+      winRate: number;
+      averageTurns: number;
+      loadouts: { weapon_slot: string }[];
+    };
   }
 
   it('reports a win when the sim succeeded', async () => {
-    mockedSimulate.mockResolvedValue(ObjectiveCompleted);
+    mockedSimulate.mockResolvedValue({
+      ...ObjectiveCompleted,
+      winRate: 100,
+      averageTurns: 14,
+      loadouts: [],
+    });
 
     const body = await simulate();
 
@@ -60,10 +70,48 @@ describe('POST /fight/boss/simulate', () => {
   });
 
   it('reports a loss when the sim failed', async () => {
-    mockedSimulate.mockResolvedValue(ObjectiveFailed);
+    mockedSimulate.mockResolvedValue({
+      ...ObjectiveFailed,
+      winRate: 0,
+      averageTurns: 0,
+      loadouts: [],
+    });
 
     const body = await simulate();
 
     expect(body.message).toBe('Boss fight sim against lich was a loss');
+  });
+
+  it('reports how close the party came, not just the verdict', async () => {
+    mockedSimulate.mockResolvedValue({
+      ...ObjectiveFailed,
+      winRate: 40,
+      averageTurns: 26,
+      loadouts: [],
+    });
+
+    const body = await simulate();
+
+    expect(body.winRate).toBe(40);
+    expect(body.averageTurns).toBe(26);
+  });
+
+  it('reports the loadouts the sim was run with', async () => {
+    mockedSimulate.mockResolvedValue({
+      ...ObjectiveFailed,
+      winRate: 0,
+      averageTurns: 0,
+      loadouts: [
+        { weapon_slot: 'greater_dreadful_staff' },
+        { weapon_slot: 'gold_sword' },
+      ] as never,
+    });
+
+    const body = await simulate();
+
+    expect(body.loadouts.map((loadout) => loadout.weapon_slot)).toEqual([
+      'greater_dreadful_staff',
+      'gold_sword',
+    ]);
   });
 });

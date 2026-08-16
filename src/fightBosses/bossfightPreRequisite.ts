@@ -11,21 +11,28 @@ import {
 } from '../types/ObjectiveData.js';
 import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
+import { FightSimulator } from '../fights/FightSimulator.js';
+import { BossFightSimResult } from './types.js';
+
+/** A verdict with nothing behind it, for the paths that never reach the sim */
+function noSimResult(result: ObjectiveResult): BossFightSimResult {
+  return { ...result, winRate: 0, averageTurns: 0, loadouts: [] };
+}
 
 export async function simulateBossFight(
   character: Character,
   target: ObjectiveTargets,
-): Promise<ObjectiveResult> {
+): Promise<BossFightSimResult> {
   const mobInfo = await getMonsterInformation(target.code);
   if (mobInfo instanceof ApiError) {
     await character.handleErrors(mobInfo);
-    return ObjectiveFailed;
+    return noSimResult(ObjectiveFailed);
   }
 
-  const participants = await findBestParticipants();
+  const participants = await findBestParticipants(character);
   if (!participants) {
     logger.warn(`No participants found for fight against ${target.code}`);
-    return ObjectiveFailed;
+    return noSimResult(ObjectiveFailed);
   }
 
   // Build FakeCharacterSchemas to run a fight sim
@@ -62,15 +69,37 @@ export async function simulateBossFight(
     part2FakeCharSchema = part2FakeCharSchemaRequest.proposedLoadout;
   }
 
-  const simResult = await character.simulateFightNow(
-    [leaderFakeCharSchema, part1FakeCharSchema, part2FakeCharSchema],
+  const loadouts = [
+    leaderFakeCharSchema,
+    part1FakeCharSchema,
+    part2FakeCharSchema,
+  ];
+
+  // Owning the job rather than going through simulateFightNow is what keeps the
+  // win rate and turn count reachable; the helper returns only a pass/fail
+  const sim = new FightSimulator(
+    character,
+    loadouts,
     target.code,
     target.quantity,
   );
+  const simResult = await character.executeJobNow(
+    sim,
+    true,
+    true,
+    character.currentExecutingJob?.objectiveId,
+  );
 
-  logger.info(`Sim result was a ${simResult.success ? 'win' : 'loss'}`);
+  logger.info(
+    `Sim result was a ${simResult.success ? 'win' : 'loss'} at a ${sim.winRate}% win rate over ${sim.averageTurns} turns`,
+  );
 
-  return simResult;
+  return {
+    ...simResult,
+    winRate: sim.winRate,
+    averageTurns: sim.averageTurns,
+    loadouts,
+  };
 }
 
 /**
@@ -78,13 +107,12 @@ export async function simulateBossFight(
  * @todo Expand this to choose the supporting participants dynamically
  * @returns An array of the character schemas of the 2 participants
  */
-async function findBestParticipants(): Promise<CharacterSchema[]> {
-  let part1: CharacterSchema;
-  let part2: CharacterSchema;
-
+async function findBestParticipants(
+  char: Character,
+): Promise<CharacterSchema[]> {
   const allChars = await getMyCharacters();
   if (allChars instanceof ApiError) {
-    await this.character.handleErrors(allChars);
+    await char.handleErrors(allChars);
     return [];
   }
 
@@ -92,6 +120,9 @@ async function findBestParticipants(): Promise<CharacterSchema[]> {
     allChars.find((char) => char.name === BouncyBella),
     allChars.find((char) => char.name === JumpyJimmy),
   ];
+
+  // let part1: CharacterSchema;
+  // let part2: CharacterSchema;
 
   // for (const char of allChars) {
   //   if (part1 === undefined) {

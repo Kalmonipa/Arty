@@ -65,7 +65,12 @@ export class FightBossLeaderObjective extends Objective {
 
     if (!fightSimResult.success) {
       logger.warn(
-        `Boss fight against ${this.target.code} isn't winnable. Exiting`,
+        `Boss fight against ${this.target.code} isn't winnable at a ${fightSimResult.winRate}% win rate. Exiting`,
+      );
+      logger.warn(
+        `Simulated with ${fightSimResult.loadouts
+          .map((loadout) => `${loadout.weapon_slot} [${loadout.level}]`)
+          .join(', ')}`,
       );
       return ObjectiveFailed;
     }
