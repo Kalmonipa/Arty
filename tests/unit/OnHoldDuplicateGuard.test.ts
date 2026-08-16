@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-jest.mock('../../src/wishlist/functions.js', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   addToWishlist: jest.fn(async () => 1),
   findOpenWishlistRequest: jest.fn(async () => undefined),
   getWishlistRequestsForJob: jest.fn(async () => []),

@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import { BankCache } from '../../src/core/BankCache.js';
-import { IdleHealerObjective } from '../../src/idleObjectives/IdleHealer.js';
+import { IdleHealerObjective } from '../../src/idleObjectives/idleHealer.js';
 import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { ItemSchema } from '../../src/types/types.js';
 
 const teleportPotion = (code: string, level: number): ItemSchema =>

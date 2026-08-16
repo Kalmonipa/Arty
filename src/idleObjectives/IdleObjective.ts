@@ -17,7 +17,7 @@ import {
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
@@ -30,7 +30,7 @@ import {
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
-} from './idleUtils.js';
+} from './idle.utils.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

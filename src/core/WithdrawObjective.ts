@@ -6,7 +6,7 @@ import {
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { invalidateBankQuantities } from './bankQuantityCache.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';

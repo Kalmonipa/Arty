@@ -6,7 +6,7 @@ import {
   ObjectiveResult,
   ObjectiveStatus,
 } from '../types/ObjectiveData.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { logger, sleep } from '../utils.js';
 import {
   jobActiveGauge,
@@ -20,8 +20,8 @@ import {
   addToWishlist,
   findOpenWishlistRequest,
   getWishlistRequestsForJob,
-} from '../wishlist/functions.js';
-import { WishlistRequest } from '../wishlist/types.js';
+} from '../wishlist/wishlist.utils.js';
+import { WishlistRequest } from '../wishlist/wishlist.types.js';
 import { TasksCoin } from '../names.js';
 import { MAX_TASK_REROLLS } from '../constants.js';
 

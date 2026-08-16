@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { logger } from '../utils.js';
-import { addToWishlist, listOpenWishlistRequests } from './functions.js';
-import { WishlistRequest } from './types.js';
+import { addToWishlist, listOpenWishlistRequests } from './wishlist.utils.js';
+import { WishlistRequest } from './wishlist.types.js';
 
 export default function WishlistRouter(char: Character) {
   const router = Router();

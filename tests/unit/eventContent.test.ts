@@ -17,8 +17,8 @@ import {
   eventBlockedIngredients,
   isEventContent,
   isEventOnlyDrop,
-} from '../../src/events/eventContent.js';
-import { Character } from '../../src/character/CharacterClass.js';
+} from '../../src/events/events.cache.js';
+import { Character } from '../../src/character/character.js';
 import {
   EventSchema,
   ItemSchema,

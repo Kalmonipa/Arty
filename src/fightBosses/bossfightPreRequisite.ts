@@ -1,7 +1,7 @@
 import { requestLoadout } from '../api_calls/Account.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { getMyCharacters } from '../character/ApiCalls.js';
-import { Character } from '../character/CharacterClass.js';
+import { getMyCharacters } from '../character/character.apiCalls.js';
+import { Character } from '../character/character.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { ApiError } from '../core/Error.js';
 import {
@@ -11,8 +11,8 @@ import {
 } from '../types/ObjectiveData.js';
 import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { FightSimulator } from '../fights/FightSimulator.js';
-import { BossFightSimResult } from './types.js';
+import { FightSimulator } from '../fights/fight.simulator.js';
+import { BossFightSimResult } from './bossFight.types.js';
 
 /** A verdict with nothing behind it, for the paths that never reach the sim */
 function noSimResult(result: ObjectiveResult): BossFightSimResult {

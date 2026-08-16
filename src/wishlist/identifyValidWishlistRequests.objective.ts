@@ -1,12 +1,12 @@
 import { getItemInformation } from '../api_calls/Items.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
-import { getOpenWishlistRequests } from './functions.js';
-import { AcquisitionMethod } from './types.js';
-import { eventBlockedIngredients } from '../events/eventContent.js';
-import { FulfillWishlistRequestObjective } from './fulfillWishlistRequest.js';
+import { getOpenWishlistRequests } from './wishlist.utils.js';
+import { AcquisitionMethod } from './wishlist.types.js';
+import { eventBlockedIngredients } from '../events/events.cache.js';
+import { FulfillWishlistRequestObjective } from './fulfillWishlistRequest.objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

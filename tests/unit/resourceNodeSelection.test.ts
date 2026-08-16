@@ -2,7 +2,7 @@ import {
   preferLowestNode,
   selectResourceNode,
 } from '../../src/core/resourceNodeSelection.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { GatheringSkill, ResourceSchema } from '../../src/types/types.js';
 import { Role } from '../../src/types/CharacterData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';

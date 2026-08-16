@@ -24,7 +24,7 @@ import {
   UNATTAINABLE,
 } from '../../src/core/TrainCraftingSkillObjective.js';
 import { BankCache } from '../../src/core/BankCache.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import {
   EventSchema,
   ItemSchema,
@@ -33,7 +33,7 @@ import {
   ResourceSchema,
 } from '../../src/types/types.js';
 import * as fs from 'node:fs/promises';
-import { clearEventContentCache } from '../../src/events/eventContent.js';
+import { clearEventContentCache } from '../../src/events/events.cache.js';
 
 type Ingredient = [code: string, quantity: number];
 

@@ -8,7 +8,7 @@ import {
   StaticDataPageResourceSchema,
 } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {
@@ -17,7 +17,7 @@ import {
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
-} from './idleUtils.js';
+} from './idle.utils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import {
   ObjectiveCancelled,

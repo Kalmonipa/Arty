@@ -1,4 +1,4 @@
-import type { Character } from '../character/CharacterClass.js';
+import type { Character } from '../character/character.js';
 import { Algae, Sap } from '../names.js';
 import { GatheringSkill, ResourceSchema } from '../types/types.js';
 

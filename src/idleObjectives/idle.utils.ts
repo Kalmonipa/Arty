@@ -1,5 +1,5 @@
 import { getAllNpcItems } from '../api_calls/NPC.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { Role } from '../types/CharacterData.js';
@@ -15,9 +15,9 @@ import {
   deleteOrphanedWishlistRequests,
   getWishlistRequestsForJob,
   deleteWishlistRequest,
-} from '../wishlist/functions.js';
-import { AcquisitionMethod } from '../wishlist/types.js';
-import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
+} from '../wishlist/wishlist.utils.js';
+import { AcquisitionMethod } from '../wishlist/wishlist.types.js';
+import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.objective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { Objective } from '../core/Objective.js';

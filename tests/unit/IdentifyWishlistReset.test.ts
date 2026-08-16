@@ -4,7 +4,7 @@ import {
   ObjectiveFailed,
 } from '../../src/types/ObjectiveData.js';
 
-jest.mock('../../src/wishlist/functions.js', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   getOpenWishlistRequests: jest.fn(),
   claimWishlistRequest: jest.fn(async () => true),
   markAsFulfilled: jest.fn(async () => true),
@@ -14,16 +14,16 @@ jest.mock('../../src/api_calls/Items.js', () => ({
   getItemInformation: jest.fn(),
 }));
 
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import {
   claimWishlistRequest,
   getOpenWishlistRequests,
   markAsFulfilled,
   markAsNotExecuting,
-} from '../../src/wishlist/functions.js';
+} from '../../src/wishlist/wishlist.utils.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
-import { IdentifyValidWishlistRequestsObjective } from '../../src/wishlist/identifyValidWishlistRequests.js';
+import { IdentifyValidWishlistRequestsObjective } from '../../src/wishlist/identifyValidWishlistRequests.objective.js';
 
 const mockedOpen = getOpenWishlistRequests as jest.MockedFunction<
   typeof getOpenWishlistRequests

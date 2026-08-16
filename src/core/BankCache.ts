@@ -1,4 +1,4 @@
-import type { Character } from '../character/CharacterClass.js';
+import type { Character } from '../character/character.js';
 import type { SimpleItemSchema } from '../types/types.js';
 
 /**

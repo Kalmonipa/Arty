@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
 
 export default function RecycleRouter(char: Character) {

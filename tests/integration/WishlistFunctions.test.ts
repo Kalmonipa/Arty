@@ -19,7 +19,7 @@ import {
   markAsFulfilled,
   markAsNotExecuting,
   reclaimExecutingWishlistRequests,
-} from '../../src/wishlist/functions.js';
+} from '../../src/wishlist/wishlist.utils.js';
 
 const mockedQuery = db.query as jest.MockedFunction<typeof db.query>;
 const mockedGetItem = getItemInformation as jest.MockedFunction<

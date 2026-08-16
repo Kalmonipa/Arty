@@ -1,7 +1,7 @@
 import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';

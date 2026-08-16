@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { CraftObjective } from '../core/CraftObjective.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { CraftResponse } from '../types/CharacterData.js';
 
 export default function CraftRouter(char: Character) {

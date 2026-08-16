@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-jest.mock('../../src/wishlist/functions.js', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   addToWishlist: jest.fn(async () => null),
   deleteExpiredWishlistRequests: jest.fn(async () => 0),
   deleteOrphanedWishlistRequests: jest.fn(async () => 0),
@@ -9,12 +9,12 @@ jest.mock('../../src/wishlist/functions.js', () => ({
   getWishlistRequestsForJob: jest.fn(async () => []),
 }));
 
-import { Character } from '../../src/character/CharacterClass.js';
-import { checkOnHoldQueue } from '../../src/idleObjectives/idleUtils.js';
-import { getWishlistRequestsForJob } from '../../src/wishlist/functions.js';
+import { Character } from '../../src/character/character.js';
+import { checkOnHoldQueue } from '../../src/idleObjectives/idle.utils.js';
+import { getWishlistRequestsForJob } from '../../src/wishlist/wishlist.utils.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { OnHoldJob } from '../../src/types/ObjectiveData.js';
-import { WishlistRow } from '../../src/wishlist/types.js';
+import { WishlistRow } from '../../src/wishlist/wishlist.types.js';
 
 const mockedRequestsForJob = getWishlistRequestsForJob as jest.MockedFunction<
   typeof getWishlistRequestsForJob

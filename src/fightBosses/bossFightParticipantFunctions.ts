@@ -1,6 +1,6 @@
 import { db } from '../db.js';
 import { logger } from '../utils.js';
-import { ParticipantStatus } from './types.js';
+import { ParticipantStatus } from './bossFight.types.js';
 
 /**
  * Registers a row per participant in the boss_fight_participants table

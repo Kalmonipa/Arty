@@ -1,6 +1,6 @@
 import { actionCraft } from '../api_calls/Actions.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import {
@@ -14,7 +14,7 @@ import {
 import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
 import { Role } from '../types/CharacterData.js';
-import { eventBlockedIngredients } from '../events/eventContent.js';
+import { eventBlockedIngredients } from '../events/events.cache.js';
 
 /**
  * Maps a craft skill to the role responsible for it. Skills without an entry

@@ -1,4 +1,4 @@
-import { parseTrainJobId } from '../../src/idleObjectives/idleUtils.js';
+import { parseTrainJobId } from '../../src/idleObjectives/idle.utils.js';
 
 describe('parseTrainJobId', () => {
   it('reads the target level and skill off a crafting train job', () => {

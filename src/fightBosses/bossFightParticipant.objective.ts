@@ -1,5 +1,5 @@
 import { logger, sleep } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { Objective } from '../core/Objective.js';
 import {
   ObjectiveCompleted,
@@ -10,7 +10,7 @@ import {
 import {
   getBossFightState,
   getCurrentNumFights,
-} from './bossfightFunctions.js';
+} from './bossFight.utils.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import {
   acceptBossFightCompletion,

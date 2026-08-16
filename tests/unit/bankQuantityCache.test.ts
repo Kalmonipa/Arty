@@ -7,7 +7,7 @@ jest.mock('../../src/api_calls/Bank.js', () => ({
 }));
 
 import { getBankItems } from '../../src/api_calls/Bank.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { BankCache } from '../../src/core/BankCache.js';
 import { ApiError } from '../../src/core/Error.js';
 import {

@@ -23,7 +23,7 @@ jest.mock('../../src/api_calls/Items', () => ({
 
 // A stand-in wishlist table: the rows are the inserts recorded on addToWishlist,
 // so jest.clearAllMocks() empties it between tests
-jest.mock('../../src/wishlist/functions', () => {
+jest.mock('../../src/wishlist/wishlist.utils.js', () => {
   const addToWishlist = jest.fn(async () => 701);
   return {
     addToWishlist,
@@ -50,7 +50,7 @@ jest.mock('../../src/wishlist/functions', () => {
 // Import the mocked functions
 import { actionCraft } from '../../src/api_calls/Actions.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { addToWishlist } from '../../src/wishlist/functions.js';
+import { addToWishlist } from '../../src/wishlist/wishlist.utils.js';
 import { Role } from '../../src/types/CharacterData.js';
 
 /** The parking job that owns any request these craft jobs raise */

@@ -4,7 +4,7 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { EventObjective } from '../../src/events/eventObjective.js';
+import { EventObjective } from '../../src/events/events.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ApiError } from '../../src/core/Error.js';
 import { ActiveEventSchema } from '../../src/types/types.js';

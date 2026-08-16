@@ -3,7 +3,7 @@ import {
   ObjectiveCompleted,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ApiError } from '../../src/core/Error.js';
 import {

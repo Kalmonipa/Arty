@@ -1,8 +1,8 @@
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { db } from '../db.js';
 import { ObjectiveTargets } from '../types/ObjectiveData.js';
 import { logger } from '../utils.js';
-import { BossFightStatus } from './types.js';
+import { BossFightStatus } from './bossFight.types.js';
 
 /**
  * Registers the boss fight in the boss_fights table

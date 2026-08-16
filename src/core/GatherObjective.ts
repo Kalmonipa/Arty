@@ -15,11 +15,11 @@ import {
   SimpleItemSchema,
 } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { selectResourceNode } from './resourceNodeSelection.js';
-import { isEventOnlyDrop } from '../events/eventContent.js';
+import { isEventOnlyDrop } from '../events/events.cache.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;

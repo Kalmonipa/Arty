@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-jest.mock('../../src/wishlist/functions.js', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   addToWishlist: jest.fn(async () => 907),
   findOpenWishlistRequest: jest.fn(async () => undefined),
   getWishlistRequestsForJob: jest.fn(async () => []),
@@ -14,8 +14,8 @@ import {
 import {
   addToWishlist,
   findOpenWishlistRequest,
-} from '../../src/wishlist/functions.js';
-import { WishlistRow } from '../../src/wishlist/types.js';
+} from '../../src/wishlist/wishlist.utils.js';
+import { WishlistRow } from '../../src/wishlist/wishlist.types.js';
 
 const mockedAdd = addToWishlist as jest.MockedFunction<typeof addToWishlist>;
 const mockedFind = findOpenWishlistRequest as jest.MockedFunction<

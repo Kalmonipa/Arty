@@ -22,7 +22,7 @@ import {
   Skill,
 } from '../types/types.js';
 import { isGatheringSkill, logger, sleep } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
@@ -36,7 +36,7 @@ import {
   checkWishlistToFulfill,
   doMonsterTask,
   craftingSkillsToTrain,
-} from './idleUtils.js';
+} from './idle.utils.js';
 import { actionTasksExchange } from '../api_calls/Tasks.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import {

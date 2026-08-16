@@ -1,13 +1,13 @@
 import { jest } from '@jest/globals';
 
-jest.mock('../../src/wishlist/functions.js', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   addToWishlist: jest.fn(async () => null),
   deleteWishlistRequestsForJob: jest.fn(async () => 1),
   getWishlistRequestsForJob: jest.fn(async () => []),
 }));
 
-import { Character } from '../../src/character/CharacterClass.js';
-import { deleteWishlistRequestsForJob } from '../../src/wishlist/functions.js';
+import { Character } from '../../src/character/character.js';
+import { deleteWishlistRequestsForJob } from '../../src/wishlist/wishlist.utils.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { OnHoldJob } from '../../src/types/ObjectiveData.js';
 

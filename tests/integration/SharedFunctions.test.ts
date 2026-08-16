@@ -3,7 +3,7 @@ import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,
-} from '../../src/idleObjectives/idleUtils.js';
+} from '../../src/idleObjectives/idle.utils.js';
 import { GetCharacterData } from '../../src/utils.js';
 import { CharacterSchema } from '../../src/types/types.js';
 import {
@@ -11,7 +11,7 @@ import {
   deleteOrphanedWishlistRequests,
   getWishlistRequestsForJob,
   deleteWishlistRequest,
-} from '../../src/wishlist/functions.js';
+} from '../../src/wishlist/wishlist.utils.js';
 
 jest.mock('../../src/utils.js', () => {
   const actual =
@@ -30,7 +30,7 @@ jest.mock('../../src/utils.js', () => {
   };
 });
 
-jest.mock('../../src/wishlist/functions.js', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   deleteExpiredWishlistRequests: jest.fn(async () => 0),
   deleteOrphanedWishlistRequests: jest.fn(async () => 0),
   getWishlistRequestsForJob: jest.fn(async () => []),

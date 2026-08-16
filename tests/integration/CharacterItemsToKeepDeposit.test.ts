@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { MapSchema, SimpleItemSchema } from '../../src/types/types.js';
 

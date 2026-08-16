@@ -17,7 +17,7 @@ import { InventorySlot } from '../../src/types/CharacterData.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
 import { actionGather } from '../../src/api_calls/Actions.js';
-import { addToWishlist } from '../../src/wishlist/functions.js';
+import { addToWishlist } from '../../src/wishlist/wishlist.utils.js';
 
 // Mock item data
 const mockIronOreData: ItemSchema = {
@@ -121,7 +121,7 @@ jest.mock('../../src/api_calls/Resources', () => ({
 
 // A stand-in wishlist table: the rows are the inserts recorded on addToWishlist,
 // so jest.clearAllMocks() empties it between tests
-jest.mock('../../src/wishlist/functions', () => {
+jest.mock('../../src/wishlist/wishlist.utils.js', () => {
   const addToWishlist = jest.fn(async () => 701);
   return {
     addToWishlist,

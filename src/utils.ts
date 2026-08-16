@@ -14,7 +14,7 @@ import { ApiError } from './core/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import { MonsterResistance } from './types/MonsterData.js';
 import { Role, ROLES } from './types/CharacterData.js';
-import { getCharacter } from './character/ApiCalls.js';
+import { getCharacter } from './character/character.apiCalls.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
 import { getAllMaps } from './api_calls/Maps.js';
 import {

@@ -1,4 +1,4 @@
-import { Character } from './character/CharacterClass.js';
+import { Character } from './character/character.js';
 import express from 'express';
 import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
@@ -8,19 +8,19 @@ import { ApiUrl } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
 import EquipRouter from './routes/Equip.js';
-import FightRouter from './fights/Routes.js';
+import FightRouter from './fights/fight.routes.js';
 import RecycleRouter from './routes/Recycle.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
 import BankRouter from './routes/Bank.js';
-import CharacterRouter from './character/Routes.js';
+import CharacterRouter from './character/character.routes.js';
 import { CharacterSchema } from './types/types.js';
 import { CharName } from './constants.js';
 import { register } from './metrics.js';
 import { db } from './db.js';
-import EventRouter from './events/routes.js';
-import WishlistRouter from './wishlist/routes.js';
-import { reclaimExecutingWishlistRequests } from './wishlist/functions.js';
+import EventRouter from './events/events.routes.js';
+import WishlistRouter from './wishlist/wishlist.routes.js';
+import { reclaimExecutingWishlistRequests } from './wishlist/wishlist.utils.js';
 
 async function main() {
   let charDetails: CharacterSchema[] = await GetCharacterData();

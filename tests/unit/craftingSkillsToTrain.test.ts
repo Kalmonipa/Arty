@@ -1,4 +1,4 @@
-import { craftingSkillsToTrain } from '../../src/idleObjectives/idleUtils.js';
+import { craftingSkillsToTrain } from '../../src/idleObjectives/idle.utils.js';
 import {
   Gearcrafting,
   Jewelrycrafting,

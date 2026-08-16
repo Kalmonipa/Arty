@@ -1,5 +1,5 @@
 import { logger, sleep } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {
@@ -14,7 +14,7 @@ import {
   incrementBossFightCounter,
   markBossFightComplete,
   registerBossFight,
-} from './bossfightFunctions.js';
+} from './bossFight.utils.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import { actionFight } from '../api_calls/Actions.js';
 import {

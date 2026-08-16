@@ -6,7 +6,7 @@ import {
 import { TradeType } from '../types/NPCData.js';
 import { NPCItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from './GatherObjective.js';
 import { getAllMaps } from '../api_calls/Maps.js';

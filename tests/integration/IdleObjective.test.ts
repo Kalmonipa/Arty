@@ -4,7 +4,7 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { IdleObjective } from '../../src/idleObjectives/IdleObjective.js';
+import { IdleObjective } from '../../src/idleObjectives/idleObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ItemSchema, CharacterSchema } from '../../src/types/types.js';
 import { GearEffects } from '../../src/types/ItemData.js';

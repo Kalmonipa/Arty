@@ -8,7 +8,7 @@ jest.mock('../../src/fightBosses/bossfightPreRequisite.js', () => ({
 }));
 
 import { simulateBossFight } from '../../src/fightBosses/bossfightPreRequisite.js';
-import FightRouter from '../../src/fights/Routes.js';
+import FightRouter from '../../src/fights/fight.routes.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

@@ -48,8 +48,8 @@ import {
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { CraftObjective } from '../core/CraftObjective.js';
-import { FightBossParticipantObjective } from '../fightBosses/fightBossParticipantObjecive.js';
-import { getBossFightTarget } from '../fightBosses/bossfightFunctions.js';
+import { FightBossParticipantObjective } from '../fightBosses/bossFightParticipant.objective.js';
+import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
 import type { BankCache } from '../core/BankCache.js';
@@ -70,7 +70,7 @@ import {
   ObjectiveFailed,
   ObjectiveCompleted,
 } from '../types/ObjectiveData.js';
-import { FightObjective } from '../fights/FightObjective.js';
+import { FightObjective } from '../fights/fight.objective.js';
 import { EquipObjective } from '../core/EquipObjective.js';
 import { UnequipObjective } from '../core/UnequipObjective.js';
 import { WithdrawObjective } from '../core/WithdrawObjective.js';
@@ -92,18 +92,18 @@ import { TidyBankObjective } from '../core/TidyBankObjective.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
-import { FightSimulator } from '../fights/FightSimulator.js';
-import { IdleObjective } from '../idleObjectives/IdleObjective.js';
+import { FightSimulator } from '../fights/fight.simulator.js';
+import { IdleObjective } from '../idleObjectives/idleObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import {
   deleteWishlistRequestsForJob,
   getWishlistRequestsForJob,
-} from '../wishlist/functions.js';
+} from '../wishlist/wishlist.utils.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
 import { ExpandBankObjective } from '../core/BankExpansion.js';
-import { getActiveEvents } from '../events/apiCalls.js';
-import { EventObjective } from '../events/eventObjective.js';
+import { getActiveEvents } from '../events/events.apiCalls.js';
+import { EventObjective } from '../events/events.objective.js';
 import {
   getAllResourceInformation,
   getResourceInformation,
@@ -152,17 +152,17 @@ import {
 } from '../names.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
-import { shouldDoEvent } from '../events/functions.js';
+import { shouldDoEvent } from '../events/events.utils.js';
 import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
-import { IdleHealerObjective } from '../idleObjectives/IdleHealer.js';
-import { IdleCrafterObjective } from '../idleObjectives/IdleCrafter.js';
+import { IdleHealerObjective } from '../idleObjectives/idleHealer.js';
+import { IdleCrafterObjective } from '../idleObjectives/idleCrafter.js';
 import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
-import { IdleLabourerObjective } from '../idleObjectives/IdleLabourer.js';
-import { IdleFishermanObjective } from '../idleObjectives/IdleFisherman.js';
-import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.js';
-import { AcquisitionMethod, WishlistRow } from '../wishlist/types.js';
-import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.js';
+import { IdleLabourerObjective } from '../idleObjectives/idleLabourer.js';
+import { IdleFishermanObjective } from '../idleObjectives/idleFisherman.js';
+import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.objective.js';
+import { AcquisitionMethod, WishlistRow } from '../wishlist/wishlist.types.js';
+import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.objective.js';
 import { checkEnlistments } from '../fightBosses/bossFightParticipantFunctions.js';
 
 /**

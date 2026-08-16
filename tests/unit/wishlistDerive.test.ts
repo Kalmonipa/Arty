@@ -1,7 +1,7 @@
 import {
   deriveAcquisitionMethod,
   deriveRequiredLevel,
-} from '../../src/wishlist/functions.js';
+} from '../../src/wishlist/wishlist.utils.js';
 import { CraftSchema, ItemSchema } from '../../src/types/types.js';
 
 function makeItem(overrides: Partial<ItemSchema>): ItemSchema {

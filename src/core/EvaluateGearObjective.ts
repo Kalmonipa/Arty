@@ -3,7 +3,7 @@ import {
   logger,
   scoreWeaponAgainstResistances,
 } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { Objective } from './Objective.js';
 import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
 import {

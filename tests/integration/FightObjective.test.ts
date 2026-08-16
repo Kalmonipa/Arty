@@ -3,7 +3,7 @@ import {
   ObjectiveCompleted,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { FightObjective } from '../../src/fights/FightObjective.js';
+import { FightObjective } from '../../src/fights/fight.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';

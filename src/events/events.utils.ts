@@ -1,4 +1,4 @@
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { db } from '../db.js';
 import { EventRule } from '../types/Database.js';
 import { isValidLevelLimit, logger } from '../utils.js';

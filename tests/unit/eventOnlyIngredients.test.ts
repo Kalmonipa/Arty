@@ -12,7 +12,7 @@ jest.mock('../../src/api_calls/Actions.js', () => ({
   actionCraft: jest.fn(),
 }));
 
-jest.mock('../../src/wishlist/functions.js', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   getOpenWishlistRequests: jest.fn(),
   claimWishlistRequest: jest.fn(async () => true),
   markAsFulfilled: jest.fn(async () => true),
@@ -22,12 +22,12 @@ jest.mock('../../src/wishlist/functions.js', () => ({
 import * as fs from 'node:fs/promises';
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { actionCraft } from '../../src/api_calls/Actions.js';
-import { getOpenWishlistRequests } from '../../src/wishlist/functions.js';
-import { clearEventContentCache } from '../../src/events/eventContent.js';
+import { getOpenWishlistRequests } from '../../src/wishlist/wishlist.utils.js';
+import { clearEventContentCache } from '../../src/events/events.cache.js';
 import { CraftObjective } from '../../src/core/CraftObjective.js';
 import { GatherObjective } from '../../src/core/GatherObjective.js';
-import { IdentifyValidWishlistRequestsObjective } from '../../src/wishlist/identifyValidWishlistRequests.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { IdentifyValidWishlistRequestsObjective } from '../../src/wishlist/identifyValidWishlistRequests.objective.js';
+import { Character } from '../../src/character/character.js';
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import {

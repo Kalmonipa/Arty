@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { BankCache } from '../../src/core/BankCache.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { SimpleItemSchema } from '../../src/types/types.js';
 
 const characterWithBank = (items: SimpleItemSchema[] | undefined): Character =>

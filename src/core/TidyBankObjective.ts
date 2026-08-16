@@ -6,7 +6,7 @@ import {
 import { Role } from '../types/CharacterData.js';
 import { CraftSkill, ItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';

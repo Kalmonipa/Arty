@@ -19,7 +19,7 @@ import {
   isGatheringSkill,
   logger,
 } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
@@ -37,8 +37,8 @@ import {
   doMonsterTask,
   doItemTask,
   shuffle,
-} from './idleUtils.js';
-import { AcquisitionMethod } from '../wishlist/types.js';
+} from './idle.utils.js';
+import { AcquisitionMethod } from '../wishlist/wishlist.types.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';
 import {

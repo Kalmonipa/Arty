@@ -8,7 +8,7 @@ jest.mock('../../src/api_calls/Items.js', () => ({
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { calculateBestCraftingItem } from '../../src/core/TrainCraftingSkillObjective.js';
 import { BankCache } from '../../src/core/BankCache.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { ItemSchema } from '../../src/types/types.js';
 
 const mobDrop = (code: string): ItemSchema =>

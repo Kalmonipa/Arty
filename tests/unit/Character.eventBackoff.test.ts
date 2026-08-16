@@ -25,7 +25,7 @@ jest.mock('../../src/api_calls/Bank.js', () => ({
     size: 50,
   })),
 }));
-jest.mock('../../src/events/apiCalls.js', () => ({
+jest.mock('../../src/events/events.apiCalls.js', () => ({
   getActiveEvents: jest.fn(),
 }));
 jest.mock('../../src/api_calls/Resources.js', () => ({
@@ -40,7 +40,7 @@ jest.mock('../../src/api_calls/NPC.js', () => ({
   getNpc: jest.fn(),
 }));
 
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import * as fs from 'node:fs/promises';
 
 const mockWriteFile = fs.writeFile as jest.MockedFunction<typeof fs.writeFile>;

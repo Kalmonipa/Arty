@@ -5,7 +5,7 @@ jest.mock('../../src/fightBosses/bossfightPreRequisite', () => ({
 }));
 
 import { simulateBossFight } from '../../src/fightBosses/bossfightPreRequisite.js';
-import { FightBossLeaderObjective } from '../../src/fightBosses/fightBossLeaderObjective.js';
+import { FightBossLeaderObjective } from '../../src/fightBosses/bossFightLeader.objective.js';
 import { ObjectiveFailed } from '../../src/types/ObjectiveData.js';
 import { logger } from '../../src/utils.js';
 

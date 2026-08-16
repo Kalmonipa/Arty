@@ -1,4 +1,4 @@
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { Objective } from './Objective.js';
 import { ObjectiveResult } from '../types/ObjectiveData.js';
 

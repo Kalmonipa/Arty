@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { ObjectiveFailed } from '../../src/types/ObjectiveData.js';
-import { Character } from '../../src/character/CharacterClass.js';
+import { Character } from '../../src/character/character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import {

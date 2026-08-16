@@ -27,7 +27,7 @@ jest.mock('../../src/api_calls/Resources', () => ({
   getResourceNodesDropping: jest.fn(async () => []),
 }));
 
-jest.mock('../../src/wishlist/functions', () => ({
+jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   addToWishlist: jest.fn(async () => 1),
   findOpenWishlistRequest: jest.fn(async () => undefined),
   getWishlistRequestsForJob: jest.fn(async () => []),
@@ -35,7 +35,7 @@ jest.mock('../../src/wishlist/functions', () => ({
 
 // Import the mocked functions
 import { getAllItemInformation } from '../../src/api_calls/Items.js';
-import { getWishlistRequestsForJob } from '../../src/wishlist/functions.js';
+import { getWishlistRequestsForJob } from '../../src/wishlist/wishlist.utils.js';
 import {
   Alchemy,
   Cooking,

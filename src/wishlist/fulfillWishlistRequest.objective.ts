@@ -1,11 +1,11 @@
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { Objective } from '../core/Objective.js';
 import {
   claimWishlistRequest,
   markAsFulfilled,
   markAsNotExecuting,
-} from './functions.js';
-import { WishlistRow } from './types.js';
+} from './wishlist.utils.js';
+import { WishlistRow } from './wishlist.types.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

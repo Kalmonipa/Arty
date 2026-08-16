@@ -10,11 +10,11 @@ import {
   MonsterSchema,
   NPCItemSchema,
 } from '../types/types.js';
-import { isEventContent } from '../events/eventContent.js';
+import { isEventContent } from '../events/events.cache.js';
 import { getResourceNodesDropping } from '../api_calls/Resources.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { BankCache } from './BankCache.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';

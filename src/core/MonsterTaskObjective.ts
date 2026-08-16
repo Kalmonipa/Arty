@@ -1,7 +1,7 @@
 import { estimateFightCooldown, logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { DepositObjective } from './DepositObjective.js';
-import { FightSimulator } from '../fights/FightSimulator.js';
+import { FightSimulator } from '../fights/fight.simulator.js';
 import { Objective } from './Objective.js';
 import {
   FIGHTS_PER_YIELD_CHECK,

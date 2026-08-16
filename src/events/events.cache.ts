@@ -5,7 +5,7 @@ import { getResourceNodesDropping } from '../api_calls/Resources.js';
 import { ApiError } from '../core/Error.js';
 import { EventSchema, MapContentType } from '../types/types.js';
 import { logger } from '../utils.js';
-import type { Character } from '../character/CharacterClass.js';
+import type { Character } from '../character/character.js';
 
 /**
  * Path to the game state file containing events, written by the

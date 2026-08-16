@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
 

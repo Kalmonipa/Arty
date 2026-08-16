@@ -1,7 +1,7 @@
 import { fightSimulator } from '../api_calls/Actions.js';
 import { FakeCharacterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
-import { Character } from '../character/CharacterClass.js';
+import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {

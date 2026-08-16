@@ -4,7 +4,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
   getMonsterInformation: jest.fn(),
 }));
 
-jest.mock('../../src/character/ApiCalls', () => ({
+jest.mock('../../src/character/character.apiCalls.ts', () => ({
   getMyCharacters: jest.fn(),
 }));
 
@@ -13,10 +13,10 @@ jest.mock('../../src/api_calls/Account', () => ({
 }));
 
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
-import { getMyCharacters } from '../../src/character/ApiCalls.js';
+import { getMyCharacters } from '../../src/character/character.apiCalls.js';
 import { requestLoadout } from '../../src/api_calls/Account.js';
 import { simulateBossFight } from '../../src/fightBosses/bossfightPreRequisite.js';
-import { FightSimulator } from '../../src/fights/FightSimulator.js';
+import { FightSimulator } from '../../src/fights/fight.simulator.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,
