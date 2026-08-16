@@ -24,6 +24,9 @@ import { Zone, ZoneId } from '../../src/core/navigation/zones.js';
 function makeGraph(
   zoneAssignments: Record<number, ZoneId>,
   edges: { from: ZoneId; to: ZoneId; transitionPoint: MapSchema }[] = [],
+  // Costing a journey in cooldown seconds needs tile coordinates, so any map a
+  // test walks from or to has to be resolvable by id
+  knownMaps: MapSchema[] = [],
 ): NavigationGraph {
   const zoneOfMapId = new Map<number, ZoneId>();
   const zones = new Map<ZoneId, Zone>();
@@ -48,7 +51,11 @@ function makeGraph(
     });
     edgeMap.set(e.from, list);
   }
-  return { zoneOfMapId, zones, edges: edgeMap };
+  const mapById = new Map<number, MapSchema>();
+  for (const e of edges)
+    mapById.set(e.transitionPoint.map_id, e.transitionPoint);
+  for (const m of knownMaps) mapById.set(m.map_id, m);
+  return { zoneOfMapId, zones, edges: edgeMap, mapById };
 }
 
 // Mock the API calls
@@ -1539,6 +1546,18 @@ describe('Character.move()', () => {
   });
 
   describe('Teleport potion instead of the boat', () => {
+    // The mainland tile the recall potion lands on, and where the boat arrives
+    const mainlandLanding: MapSchema = {
+      map_id: 1093,
+      name: 'Mainland Shore',
+      skin: 's',
+      x: 2,
+      y: 16,
+      layer: 'overworld',
+      access: { type: 'standard', conditions: [] },
+      interactions: {},
+    };
+
     // Lands on map 1093, a mainland tile in the same zone the boat reaches
     const recallPotion = {
       code: 'recall_potion',
@@ -1619,11 +1638,6 @@ describe('Character.move()', () => {
       });
       character.useItem = useItemSpy as typeof character.useItem;
 
-      character.navigationGraph = makeGraph(
-        { 91: 0, 1093: 0, 700: 0, 1336: 1 },
-        [{ from: 1, to: 0, transitionPoint: islandDock }],
-      );
-
       const destination: MapSchema = {
         map_id: 700,
         name: 'Mainland Town',
@@ -1634,6 +1648,12 @@ describe('Character.move()', () => {
         access: { type: 'standard', conditions: [] },
         interactions: {},
       };
+
+      character.navigationGraph = makeGraph(
+        { 91: 0, 1093: 0, 700: 0, 1336: 1 },
+        [{ from: 1, to: 0, transitionPoint: islandDock }],
+        [spawnMap, destination, islandDock, mainlandLanding],
+      );
 
       mockActionMove.mockResolvedValue({
         data: {
@@ -1719,8 +1739,8 @@ describe('Character.move()', () => {
       expect(mockActionTransition).toHaveBeenCalledTimes(1);
     });
 
-    it('does not recall when the transition does not lead to the mainland', async () => {
-      // Mainland (zone 0) -> island (zone 1): potion held but must not be used.
+    it('does not drink a potion that leaves the journey no shorter', async () => {
+      // The potion lands where the character already stands, so it buys nothing
       mockCharacter = {
         ...mockCharacterData,
         map_id: 91,
@@ -1755,9 +1775,19 @@ describe('Character.move()', () => {
           },
         },
       };
+      character.consumablesMap = {
+        heal: [],
+        teleport: [
+          {
+            ...(recallPotion as object),
+            effects: [{ code: 'teleport', value: 91, description: '' }],
+          },
+        ] as never,
+      };
       character.navigationGraph = makeGraph(
         { 91: 0, 1093: 0, 1336: 1, 1500: 1 },
         [{ from: 0, to: 1, transitionPoint: mainlandDock }],
+        [spawnMap, mainlandDock],
       );
 
       const destination: MapSchema = {
@@ -1838,7 +1868,43 @@ describe('Character.move() teleport potions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     character = new Character({ ...mockCharacterData });
-    character.navigationGraph = makeGraph({ 91: 0, 300: 0, 200: 2, 715: 2 });
+    character.navigationGraph = makeGraph(
+      { 91: 0, 300: 0, 200: 2, 715: 2 },
+      [],
+      [
+        {
+          map_id: 91,
+          name: 'Start',
+          skin: 's',
+          x: 0,
+          y: 0,
+          layer: 'overworld',
+          access: { type: 'standard', conditions: [] },
+          interactions: {},
+        },
+        {
+          map_id: 300,
+          name: 'Bank',
+          skin: 's',
+          x: 1,
+          y: 1,
+          layer: 'overworld',
+          access: { type: 'standard', conditions: [] },
+          interactions: {},
+        },
+        {
+          map_id: 715,
+          name: 'Grove',
+          skin: 's',
+          x: 21,
+          y: 5,
+          layer: 'overworld',
+          access: { type: 'standard', conditions: [] },
+          interactions: {},
+        },
+        destination,
+      ] as MapSchema[],
+    );
     character.consumablesMap = { heal: [], teleport: [enchantedPotion] };
     character.data.inventory[0] = {
       slot: 1,
@@ -1883,6 +1949,44 @@ describe('Character.move() teleport potions', () => {
     expect(mockActionUse).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ code: 'enchanted_potion', quantity: 1 }),
+    );
+  });
+
+  it('drinks a potion that shortens a long walk inside one zone', async () => {
+    // No transition is needed either way, so hop counting saw nothing to do
+    const farSide: MapSchema = {
+      map_id: 400,
+      name: 'Far Side',
+      skin: 's',
+      x: 20,
+      y: 20,
+      layer: 'overworld',
+      access: { type: 'standard', conditions: [] },
+      interactions: {},
+    };
+    const nextDoor: MapSchema = { ...farSide, map_id: 715, x: 19, y: 20 };
+
+    character.navigationGraph = makeGraph({ 91: 0, 400: 0, 715: 0 }, [], [
+      {
+        map_id: 91,
+        name: 'Start',
+        skin: 's',
+        x: 0,
+        y: 0,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      },
+      farSide,
+      nextDoor,
+    ] as MapSchema[]);
+
+    await character.move(farSide);
+
+    // 40 tiles of walking (200s) against 3s for the potion plus one tile
+    expect(mockActionUse).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ code: 'enchanted_potion' }),
     );
   });
 

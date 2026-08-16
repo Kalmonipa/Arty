@@ -96,6 +96,15 @@ export const MinFood = 15;
 export const BankQuantityCacheTtlMs = 30 * 1000;
 
 /**
+ * Movement and transition cooldowns, per the game docs:
+ * https://docs.artifactsmmo.com/concepts/maps_and_movement/#move
+ */
+export const MoveSecondsPerTile = 5;
+export const TransitionSeconds = 5;
+/** Cooldown for drinking a potion */
+export const UseItemSeconds = 3;
+
+/**
  * How long a character waits before trying to expand a full bank again. The
  * gold for an expansion has to be earned, so a bank that was full a moment ago
  * still is; anything shorter just spends API budget confirming it.

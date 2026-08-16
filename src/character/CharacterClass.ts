@@ -2778,9 +2778,15 @@ export class Character {
       ? new Set<number>()
       : await this.computeUnsatisfiableTransitions();
 
-    if (!sameZone) {
-      // Drink before pathfinding, so the route below is planned from wherever
-      // the potion drops us rather than from where we started.
+    // Drink before pathfinding, so the route below is planned from wherever the
+    // potion drops us rather than from where we started. Worth doing even for a
+    // same-zone move: a potion landing next to the destination can save a long
+    // walk that involves no transition at all. There the candidates are limited
+    // to potions landing in this same zone, which keeps gate satisfiability —
+    // and its bank read — out of a journey that crosses no gates.
+    if (sameZone) {
+      await this.tryTeleportTowards(destination, new Set(), targetZone);
+    } else {
       await this.tryTeleportTowards(destination, unsatisfiableTransitionIds);
       sameZone = inTargetZone();
     }
@@ -2902,12 +2908,16 @@ export class Character {
   private async tryTeleportTowards(
     destination: MapSchema,
     excludedTransitionIds: Set<number>,
+    restrictToZone?: number,
   ): Promise<void> {
     const characterLevel = this.getCharacterLevel(this.data);
     const held = buildTeleportTable(this.consumablesMap?.teleport ?? []).filter(
       (potion) =>
         potion.level <= characterLevel &&
         !this.unusableTeleportPotions.has(potion.code) &&
+        (restrictToZone === undefined ||
+          this.navigationGraph.zoneOfMapId.get(potion.mapId) ===
+            restrictToZone) &&
         this.checkQuantityOfItemInInv(potion.code) > 0,
     );
 

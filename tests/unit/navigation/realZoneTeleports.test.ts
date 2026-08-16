@@ -6,6 +6,7 @@ import {
 } from '../../../src/core/navigation/teleports.js';
 import { buildNavigationGraph } from '../../../src/core/navigation/graph.js';
 import { buildTransitionPath } from '../../../src/core/navigation/pathfinding.js';
+import { journeySeconds } from '../../../src/core/navigation/teleports.js';
 import { ItemSchema, MapSchema } from '../../../src/types/types.js';
 
 // The real game data, so these cases track the actual world rather than a
@@ -96,14 +97,27 @@ describe('choosing a potion for each zone, standing at spawn', () => {
     expect(chosen?.code).toBe('lava_underground_potion');
   });
 
-  it('walks to somewhere already in the spawn zone', () => {
+  it('drinks a potion even for a destination in its own zone, when that is quicker', () => {
     // The standard-access part of the Enchanted Forest shares spawn's zone, so
-    // there is nothing for a potion to save
+    // no transition is needed — but it is thirteen tiles away, and the
+    // enchanted potion lands next door for three seconds plus one transition.
+    // Counting transitions rather than seconds could never see this.
     const walkable = mapById(718);
     expect(graph.zoneOfMapId.get(718)).toBe(graph.zoneOfMapId.get(SPAWN));
+    expect(journeySeconds(SPAWN, walkable, graph)).toBe(65);
+
+    const chosen = chooseTeleportPotion(SPAWN, walkable, graph, allPotions);
+
+    expect(chosen?.code).toBe('enchanted_potion');
+    expect(journeySeconds(chosen!.mapId, walkable, graph)).toBe(15);
+  });
+
+  it('leaves a potion alone when walking is already quicker', () => {
+    // Spawn to the forest bank is twenty tiles; no potion lands nearer
+    const bank = mapById(955);
 
     expect(
-      chooseTeleportPotion(SPAWN, walkable, graph, allPotions),
+      chooseTeleportPotion(SPAWN, bank, graph, [potion('recall_potion')]),
     ).toBeUndefined();
   });
 });
@@ -165,5 +179,67 @@ describe('when the character cannot pay its way', () => {
     expect(
       chooseTeleportPotion(SPAWN, destination, graph, allPotions, gated),
     ).toBeUndefined();
+  });
+});
+
+/**
+ * The everyday case: a character mining gold at map 83 (underground) is sent to
+ * the item task master at map 946 (overworld) to hand in a gather task.
+ *
+ * Movement costs 5s per tile and using a potion costs 3s, both confirmed
+ * against live cooldowns. The routes available are:
+ *
+ *   walk only            1 tile to the transition + 17 tiles the far side  = 90s + transition
+ *   recall_potion        3s + 17 tiles from spawn (0,0)                    = 88s
+ *   forest_bank_potion   3s + 3 tiles from the forest bank (7,13)          = 18s
+ */
+describe('mining gold at map 83, handing in at the task master on map 946', () => {
+  const MOVE_SECONDS_PER_TILE = 5;
+  const POTION_SECONDS = 3;
+
+  const tilesBetween = (a: MapSchema, b: MapSchema) =>
+    Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+  const goldRocks = mapById(83);
+  const taskMaster = mapById(946);
+
+  it('leaves the character three tiles from the task master', () => {
+    const chosen = chooseTeleportPotion(
+      goldRocks.map_id,
+      taskMaster,
+      graph,
+      allPotions,
+    );
+
+    expect(chosen?.code).toBe('forest_bank_potion');
+
+    const walkAfter = tilesBetween(mapById(chosen!.mapId), taskMaster);
+    expect(walkAfter).toBe(3);
+    expect(POTION_SECONDS + walkAfter * MOVE_SECONDS_PER_TILE).toBe(18);
+  });
+
+  it('picks the potion that lands nearest, not merely one in the right zone', () => {
+    // recall_potion and forest_bank_potion both land in the task master's zone,
+    // so hop count alone cannot separate them — but recall leaves a 17 tile walk
+    const recallWalk = tilesBetween(
+      mapById(potion('recall_potion').mapId),
+      taskMaster,
+    );
+    const bankWalk = tilesBetween(
+      mapById(potion('forest_bank_potion').mapId),
+      taskMaster,
+    );
+
+    expect(recallWalk).toBe(17);
+    expect(bankWalk).toBe(3);
+
+    const chosen = chooseTeleportPotion(
+      goldRocks.map_id,
+      taskMaster,
+      graph,
+      allPotions,
+    );
+
+    expect(tilesBetween(mapById(chosen!.mapId), taskMaster)).toBe(bankWalk);
   });
 });

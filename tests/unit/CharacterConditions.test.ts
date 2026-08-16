@@ -170,7 +170,12 @@ describe('Character.computeUnsatisfiableTransitions', () => {
       0,
       points.map((p) => ({ fromZone: 0, toZone: 1, transitionPoint: p })),
     );
-    return { zoneOfMapId: new Map(), zones: new Map(), edges };
+    return {
+      zoneOfMapId: new Map(),
+      zones: new Map(),
+      edges,
+      mapById: new Map(),
+    };
   }
 
   beforeEach(() => {
@@ -241,7 +246,12 @@ describe('Character.computeUnacquirableTransitions', () => {
       0,
       points.map((p) => ({ fromZone: 0, toZone: 1, transitionPoint: p })),
     );
-    return { zoneOfMapId: new Map(), zones: new Map(), edges };
+    return {
+      zoneOfMapId: new Map(),
+      zones: new Map(),
+      edges,
+      mapById: new Map(),
+    };
   }
 
   beforeEach(() => {

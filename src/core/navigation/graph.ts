@@ -12,6 +12,8 @@ export interface NavigationGraph {
   zones: Map<ZoneId, Zone>;
   /** Outgoing transition edges keyed by source zone. */
   edges: Map<ZoneId, TransitionEdge[]>;
+  /** Every map by id, so a journey can be costed from map ids alone. */
+  mapById: Map<number, MapSchema>;
 }
 
 export function buildNavigationGraph(allMaps: MapSchema[]): NavigationGraph {
@@ -35,7 +37,10 @@ export function buildNavigationGraph(allMaps: MapSchema[]): NavigationGraph {
     edges.set(fromZone, list);
   }
 
-  return { zoneOfMapId, zones, edges };
+  const mapById = new Map<number, MapSchema>();
+  for (const map of allMaps) mapById.set(map.map_id, map);
+
+  return { zoneOfMapId, zones, edges, mapById };
 }
 
 let cachedGraph: NavigationGraph | null = null;
