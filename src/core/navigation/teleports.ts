@@ -4,6 +4,7 @@ import { NavigationGraph } from './graph.js';
 import { buildTransitionPath } from './pathfinding.js';
 import {
   MoveSecondsPerTile,
+  TeleportMinimumSavingSeconds,
   TransitionSeconds,
   UseItemSeconds,
 } from '../../constants.js';
@@ -38,14 +39,9 @@ export function buildTeleportTable(
 
 /**
  * @description The held potion that gets the character to the destination
- * soonest, or undefined when walking there is no slower.
- *
- * Everything is costed in cooldown seconds, because that is what the character
- * actually spends. Counting zone transitions instead cannot separate two
- * potions that land in the same zone, which is the common case — a character
- * mining gold underground and heading for the task master would take a recall
- * potion and then walk seventeen tiles, when a forest bank potion lands three
- * tiles away.
+ * soonest, or undefined when walking there is no slower. It adds a 60 second buffer
+ * to the potion use time because we don't want to burn through potions to save
+ * minimal time
  *
  * `excludedTransitionIds` must be the same set move() gives the pathfinder —
  * gates the character cannot pass. Judging the walk without it flatters routes
@@ -68,7 +64,7 @@ export function chooseTeleportPotion(
   if (baseline === 0) return undefined;
 
   let best: TeleportPotion | undefined;
-  let bestSeconds = baseline;
+  let bestSeconds: number | null = null;
 
   for (const potion of held) {
     const remaining = costFrom(potion.mapId);
@@ -81,7 +77,15 @@ export function chooseTeleportPotion(
     }
   }
 
-  return best;
+  if (best === undefined) return undefined;
+
+  // Nowhere to walk to: any potion that reaches is worth it whatever it saves,
+  // since the alternative is not getting there at all.
+  if (baseline === null) return best;
+
+  return baseline - bestSeconds > TeleportMinimumSavingSeconds
+    ? best
+    : undefined;
 }
 
 const tilesBetween = (

@@ -1611,12 +1611,25 @@ describe('Character.move()', () => {
       },
     };
 
+    // Inland on the island, twelve tiles from the dock. Starting on the dock
+    // itself would leave the potion nothing to save.
+    const islandInterior: MapSchema = {
+      map_id: 1337,
+      name: 'Island Interior',
+      skin: 's',
+      x: -10,
+      y: 25,
+      layer: 'overworld',
+      access: { type: 'standard', conditions: [] },
+      interactions: {},
+    };
+
     it('uses a recall potion to reach the mainland instead of the boat', async () => {
       mockCharacter = {
         ...mockCharacterData,
-        map_id: 1336,
-        x: -2,
-        y: 21,
+        map_id: 1337,
+        x: -10,
+        y: 25,
         layer: 'overworld',
       };
       character = new Character(mockCharacter);
@@ -1650,9 +1663,9 @@ describe('Character.move()', () => {
       };
 
       character.navigationGraph = makeGraph(
-        { 91: 0, 1093: 0, 700: 0, 1336: 1 },
+        { 91: 0, 1093: 0, 700: 0, 1336: 1, 1337: 1 },
         [{ from: 1, to: 0, transitionPoint: islandDock }],
-        [spawnMap, destination, islandDock, mainlandLanding],
+        [spawnMap, destination, islandDock, mainlandLanding, islandInterior],
       );
 
       mockActionMove.mockResolvedValue({
