@@ -3690,8 +3690,6 @@ export class Character {
    * @description Makes sure the character leaves a bank carrying teleport potions.
    */
   async topUpTeleportPotions(): Promise<void> {
-    // Without the map snapshot there is no way to tell a bank tile from any
-    // other, and guessing wrong would withdraw potions in the middle of nowhere
     if (this.toppingUpTeleportPotions || !this.allMaps) return;
 
     const onBank = this.findMaps({ content_type: 'bank' }).some(

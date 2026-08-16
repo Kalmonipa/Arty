@@ -37,7 +37,8 @@
     "run-local": "tsx scripts/run-local-db.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "update-test-fixtures": "tsx scripts/update-test-fixtures.ts"
   },
   "dependencies": {
     "@datalust/winston-seq": "^3.0.1",

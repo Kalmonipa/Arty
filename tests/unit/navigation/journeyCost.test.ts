@@ -1,11 +1,9 @@
-import * as fs from 'fs';
 import { journeySeconds } from '../../../src/core/navigation/teleports.js';
 import { buildNavigationGraph } from '../../../src/core/navigation/graph.js';
 import { MapSchema } from '../../../src/types/types.js';
+import { loadMaps } from '../../fixtures/gameData.js';
 
-const maps: MapSchema[] = JSON.parse(
-  fs.readFileSync('data/maps-data.json', 'utf-8'),
-);
+const maps = loadMaps();
 const graph = buildNavigationGraph(maps);
 const byId = (id: number) => maps.find((m) => m.map_id === id)!;
 

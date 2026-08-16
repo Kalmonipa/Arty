@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import {
   buildTeleportTable,
   chooseTeleportPotion,
@@ -8,15 +7,12 @@ import { buildNavigationGraph } from '../../../src/core/navigation/graph.js';
 import { buildTransitionPath } from '../../../src/core/navigation/pathfinding.js';
 import { journeySeconds } from '../../../src/core/navigation/teleports.js';
 import { ItemSchema, MapSchema } from '../../../src/types/types.js';
+import { loadMaps, loadConsumables } from '../../fixtures/gameData.js';
 
 // The real game data, so these cases track the actual world rather than a
 // hand-built graph that agrees with whatever the code already does.
-const maps: MapSchema[] = JSON.parse(
-  fs.readFileSync('data/maps-data.json', 'utf-8'),
-);
-const items: ItemSchema[] = JSON.parse(
-  fs.readFileSync('data/items-data.json', 'utf-8'),
-);
+const maps = loadMaps();
+const items = loadConsumables();
 
 const graph = buildNavigationGraph(maps);
 const mapById = (id: number): MapSchema =>
