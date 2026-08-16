@@ -95,5 +95,17 @@ export const MinFood = 15;
  */
 export const BankQuantityCacheTtlMs = 30 * 1000;
 
+/**
+ * How long a character waits before trying to expand a full bank again. The
+ * gold for an expansion has to be earned, so a bank that was full a moment ago
+ * still is; anything shorter just spends API budget confirming it.
+ */
+export const BankFullRetryMs = 10 * 60 * 1000;
+
+/**
+ * How many of each teleport potion a character carries
+ */
+export const TeleportPotionStock = 1;
+
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 export const ApiToken = getEnv('API_TOKEN');

@@ -5,6 +5,8 @@ import {
   MapLayer,
   MapAccessType,
 } from '../../../src/types/types.js';
+import { jest } from '@jest/globals';
+import { logger } from '../../../src/utils.js';
 
 function makeMap(
   map_id: number,
@@ -90,5 +92,31 @@ describe('buildTransitionPath', () => {
     const graph = buildNavigationGraph(maps);
     const target = makeMap(3, 0, 0, 'underground');
     expect(buildTransitionPath(999, target, graph)).toBeNull();
+  });
+});
+
+describe('buildTransitionPath logging', () => {
+  const isolated = [
+    makeMap(90, 0, 0, 'overworld'),
+    makeMap(91, 50, 0, 'overworld'),
+  ];
+  const isolatedGraph = buildNavigationGraph(isolated);
+
+  beforeEach(() => {
+    (logger.error as jest.Mock).mockClear();
+  });
+
+  it('logs when no route exists', () => {
+    expect(buildTransitionPath(90, isolated[1], isolatedGraph)).toBeNull();
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it('stays silent when asked to, so speculative lookups do not read as errors', () => {
+    expect(
+      buildTransitionPath(90, isolated[1], isolatedGraph, new Set(), {
+        quiet: true,
+      }),
+    ).toBeNull();
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

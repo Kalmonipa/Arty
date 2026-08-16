@@ -9,6 +9,10 @@ import {
   purchaseBankExpansion,
 } from '../api_calls/Bank.js';
 import { ObjectiveResult } from '../types/ObjectiveData.js';
+import {
+  cacheBankSlotsUsed,
+  readCachedBankSlotsUsed,
+} from './bankQuantityCache.js';
 
 export class ExpandBankObjective extends Objective {
   constructor(character: Character) {
@@ -30,9 +34,8 @@ export class ExpandBankObjective extends Objective {
     const maxBankFullness = 90;
     const targetPercentageLeftoverCash = 25;
 
-    const currentBankFullness = await getBankItems();
-    if (currentBankFullness instanceof ApiError) {
-      await this.character.handleErrors(currentBankFullness);
+    const slotsUsed = await this.readSlotsUsed();
+    if (slotsUsed === undefined) {
       return { complete: true, success: false, reason: 'failed' };
     }
 
@@ -42,12 +45,18 @@ export class ExpandBankObjective extends Objective {
       return { complete: true, success: false, reason: 'failed' };
     }
 
-    // Check if the bank is >90% full
-    if (
-      Math.floor(bankDetails.data.slots / currentBankFullness.total) * 100 <
-      maxBankFullness
-    ) {
-      logger.debug(`Bank is less than 90% full so no need to upgrade`);
+    if (bankDetails.data.slots <= 0) {
+      logger.warn(
+        `Bank reports ${bankDetails.data.slots} slots; not upgrading`,
+      );
+      return { complete: true, success: true, reason: 'complete' };
+    }
+
+    const fullnessPercent = (slotsUsed / bankDetails.data.slots) * 100;
+    if (fullnessPercent < maxBankFullness) {
+      logger.debug(
+        `Bank is ${fullnessPercent.toFixed(0)}% full (${slotsUsed}/${bankDetails.data.slots}) so no need to upgrade`,
+      );
       // Returning true because technically the job completed
       return { complete: true, success: true, reason: 'complete' };
     }
@@ -92,5 +101,26 @@ export class ExpandBankObjective extends Objective {
     }
 
     return { complete: true, success: true, reason: 'complete' };
+  }
+
+  /**
+   * @description How many bank slots are occupied, or undefined if the bank
+   * could not be read. Asks for a single item because only the `total` is
+   * wanted, and memoises it: a full bank calls this on every failed deposit.
+   */
+  private async readSlotsUsed(): Promise<number | undefined> {
+    const cached = readCachedBankSlotsUsed();
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const response = await getBankItems(undefined, 1, 1);
+    if (response instanceof ApiError) {
+      await this.character.handleErrors(response);
+      return undefined;
+    }
+
+    cacheBankSlotsUsed(response.total);
+    return response.total;
   }
 }

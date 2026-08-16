@@ -62,6 +62,23 @@ class SimpleMockCharacter {
     return true;
   });
 
+  consumablesMap: { heal: unknown[]; teleport: unknown[] } = {
+    heal: [],
+    teleport: [],
+  };
+
+  getCharacterLevel = jest.fn((char: { level: number }): number => char.level);
+
+  bankItems: { [key: string]: number } = {};
+
+  checkQuantityOfItemInBank = jest.fn(
+    async (code: string): Promise<number> => this.bankItems[code] ?? 0,
+  );
+
+  withdrawNow = jest.fn(async (): Promise<ObjectiveResult> => {
+    return ObjectiveCompleted;
+  });
+
   saveJobQueue = jest.fn(async (): Promise<void> => {
     // Mock implementation
   });
@@ -571,5 +588,156 @@ describe('DepositObjective Integration Tests', () => {
       expect(mockCharacter.evaluateClosestMap).toHaveBeenCalled();
       expect(mockCharacter.move).toHaveBeenCalledWith({ x: 200, y: 300 });
     });
+  });
+});
+
+describe('DepositObjective restocking teleport potions', () => {
+  let mockCharacter: SimpleMockCharacter;
+
+  const potion = (code: string, level: number, mapId: number) =>
+    ({
+      code,
+      name: code,
+      level,
+      type: 'consumable',
+      subtype: 'potion',
+      description: '',
+      craft: null,
+      tradeable: true,
+      conditions: [],
+      effects: [{ code: 'teleport', value: mapId, description: '' }],
+    }) as never;
+
+  const depositAll = () =>
+    new DepositObjective(mockCharacter as any, { code: 'all', quantity: 0 });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    mockCharacter = new SimpleMockCharacter();
+    mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
+    // Character is level 10 in the fixture
+    mockCharacter.consumablesMap = {
+      heal: [],
+      teleport: [
+        potion('recall_potion', 5, 271),
+        potion('sandwhisper_potion', 50, 1234),
+      ],
+    };
+    mockCharacter.bankItems = { recall_potion: 40, sandwhisper_potion: 40 };
+
+    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+      mockBankMapData,
+    );
+    (
+      actionDepositItems as jest.MockedFunction<typeof actionDepositItems>
+    ).mockResolvedValue(mockDepositItemResponse);
+  });
+
+  it('withdraws a teleport potion it can use after emptying its bags', async () => {
+    await depositAll().run();
+
+    expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(1, 'recall_potion');
+  });
+
+  it('leaves potions above the character level in the bank', async () => {
+    await depositAll().run();
+
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalledWith(
+      1,
+      'sandwhisper_potion',
+    );
+  });
+
+  it('does not top up beyond the stock it already carries', async () => {
+    // A potion left behind by the deposit (on the keep list, say) means there is
+    // nothing to fetch
+    (
+      actionDepositItems as jest.MockedFunction<typeof actionDepositItems>
+    ).mockResolvedValue({
+      ...mockDepositItemResponse,
+      data: {
+        ...mockDepositItemResponse.data,
+        character: {
+          ...mockCharacterData,
+          inventory: [
+            { slot: 1, code: 'recall_potion', quantity: 1 },
+            ...mockCharacterData.inventory.slice(1),
+          ],
+        },
+      },
+    } as never);
+
+    await depositAll().run();
+
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalledWith(
+      expect.anything(),
+      'recall_potion',
+    );
+  });
+
+  it('does not withdraw a potion the bank does not have', async () => {
+    mockCharacter.bankItems = {};
+
+    await depositAll().run();
+
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+  });
+
+  it('leaves a single-item deposit alone', async () => {
+    mockCharacter.checkQuantityOfItemInInv.mockReturnValue(15);
+
+    await new DepositObjective(mockCharacter as any, {
+      code: 'iron_ore',
+      quantity: 10,
+    }).run();
+
+    expect(mockCharacter.withdrawNow).not.toHaveBeenCalled();
+  });
+});
+
+describe('DepositObjective against a full bank', () => {
+  let mockCharacter: SimpleMockCharacter;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCharacter = new SimpleMockCharacter();
+    mockCharacter.data = JSON.parse(JSON.stringify(mockCharacterData));
+
+    (getMaps as jest.MockedFunction<typeof getMaps>).mockResolvedValue(
+      mockBankMapData,
+    );
+    (
+      actionDepositItems as jest.MockedFunction<typeof actionDepositItems>
+    ).mockResolvedValue(
+      new ApiError({ code: 462, message: 'Your bank is full.' }) as never,
+    );
+  });
+
+  it('gives up instead of hammering a bank that cannot take the items', async () => {
+    // handleErrors answers 462 with false once it is backing off; retrying a
+    // deposit into a still-full bank only spends the action budget
+    mockCharacter.handleErrors.mockResolvedValue(false as never);
+
+    const result = await new DepositObjective(mockCharacter as any, {
+      code: 'all',
+      quantity: 0,
+    }).run();
+
+    expect(result.success).toBe(false);
+    expect(actionDepositItems).toHaveBeenCalledTimes(1);
+  });
+
+  it('tries once more when an expansion just made room', async () => {
+    mockCharacter.handleErrors.mockResolvedValue(true as never);
+
+    await new DepositObjective(mockCharacter as any, {
+      code: 'all',
+      quantity: 0,
+    }).run();
+
+    expect((actionDepositItems as jest.Mock).mock.calls.length).toBeGreaterThan(
+      1,
+    );
   });
 });

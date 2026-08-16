@@ -51,3 +51,36 @@ export function invalidateBankQuantities(codes: string[]): void {
 export function clearBankQuantityCache(): void {
   quantities.clear();
 }
+
+/**
+ * @description A memo of how many bank slots are occupied.
+ *
+ * Separate from the per-item quantities above because it answers a different
+ * question — how full is the bank, not how much of X is in it — and because the
+ * bank-expansion check reads it on a path that a full bank drives hard. Left
+ * uncached it costs a listing per failed deposit, which is what exhausted the
+ * data budget for the whole fleet.
+ */
+let slotsUsed: { count: number; readAt: number } | undefined;
+
+export function readCachedBankSlotsUsed(): number | undefined {
+  if (!slotsUsed) {
+    return undefined;
+  }
+
+  if (Date.now() - slotsUsed.readAt >= BankQuantityCacheTtlMs) {
+    slotsUsed = undefined;
+    return undefined;
+  }
+
+  return slotsUsed.count;
+}
+
+export function cacheBankSlotsUsed(count: number): void {
+  slotsUsed = { count, readAt: Date.now() };
+}
+
+/** Test seam: forget the slot count so each case starts from a clean fetch. */
+export function clearBankSlotCache(): void {
+  slotsUsed = undefined;
+}

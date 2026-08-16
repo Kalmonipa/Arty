@@ -16,6 +16,8 @@ import {
 } from '../types/types.js';
 import { actionDepositGold } from '../api_calls/Bank.js';
 import { ExpandBankObjective } from './BankExpansion.js';
+import { buildTeleportTable } from './navigation/teleports.js';
+import { TeleportPotionStock } from '../constants.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;
@@ -162,7 +164,45 @@ export class DepositObjective extends Objective {
           logger.error('Deposit response missing character data');
         }
       }
+
+      // Emptying the bags takes the teleport potions with everything else, so
+      // the standing stock is pulled back while the character is still stood at
+      // the bank. Only worth doing on the deposit-all path.
+      if (this.target.code === 'all') {
+        await this.restockTeleportPotions();
+      }
+
       return { complete: true, success: true, reason: 'complete' };
+    }
+  }
+
+  /**
+   * @description Tops the character back up to TeleportPotionStock.
+   */
+  private async restockTeleportPotions(): Promise<void> {
+    const characterLevel = this.character.getCharacterLevel(
+      this.character.data,
+    );
+
+    for (const potion of buildTeleportTable(
+      this.character.consumablesMap?.teleport ?? [],
+    )) {
+      if (potion.level > characterLevel) continue;
+
+      const shortfall =
+        TeleportPotionStock -
+        this.character.checkQuantityOfItemInInv(potion.code);
+      if (shortfall <= 0) continue;
+
+      if (
+        (await this.character.checkQuantityOfItemInBank(potion.code)) <
+        shortfall
+      ) {
+        continue;
+      }
+
+      logger.info(`Picking up ${shortfall} ${potion.code} for travelling`);
+      await this.character.withdrawNow(shortfall, potion.code);
     }
   }
 }

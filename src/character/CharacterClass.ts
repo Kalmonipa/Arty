@@ -22,7 +22,6 @@ import {
   ItemSchema,
   ItemSlot,
   MapContentType,
-  MapLayer,
   MapSchema,
   MonsterSchema,
   ResourceResponseSchema,
@@ -111,11 +110,16 @@ import {
 } from '../api_calls/Resources.js';
 import { buildTransitionPath } from '../core/navigation/pathfinding.js';
 import {
+  buildTeleportTable,
+  chooseTeleportPotion,
+} from '../core/navigation/teleports.js';
+import {
   getNavigationGraph,
   NavigationGraph,
 } from '../core/navigation/graph.js';
-import { Fishing, ForestBankPotion, RecallPotion } from '../names.js';
+import { Fishing } from '../names.js';
 import {
+  BankFullRetryMs,
   CharRole,
   DesiredFoodCount,
   MaxEquippedUtilities,
@@ -270,9 +274,12 @@ export class Character {
   // calls (from gather/craft/buy sub-jobs) check this so acquisition can't recurse.
   private acquiringForTransition = false;
 
-  // Cached id of the mainland overworld zone (the zone containing the spawn tile
-  // at 0,0). Used by the recall-potion shortcut. undefined until first resolved.
-  private mainlandZoneId?: number;
+  // Storing unusable potions so we don't try use them every time
+  private unusableTeleportPotions = new Set<string>();
+
+  // When this character last tried to expand a full bank. Expanding needs gold
+  // it must go and earn, so retrying per failed deposit only burns API budget.
+  private lastBankExpansionAttempt = 0;
 
   allCharacterDetails?: CharacterSchema[];
 
@@ -2756,17 +2763,27 @@ export class Character {
       return true;
     }
 
-    // Same-zone moves need no transitions, so skip the (bank-touching) satisfiability scan.
-    const startZone = this.navigationGraph.zoneOfMapId.get(this.data.map_id);
     const targetZone = this.navigationGraph.zoneOfMapId.get(destination.map_id);
-    const sameZone = startZone !== undefined && startZone === targetZone;
+    const inTargetZone = () =>
+      this.navigationGraph.zoneOfMapId.get(this.data.map_id) === targetZone &&
+      targetZone !== undefined;
+    // Same-zone moves need no transitions, so skip the (bank-touching) satisfiability scan.
+    let sameZone = inTargetZone();
 
     // Transitions whose conditions the character cannot currently satisfy — the pathfinder
     // never routes through a gate it can't pass (e.g. a key it doesn't hold). Recomputed
     // after a successful acquisition, since newly-held items make gates passable.
+    // Position-independent, so the teleport check below can share the same scan.
     let unsatisfiableTransitionIds = sameZone
       ? new Set<number>()
       : await this.computeUnsatisfiableTransitions();
+
+    if (!sameZone) {
+      // Drink before pathfinding, so the route below is planned from wherever
+      // the potion drops us rather than from where we started.
+      await this.tryTeleportTowards(destination, unsatisfiableTransitionIds);
+      sameZone = inTargetZone();
+    }
     // Transitions the game reported unreachable (595) during this move.
     const blockedTransitionIds = new Set<number>();
     let attemptedAcquisition = false;
@@ -2877,66 +2894,37 @@ export class Character {
   }
 
   /**
-   * @description The id of the mainland overworld zone — the zone containing the
-   * spawn tile at (0, 0). Resolved once from the navigation graph and cached.
-   * Returns undefined if the spawn tile or its zone can't be found (recall is then
-   * simply skipped). Used to decide when a recall potion is worthwhile.
+   * @description Drinks the held teleport potion that gets closest to the
+   * destination, when one beats walking. Potions the character turns out not to
+   * be able to use (the achievement-gated ones) are remembered and skipped for
+   * the rest of the session rather than retried on every move.
    */
-  private getMainlandZoneId(): number | undefined {
-    if (this.mainlandZoneId !== undefined) return this.mainlandZoneId;
-    if (!this.allMaps) return undefined;
-    const spawn = this.allMaps.find(
-      (m) => m.x === 0 && m.y === 0 && m.layer === MapLayer.overworld,
+  private async tryTeleportTowards(
+    destination: MapSchema,
+    excludedTransitionIds: Set<number>,
+  ): Promise<void> {
+    const characterLevel = this.getCharacterLevel(this.data);
+    const held = buildTeleportTable(this.consumablesMap?.teleport ?? []).filter(
+      (potion) =>
+        potion.level <= characterLevel &&
+        !this.unusableTeleportPotions.has(potion.code) &&
+        this.checkQuantityOfItemInInv(potion.code) > 0,
     );
-    if (!spawn) {
-      logger.warn(
-        'Could not find spawn tile (0,0) overworld; recall shortcut disabled',
-      );
-      return undefined;
-    }
-    this.mainlandZoneId = this.navigationGraph.zoneOfMapId.get(spawn.map_id);
-    return this.mainlandZoneId;
-  }
 
-  /**
-   * @description If a transition is an overworld→overworld hop into the mainland zone
-   * and the character holds a recall (or forest bank) potion, use the potion to teleport
-   * to the mainland instead of taking the boat — saving the trip and its gold cost.
-   * Returns the step result when it handled the step, or null to fall through to the
-   * normal transition (no potion, not a mainland-bound overworld hop, or use failed).
-   */
-  private async tryRecallToMainland(
-    transitionPoint: MapSchema,
-  ): Promise<TransitionStepResult | null> {
-    const transition = transitionPoint.interactions.transition;
-    if (
-      !transition ||
-      transitionPoint.layer !== MapLayer.overworld ||
-      transition.layer !== MapLayer.overworld
-    ) {
-      return null;
-    }
-
-    const mainlandZoneId = this.getMainlandZoneId();
-    const destZoneId = this.navigationGraph.zoneOfMapId.get(transition.map_id);
-    if (mainlandZoneId === undefined || destZoneId !== mainlandZoneId) {
-      return null;
-    }
-
-    const potion =
-      this.checkQuantityOfItemInInv(RecallPotion) > 0
-        ? RecallPotion
-        : this.checkQuantityOfItemInInv(ForestBankPotion) > 0
-          ? ForestBankPotion
-          : null;
-    if (!potion) return null;
-
-    logger.info(
-      `Using ${potion} to recall to the mainland instead of the boat`,
+    const potion = chooseTeleportPotion(
+      this.data.map_id,
+      destination,
+      this.navigationGraph,
+      held,
+      excludedTransitionIds,
     );
-    if (await this.useItem(potion, 1)) return { ok: true };
-    // Use failed — fall through to the normal transition route.
-    return null;
+    if (!potion) return;
+
+    logger.info(`Drinking ${potion.code} to travel to ${destination.name}`);
+    if (!(await this.useItem(potion.code, 1))) {
+      logger.warn(`Could not use ${potion.code}; walking instead`);
+      this.unusableTeleportPotions.add(potion.code);
+    }
   }
 
   /**
@@ -2955,11 +2943,6 @@ export class Character {
       );
       return { ok: false, reroute: false };
     }
-
-    // Shortcut: if this overworld transition leads to the mainland and we hold a
-    // teleport potion, recall instead of taking the (slower, gold-costing) boat.
-    const recallResult = await this.tryRecallToMainland(transitionPoint);
-    if (recallResult) return recallResult;
 
     if (transition.conditions) {
       for (const condition of transition.conditions) {
@@ -3663,6 +3646,30 @@ export class Character {
    * with this so the pathfinder never routes through a gate it can't pass.
    * Transitions without conditions are skipped (the common case).
    */
+  /**
+   * @description Answers a full bank with at most one expansion attempt per
+   * BankFullRetryMs, and reports whether the caller should retry.
+   *
+   * Expanding needs gold the character has to go and earn, so a bank that was
+   * full a second ago is still full now. Attempting it per failed deposit turned
+   * one full bank into an expansion job and a bank listing roughly twice a
+   * second, which exhausted the API budget for every character on the host.
+   * While backing off this returns false so the caller gives up rather than
+   * spending its own budget on a deposit that cannot succeed.
+   */
+  private async tryExpandFullBank(): Promise<boolean> {
+    const sinceLastAttempt = Date.now() - this.lastBankExpansionAttempt;
+    if (sinceLastAttempt < BankFullRetryMs) {
+      logger.warn(
+        `Bank is full and an expansion was tried ${Math.round(sinceLastAttempt / 1000)}s ago; not retrying yet`,
+      );
+      return false;
+    }
+
+    this.lastBankExpansionAttempt = Date.now();
+    return (await this.executeJobNow(new ExpandBankObjective(this))).success;
+  }
+
   async computeUnsatisfiableTransitions(): Promise<Set<number>> {
     const unsatisfiable = new Set<number>();
     for (const edges of this.navigationGraph.edges.values()) {
@@ -3846,9 +3853,8 @@ export class Character {
       case 422: // Invalid payload
         logger.error(`Invalid payload [Code: ${response.error.code}]`);
         return false;
-      case 462:
-        return (await this.executeJobNow(new ExpandBankObjective(this)))
-          .success;
+      case 462: // The bank is full
+        return await this.tryExpandFullBank();
       case 483: // The character does not have enough HP to uneqip this item
         return await this.recoverHealth();
       case 484: // The character cannot equip more than 100 utilities in the same slot.

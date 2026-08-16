@@ -16,27 +16,34 @@ const manhattan = (
  * Returns [] when already in the target's zone, or null when no route exists.
  * Minimises the number of transitions (BFS); ties are broken toward the
  * transition whose landing tile is closest to the target.
+ *
+ * Pass `quiet` when asking speculatively (e.g. "what would the route be if I
+ * teleported first?") — a missing route is an answer there, not a fault.
  */
 export function buildTransitionPath(
   currentMapId: number,
   target: MapSchema,
   graph: NavigationGraph,
   excludedTransitionIds: Set<number> = new Set(),
+  options: { quiet?: boolean } = {},
 ): MapSchema[] | null {
+  const reportFailure = (message: string) => {
+    if (!options.quiet) logger.error(message);
+    return null;
+  };
+
   const startZone = graph.zoneOfMapId.get(currentMapId);
   const targetZone = graph.zoneOfMapId.get(target.map_id);
 
   if (startZone === undefined) {
-    logger.error(
+    return reportFailure(
       `buildTransitionPath: no zone for current map ${currentMapId}`,
     );
-    return null;
   }
   if (targetZone === undefined) {
-    logger.error(
+    return reportFailure(
       `buildTransitionPath: no zone for target ${target.name} (${target.map_id})`,
     );
-    return null;
   }
   if (startZone === targetZone) return [];
 
@@ -67,8 +74,7 @@ export function buildTransitionPath(
     }
   }
 
-  logger.error(
+  return reportFailure(
     `buildTransitionPath: no path to ${target.name} (${target.x}, ${target.y}, ${target.layer})`,
   );
-  return null;
 }

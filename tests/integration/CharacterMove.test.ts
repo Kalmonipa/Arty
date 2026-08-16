@@ -57,6 +57,10 @@ jest.mock('../../src/api_calls/Actions.js', () => ({
   actionTransition: jest.fn(),
 }));
 
+jest.mock('../../src/api_calls/Items.js', () => ({
+  actionUse: jest.fn(),
+}));
+
 jest.mock('../../src/api_calls/Maps.js', () => ({
   getMaps: jest.fn(),
   getMapsById: jest.fn(),
@@ -73,11 +77,13 @@ jest.mock('../../src/api_calls/Bank.js', () => ({
 
 // Import the mocked functions
 import { actionMove, actionTransition } from '../../src/api_calls/Actions.js';
+import { actionUse } from '../../src/api_calls/Items.js';
 
 const mockActionMove = actionMove as jest.MockedFunction<typeof actionMove>;
 const mockActionTransition = actionTransition as jest.MockedFunction<
   typeof actionTransition
 >;
+const mockActionUse = actionUse as jest.MockedFunction<typeof actionUse>;
 
 describe('Character.move()', () => {
   let character: Character;
@@ -1532,7 +1538,21 @@ describe('Character.move()', () => {
     });
   });
 
-  describe('Recall-potion shortcut', () => {
+  describe('Teleport potion instead of the boat', () => {
+    // Lands on map 1093, a mainland tile in the same zone the boat reaches
+    const recallPotion = {
+      code: 'recall_potion',
+      name: 'Recall Potion',
+      level: 5,
+      type: 'consumable',
+      subtype: 'potion',
+      description: '',
+      craft: null,
+      tradeable: true,
+      conditions: [],
+      effects: [{ code: 'teleport', value: 1093, description: '' }],
+    } as never;
+
     const cd = (reason: 'movement' | 'transition') => ({
       remaining_seconds: 0,
       total_seconds: 0,
@@ -1585,6 +1605,7 @@ describe('Character.move()', () => {
       character.checkQuantityOfItemInInv = jest.fn((c) =>
         c === 'recall_potion' ? 1 : 0,
       );
+      character.consumablesMap = { heal: [], teleport: [recallPotion] };
       const useItemSpy = jest.fn(async () => {
         // Teleports to a mainland overworld tile (same zone the boat lands in).
         character.data = {
@@ -1644,6 +1665,7 @@ describe('Character.move()', () => {
       character = new Character(mockCharacter);
       character.allMaps = [spawnMap];
       character.checkQuantityOfItemInInv = jest.fn(() => 0);
+      character.consumablesMap = { heal: [], teleport: [recallPotion] };
       const useItemSpy = jest.fn(async () => true);
       character.useItem = useItemSpy as typeof character.useItem;
 
@@ -1711,6 +1733,7 @@ describe('Character.move()', () => {
       character.checkQuantityOfItemInInv = jest.fn((c) =>
         c === 'recall_potion' ? 1 : 0,
       );
+      character.consumablesMap = { heal: [], teleport: [recallPotion] };
       const useItemSpy = jest.fn(async () => true);
       character.useItem = useItemSpy as typeof character.useItem;
 
@@ -1780,5 +1803,114 @@ describe('Character.move()', () => {
       expect(useItemSpy).not.toHaveBeenCalled();
       expect(mockActionTransition).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('Character.move() teleport potions', () => {
+  let character: Character;
+  const enchantedPotion = {
+    code: 'enchanted_potion',
+    name: 'Enchanted Potion',
+    level: 5,
+    type: 'consumable',
+    subtype: 'potion',
+    description: '',
+    craft: null,
+    tradeable: true,
+    conditions: [],
+    effects: [{ code: 'teleport', value: 715, description: '' }],
+  } as never;
+
+  // Zone 0 holds the character (map 91) and the bank (map 300); zone 2 holds
+  // the destination and the potion's landing tile. No edges, so nothing walks
+  // between them — the potion is the only way across.
+  const destination: MapSchema = {
+    map_id: 200,
+    name: 'Enchanted Forest',
+    skin: 'forest',
+    x: 20,
+    y: 5,
+    layer: 'overworld',
+    access: { type: 'standard', conditions: [] },
+    interactions: {},
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    character = new Character({ ...mockCharacterData });
+    character.navigationGraph = makeGraph({ 91: 0, 300: 0, 200: 2, 715: 2 });
+    character.consumablesMap = { heal: [], teleport: [enchantedPotion] };
+    character.data.inventory[0] = {
+      slot: 1,
+      code: 'enchanted_potion',
+      quantity: 1,
+    } as never;
+
+    mockActionUse.mockImplementation(async () => ({
+      data: {
+        cooldown: {
+          remaining_seconds: 0,
+          total_seconds: 3,
+          started_at: '2025-01-01T00:00:00.000Z',
+          expiration: '2025-01-01T00:00:03.000Z',
+          reason: 'use',
+        },
+        item: enchantedPotion,
+        character: { ...character.data, map_id: 715, x: 15, y: 0 },
+      },
+    })) as never;
+
+    mockActionMove.mockImplementation(async () => ({
+      data: {
+        cooldown: {
+          remaining_seconds: 0,
+          total_seconds: 5,
+          started_at: '2025-01-01T00:00:00.000Z',
+          expiration: '2025-01-01T00:00:05.000Z',
+          reason: 'movement',
+        },
+        destination,
+        path: [],
+        character: { ...character.data, map_id: 200, x: 20, y: 5 },
+      },
+    })) as never;
+  });
+
+  it('drinks a potion to reach a zone it cannot walk to', async () => {
+    const result = await character.move(destination);
+
+    expect(result).toBe(true);
+    expect(mockActionUse).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ code: 'enchanted_potion', quantity: 1 }),
+    );
+  });
+
+  it('walks when it is already in the destination zone', async () => {
+    const nearby: MapSchema = { ...destination, map_id: 300, x: 1, y: 1 };
+
+    await character.move(nearby);
+
+    expect(mockActionUse).not.toHaveBeenCalled();
+  });
+
+  it('ignores a potion it does not hold', async () => {
+    character.data.inventory[0] = { slot: 1, code: '', quantity: 0 } as never;
+
+    await character.move(destination);
+
+    expect(mockActionUse).not.toHaveBeenCalled();
+  });
+
+  it('does not retry a potion whose use failed', async () => {
+    // Stands in for an achievement-gated potion the character cannot drink
+    mockActionUse.mockResolvedValue(
+      new ApiError({ code: 496, message: 'condition not met' }) as never,
+    );
+
+    await character.move(destination);
+    await character.move(destination);
+
+    expect(mockActionUse).toHaveBeenCalledTimes(1);
   });
 });
