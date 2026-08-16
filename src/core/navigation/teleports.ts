@@ -40,17 +40,10 @@ export function buildTeleportTable(
  * @description The held potion that gets the character to the destination
  * soonest, or undefined when walking there is no slower.
  *
- * Everything is costed in cooldown seconds, because that is what the character
- * actually spends. Counting zone transitions instead cannot separate two
- * potions that land in the same zone, which is the common case — a character
- * mining gold underground and heading for the task master would take a recall
- * potion and then walk seventeen tiles, when a forest bank potion lands three
- * tiles away.
- *
  * `excludedTransitionIds` must be the same set move() gives the pathfinder —
- * gates the character cannot pass. Judging the walk without it flatters routes
- * the character cannot actually take (an unaffordable gold cost, say) and so
- * talks itself out of the potion that was the only way through.
+ * gates the character cannot pass. Judging the walk without it could mean
+ * the character tries routes it cannot actually take (an unaffordable gold cost for example) 
+ * and so talks itself out of the potion that was the only way through.
  */
 export function chooseTeleportPotion(
   currentMapId: number,
@@ -93,11 +86,6 @@ const tilesBetween = (
  * @description What a journey costs in cooldown seconds: five per tile walked
  * and five per transition taken, per the game docs. Returns null when no route
  * exists.
- *
- * Distance is Manhattan rather than the game's A* path length. Across the real
- * map those agree everywhere except 22 of the mainland's 343 tiles, where this
- * understates the walk by at most four tiles — close enough to rank routes,
- * which is all this is for.
  */
 export function journeySeconds(
   fromMapId: number,
