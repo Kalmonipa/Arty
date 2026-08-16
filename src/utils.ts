@@ -12,6 +12,7 @@ import {
 import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './core/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
+import { MonsterResistance } from './types/MonsterData.js';
 import { Role, ROLES } from './types/CharacterData.js';
 import { getCharacter } from './character/ApiCalls.js';
 import { CharName, AllCharNames, ApiToken } from './constants.js';
@@ -236,6 +237,23 @@ export function isSkill(value: string): value is CraftSkill | GatheringSkill {
  */
 export function effectValueOf(item: ItemSchema, effect: string): number {
   return item.effects?.find((e) => e.code === effect)?.value ?? 0;
+}
+
+/**
+ * @description How much damage a weapon lands on a mob once its resistances are
+ * applied, summed across every element the weapon attacks with.
+ */
+export function scoreWeaponAgainstResistances(
+  weapon: ItemSchema,
+  resistances: MonsterResistance[],
+): number {
+  return resistances.reduce(
+    (total, resistance) =>
+      total +
+      effectValueOf(weapon, resistance.atkCounterType) *
+        (1 - resistance.value / 100),
+    0,
+  );
 }
 
 /**

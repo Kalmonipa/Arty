@@ -135,6 +135,27 @@ const createMockWeapon = (
   ],
 });
 
+const createMockMultiElementWeapon = (
+  code: string,
+  level: number,
+  attacks: Partial<Record<GearEffects, number>>,
+): ItemSchema => ({
+  code,
+  name: code,
+  level,
+  type: 'weapon',
+  subtype: 'sword',
+  description: '',
+  craft: null,
+  tradeable: true,
+  conditions: [],
+  effects: Object.entries(attacks).map(([effectType, value]) => ({
+    code: effectType,
+    value,
+    description: `${effectType} effect`,
+  })),
+});
+
 const createMockShield = (
   code: string,
   name: string,
@@ -945,6 +966,58 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(result.success).toBe(true);
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
         'fire_sword',
+        'weapon',
+      );
+    });
+
+    it('prefers the weapon that lands the most damage over the least resisted element', async () => {
+      // The lich: air and water are its joint-weakest elements at 18, but a
+      // weapon's headline damage matters more than that six point spread
+      const lich = {
+        data: {
+          ...mockMonsterData.data,
+          res_air: 18,
+          res_water: 18,
+          res_earth: 24,
+          res_fire: 24,
+        } as MonsterSchema,
+      };
+      (
+        getMonsterInformation as jest.MockedFunction<
+          typeof getMonsterInformation
+        >
+      ).mockResolvedValue(lich);
+
+      mockCharacter.data.level = 30;
+      mockCharacter.weaponMap.combat = [
+        // Qualifies on a token attack_air 20 while its real payload lands in
+        // earth, the element the lich resists most
+        createMockMultiElementWeapon('gold_sword', 30, {
+          attack_earth: 60,
+          attack_air: 20,
+        }),
+        createMockMultiElementWeapon('greater_dreadful_staff', 30, {
+          attack_water: 60,
+          attack_earth: 20,
+        }),
+      ];
+      mockCharacter.addItemToInventory('gold_sword', 1);
+      mockCharacter.addItemToInventory('greater_dreadful_staff', 1);
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'lich',
+      );
+
+      await objective.run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'greater_dreadful_staff',
+        'weapon',
+      );
+      expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
+        'gold_sword',
         'weapon',
       );
     });
