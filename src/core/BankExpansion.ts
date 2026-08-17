@@ -8,7 +8,7 @@ import {
   getBankItems,
   purchaseBankExpansion,
 } from '../api_calls/Bank.js';
-import { ObjectiveResult } from '../types/ObjectiveData.js';
+import { ObjectiveFailed, ObjectiveResult } from '../types/ObjectiveData.js';
 import {
   cacheBankSlotsUsed,
   readCachedBankSlotsUsed,
@@ -36,13 +36,13 @@ export class ExpandBankObjective extends Objective {
 
     const slotsUsed = await this.readSlotsUsed();
     if (slotsUsed === undefined) {
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     const bankDetails = await getBankDetails();
     if (bankDetails instanceof ApiError) {
       await this.character.handleErrors(bankDetails);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     if (bankDetails.data.slots <= 0) {
@@ -78,7 +78,7 @@ export class ExpandBankObjective extends Objective {
 
     if (maps.length === 0) {
       logger.error(`Cannot find the bank. This shouldn't happen ??`);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     const contentLocation = this.character.evaluateClosestMap(maps);
@@ -92,13 +92,13 @@ export class ExpandBankObjective extends Objective {
     );
     if (withdrawGold instanceof ApiError) {
       await this.character.handleErrors(withdrawGold);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     const upgradeBank = await purchaseBankExpansion(this.character.data);
     if (upgradeBank instanceof ApiError) {
       await this.character.handleErrors(upgradeBank);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     return { complete: true, success: true, reason: 'complete' };

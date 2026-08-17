@@ -122,7 +122,7 @@ export class CraftObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Craft failed after ${attempt} attempts`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
       } else {
         if (!(await this.checkStatus())) return ObjectiveCancelled;
@@ -132,7 +132,7 @@ export class CraftObjective extends Objective {
             `Item ${itemToCraft.code} has no craft information. Failing`,
           );
           this.character.removeItemFromItemsToKeep(itemToCraft.code);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
 
         /**
@@ -210,7 +210,7 @@ export class CraftObjective extends Objective {
         });
         if (maps.length === 0) {
           logger.error(`Cannot find any maps to craft ${this.target.code}`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
 
         const contentLocation = this.character.evaluateClosestMap(maps);
@@ -282,7 +282,7 @@ export class CraftObjective extends Objective {
             logger.error(
               `Could not reach workshop at x: ${contentLocation.x}, y: ${contentLocation.y} to craft ${this.target.code}`,
             );
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
 
           logger.info(
@@ -299,7 +299,7 @@ export class CraftObjective extends Objective {
 
             if (!shouldRetry || attempt === this.maxRetries) {
               logger.error(`Craft failed after ${attempt} attempts`);
-              return { complete: true, success: false, reason: 'failed' };
+              return ObjectiveFailed;
             }
             break;
           } else {
@@ -332,7 +332,7 @@ export class CraftObjective extends Objective {
       }
     }
 
-    return { complete: true, success: false, reason: 'failed' };
+    return ObjectiveFailed;
   }
 
   /**
@@ -437,7 +437,7 @@ export class CraftObjective extends Objective {
       if (craftingItemInfo instanceof ApiError) {
         await this.character.handleErrors(craftingItemInfo);
         this.character.removeItemFromItemsToKeep(craftingItem.code);
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       logger.debug(
@@ -500,7 +500,7 @@ export class CraftObjective extends Objective {
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
 
           if (!(await this.checkStatus())) return ObjectiveCancelled;
@@ -533,7 +533,7 @@ export class CraftObjective extends Objective {
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
 
           if (!(await this.checkStatus())) return ObjectiveCancelled;
@@ -563,7 +563,7 @@ export class CraftObjective extends Objective {
               continue;
             }
             this.character.removeItemListfromItemsToKeep(craftingItems);
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
 
           if (!(await this.checkStatus())) return ObjectiveCancelled;

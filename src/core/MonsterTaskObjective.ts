@@ -14,6 +14,7 @@ import { TasksCoin } from '../names.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
 
@@ -115,7 +116,7 @@ export class MonsterTaskObjective extends Objective {
     // matches every monster map — so bail rather than fighting something random
     if (!this.character.data.task || this.character.data.task === '') {
       logger.warn(`No monster task to work on`);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     await this.rerollTasksThatCostTooMuch();

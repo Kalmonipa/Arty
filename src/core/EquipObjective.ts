@@ -7,6 +7,7 @@ import { Objective } from './Objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
 
@@ -54,7 +55,7 @@ export class EquipObjective extends Objective {
         logger.warn(
           `Quantity can only be provided for utility slots and must be less than 100`,
         );
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       if (this.character.checkQuantityOfItemInInv(this.itemCode) === 0) {
@@ -65,7 +66,7 @@ export class EquipObjective extends Objective {
           await this.character.withdrawNow(this.quantity || 1, this.itemCode);
         } else {
           logger.warn(`No potions found in bank. Not equipping anything`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
       }
 
@@ -88,7 +89,7 @@ export class EquipObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Equip failed after ${attempt} attempts`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
       } else {
         if (response.data.character) {

@@ -4,6 +4,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import {
   ObjectiveCancelled,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
@@ -46,7 +47,7 @@ export class DeleteItemObjective extends Objective {
       logger.warn(
         `Failed to withdraw ${this.target.quantity - numInInv} ${this.target.code} from the bank`,
       );
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     logger.info(`Deleting ${this.target.quantity} ${this.target.code}`);
@@ -58,13 +59,13 @@ export class DeleteItemObjective extends Objective {
     if (deleteResult instanceof ApiError) {
       logger.info(deleteResult.message);
       await this.character.handleErrors(deleteResult);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     } else {
       if (deleteResult.data.character) {
         this.character.data = deleteResult.data.character;
       } else {
         logger.error('Delete response missing character data');
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       return { complete: true, success: true, reason: 'complete' };

@@ -6,6 +6,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import {
   ObjectiveCancelled,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
@@ -62,7 +63,7 @@ export class DepositObjective extends Objective {
       logger.warn(
         `Found ${numInInv}/${this.target.quantity} ${this.target.code} in inventory. Exiting`,
       );
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     return { complete: true, success: true, reason: 'complete' };
@@ -85,7 +86,7 @@ export class DepositObjective extends Objective {
 
       if (maps.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       const contentLocation = this.character.evaluateClosestMap(maps);
@@ -153,7 +154,7 @@ export class DepositObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Deposit failed after ${attempt} attempts`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
         continue;
       } else {

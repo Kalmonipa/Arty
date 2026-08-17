@@ -8,6 +8,7 @@ import { Objective } from './Objective.js';
 import { TasksCoin } from '../names.js';
 import {
   ObjectiveCancelled,
+  ObjectiveFailed,
   ObjectiveOnHold,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
@@ -112,7 +113,7 @@ export class ItemTaskObjective extends Objective {
         const shouldRetry = await this.character.handleErrors(taskInfo);
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Item task failed after ${attempt} attempts`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
         continue;
       }
@@ -152,7 +153,7 @@ export class ItemTaskObjective extends Objective {
             ))
           ) {
             this.character.removeItemFromItemsToKeep(this.character.data.task);
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
         } else if (taskInfo.craft) {
           logger.debug(
@@ -174,7 +175,7 @@ export class ItemTaskObjective extends Objective {
                 `Cancelling ${this.character.data.task} collection task`,
               );
               await this.cancelCurrentTask('items');
-              return { complete: true, success: false, reason: 'failed' };
+              return ObjectiveFailed;
             } else {
               break;
             }
@@ -189,7 +190,7 @@ export class ItemTaskObjective extends Objective {
           );
           if (itemInformation instanceof ApiError) {
             logger.warn(`Item info not found for ${this.character.data.task}`);
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
           // ToDo: Make this into a reusable function that encompasses all roles and their responsibilities
           if (
@@ -219,7 +220,7 @@ export class ItemTaskObjective extends Objective {
                 this.character.removeItemFromItemsToKeep(
                   this.character.data.task,
                 );
-                return { complete: true, success: false, reason: 'failed' };
+                return ObjectiveFailed;
               } else {
                 break;
               }
@@ -238,6 +239,6 @@ export class ItemTaskObjective extends Objective {
         return { complete: true, success: true, reason: 'complete' };
       }
     }
-    return { complete: true, success: false, reason: 'failed' };
+    return ObjectiveFailed;
   }
 }

@@ -5,6 +5,7 @@ import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { WeaponFlavours } from '../types/ItemData.js';
 import {
   ObjectiveCancelled,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
@@ -19,6 +20,7 @@ import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import { selectResourceNode } from './resourceNodeSelection.js';
+import { selectMobsForDrop } from './monsterSelection.js';
 import { isEventOnlyDrop } from '../events/events.cache.js';
 
 export class GatherObjective extends Objective {
@@ -61,7 +63,7 @@ export class GatherObjective extends Objective {
 
     if (this.target.code === 'wooden_stick') {
       logger.info(`${this.target.code} is not gatherable`);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     if (this.includeInventory) {
@@ -148,14 +150,14 @@ export class GatherObjective extends Objective {
 
         if (!shouldRetry || attempt === maxRetries) {
           logger.error(`Gather failed after ${attempt} attempts`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
         continue;
       } else if (await isEventOnlyDrop(code, this.character)) {
         logger.warn(
           `${code} only drops from event content, which isn't reliably available. Failing`,
         );
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       } else if (isGatheringSkill(resourceDetails.subtype)) {
         await this.character.evaluateGear(
           resourceDetails.subtype as WeaponFlavours,
@@ -229,7 +231,7 @@ export class GatherObjective extends Objective {
     }
 
     logger.error(`Gather failed after ${maxRetries} attempts`);
-    return { complete: true, success: false, reason: 'failed' };
+    return ObjectiveFailed;
   }
 
   async gatherItemLoop(
@@ -274,7 +276,7 @@ export class GatherObjective extends Objective {
 
       if (response instanceof ApiError) {
         await this.character.handleErrors(response);
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       } else {
         if (response && response.data && response.data.character) {
           this.character.data = response.data.character;
@@ -283,7 +285,7 @@ export class GatherObjective extends Objective {
             'Invalid response structure from actionGather:',
             response,
           );
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
       }
 
@@ -302,8 +304,12 @@ export class GatherObjective extends Objective {
    * gatherItemLoop does — the stock actually held against the job's target — so
    * it lines up with what the character is carrying instead of counting only
    * the drops from this run.
-   * @param target The drop to farm; its code decides which mob to fight
-   * @returns true once the target is met, false if a fight failed or the job stopped
+   *
+   * Droppers are tried fastest first, moving on to the next one whenever a fight
+   * fails, so a mob the character cannot beat doesn't sink a drop another mob
+   * also yields.
+   * @param target The drop to farm; its code decides which mobs to fight
+   * @returns true once the target is met, false once the droppers run out or the job stopped
    */
   async gatherMobDrop(target: SimpleItemSchema): Promise<ObjectiveResult> {
     const mobInfo: StaticDataPageMonsterSchema | ApiError =
@@ -313,11 +319,24 @@ export class GatherObjective extends Objective {
       });
     if (mobInfo instanceof ApiError) {
       await this.character.handleErrors(mobInfo);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     } else if (mobInfo.data.length === 0) {
       logger.error(`Found no mobs for drop ${target.code}`);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     } else {
+      const droppers = await selectMobsForDrop(
+        mobInfo.data,
+        this.character,
+        target.code,
+      );
+
+      if (droppers.length === 0) {
+        logger.error(
+          `Nothing farmable drops ${target.code}. The only droppers are bosses or event mobs`,
+        );
+        return ObjectiveFailed;
+      }
+
       const baselineInventory = this.includeInventory
         ? 0
         : this.character.checkQuantityOfItemInInv(this.target.code);
@@ -328,6 +347,8 @@ export class GatherObjective extends Objective {
         this.target.code,
       );
       this.character.addItemToItemsToKeep(this.target.code);
+
+      let dropperIndex = 0;
 
       try {
         while (this.progress < this.target.quantity) {
@@ -345,14 +366,23 @@ export class GatherObjective extends Objective {
 
           if (this.progress >= this.target.quantity) break;
 
-          logger.info(`Mob info for ${mobInfo.data.length} mobs`);
+          const dropper = droppers[dropperIndex];
 
-          // ToDo: make this check all mobs in case multiple drop the item
-          if (!(await this.character.fightNow(10, mobInfo.data[0].code))) {
-            logger.debug(
-              `Fight attempt against ${mobInfo.data[0].code} failed`,
+          if (!(await this.character.fightNow(10, dropper.code))) {
+            logger.debug(`Fight attempt against ${dropper.code} failed`);
+
+            dropperIndex++;
+            if (dropperIndex >= droppers.length) {
+              logger.warn(
+                `Ran out of mobs to farm ${target.code} from after ${dropper.code}`,
+              );
+              return ObjectiveFailed;
+            }
+
+            logger.info(
+              `Trying ${droppers[dropperIndex].code} for ${target.code} instead`,
             );
-            return { complete: true, success: false, reason: 'failed' };
+            continue;
           }
 
           if (!(await this.checkStatus())) return ObjectiveCancelled;
@@ -387,7 +417,7 @@ export class GatherObjective extends Objective {
     });
     if (resources instanceof ApiError) {
       await this.character.handleErrors(resources);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     logger.debug(`Finding best resource to gather`);
@@ -407,7 +437,7 @@ export class GatherObjective extends Objective {
         { code, quantity },
         { acquisitionMethod: skillNeeded, minLevel: levelNeeded },
       );
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     logger.info(`Finding location of ${resource.code}`);
@@ -415,7 +445,7 @@ export class GatherObjective extends Objective {
     const maps = this.character.findMaps({ content_code: resource.code });
     if (maps.length === 0) {
       logger.error(`Cannot find any maps for ${resource.code}`);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     const contentLocation = this.character.evaluateClosestMap(maps);

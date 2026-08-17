@@ -2,6 +2,7 @@ import { actionWithdrawItem } from '../api_calls/Actions.js';
 import { actionWithdrawGold } from '../api_calls/Bank.js';
 import {
   ObjectiveCancelled,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
@@ -44,7 +45,7 @@ export class WithdrawObjective extends Objective {
 
       if (maps.length === 0) {
         logger.error(`Cannot find the bank. This shouldn't happen ??`);
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       const contentLocation = this.character.evaluateClosestMap(maps);
@@ -60,7 +61,7 @@ export class WithdrawObjective extends Objective {
         );
         if (response instanceof ApiError) {
           logger.warn(`Withdraw gold attempt failed`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
 
         return { complete: true, success: true, reason: 'complete' };
@@ -80,7 +81,7 @@ export class WithdrawObjective extends Objective {
 
         if (!shouldRetry || attempt === this.maxRetries) {
           logger.error(`Withdraw failed after ${attempt} attempts`);
-          return { complete: true, success: false, reason: 'failed' };
+          return ObjectiveFailed;
         }
         continue;
       } else {

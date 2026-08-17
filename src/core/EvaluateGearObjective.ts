@@ -115,7 +115,7 @@ export class EvaluateGearObjective extends Objective {
       );
     }
 
-    return { complete: true, success: false, reason: 'failed' };
+    return ObjectiveFailed;
   }
 
   /**

@@ -9,6 +9,7 @@ import {
   MapSchema,
   ItemSchema,
   CharacterSchema,
+  MonsterSchema,
 } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
@@ -16,6 +17,7 @@ import { InventorySlot } from '../../src/types/CharacterData.js';
 // Import the mocked functions
 import { getItemInformation } from '../../src/api_calls/Items.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
+import { getAllMonsterInformation } from '../../src/api_calls/Monsters.js';
 import { actionGather } from '../../src/api_calls/Actions.js';
 import { addToWishlist } from '../../src/wishlist/wishlist.utils.js';
 
@@ -119,6 +121,13 @@ jest.mock('../../src/api_calls/Resources', () => ({
   getAllResourceInformation: jest.fn(),
 }));
 
+jest.mock('../../src/events/events.cache.js', () => ({
+  isEventContent: jest.fn(async (code: string) =>
+    code.startsWith('corrupted_'),
+  ),
+  isEventOnlyDrop: jest.fn(async () => false),
+}));
+
 // A stand-in wishlist table: the rows are the inserts recorded on addToWishlist,
 // so jest.clearAllMocks() empties it between tests
 jest.mock('../../src/wishlist/wishlist.utils.js', () => {
@@ -192,9 +201,11 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  fightNow = jest.fn(async (): Promise<boolean> => {
-    return true;
-  });
+  fightNow = jest.fn(
+    async (_quantity?: number, _code?: string): Promise<boolean> => {
+      return true;
+    },
+  );
 
   move = jest.fn(
     async (destination: { x: number; y: number }): Promise<void> => {
@@ -209,7 +220,10 @@ class SimpleMockCharacter {
     },
   );
 
-  findMaps = jest.fn((): MapSchema[] => mockMapData.data as MapSchema[]);
+  findMaps = jest.fn(
+    (_filter?: { content_code?: string }): MapSchema[] =>
+      mockMapData.data as MapSchema[],
+  );
 
   handleErrors = jest.fn(async (): Promise<boolean> => {
     return true;
@@ -217,6 +231,12 @@ class SimpleMockCharacter {
 
   saveJobQueue = jest.fn(async (): Promise<void> => {
     // Mock implementation
+  });
+
+  itemsToKeep: string[] = [];
+
+  addItemToItemsToKeep = jest.fn((code: string): void => {
+    if (!this.itemsToKeep.includes(code)) this.itemsToKeep.push(code);
   });
 
   removeItemFromItemsToKeep = jest.fn((): void => {
@@ -763,6 +783,133 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
         acquisitionMethod: 'mining',
         minLevel: 40,
       });
+    });
+  });
+
+  describe('Mob drops', () => {
+    const clawDrop = {
+      code: 'owlbear_claw',
+      rate: 12,
+      min_quantity: 1,
+      max_quantity: 2,
+    };
+
+    const mob = (code: string, overrides: Partial<MonsterSchema> = {}) =>
+      ({
+        code,
+        name: code,
+        level: 30,
+        type: 'normal',
+        drops: [clawDrop],
+        ...overrides,
+      }) as MonsterSchema;
+
+    const arrangeClawGather = (
+      monsters: MonsterSchema[],
+      mappedMobs: string[],
+    ) => {
+      (
+        getItemInformation as jest.MockedFunction<typeof getItemInformation>
+      ).mockResolvedValue({
+        ...mockIronOreData,
+        code: 'owlbear_claw',
+        name: 'Owlbear Claw',
+        level: 30,
+        subtype: 'mob',
+      } as ItemSchema);
+
+      (
+        getAllMonsterInformation as jest.MockedFunction<
+          typeof getAllMonsterInformation
+        >
+      ).mockResolvedValue({
+        data: monsters,
+        total: monsters.length,
+        page: 1,
+        pages: 1,
+        size: 50,
+      });
+
+      mockCharacter.findMaps.mockImplementation((filter) =>
+        mappedMobs.includes(filter?.content_code ?? '')
+          ? (mockMapData.data as MapSchema[])
+          : [],
+      );
+
+      mockCharacter.fightNow.mockImplementation(async () => {
+        mockCharacter.addItemToInventory('owlbear_claw', 1);
+        return true;
+      });
+
+      return new GatherObjective(mockCharacter as any, {
+        code: 'owlbear_claw',
+        quantity: 1,
+      });
+    };
+
+    it('fights the owlbear instead of the event-only corrupted owlbear', async () => {
+      // The monster catalogue happens to list corrupted_owlbear first, and it
+      // has no permanent map, so farming it never finds a location
+      const objective = arrangeClawGather(
+        [mob('corrupted_owlbear'), mob('owlbear')],
+        ['owlbear'],
+      );
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(true);
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'owlbear');
+      expect(mockCharacter.fightNow).not.toHaveBeenCalledWith(
+        10,
+        'corrupted_owlbear',
+      );
+    });
+
+    it('prefers the dropper that needs the fewest fights per claw', async () => {
+      const objective = arrangeClawGather(
+        [
+          mob('cultist_emperor', { drops: [{ ...clawDrop, rate: 30 }] }),
+          mob('owlbear', { drops: [{ ...clawDrop, rate: 6 }] }),
+        ],
+        ['cultist_emperor', 'owlbear'],
+      );
+
+      await objective.run();
+
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'owlbear');
+    });
+
+    it('falls through to the next dropper when the best one cannot be beaten', async () => {
+      const objective = arrangeClawGather(
+        [
+          mob('cultist_emperor', { drops: [{ ...clawDrop, rate: 6 }] }),
+          mob('owlbear', { drops: [{ ...clawDrop, rate: 30 }] }),
+        ],
+        ['cultist_emperor', 'owlbear'],
+      );
+
+      mockCharacter.fightNow.mockImplementation(async (_quantity, code) => {
+        if (code === 'cultist_emperor') return false;
+        mockCharacter.addItemToInventory('owlbear_claw', 1);
+        return true;
+      });
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(true);
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'owlbear');
+    });
+
+    it('fails without fighting when every dropper is a boss or event mob', async () => {
+      const objective = arrangeClawGather(
+        [mob('corrupted_owlbear'), mob('bandit_lizard', { type: 'boss' })],
+        ['bandit_lizard'],
+      );
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(false);
+      expect(mockCharacter.fightNow).not.toHaveBeenCalled();
     });
   });
 });

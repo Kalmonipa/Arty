@@ -59,7 +59,7 @@ export class FightObjective extends Objective {
     const mobInfo = await getMonsterInformation(this.target.code);
     if (mobInfo instanceof ApiError) {
       await this.character.handleErrors(mobInfo);
-      return { complete: true, success: false, reason: 'failed' };
+      return ObjectiveFailed;
     }
 
     // if (
@@ -69,7 +69,7 @@ export class FightObjective extends Objective {
     //   logger.info(
     //     `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
     //   );
-    //   return { complete: true, success: false, reason: 'failed' };
+    //   return ObjectiveFailed;
     // }
 
     if (this.runFightSim) {
@@ -207,7 +207,7 @@ export class FightObjective extends Objective {
       const maps = this.character.findMaps({ content_code: this.target.code });
       if (maps.length === 0) {
         logger.error(`Cannot find any maps for ${this.target.code}`);
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       const contentLocation = this.character.evaluateClosestMap(maps);
@@ -267,7 +267,7 @@ export class FightObjective extends Objective {
 
           if (!shouldRetry || attempt === this.maxRetries) {
             logger.error(`Fight failed after ${attempt} attempts`);
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
           this.progress--;
           continue;
@@ -280,7 +280,7 @@ export class FightObjective extends Objective {
             this.character.data = charData;
           } else {
             logger.error('Fight response missing character data');
-            return { complete: true, success: false, reason: 'failed' };
+            return ObjectiveFailed;
           }
 
           if (response.data.fight.result === 'loss') {
@@ -300,7 +300,7 @@ export class FightObjective extends Objective {
               logger.warn(
                 `Lost ${consecutiveLosses} fights in a row against ${this.target.code}. Stopping fight objective`,
               );
-              return { complete: true, success: false, reason: 'failed' };
+              return ObjectiveFailed;
             }
           } else {
             consecutiveLosses = 0;

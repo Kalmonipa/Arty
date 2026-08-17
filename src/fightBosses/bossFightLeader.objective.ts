@@ -111,7 +111,7 @@ export class FightBossLeaderObjective extends Objective {
       const maps = this.character.findMaps({ content_code: this.target.code });
       if (maps.length === 0) {
         logger.error(`Cannot find any maps for ${this.target.code}`);
-        return { complete: true, success: false, reason: 'failed' };
+        return ObjectiveFailed;
       }
 
       const contentLocation = this.character.evaluateClosestMap(maps);

@@ -206,7 +206,22 @@ describe('GatherObjective progress reflects actual held stock', () => {
 
     beforeEach(() => {
       mockedMonsters.mockResolvedValue({
-        data: [{ code: 'skeleton' }],
+        data: [
+          {
+            code: 'skeleton',
+            name: 'Skeleton',
+            level: 20,
+            type: 'normal',
+            drops: [
+              {
+                code: 'skeleton_bone',
+                rate: 12,
+                min_quantity: 1,
+                max_quantity: 1,
+              },
+            ],
+          },
+        ],
         total: 1,
         page: 1,
         pages: 1,
