@@ -37,11 +37,9 @@ export const MIN_TASK_COINS_BEFORE_GAMBLING = 100;
 
 /**
  * How long a monster task is allowed to take before it's worth cancelling for a
- * new one. Every monster task pays the same 3-5 coins whatever the target or the
- * quantity, so the only thing that varies is the time it costs — and that ranges
- * from under an hour to over eight.
+ * new one.
  */
-export const MAX_MONSTER_TASK_SECONDS = 2.5 * 60 * 60;
+export const MAX_MONSTER_TASK_SECONDS = 3 * 60 * 60;
 /** Each cancel costs a task coin, so don't chase a good draw forever */
 export const MAX_TASK_REROLLS = 3;
 /**
