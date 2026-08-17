@@ -245,15 +245,28 @@ export class IdleHealerObjective extends Objective {
 
   /**
    * Crafts numWantedInBank antipoison potions
+   * We only want 50 in the bank at a time, no need to craft more than that
    * @returns
    */
   async topUpAntipoisonPotionsInBank(): Promise<ObjectiveResult> {
     const numWantedInBank = 50;
+
+    const bankContents = await BankCache.create(this.character);
+
+    if (bankContents.stale) {
+      logger.warn(
+        'Could not read the bank; skipping the teleport potion top-up',
+      );
+      return ObjectiveFailed;
+    }
+
     for (const antiPoisonpotion of this.character.utilitiesMap['antipoison']) {
+      const numInBank = bankContents.quantityOf(antiPoisonpotion.code);
       if (
         antiPoisonpotion.craft.level <
           this.character.getCharacterLevel(this.character.data, 'alchemy') &&
-        antiPoisonpotion.craft.level <= this.character.highestCharLevel
+        antiPoisonpotion.craft.level <= this.character.highestCharLevel &&
+        numInBank < numWantedInBank
       ) {
         await this.character.craftNow(numWantedInBank, antiPoisonpotion.code);
       }

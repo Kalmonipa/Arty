@@ -3,7 +3,11 @@ import { ApiError } from '../core/Error.js';
 import { db } from '../db.js';
 import { ItemSchema } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
-import { AcquisitionMethod, WishlistRequest, WishlistRow } from './wishlist.types.js';
+import {
+  AcquisitionMethod,
+  WishlistRequest,
+  WishlistRow,
+} from './wishlist.types.js';
 
 /** How long a claim can sit untouched before another process may reclaim it */
 const STALE_CLAIM_HOURS = 24;

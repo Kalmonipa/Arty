@@ -7,10 +7,7 @@ import {
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
-import {
-  getBossFightState,
-  getCurrentNumFights,
-} from './bossFight.utils.js';
+import { getBossFightState, getCurrentNumFights } from './bossFight.utils.js';
 import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import {
   acceptBossFightCompletion,
