@@ -61,5 +61,10 @@
       "data/*.json"
     ],
     "delay": 2500
+  },
+  "allowScripts": {
+    "esbuild@0.25.10": true,
+    "fsevents@2.3.3": true,
+    "unrs-resolver@1.12.2": true
   }
 }
