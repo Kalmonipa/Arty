@@ -10,7 +10,6 @@ import {
   FakeCharacterSchema,
   ItemSchema,
   ItemSlot,
-  MonsterSchema,
   ResourceSchema,
 } from '../types/types.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
@@ -18,7 +17,6 @@ import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { ApiError } from './Error.js';
 import { BankCache } from './BankCache.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
-import { MinEquippedUtilities } from '../constants.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
@@ -507,53 +505,6 @@ export class EvaluateGearObjective extends Objective {
     );
     const base = this.character.createFakeCharacterSchema(this.character.data);
     return { ...base, ...selected };
-  }
-
-  /**
-   * @description Equips 100 health potions into the utility 1 slot
-   * utility 1 is reserved for health potions
-   * @returns
-   */
-  private async topUpHealthPots(): Promise<ObjectiveResult> {
-    if (this.character.data.utility1_slot_quantity <= MinEquippedUtilities) {
-      return await this.character.equipUtility('restore', 'utility1');
-    }
-
-    return ObjectiveCompleted;
-  }
-
-  /**
-   * @description Equips other potions (antidote, damage boost etc) into utility 2 slot
-   * @todo Equip damage, resistance, etc pots if available
-   * @todo Only equip antidotes if we need them. Higher level chars probably don't need antidotes
-   */
-  private async topUpSecondaryPots(mobInfo: MonsterSchema) {
-    if (!mobInfo.effects || mobInfo.effects.length === 0) {
-      return true;
-    } else if (mobInfo.effects.some((effect) => effect.code === 'poison')) {
-      const poisonEffect = mobInfo.effects.find(
-        (effect) => effect.code === 'poison',
-      );
-      logger.info(`${mobInfo.name} has the ${poisonEffect?.code} effect`);
-      if (
-        !this.character.data.utility2_slot_quantity ||
-        (this.character.data.utility2_slot_quantity &&
-          this.character.data.utility2_slot_quantity < MinEquippedUtilities)
-      ) {
-        logger.info(`Equipping antidotes`);
-        return await this.character.equipAntiEffectUtility(
-          'antipoison',
-          poisonEffect,
-        );
-      } else {
-        return true;
-      }
-    } else {
-      logger.info(
-        `Counter of ${mobInfo.effects[0].code} from ${mobInfo.code} not found.`,
-      );
-      return false;
-    }
   }
 
   /**
