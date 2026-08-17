@@ -124,7 +124,6 @@ export class FightObjective extends Objective {
       }
 
       // Find the highest potion that we could equip for the fight
-      // ToDo: Don't craft if needed. The alchemist should be the only char to craft health potions
       let potionNeeded: string = this.character.utilitiesMap['restore'][0].code; // Usually small_health_potion
       for (const potion of this.character.utilitiesMap[
         'restore'
@@ -137,7 +136,7 @@ export class FightObjective extends Objective {
           logger.debug(`Chose to equip ${potion.code}`);
           break;
         } else {
-          logger.debug(`${potion.code} is too high level or cannot be crafted`);
+          logger.debug(`${potion.code} is too high level to equip`);
         }
       }
       fakeSchema.utility1_slot = potionNeeded;

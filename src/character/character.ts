@@ -2050,6 +2050,10 @@ export class Character {
    * @description Equips a utility into the specified slot.
    * Calculates how many potions we need to reach max number.
    * Checks inventory and bank for the amount we need.
+   *
+   * Deliberately never crafts health potions. If some are available, use them
+   * otherwise fight without
+   *
    * @returns a boolean stating whether we need to move back to our original location
    */
   async equipUtility(
@@ -2092,17 +2096,8 @@ export class Character {
             slot,
             Math.min(numInBank, numNeeded),
           );
-        } else if (this.role === 'healer' || this.role === 'alchemist') {
-          logger.debug(`Can't find any ${potion.name}. Crafting`);
-          if ((await this.craftNow(numNeeded, potion.code)).success) {
-            return await this.equipNow(potion.code, slot, numNeeded);
-          } else {
-            logger.debug(`Can't craft ${potion.name}. Trying next best option`);
-            continue;
-          }
-        } else {
-          logger.debug(`Can't find any ${potion.name}`);
         }
+        logger.debug(`Can't find any ${potion.name}. Trying next best option`);
       }
     }
     return ObjectiveFailed;
@@ -2113,6 +2108,9 @@ export class Character {
    * Calculates how many potions we need to reach max number.
    * Equips the most minor potion so we aren't overusing potions.
    * E.g We only get 20 poison when fighting spiders so equipping antidotes that recover 50 is unnecessary
+   *
+   * Never crafts, for the same reason as {@link equipUtility}.
+   *
    * @returns a boolean stating whether we need to move back to our original location
    */
   async equipAntiEffectUtility(
@@ -2165,26 +2163,13 @@ export class Character {
           'utility2',
           Math.min(numInBank, numNeeded),
         );
-      } else {
-        if (
-          utility[ind].level <= this.getCharacterLevel(this.data, 'alchemy')
-        ) {
-          logger.debug(`Can't find any ${utility[ind].name}. Crafting`);
-          if ((await this.craftNow(numNeeded, utility[ind].code)).success) {
-            return await this.equipNow(
-              utility[ind].code,
-              'utility2',
-              numNeeded,
-            );
-          } else {
-            logger.debug(`Can't craft ${utility[ind].name}`);
-            return ObjectiveFailed;
-          }
-        } else {
-          logger.debug(`Can't find any ${utility[ind].name}`);
-        }
       }
+      logger.debug(
+        `Can't find any ${utility[ind].name}. Trying next best option`,
+      );
     }
+
+    return ObjectiveFailed;
   }
 
   /**

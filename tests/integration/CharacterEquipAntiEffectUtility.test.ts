@@ -1,5 +1,4 @@
 import { jest } from '@jest/globals';
-import { ObjectiveFailed } from '../../src/types/ObjectiveData.js';
 import { Character } from '../../src/character/character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
@@ -351,8 +350,8 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
     });
   });
 
-  describe('Crafting fallback', () => {
-    it('should attempt to craft when item not in inventory or bank', async () => {
+  describe('No crafting on the fight path', () => {
+    it('should not craft when the item is in neither inventory nor bank', async () => {
       // Arrange
       const mobEffect: SimpleEffectSchema = {
         code: 'poison',
@@ -360,7 +359,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         description: 'Poison effect',
       };
       character.data.utility2_slot_quantity = 0;
-      character.data.alchemy_level = 1; // Can craft weak_antidote (level 1)
+      character.data.alchemy_level = 1; // Could craft weak_antidote (level 1)
       (character.checkQuantityOfItemInInv as jest.Mock).mockReturnValue(0);
       (character.checkQuantityOfItemInBank as any).mockResolvedValue(0);
 
@@ -371,18 +370,18 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       );
 
       // Assert
-      // Should attempt to craft if character has alchemy level
       expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
         'weak_antidote',
       );
       expect(character.checkQuantityOfItemInBank).toHaveBeenCalledWith(
         'weak_antidote',
       );
-      expect(character.craftNow).toHaveBeenCalledWith(100, 'weak_antidote');
-      expect(result.success).toBe(true);
+      expect(character.craftNow).not.toHaveBeenCalled();
+      expect(character.equipNow).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
     });
 
-    it('should not attempt to craft if alchemy level is too low', async () => {
+    it('should not craft when alchemy level is too low either', async () => {
       // Arrange
       const mobEffect: SimpleEffectSchema = {
         code: 'poison',
@@ -402,8 +401,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
 
       // Assert
       expect(character.craftNow).not.toHaveBeenCalled();
-      // Should return false or undefined when can't craft
-      expect(result).toBeFalsy();
+      expect(result.success).toBe(false);
     });
   });
 
@@ -436,7 +434,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       );
 
       // Assert
-      expect(result).toBeUndefined();
+      expect(result.success).toBe(false);
       expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalled();
     });
 
@@ -469,7 +467,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       );
 
       // Assert
-      expect(result).toBeUndefined();
+      expect(result.success).toBe(false);
     });
 
     it('should handle utility items without effects array', async () => {
@@ -530,36 +528,6 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       );
       expect(character.withdrawNow).toHaveBeenCalled();
       expect(result.success).toBe(true);
-    });
-
-    it('should return false when crafting fails', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5, // Use value that works with weak_antidote
-        description: 'Poison effect',
-      };
-      character.data.utility2_slot_quantity = 0;
-      character.data.alchemy_level = 1; // Can craft weak_antidote (level 1)
-      (character.checkQuantityOfItemInInv as jest.Mock).mockReturnValue(0);
-      (character.checkQuantityOfItemInBank as any).mockResolvedValue(0);
-      (character.craftNow as any).mockResolvedValue(ObjectiveFailed); // Crafting fails
-
-      // Act
-      const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
-
-      // Assert
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.checkQuantityOfItemInBank).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.craftNow).toHaveBeenCalledWith(100, 'weak_antidote');
-      expect(result.success).toBe(false); // Crafting failed
     });
   });
 
