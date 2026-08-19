@@ -201,6 +201,21 @@ describe('IdentifyValidWishlistRequestsObjective', () => {
     expect(character.executeJobNow).not.toHaveBeenCalled();
   });
 
+  it('skips a request above the character level without pricing the recipe', async () => {
+    const character = emptyHandedCrafter();
+    character.getCharacterLevel = jest.fn(() => 20) as never;
+    const job = new IdentifyValidWishlistRequestsObjective(
+      character,
+      'gearcrafting',
+    );
+
+    await job.run();
+
+    expect(character.executeJobNow).not.toHaveBeenCalled();
+    // Walking the recipe tree is what costs a bank lookup per ingredient
+    expect(character.checkQuantityOfItemInBank).not.toHaveBeenCalled();
+  });
+
   it('picks the request up once the drop is banked', async () => {
     const character = emptyHandedCrafter();
     character.checkQuantityOfItemInBank = jest.fn(async (code: string) =>

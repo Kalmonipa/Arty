@@ -90,6 +90,13 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
           break;
       }
 
+      if (itemInformation.level > levelRequired) {
+        logger.info(
+          `Skipping request #${request.id} for ${request.quantity}x ${request.item_code} (${itemInformation.level}) - character level is ${levelRequired}`,
+        );
+        continue;
+      }
+
       const blockedByEvent = await eventBlockedIngredients(
         request.item_code,
         request.quantity,
@@ -102,23 +109,14 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
         continue;
       }
 
-      if (itemInformation.level <= levelRequired) {
-        logger.info(
-          `Executing request #${request.id} for ${request.quantity}x ${request.item_code}`,
-        );
-        logger.info(
-          `Request info: acquisition method: ${request.acquisition_method}, requestor: ${request.character}`,
-        );
-        const job = new FulfillWishlistRequestObjective(
-          this.character,
-          request,
-        );
-        await this.character.executeJobNow(job, true, true, this.objectiveId);
-      } else {
-        logger.info(
-          `Skipping request #${request.id} for ${request.quantity}x ${request.item_code} (${itemInformation.level}) - character level is ${levelRequired}`,
-        );
-      }
+      logger.info(
+        `Executing request #${request.id} for ${request.quantity}x ${request.item_code}`,
+      );
+      logger.info(
+        `Request info: acquisition method: ${request.acquisition_method}, requestor: ${request.character}`,
+      );
+      const job = new FulfillWishlistRequestObjective(this.character, request);
+      await this.character.executeJobNow(job, true, true, this.objectiveId);
     }
 
     return ObjectiveCompleted;
