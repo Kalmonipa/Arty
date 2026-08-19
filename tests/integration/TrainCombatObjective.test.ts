@@ -39,10 +39,10 @@ class SimpleMockCharacter {
 
   getAllBankItems = jest.fn(async () => []);
 
-  fightNow = jest.fn(async (): Promise<boolean> => {
+  fightNow = jest.fn(async (): Promise<ObjectiveResult> => {
     // Simulate level progression
     this.data.level += 1;
-    return true;
+    return ObjectiveCompleted;
   });
 
   evaluateGear = jest.fn(async (): Promise<void> => {
@@ -228,7 +228,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -250,7 +250,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       await trainCombatObjective.run();
@@ -272,7 +272,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -322,7 +322,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -386,7 +386,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.getCharacterLevel.mockReturnValue(10);
 
       // Mock fight to always fail
-      mockCharacter.fightNow.mockResolvedValue(false);
+      mockCharacter.fightNow.mockResolvedValue(ObjectiveFailed);
 
       // Act
       const result = await trainCombatObjective.run();
@@ -400,7 +400,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      mockCharacter.fightNow.mockResolvedValue(false);
+      mockCharacter.fightNow.mockResolvedValue(ObjectiveFailed);
 
       // Act
       const result = await trainCombatObjective.run();
@@ -438,7 +438,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -460,7 +460,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -482,7 +482,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -508,7 +508,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -538,7 +538,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -614,7 +614,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       // Act
@@ -642,7 +642,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       await trainCombatObjective.run();
@@ -685,7 +685,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
-        return true;
+        return ObjectiveCompleted;
       });
 
       await trainCombatObjective.run();

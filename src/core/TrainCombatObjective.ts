@@ -95,7 +95,7 @@ export class TrainCombatObjective extends Objective {
             false,
           );
 
-          if (fightResult) {
+          if (fightResult.success) {
             fightSuccessful = true;
             charLevel = this.character.getCharacterLevel(this.character.data);
 

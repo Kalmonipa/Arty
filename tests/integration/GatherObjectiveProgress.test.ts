@@ -1,6 +1,11 @@
 import { jest } from '@jest/globals';
 import { GatherObjective } from '../../src/core/GatherObjective.js';
-import { ObjectiveTargets } from '../../src/types/ObjectiveData.js';
+import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+  ObjectiveTargets,
+} from '../../src/types/ObjectiveData.js';
 import {
   MapSchema,
   ItemSchema,
@@ -118,7 +123,7 @@ class MockCharacter {
     if (index !== -1) this.itemsToKeep.splice(index, 1);
   });
 
-  fightNow = jest.fn(async (): Promise<boolean> => true);
+  fightNow = jest.fn(async (): Promise<ObjectiveResult> => ObjectiveCompleted);
 
   evaluateDepositItemsInBank = jest.fn(async (): Promise<void> => {});
   saveJobQueue = jest.fn(async (): Promise<void> => {});
@@ -235,7 +240,7 @@ describe('GatherObjective progress reflects actual held stock', () => {
       character.fightNow.mockImplementation(async () => {
         progressPerFight.push(objective.progress);
         character.addItemToInventory('skeleton_bone', dropped);
-        return true;
+        return ObjectiveCompleted;
       });
       return progressPerFight;
     };
@@ -301,7 +306,7 @@ describe('GatherObjective progress reflects actual held stock', () => {
       character.fightNow.mockImplementation(async () => {
         keptDuringFight.push(character.itemsToKeep.includes('skeleton_bone'));
         character.addItemToInventory('skeleton_bone', 1);
-        return true;
+        return ObjectiveCompleted;
       });
 
       await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 2 });
@@ -313,7 +318,7 @@ describe('GatherObjective progress reflects actual held stock', () => {
     it('stops keeping the drop when a fight fails', async () => {
       const target: ObjectiveTargets = { code: 'skeleton_bone', quantity: 2 };
       const objective = new GatherObjective(character as any, target);
-      character.fightNow.mockResolvedValue(false);
+      character.fightNow.mockResolvedValue(ObjectiveFailed);
 
       await objective.gatherMobDrop({ code: 'skeleton_bone', quantity: 2 });
 

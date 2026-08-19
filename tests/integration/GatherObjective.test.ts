@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { GatherObjective } from '../../src/core/GatherObjective.js';
 import {
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../../src/types/ObjectiveData.js';
@@ -202,8 +203,8 @@ class SimpleMockCharacter {
   });
 
   fightNow = jest.fn(
-    async (_quantity?: number, _code?: string): Promise<boolean> => {
-      return true;
+    async (_quantity?: number, _code?: string): Promise<ObjectiveResult> => {
+      return ObjectiveCompleted;
     },
   );
 
@@ -838,7 +839,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.addItemToInventory('owlbear_claw', 1);
-        return true;
+        return ObjectiveCompleted;
       });
 
       return new GatherObjective(mockCharacter as any, {
@@ -889,9 +890,9 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       );
 
       mockCharacter.fightNow.mockImplementation(async (_quantity, code) => {
-        if (code === 'cultist_emperor') return false;
+        if (code === 'cultist_emperor') return ObjectiveFailed;
         mockCharacter.addItemToInventory('owlbear_claw', 1);
-        return true;
+        return ObjectiveCompleted;
       });
 
       const result = await objective.run();

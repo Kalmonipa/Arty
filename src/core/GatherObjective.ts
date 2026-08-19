@@ -368,7 +368,7 @@ export class GatherObjective extends Objective {
 
           const dropper = droppers[dropperIndex];
 
-          if (!(await this.character.fightNow(10, dropper.code))) {
+          if (!(await this.character.fightNow(10, dropper.code)).success) {
             logger.debug(`Fight attempt against ${dropper.code} failed`);
 
             dropperIndex++;
