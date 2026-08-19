@@ -181,7 +181,7 @@ export class FightObjective extends Objective {
           !shouldFightWithoutHealthPots.success &&
           shouldFightWithHealthPots.success
         ) {
-          await this.character.topUpHealthPots(potionNeeded);
+          return await this.character.topUpHealthPots(potionNeeded);
         }
       }
     }
