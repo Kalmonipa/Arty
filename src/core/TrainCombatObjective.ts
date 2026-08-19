@@ -84,7 +84,7 @@ export class TrainCombatObjective extends Objective {
           mob.code,
         );
 
-        if (fightSimResult) {
+        if (fightSimResult.success) {
           foundSuitableMob = true;
           await this.character.evaluateGear('combat', mob.code);
           const fightResult = await this.character.fightNow(

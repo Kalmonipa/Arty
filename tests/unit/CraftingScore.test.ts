@@ -26,6 +26,10 @@ import {
 import { BankCache } from '../../src/core/BankCache.js';
 import { Character } from '../../src/character/character.js';
 import {
+  ObjectiveCompleted,
+  ObjectiveFailed,
+} from '../../src/types/ObjectiveData.js';
+import {
   EventSchema,
   ItemSchema,
   MonsterSchema,
@@ -157,7 +161,9 @@ const world = ({
     data: { name: 'LongLegLarry' },
     monsterData: monsters,
     proposeCombatLoadout: jest.fn(async () => ({})),
-    simulateFightNow: jest.fn(async () => canFight),
+    simulateFightNow: jest.fn(async () =>
+      canFight ? ObjectiveCompleted : ObjectiveFailed,
+    ),
   } as unknown as Character;
 };
 

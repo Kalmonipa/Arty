@@ -62,16 +62,6 @@ export class FightObjective extends Objective {
       return ObjectiveFailed;
     }
 
-    // if (
-    //   (!this.participants || this.participants.length === 0) &&
-    //   mobInfo.data.type === 'boss'
-    // ) {
-    //   logger.info(
-    //     `${this.character.data.name} shouldn't fight ${mobInfo.data.name} alone`,
-    //   );
-    //   return ObjectiveFailed;
-    // }
-
     if (this.runFightSim) {
       const fakeSchema = this.character.createFakeCharacterSchema(
         this.character.data,

@@ -10,6 +10,7 @@ import { calculateBestCraftingItem } from '../../src/core/TrainCraftingSkillObje
 import { BankCache } from '../../src/core/BankCache.js';
 import { Character } from '../../src/character/character.js';
 import { ItemSchema } from '../../src/types/types.js';
+import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 
 const mobDrop = (code: string): ItemSchema =>
   ({
@@ -53,7 +54,7 @@ describe('crafting score reuses the caller bank snapshot', () => {
         },
       ],
       proposeCombatLoadout,
-      simulateFightNow: jest.fn(async () => true),
+      simulateFightNow: jest.fn(async () => ObjectiveCompleted),
     } as unknown as Character;
 
     jest
@@ -98,7 +99,7 @@ describe('crafting score reuses the caller bank snapshot', () => {
         },
       ],
       proposeCombatLoadout,
-      simulateFightNow: jest.fn(async () => true),
+      simulateFightNow: jest.fn(async () => ObjectiveCompleted),
     } as unknown as Character;
 
     jest

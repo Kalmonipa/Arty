@@ -1,6 +1,11 @@
 import { jest } from '@jest/globals';
 import { TrainCombatObjective } from '../../src/core/TrainCombatObjective.js';
-import { ObjectiveCancelled } from '../../src/types/ObjectiveData.js';
+import {
+  ObjectiveCancelled,
+  ObjectiveCompleted,
+  ObjectiveFailed,
+  ObjectiveResult,
+} from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';
@@ -22,8 +27,8 @@ class SimpleMockCharacter {
     return this.data.level;
   });
 
-  simulateFightNow = jest.fn(async (): Promise<boolean> => {
-    return true;
+  simulateFightNow = jest.fn(async (): Promise<ObjectiveResult> => {
+    return ObjectiveCompleted;
   });
 
   proposeCombatLoadout = jest.fn(
@@ -286,7 +291,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      mockCharacter.simulateFightNow.mockResolvedValue(false);
+      mockCharacter.simulateFightNow.mockResolvedValue(ObjectiveFailed);
 
       // Act
       const result = await trainCombatObjective.run();
@@ -526,8 +531,8 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       // Mock simulateFightNow to fail for higher level monsters, succeed for lower
       mockCharacter.simulateFightNow
-        .mockResolvedValueOnce(false) // blue_slime (level 8)
-        .mockResolvedValueOnce(true); // red_slime (level 5)
+        .mockResolvedValueOnce(ObjectiveFailed) // blue_slime (level 8)
+        .mockResolvedValueOnce(ObjectiveCompleted); // red_slime (level 5)
 
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
@@ -603,7 +608,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       ).mockImplementation(async () => customMonsterData);
 
       // Mock simulateFightNow to succeed for the ogre
-      mockCharacter.simulateFightNow.mockResolvedValue(true);
+      mockCharacter.simulateFightNow.mockResolvedValue(ObjectiveCompleted);
 
       // Mock fight to increase level to target
       mockCharacter.fightNow.mockImplementation(async () => {
@@ -632,8 +637,8 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       // Candidates iterate from the end: blue_slime first (loses), then red_slime (wins)
       mockCharacter.simulateFightNow
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(true);
+        .mockResolvedValueOnce(ObjectiveFailed)
+        .mockResolvedValueOnce(ObjectiveCompleted);
       mockCharacter.fightNow.mockImplementation(async () => {
         mockCharacter.data.level = 15;
         mockCharacter.getCharacterLevel.mockReturnValue(15);
@@ -664,7 +669,7 @@ describe('TrainCombatObjective Integration Tests', () => {
     it('never equips when no candidate simulation passes', async () => {
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
-      mockCharacter.simulateFightNow.mockResolvedValue(false);
+      mockCharacter.simulateFightNow.mockResolvedValue(ObjectiveFailed);
 
       await trainCombatObjective.run();
 

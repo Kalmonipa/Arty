@@ -456,7 +456,7 @@ async function mobDropCost(
       10, // Iterations
     );
 
-    if (canWin) {
+    if (canWin.success) {
       logger.debug(
         `${mob.code} drops ${item.code} every ${cost} fights on average`,
       );
