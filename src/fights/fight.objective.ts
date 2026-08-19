@@ -81,7 +81,8 @@ export class FightObjective extends Objective {
         `Simulating fight against ${this.target.code} with no utilities`,
       );
       if (
-        await this.character.simulateFightNow([fakeSchema], this.target.code)
+        (await this.character.simulateFightNow([fakeSchema], this.target.code))
+          .success
       ) {
         return ObjectiveCompleted;
       }
@@ -108,7 +109,12 @@ export class FightObjective extends Objective {
         );
 
         if (
-          await this.character.simulateFightNow([fakeSchema], this.target.code)
+          (
+            await this.character.simulateFightNow(
+              [fakeSchema],
+              this.target.code,
+            )
+          ).success
         ) {
           return ObjectiveCompleted;
         } else {
@@ -150,14 +156,14 @@ export class FightObjective extends Objective {
         this.target.code,
       );
 
-      if (!shouldFightWithHealthPots) {
+      if (!shouldFightWithHealthPots.success) {
         logger.info(
           `Fight sim against ${this.target.code} was a failure. Skipping`,
         );
         return ObjectiveFailed;
       }
 
-      if (shouldFightWithHealthPots) {
+      if (shouldFightWithHealthPots.success) {
         const fakeSchema = this.character.createFakeCharacterSchema(
           this.character.data,
         );
@@ -169,7 +175,7 @@ export class FightObjective extends Objective {
         const shouldFightWithoutHealthPots =
           await this.character.simulateFightNow([fakeSchema], this.target.code);
 
-        if (shouldFightWithoutHealthPots) {
+        if (shouldFightWithoutHealthPots.success) {
           const utilOnePot = this.character.data.utility1_slot;
           logger.info(`Unequipping ${utilOnePot} as not needed`);
           this.shouldEquipHealthPots = false;
@@ -182,7 +188,7 @@ export class FightObjective extends Objective {
             utilOnePot,
           );
         } else if (
-          !shouldFightWithoutHealthPots &&
+          !shouldFightWithoutHealthPots.success &&
           shouldFightWithHealthPots.success
         ) {
           await this.character.topUpHealthPots(potionNeeded);
