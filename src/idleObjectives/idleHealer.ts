@@ -309,7 +309,8 @@ export class IdleHealerObjective extends Objective {
    * @returns
    */
   private async topUpTeleportPotionsInBank(): Promise<boolean> {
-    const minPotionsToCraft = 100;
+    const maxPotionsToCraft = 100;
+    const minPotionsInBank = 50;
     const alchemyLevel = this.character.getCharacterLevel(
       this.character.data,
       'alchemy',
@@ -329,12 +330,10 @@ export class IdleHealerObjective extends Objective {
     for (const potion of teleportPotions) {
       const numInBank = bankContents.quantityOf(potion.code);
 
-      if (potion.level <= alchemyLevel && numInBank < minPotionsToCraft) {
-        logger.info(`Crafting ${minPotionsToCraft - numInBank} ${potion.code}`);
-        await this.character.craftNow(
-          minPotionsToCraft - numInBank,
-          potion.code,
-        );
+      if (potion.level <= alchemyLevel && numInBank < minPotionsInBank) {
+        const potsToCraft = maxPotionsToCraft - numInBank;
+        logger.info(`Crafting ${potsToCraft} ${potion.code}`);
+        await this.character.craftNow(potsToCraft, potion.code);
       }
     }
 
