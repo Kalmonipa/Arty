@@ -7,6 +7,7 @@
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    // ToDo: Set this to strict and fix the resulting breakages
     "strict": false,
     "skipLibCheck": true
   }
