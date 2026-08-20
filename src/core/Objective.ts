@@ -410,6 +410,7 @@ export abstract class Objective {
     } else {
       this.character.data = response.data.character;
     }
+    return true;
   }
 
   /**

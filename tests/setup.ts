@@ -37,10 +37,11 @@ jest.mock('node:fs/promises', () => ({
 // The bank quantity memo lives for the process lifetime, so without this a cached
 // read from one test silently satisfies the next one's expected API call
 beforeEach(async () => {
-  const { clearBankQuantityCache } = await import(
+  const { clearBankQuantityCache, clearBankSnapshot } = await import(
     '../src/core/bankQuantityCache.js'
   );
   clearBankQuantityCache();
+  clearBankSnapshot();
 });
 
 // Set up global test timeout

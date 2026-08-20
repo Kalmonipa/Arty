@@ -1,5 +1,9 @@
 import type { Character } from '../character/character.js';
 import type { SimpleItemSchema } from '../types/types.js';
+import {
+  cacheBankSnapshot,
+  readCachedBankSnapshot,
+} from './bankQuantityCache.js';
 
 /**
  * @description A snapshot of the bank's item quantities, built once and read
@@ -35,11 +39,17 @@ export class BankCache {
   }
 
   static async create(character: Character): Promise<BankCache> {
+    const cached = readCachedBankSnapshot();
+    if (cached) {
+      return BankCache.fromItems(cached);
+    }
+
     const items = await character.getAllBankItems();
     if (items === undefined) {
       return new BankCache(new Map(), true);
     }
 
+    cacheBankSnapshot(items);
     return BankCache.fromItems(items);
   }
 

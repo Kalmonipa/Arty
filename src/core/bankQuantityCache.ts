@@ -1,4 +1,5 @@
 import { BankQuantityCacheTtlMs } from '../constants.js';
+import type { SimpleItemSchema } from '../types/types.js';
 
 /**
  * @description A short lived memo of per-item bank quantities.
@@ -45,6 +46,8 @@ export function invalidateBankQuantities(codes: string[]): void {
   for (const code of codes) {
     quantities.delete(code);
   }
+  // The full listing is a superset of these codes, so any movement dates it too.
+  clearBankSnapshot();
 }
 
 /** Test seam: drop every entry so each test starts from a clean fetch. */
@@ -83,4 +86,43 @@ export function cacheBankSlotsUsed(count: number): void {
 /** Test seam: forget the slot count so each case starts from a clean fetch. */
 export function clearBankSlotCache(): void {
   slotsUsed = undefined;
+}
+
+/**
+ * @description A memo of the whole bank listing.
+ *
+ * Separate again from the two above: this answers "what is in the bank", which
+ * costs a call per page rather than a single lookup. A gear evaluation reads
+ * dozens of codes and so builds a {@link BankCache} from a full listing, and it
+ * re-entered often enough to spend the fleet's entire hourly data budget on
+ * paging the bank. The per-item memo above never covered it, because a full
+ * listing asks for no particular code.
+ *
+ * Read through {@link BankCache.fromItems} so each caller gets its own map to
+ * spend down; handing out one shared snapshot would let one caller's planned
+ * withdrawals disappear from another's view. The cross-character staleness noted
+ * above applies here too, and for the same reason is not made worse by memoing.
+ */
+let snapshot: { items: SimpleItemSchema[]; readAt: number } | undefined;
+
+export function readCachedBankSnapshot(): SimpleItemSchema[] | undefined {
+  if (!snapshot) {
+    return undefined;
+  }
+
+  if (Date.now() - snapshot.readAt >= BankQuantityCacheTtlMs) {
+    snapshot = undefined;
+    return undefined;
+  }
+
+  return snapshot.items;
+}
+
+export function cacheBankSnapshot(items: SimpleItemSchema[]): void {
+  snapshot = { items, readAt: Date.now() };
+}
+
+/** Test seam: forget the listing so each case starts from a clean fetch. */
+export function clearBankSnapshot(): void {
+  snapshot = undefined;
 }
