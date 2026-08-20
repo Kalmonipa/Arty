@@ -213,7 +213,12 @@ export class MonsterTaskObjective extends Objective {
       logger.info(
         `Task of ${this.remainingFights()} ${this.character.data.task} ${reason}. Cancelling for a new one`,
       );
-      await this.cancelCurrentTask('monsters');
+      if (!(await this.cancelCurrentTask('monsters'))) {
+        logger.warn(
+          `Could not cancel the ${this.character.data.task} task. Keeping it`,
+        );
+        return;
+      }
       await this.startNewTask('monsters');
     }
   }

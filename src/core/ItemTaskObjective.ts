@@ -95,9 +95,15 @@ export class ItemTaskObjective extends Objective {
           logger.info(
             `${this.character.data.task} is an item we want to keep. Cancelling task`,
           );
-          this.character.removeItemFromItemsToKeep(this.character.data.task);
-          await this.cancelCurrentTask('items');
-          continue;
+          if (await this.cancelCurrentTask('items')) {
+            this.character.removeItemFromItemsToKeep(this.character.data.task);
+            continue;
+          }
+          // Retrying wouldn't change the coin count or the task, so collect it
+          // rather than spending the remaining attempts on the same cancel.
+          logger.warn(
+            `Could not cancel the ${this.character.data.task} task. Collecting it instead`,
+          );
         } else {
           logger.info(
             `Not enough task coins to cancel. Continuing to collect ${this.character.data.task}`,

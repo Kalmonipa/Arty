@@ -512,6 +512,22 @@ describe('MonsterTaskObjective Integration Tests', () => {
       expect(spies.start).toHaveBeenCalledWith('monsters');
     });
 
+    // Taking a new task on top of one that is still live loses the old task's
+    // progress and leaves the reroll loop trying again against the same coins.
+    it('does not take a new task when the cancel did not go through', async () => {
+      setTask('imp', 229);
+      mockCharacter.simTurns = 74;
+      const objective = new MonsterTaskObjective(mockCharacter as any, 1);
+      jest.spyOn(objective, 'handInTask').mockResolvedValue(ObjectiveCompleted);
+      const spies = spyOnTaskChanges(objective);
+      spies.cancel.mockResolvedValue(false);
+
+      await objective.run();
+
+      expect(spies.cancel).toHaveBeenCalledTimes(1);
+      expect(spies.start).not.toHaveBeenCalled();
+    });
+
     it('judges the fights still remaining, not the whole task', async () => {
       // 300 skeletons at 20 turns would be ~3h, but only 50 are left => ~0.5h
       setTask('skeleton', 300, 250);

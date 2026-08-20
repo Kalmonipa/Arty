@@ -390,13 +390,25 @@ export abstract class Objective {
    ********/
 
   /**
-   * @description Withdraws MAX_TASK_REROLLS task coins, moves to the task master and cancels the current task
-   * Withdraws multiple task coins to save time going back to the bank
+   * @description Moves to the task master and cancels the current task.
+   *
+   * A cancel costs one coin. Up to MAX_TASK_REROLLS are withdrawn at once to
+   * save return trips to the bank, but never more than the bank holds — a
+   * withdrawal is all-or-nothing, so asking for the full batch against a bank
+   * holding one or two coins fails a cancel that was affordable.
+   * @returns true only if the task was actually cancelled
    */
   async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
     if (this.character.checkQuantityOfItemInInv(TasksCoin) < 1) {
+      const banked = await this.character.checkQuantityOfItemInBank(TasksCoin);
+      const numToWithdraw = Math.min(MAX_TASK_REROLLS, banked);
+
+      if (numToWithdraw < 1) {
+        return false;
+      }
+
       if (
-        !(await this.character.withdrawNow(MAX_TASK_REROLLS, TasksCoin)).success
+        !(await this.character.withdrawNow(numToWithdraw, TasksCoin)).success
       ) {
         return false;
       }
@@ -407,9 +419,10 @@ export abstract class Objective {
     const response = await actionCancelTask(this.character.data);
     if (response instanceof ApiError) {
       await this.character.handleErrors(response);
-    } else {
-      this.character.data = response.data.character;
+      return false;
     }
+
+    this.character.data = response.data.character;
     return true;
   }
 
