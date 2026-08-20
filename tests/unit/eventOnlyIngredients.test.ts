@@ -109,7 +109,7 @@ const emptyHandedCrafter = () =>
     craftNow: jest.fn(async () => ObjectiveCompleted),
     withdrawNow: jest.fn(async () => ObjectiveCompleted),
     depositNow: jest.fn(async () => ObjectiveCompleted),
-    executeJobNow: jest.fn(async () => undefined),
+    executeJobNow: jest.fn(async () => ObjectiveCompleted),
     move: jest.fn(async () => true),
     saveJobQueue: jest.fn(async () => undefined),
     findMaps: jest.fn(() => [workshop]),
