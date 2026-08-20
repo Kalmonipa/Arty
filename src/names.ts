@@ -1,4 +1,9 @@
 /**
+ * Achievements
+ */
+export const GourmetChef = 'gourmet_chef';
+
+/**
  * @description Items
  */
 export const TasksCoin = 'tasks_coin';

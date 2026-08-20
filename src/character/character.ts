@@ -117,7 +117,7 @@ import {
   getNavigationGraph,
   NavigationGraph,
 } from '../core/navigation/graph.js';
-import { Fishing } from '../names.js';
+import { Fishing, GourmetChef } from '../names.js';
 import {
   BankFullRetryMs,
   CharRole,
@@ -1254,8 +1254,6 @@ export class Character {
       if (this.jobList.length === 0) {
         await sleep(5, 'no-more-jobs', false);
 
-        // ToDo: I'm tempted to separate out the IdleCrafterObjective into specific crafter
-        // roles. At the moment they are all the same so no need but I see that changing.
         if (this.shouldDoIdleJobs) {
           if (this.role === 'crafter') {
             await this.appendJob(new IdleCrafterObjective(this, this.role));
@@ -1918,7 +1916,6 @@ export class Character {
 
   /**
    * @description Check currently equipped weapon
-   * @todo Expand this to factor in resistances/vulnerabilities of mobs
    * @returns {boolean}
    *  - true means the currently equipped weapon is beneficial for the activity
    *  - false means it is not beneficial
@@ -2682,7 +2679,7 @@ export class Character {
 
     if (bankFood.length > 0) {
       // Prefer cheese or fish_soup over anything else if we have it for the achievements
-      // ToDo: Only do this if we need to complete the achievement
+      // ToDo: Do the gourmet chef achievement programatically instead of harcoding the foods
       const achievementFoods = bankFood.find(
         (food) =>
           food.code === 'cheese' ||
@@ -2692,7 +2689,7 @@ export class Character {
       );
       if (achievementFoods) {
         logger.debug(
-          `Found ${achievementFoods.code} as best food in inventory (achievement food)`,
+          `Found ${achievementFoods.code} as best food in inventory, needed for ${GourmetChef}`,
         );
 
         return {
@@ -2701,7 +2698,9 @@ export class Character {
         };
       } else {
         // Sort by heal value (descending) and return the best one
-        const bestFood = bankFood.sort((a, b) => b.healValue - a.healValue)[0];
+        const bestFood = bankFood.toSorted(
+          (a, b) => b.healValue - a.healValue,
+        )[0];
         logger.debug(`Found ${bestFood.code} as best food in bank`);
 
         return { ...bestFood, source: 'bank' };
