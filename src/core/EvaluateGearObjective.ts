@@ -570,17 +570,23 @@ export class EvaluateGearObjective extends Objective {
       if (weapons[ind].level <= charLevel) {
         if (weapons[ind].code === this.character.data.weapon_slot) {
           logger.info(`Already have ${weapons[ind].code} equipped`);
+          await this.dropGrantedWishlistRequest(weapons[ind].code, 1);
           return ObjectiveCompleted;
         }
         logger.debug(`Attempting to equip ${weapons[ind].name} for gathering`);
-        if (this.character.checkQuantityOfItemInInv(weapons[ind].code) > 0) {
-          return await this.character.equipNow(weapons[ind].code, 'weapon');
-        } else if (
-          (await this.character.checkQuantityOfItemInBank(
+
+        let numHeld = this.character.checkQuantityOfItemInInv(
+          weapons[ind].code,
+        );
+        if (numHeld === 0) {
+          numHeld = await this.character.checkQuantityOfItemInBank(
             weapons[ind].code,
             this.bankCache,
-          )) > 0
-        ) {
+          );
+        }
+
+        if (numHeld > 0) {
+          await this.dropGrantedWishlistRequest(weapons[ind].code, numHeld);
           return await this.character.equipNow(weapons[ind].code, 'weapon');
         } else if (!wishlistRequested) {
           logger.info(`Requesting ${weapons[ind].code} from wishlist`);
@@ -767,6 +773,7 @@ export class EvaluateGearObjective extends Objective {
     for (const candidate of candidates) {
       if (this.character.getCharacterGearIn(gearSlot) === candidate.code) {
         logger.info(`${candidate.code} already equipped`);
+        await this.dropGrantedWishlistRequest(candidate.code, 1);
         return candidate;
       }
 
@@ -778,8 +785,10 @@ export class EvaluateGearObjective extends Objective {
         );
       }
 
-      if (numHeld - (allocated.get(candidate.code) ?? 0) > 0) {
+      const available = numHeld - (allocated.get(candidate.code) ?? 0);
+      if (available > 0) {
         allocated.set(candidate.code, (allocated.get(candidate.code) ?? 0) + 1);
+        await this.dropGrantedWishlistRequest(candidate.code, available);
         return candidate;
       }
 

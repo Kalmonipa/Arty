@@ -32,6 +32,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => {
   const addToWishlist = jest.fn(async () => 701);
   return {
     addToWishlist,
+    dropUnclaimedWishlistRequest: jest.fn(async () => true),
     getWishlistRequestsForJob: jest.fn(async () => []),
     findOpenWishlistRequest: jest.fn(
       async (filter: { itemCode: string; jobId?: string }) => {
@@ -55,7 +56,10 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => {
 // Import the mocked functions
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
 import { getAllResourceInformation } from '../../src/api_calls/Resources.js';
-import { addToWishlist } from '../../src/wishlist/wishlist.utils.js';
+import {
+  addToWishlist,
+  dropUnclaimedWishlistRequest,
+} from '../../src/wishlist/wishlist.utils.js';
 
 // Mock monster data
 const mockMonsterData = {
@@ -1293,6 +1297,47 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // fire_sword and res_fire_shield are both banked
       expect(wishlistedItems()).not.toContain('fire_sword');
       expect(wishlistedItems()).not.toContain('res_fire_shield');
+    });
+
+    it('drops its own stale request once a spare turns up in the bank', async () => {
+      // The shield was asked for on an earlier pass; another character has
+      // banked a spare since, so the request would have a duplicate made
+      await addToWishlist({
+        itemCode: 'res_fire_shield',
+        quantity: 1,
+        characterName: mockCharacter.data.name,
+      });
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(dropUnclaimedWishlistRequest).toHaveBeenCalledWith(
+        701,
+        mockCharacter.data.name,
+      );
+    });
+
+    it('keeps a request open for gear it still cannot find', async () => {
+      await addToWishlist({
+        itemCode: 'hp_boots',
+        quantity: 1,
+        characterName: mockCharacter.data.name,
+      });
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(dropUnclaimedWishlistRequest).not.toHaveBeenCalled();
     });
 
     it('does not wishlist gear that is already equipped', async () => {

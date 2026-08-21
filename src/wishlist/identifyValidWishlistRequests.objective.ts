@@ -115,20 +115,9 @@ export class IdentifyValidWishlistRequestsObjective extends Objective {
       logger.info(
         `Request info: acquisition method: ${request.acquisition_method}, requestor: ${request.character}`,
       );
-      const job = new FulfillWishlistRequestObjective(this.character, request);
-      const result = await this.character.executeJobNow(
-        job,
-        true,
-        true,
-        this.objectiveId,
-      );
 
-      if (result.success) {
-        logger.info(
-          `Crafting ${request.quantity}x ${request.item_code} was successful. Depositing`,
-        );
-        await this.character.depositNow(request.quantity, request.item_code);
-      }
+      const job = new FulfillWishlistRequestObjective(this.character, request);
+      await this.character.executeJobNow(job, true, true, this.objectiveId);
     }
 
     return ObjectiveCompleted;

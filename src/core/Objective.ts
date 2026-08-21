@@ -18,6 +18,7 @@ import { ApiError } from './Error.js';
 import { SimpleItemSchema, Skill, TaskType } from '../types/types.js';
 import {
   addToWishlist,
+  dropUnclaimedWishlistRequest,
   findOpenWishlistRequest,
   getWishlistRequestsForJob,
 } from '../wishlist/wishlist.utils.js';
@@ -544,6 +545,39 @@ export abstract class Objective {
       ...overrides,
     });
     if (jobId) this.raisedBlockingRequest = true;
+  }
+
+  /**
+   * @description Drops this character's own outstanding wish for an item it has
+   * since got hold of, so nobody spends a craft making a second one. The
+   * counterpart to requestIngredientFromWishlist: a wish granted by other means
+   * is noise, and a fulfiller will act on it days after the need went away.
+   *
+   * Only unowned wishes are dropped. A row a job is parked on has to be closed by
+   * whoever fulfils it, because checkOnHoldJobs resumes that job when every row
+   * reads fulfilled; a row that simply vanished gets the job retried once and
+   * then dropped.
+   * @param quantityHeld how many the character can now lay hands on, so a wish
+   * for more than that stays open for the rest
+   */
+  async dropGrantedWishlistRequest(
+    itemCode: string,
+    quantityHeld: number,
+  ): Promise<void> {
+    if (this.wishlistRequestOwner()) return;
+
+    const open = await findOpenWishlistRequest({
+      character: this.character.data.name,
+      itemCode,
+    });
+
+    if (!open || open.executing || quantityHeld < open.quantity) return;
+
+    if (await dropUnclaimedWishlistRequest(open.id, this.character.data.name)) {
+      this.log.info(
+        `Dropping request #${open.id} for ${itemCode}: ${this.character.data.name} already has ${quantityHeld}`,
+      );
+    }
   }
 
   /**

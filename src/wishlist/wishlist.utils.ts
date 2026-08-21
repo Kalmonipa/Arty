@@ -476,6 +476,41 @@ export async function deleteExpiredWishlistRequests(): Promise<number> {
 }
 
 /**
+ * Drops an unclaimed wish the asker no longer needs, because it got hold of the
+ * item another way. Making it again would be waste.
+ *
+ * Scoped to the asker's own unowned wishes, and to rows nobody has claimed: a
+ * claimed row is being worked on right now, and pulling it out from under the
+ * fulfiller would leave it with nothing to close. The conditions are in the
+ * statement rather than checked first so a claim landing in between loses the
+ * race safely.
+ * @param id The wishlist row id
+ * @param characterName The character that asked for it
+ * @returns true if a row was deleted, false otherwise
+ */
+export async function dropUnclaimedWishlistRequest(
+  id: number,
+  characterName: string,
+): Promise<boolean> {
+  const query = `
+    DELETE FROM wishlist
+    WHERE id = $1
+      AND character = $2
+      AND job_id IS NULL
+      AND executing = false
+      AND fulfilled = false;
+  `;
+
+  try {
+    const result = await db.query(query, [id, characterName]);
+    return (result.rowCount ?? 0) > 0;
+  } catch (err) {
+    logger.error(`Failed to drop wishlist request ${id}: ${err}`);
+    return false;
+  }
+}
+
+/**
  * Deletes a wishlist request outright.
  * @param id The wishlist row id
  * @returns true if a row was deleted, false otherwise

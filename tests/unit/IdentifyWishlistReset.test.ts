@@ -51,6 +51,9 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
     character = new Character({ ...mockCharacterData });
     jest.spyOn(character, 'getCharacterLevel').mockReturnValue(40);
     character.gatherNow = jest.fn(async () => ObjectiveCompleted) as any;
+    // These cases are about releasing the claim, not about bank stock: an empty
+    // bank keeps the fulfil job on the path where it actually makes the item
+    character.checkQuantityOfItemInBank = jest.fn(async () => 0) as any;
 
     mockedGetItem.mockResolvedValue({ code: 'steel_bar', level: 20 } as any);
     mockedOpen.mockResolvedValue([
@@ -67,6 +70,17 @@ describe('IdentifyValidWishlistRequestsObjective request release', () => {
 
     expect(mockedFulfilled).toHaveBeenCalledWith(340, character.data.name);
     expect(mockedNotExecuting).not.toHaveBeenCalled();
+  });
+
+  it('banks the goods once, leaving delivery to the fulfil job', async () => {
+    // A second deposit of the same quantity has nothing left in the inventory to
+    // bank, so it only ever logged a failed prerequisite check
+    character.depositNow = jest.fn(async () => ObjectiveCompleted) as any;
+
+    await job.run();
+
+    expect(character.depositNow).toHaveBeenCalledTimes(1);
+    expect(character.depositNow).toHaveBeenCalledWith(5, 'steel_bar');
   });
 
   it('clears the executing flag when the deposit fails', async () => {

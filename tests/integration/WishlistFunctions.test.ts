@@ -16,6 +16,7 @@ import {
   getOpenWishlistRequests,
   getWishlistRequestsForJob,
   deleteExpiredWishlistRequests,
+  dropUnclaimedWishlistRequest,
   markAsFulfilled,
   markAsNotExecuting,
   reclaimExecutingWishlistRequests,
@@ -372,6 +373,31 @@ describe('wishlist functions', () => {
       const claimed = await claimWishlistRequest(340, 'BouncyBella');
 
       expect(claimed).toBe(false);
+    });
+  });
+
+  describe('dropUnclaimedWishlistRequest', () => {
+    it('drops an unclaimed wish the asker raised', async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 1 } as any);
+
+      const dropped = await dropUnclaimedWishlistRequest(412, 'ChoppyChad');
+
+      expect(dropped).toBe(true);
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/DELETE FROM wishlist/i);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([412, 'ChoppyChad']);
+    });
+
+    it('refuses to pull a claimed or owned row out from under a fulfiller', async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 0 } as any);
+
+      const dropped = await dropUnclaimedWishlistRequest(412, 'ChoppyChad');
+
+      expect(dropped).toBe(false);
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/executing = false/i);
+      expect(sql).toMatch(/job_id IS NULL/i);
+      expect(sql).toMatch(/fulfilled = false/i);
     });
   });
 

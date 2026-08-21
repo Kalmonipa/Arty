@@ -49,30 +49,44 @@ export class FulfillWishlistRequestObjective extends Objective {
       return ObjectiveCancelled;
     }
 
-    // Calculate how many inventories full the gather job will be
-    // This is to prevent gathering more than the inventory cap and the char endlessly gathers
-    const numGatherIterations = Math.ceil(
-      this.request.quantity / this.character.data.inventory_max_items,
-    );
-
     let successfull = false;
     try {
-      let iterations = 0;
-      while (iterations < numGatherIterations) {
-        const numToGather = Math.min(
-          this.request.quantity,
-          Math.round(this.character.data.inventory_max_items * 0.9),
+      const alreadyBanked = await this.character.checkQuantityOfItemInBank(
+        this.request.item_code,
+      );
+      let outstanding = this.request.quantity - alreadyBanked;
+
+      if (outstanding <= 0) {
+        this.log.info(
+          `Request #${this.request.id} for ${this.request.quantity}x ${this.request.item_code} is already covered by the ${alreadyBanked} in the bank; nothing to make`,
         );
+        successfull = true;
+        return ObjectiveCompleted;
+      }
+
+      if (alreadyBanked > 0) {
+        this.log.info(
+          `${alreadyBanked}x ${this.request.item_code} already banked; making the remaining ${outstanding} for request #${this.request.id}`,
+        );
+      }
+
+      // Gather in inventory sized batches so a large request doesn't try to
+      // carry more than the character can hold
+      const batchSize = Math.max(
+        1,
+        Math.round(this.character.data.inventory_max_items * 0.9),
+      );
+
+      while (outstanding > 0) {
+        const numToGather = Math.min(outstanding, batchSize);
         await this.character.gatherNow(numToGather, this.request.item_code);
         successfull = (
           await this.character.depositNow(numToGather, this.request.item_code)
         ).success;
-        iterations++;
+        if (!successfull) break;
+        outstanding -= numToGather;
       }
     } finally {
-      // Release the request either way: fulfilled if it completed, otherwise
-      // cleared of the executing flag so a later cycle can retry it rather
-      // than leaving it stranded and blocking any job waiting on it.
       if (successfull) {
         await markAsFulfilled(this.request.id, characterName);
       } else {
