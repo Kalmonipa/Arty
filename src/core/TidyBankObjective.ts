@@ -15,6 +15,7 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
+import { BankCache } from './BankCache.js';
 
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API
@@ -73,6 +74,7 @@ export class TidyBankObjective extends Objective {
 
       case 'fisherman':
         await this.cleanUpBags(contentsOfBank);
+        await this.tradeEventTickets(contentsOfBank);
         return await this.cookFood();
 
       case 'gearcrafter':
@@ -107,6 +109,56 @@ export class TidyBankObjective extends Objective {
 
       default:
         break;
+    }
+
+    return ObjectiveCompleted;
+  }
+
+  /**
+   * Season 8 special event
+   * @todo Remove this code after S8 finishes
+   * Quick and dirty code to buy medals and trophies when we have enough
+   */
+  private async tradeEventTickets(
+    contentsOfBank: SimpleItemSchema[],
+  ): Promise<ObjectiveResult> {
+    const EventTicket = 'event_ticket';
+    const LichRaceMedal = 'lich_race_medal';
+    const LichRaceTrophy = 'lich_race_trophy';
+
+    const numTicketsInBank = contentsOfBank.find(
+      (item) => item.code === EventTicket,
+    ).quantity;
+
+    if (!numTicketsInBank) {
+      logger.debug(`No ${EventTicket} found in bank`);
+      return ObjectiveCompleted;
+    }
+
+    if (numTicketsInBank >= 100) {
+      const numToBuy = Math.floor(numTicketsInBank / 100);
+      logger.info(`Buying ${numToBuy}x ${LichRaceMedal}`);
+      if (
+        (await this.character.tradeWithNpcNow('buy', numToBuy, LichRaceMedal))
+          .success
+      ) {
+        await this.character.depositNow(numToBuy, LichRaceMedal);
+      }
+    }
+
+    const numMedalsInBank = contentsOfBank.find(
+      (item) => item.code === LichRaceMedal,
+    ).quantity;
+
+    if (!numMedalsInBank) {
+      logger.debug(`No ${LichRaceMedal} found in bank`);
+      return ObjectiveCompleted;
+    }
+
+    if (numMedalsInBank >= 10) {
+      const numToBuy = Math.floor(numMedalsInBank / 10);
+      logger.info(`Buying ${numToBuy}x ${LichRaceTrophy}`);
+      await this.character.tradeWithNpcNow('buy', numToBuy, LichRaceTrophy);
     }
 
     return ObjectiveCompleted;
