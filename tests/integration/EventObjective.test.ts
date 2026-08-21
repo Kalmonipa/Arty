@@ -227,7 +227,7 @@ describe('EventObjective - sellToMerchant', () => {
     expect(character.tradeWithNpcNow).toHaveBeenCalledWith('sell', 30, 'shell');
   });
 
-  it('sells all ring equipment types', async () => {
+  it('sells 5 ring equipment types', async () => {
     mockGetNpc.mockResolvedValue(
       makeNpcResponse([
         { code: 'forest_ring', buy_price: null, sell_price: 150 },
@@ -238,10 +238,10 @@ describe('EventObjective - sellToMerchant', () => {
 
     await makeObjective('fish_merchant').run();
 
-    expect(character.withdrawNow).toHaveBeenCalledWith(8, 'forest_ring');
+    expect(character.withdrawNow).toHaveBeenCalledWith(3, 'forest_ring');
     expect(character.tradeWithNpcNow).toHaveBeenCalledWith(
       'sell',
-      8,
+      3,
       'forest_ring',
     );
   });
@@ -263,7 +263,7 @@ describe('EventObjective - sellToMerchant', () => {
     },
   );
 
-  it('sells ring equipment item when bank quantity is already at or below 5', async () => {
+  it('does not sell ring equipment item when bank quantity is already at or below 5', async () => {
     mockGetNpc.mockResolvedValue(
       makeNpcResponse([
         { code: 'forest_ring', buy_price: null, sell_price: 150 },
@@ -274,7 +274,7 @@ describe('EventObjective - sellToMerchant', () => {
 
     await makeObjective('fish_merchant').run();
 
-    expect(character.withdrawNow).toHaveBeenCalled();
+    expect(character.withdrawNow).not.toHaveBeenCalled();
   });
 
   it('caps withdrawal at 90% of inventory_max_items when sell quantity exceeds it', async () => {
@@ -503,7 +503,7 @@ describe('EventObjective - sellToMerchant', () => {
 
       await makeObjective('fish_merchant').run();
 
-      expect(character.withdrawNow).toHaveBeenCalledWith(9, 'some_ring');
+      expect(character.withdrawNow).toHaveBeenCalledWith(4, 'some_ring');
     });
 
     it('sells normally when getAllNpcItems returns an ApiError', async () => {

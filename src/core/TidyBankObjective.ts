@@ -118,6 +118,7 @@ export class TidyBankObjective extends Objective {
    * Season 8 special event
    * @todo Remove this code after S8 finishes
    * Quick and dirty code to buy medals and trophies when we have enough
+   * https://www.artifactsmmo.com/news/two-year-anniversary-event
    */
   private async tradeEventTickets(
     contentsOfBank: SimpleItemSchema[],

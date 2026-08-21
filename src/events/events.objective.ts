@@ -545,10 +545,9 @@ export class EventObjective extends Objective {
   private async sellToMerchant(npcCode: string): Promise<ObjectiveResult> {
     const keepEquipmentTypes = new Set([
       'helmet', // Wolf ears are the best wisdom/prospecting head piece until lvl ~50 gear so we want to keep them
-      // Originally thought we should keep these as well but now I'm not so sure
-      // 'weapon',
-      // 'body_armor',
-      // 'ring',
+      'weapon', // Death knight swords and highwayman daggers are decent
+      'body_armor', // Bandit armor is decent
+      'ring', // Forest rings are decent
     ]);
     const keepAllTypes = new Set(['utility', 'consumable']);
     const keepQuantity = 5;

@@ -42,13 +42,19 @@ function makeCharacter() {
     checkQuantityOfItemInBank: jest.fn(async (code: string) =>
       code === 'tasks_coin' ? 2 : 0,
     ),
-    withdrawNow: jest.fn(async (): Promise<ObjectiveResult> => ObjectiveCompleted),
+    withdrawNow: jest.fn(
+      async (): Promise<ObjectiveResult> => ObjectiveCompleted,
+    ),
     handleErrors: jest.fn(async () => true),
     findMaps: jest.fn(() => [{ x: 1, y: 2 }]),
     evaluateClosestMap: jest.fn(() => ({ x: 1, y: 2 })),
     move: jest.fn(async () => undefined),
-    executeJobNow: jest.fn(async (): Promise<ObjectiveResult> => ObjectiveCompleted),
-    gatherNow: jest.fn(async (): Promise<ObjectiveResult> => ObjectiveCompleted),
+    executeJobNow: jest.fn(
+      async (): Promise<ObjectiveResult> => ObjectiveCompleted,
+    ),
+    gatherNow: jest.fn(
+      async (): Promise<ObjectiveResult> => ObjectiveCompleted,
+    ),
     addItemToItemsToKeep: jest.fn(),
     removeItemFromItemsToKeep: jest.fn(),
     saveJobQueue: jest.fn(async () => undefined),
