@@ -219,9 +219,9 @@ export class IdleCrafterObjective extends Objective {
     const taskCoinsInBank =
       await this.character.checkQuantityOfItemInBank(TasksCoin);
 
-    if (taskCoinsInBank >= MIN_TASK_COINS_IN_BANK) {
+    if (taskCoinsInBank >= MIN_TASK_COINS_BEFORE_GAMBLING) {
       logger.debug(
-        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MIN_TASK_COINS_IN_BANK}). Not doing a monster task`,
+        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MIN_TASK_COINS_BEFORE_GAMBLING}). Not doing a monster task`,
       );
       return false;
     }
