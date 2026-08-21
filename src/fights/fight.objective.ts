@@ -193,43 +193,107 @@ export class FightObjective extends Objective {
    */
   async run(): Promise<ObjectiveResult> {
     let consecutiveLosses = 0;
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+    let fightAttempts = 1;
+
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
+
+    logger.info(`Finding location of ${this.target.code}`);
+
+    const maps = this.character.findMaps({ content_code: this.target.code });
+    if (maps.length === 0) {
+      logger.error(`Cannot find any maps for ${this.target.code}`);
+      return ObjectiveFailed;
+    }
+
+    const contentLocation = this.character.evaluateClosestMap(maps);
+
+    await this.character.move(contentLocation);
+
+    for (this.progress; this.progress < this.target.quantity; this.progress++) {
       if (!(await this.checkStatus())) return ObjectiveCancelled;
 
-      logger.debug(`Fight attempt ${attempt}/${this.maxRetries}`);
+      logger.info(
+        `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
+      );
 
-      logger.info(`Finding location of ${this.target.code}`);
+      // Get all food items to deposit
+      const foodItems = this.character.findFoodInInventory();
+      const foodCodes = foodItems.map((food) => food.code);
+      const itemsToKeep = [...foodCodes];
 
-      const maps = this.character.findMaps({ content_code: this.target.code });
-      if (maps.length === 0) {
-        logger.error(`Cannot find any maps for ${this.target.code}`);
-        return ObjectiveFailed;
+      await this.character.evaluateDepositItemsInBank(
+        itemsToKeep,
+        contentLocation,
+      );
+
+      await this.character.recoverHealth();
+      // If we start gathering then we may have a gathering tool equipped instead of a weapon
+      // so we want to re-equip our fighting weapon
+      if (this.character.data.weapon_slot !== this.combatWeapon) {
+        await this.character.equipNow(this.combatWeapon, 'weapon');
       }
 
-      const contentLocation = this.character.evaluateClosestMap(maps);
+      // Check these after each fight in case we need to top up
+      if (
+        this.character.data.utility1_slot_quantity <= MinEquippedUtilities &&
+        this.shouldEquipHealthPots
+      ) {
+        await this.character.equipUtility('restore', 'utility1');
+      }
 
+      // Move back after healing
       await this.character.move(contentLocation);
 
-      for (
-        this.progress;
-        this.progress < this.target.quantity;
-        this.progress++
-      ) {
-        if (!(await this.checkStatus())) return ObjectiveCancelled;
+      const response = await actionFight(
+        this.character.data,
+        this.participants,
+      );
 
-        logger.info(
-          `Fought ${this.progress}/${this.target.quantity} ${this.target.code}s`,
-        );
+      if (response instanceof ApiError) {
+        const shouldRetry = await this.character.handleErrors(response);
 
-        // Get all food items to deposit
-        const foodItems = this.character.findFoodInInventory();
-        const foodCodes = foodItems.map((food) => food.code);
-        const itemsToKeep = [...foodCodes];
+        if (!shouldRetry || fightAttempts >= this.maxRetries) {
+          logger.error(`Fight failed after ${fightAttempts} attempts`);
+          return ObjectiveFailed;
+        }
+        fightAttempts++;
+        this.progress--;
+        continue;
+      } else {
+        fightAttempts = 1;
+        if (response.data?.characters) {
+          const charData = response.data.characters.find(
+            (char) => char.name === this.character.data.name,
+          );
 
-        await this.character.evaluateDepositItemsInBank(
-          itemsToKeep,
-          contentLocation,
-        );
+          this.character.data = charData;
+        } else {
+          logger.error('Fight response missing character data');
+          return ObjectiveFailed;
+        }
+
+        if (response.data.fight.result === 'loss') {
+          consecutiveLosses++;
+          logger.info(
+            `Lost fight ${consecutiveLosses}/${this.maxConsecutiveLosses} against ${this.target.code}`,
+          );
+          if (this.useHealthPots) {
+            logger.info(`Will equip health potions for future fights`);
+            this.shouldEquipHealthPots = true;
+          }
+          // Don't count a lost fight toward progress
+          this.progress--;
+
+          if (consecutiveLosses >= this.maxConsecutiveLosses) {
+            this.lostTooManyFights = true;
+            logger.warn(
+              `Lost ${consecutiveLosses} fights in a row against ${this.target.code}. Stopping fight objective`,
+            );
+            return ObjectiveFailed;
+          }
+        } else {
+          consecutiveLosses = 0;
+        }
 
         await this.character.recoverHealth();
         // If we start gathering then we may have a gathering tool equipped instead of a weapon
@@ -237,94 +301,22 @@ export class FightObjective extends Objective {
         if (this.character.data.weapon_slot !== this.combatWeapon) {
           await this.character.equipNow(this.combatWeapon, 'weapon');
         }
-        // Move back after healing
+        // then move back to the fighting location
         await this.character.move(contentLocation);
 
-        // Check these after each fight in case we need to top up
-        if (
-          this.character.data.utility1_slot_quantity <= MinEquippedUtilities &&
-          this.shouldEquipHealthPots
-        ) {
-          if (
-            (await this.character.equipUtility('restore', 'utility1')).success
-          ) {
-            // If we moved to the bank we need to move back to the monster location
-            await this.character.move(contentLocation);
-          }
+        // Check amount of food in inventory to use after battles
+        if (!(await this.character.checkFoodLevels())) {
+          await this.character.topUpFood(contentLocation);
         }
-
-        const response = await actionFight(
-          this.character.data,
-          this.participants,
-        );
-
-        if (response instanceof ApiError) {
-          const shouldRetry = await this.character.handleErrors(response);
-
-          if (!shouldRetry || attempt === this.maxRetries) {
-            logger.error(`Fight failed after ${attempt} attempts`);
-            return ObjectiveFailed;
-          }
-          this.progress--;
-          continue;
-        } else {
-          if (response.data?.characters) {
-            const charData = response.data.characters.find(
-              (char) => char.name === this.character.data.name,
-            );
-
-            this.character.data = charData;
-          } else {
-            logger.error('Fight response missing character data');
-            return ObjectiveFailed;
-          }
-
-          if (response.data.fight.result === 'loss') {
-            consecutiveLosses++;
-            logger.info(
-              `Lost fight ${consecutiveLosses}/${this.maxConsecutiveLosses} against ${this.target.code}`,
-            );
-            if (this.useHealthPots) {
-              logger.info(`Will equip health potions for future fights`);
-              this.shouldEquipHealthPots = true;
-            }
-            // Don't count a lost fight toward progress
-            this.progress--;
-
-            if (consecutiveLosses >= this.maxConsecutiveLosses) {
-              this.lostTooManyFights = true;
-              logger.warn(
-                `Lost ${consecutiveLosses} fights in a row against ${this.target.code}. Stopping fight objective`,
-              );
-              return ObjectiveFailed;
-            }
-          } else {
-            consecutiveLosses = 0;
-          }
-
-          await this.character.recoverHealth();
-          // If we start gathering then we may have a gathering tool equipped instead of a weapon
-          // so we want to re-equip our fighting weapon
-          if (this.character.data.weapon_slot !== this.combatWeapon) {
-            await this.character.equipNow(this.combatWeapon, 'weapon');
-          }
-          // then move back to the fighting location
-          await this.character.move(contentLocation);
-
-          // Check amount of food in inventory to use after battles
-          if (!(await this.character.checkFoodLevels())) {
-            await this.character.topUpFood(contentLocation);
-          }
-        }
-
-        await this.character.saveJobQueue();
       }
 
-      logger.debug(
-        `Successfully fought ${this.target.quantity} ${this.target.code}`,
-      );
-      return { complete: true, success: true, reason: 'complete' };
+      await this.character.saveJobQueue();
     }
+
+    logger.debug(
+      `Successfully fought ${this.target.quantity} ${this.target.code}`,
+    );
+    return ObjectiveCompleted;
   }
 
   /**
