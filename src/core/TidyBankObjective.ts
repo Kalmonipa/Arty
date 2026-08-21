@@ -266,7 +266,6 @@ export class TidyBankObjective extends Objective {
     skill: CraftSkill,
     contentsOfBank: SimpleItemSchema[],
   ): Promise<ObjectiveResult> {
-    const maxNumberNeededInBank = 5;
     const obsoleteThreshold = this.character.lowestCharLevel - 10;
 
     const itemListResponse = await getAllItemInformation({
@@ -279,6 +278,9 @@ export class TidyBankObjective extends Objective {
     }
 
     for (const gear of itemListResponse.data) {
+      // Chars can equip 2 rings so we want to keep 10 of them, 5 of everything else
+      const maxNumberNeededInBank = gear.type === 'ring' ? 10 : 5;
+
       const content = contentsOfBank.find(
         (bankItem) => bankItem.code === gear.code,
       );
