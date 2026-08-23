@@ -4,7 +4,7 @@ import GatherRouter from './routes/Gather.js';
 import TaskRouter from './routes/Task.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
 import { GetCharacterData, logger } from './utils.js';
-import { ApiUrl } from './constants.js';
+import { ApiUrl, AppVersion } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
 import EquipRouter from './routes/Equip.js';
@@ -23,6 +23,10 @@ import WishlistRouter from './wishlist/wishlist.routes.js';
 import { reclaimExecutingWishlistRequests } from './wishlist/wishlist.utils.js';
 
 async function main() {
+  // First thing out, so a container crash-looping on a bad token or a rate
+  // limit still says which build is crash-looping
+  logger.info(`Arty ${AppVersion} starting`);
+
   let charDetails: CharacterSchema[] = await GetCharacterData();
 
   const char = new Character(

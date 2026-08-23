@@ -19,24 +19,35 @@ Related earlier work in the same area: the fight potion decision was rewritten s
 potions are only equipped when they decide the fight, and boss fight participants
 equip role potions in utility 2.
 
-## Check the image first
+## Check the version first
 
 The containers run code baked into the image at build time. If these changes have
 not been rebuilt and pushed, every measurement below will show no change and the
 honest conclusion is "not deployed yet", not "no benefit".
 
-```bash
-ssh krustykrab 'docker ps --format "{{.Image}}\t{{.CreatedAt}}" | sort -u'
-```
-
-Confirm at least one of the new log lines exists before drawing conclusions:
+Each container logs its release as its first line on startup, so the question is
+answerable directly. Read the most recent one:
 
 ```bash
 ssh krustykrab 'cd ~/Docker/Arty/logs && zcat -f longleglarry/arty-*.log* \
-  | grep -c "of the time unaided\|held for boss fights"'
+  | grep -o "Arty v[0-9.]* starting" | tail -1'
 ```
 
-Zero means the change is not running.
+The changes under review, and the version line itself, both landed on 23 Aug 2026
+and ship together in the first tag cut after that date. So:
+
+- **A version at or after that tag** — the changes are running, measure away.
+- **An earlier version** — not deployed. Rebuild before drawing any conclusion.
+- **`Arty dev starting`** — running from source rather than a tagged image.
+- **Nothing at all** — the image predates the version line entirely, which also
+  means it predates these changes.
+
+Cross-check against what the daemon thinks it is pulling, which catches a stack
+that was never restarted onto the new image:
+
+```bash
+ssh krustykrab 'docker ps --format "{{.Image}}\t{{.CreatedAt}}" | sort -u'
+```
 
 ## Baseline — LongLegLarry, week 34 (19–23 Aug 2026)
 

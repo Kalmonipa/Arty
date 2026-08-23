@@ -45,8 +45,15 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
       - name: Build Docker image
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_tag.outputs.tag }} .
+          docker build \
+            --build-arg APP_VERSION=${{ steps.git_tag.outputs.tag }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_tag.outputs.tag }} .
+          # latest is a second name for the same image rather than a second
+          # build. Two builds could differ, and only one of them would be the
+          # one the version line describes
+          docker tag \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_tag.outputs.tag }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
       - name: Push Docker image
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

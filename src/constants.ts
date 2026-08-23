@@ -165,4 +165,11 @@ export const BankFullRetryMs = 10 * 60 * 1000;
 export const TeleportPotionStock = 1;
 
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
+
+/**
+ * @description The release this build came from, baked in by the image build
+ * from the git tag. Falls back to 'dev' when running from source, so a log line
+ * always says something rather than 'undefined'.
+ */
+export const AppVersion = process.env.APP_VERSION || 'dev';
 export const ApiToken = getEnv('API_TOKEN');
