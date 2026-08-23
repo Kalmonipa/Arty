@@ -880,6 +880,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
         'splash_restore',
         'utility2',
+        true,
       );
       expect(mockCharacter.data.utility2_slot).toBe('health_splash_potion');
     });
@@ -896,6 +897,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
         'boost_dmg_fire',
         'utility2',
+        true,
       );
     });
 
@@ -908,6 +910,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
         'boost_res_fire',
         'utility2',
+        true,
       );
     });
 
@@ -919,6 +922,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(mockCharacter.equipUtility).toHaveBeenLastCalledWith(
         'boost_hp',
         'utility2',
+        true,
       );
       expect(mockCharacter.data.utility2_slot).toBe('health_boost_potion');
     });
@@ -957,6 +961,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
       expect(mockCharacter.equipUtility).not.toHaveBeenCalledWith(
         'splash_restore',
         'utility2',
+        true,
       );
     });
   });

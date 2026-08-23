@@ -101,3 +101,11 @@ export type OnHoldJobInfo = {
   waitingOn: WishlistRequestRef[];
   parkedAt: string;
 };
+
+/**
+ * The objective result plus the stats on the fight sim
+ */
+export type FightSimVerdict = ObjectiveResult & {
+  winRate: number;
+  averageTurns: number;
+};

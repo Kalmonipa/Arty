@@ -52,7 +52,7 @@ import { FightBossParticipantObjective } from '../fightBosses/bossFightParticipa
 import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
-import type { BankCache } from '../core/BankCache.js';
+import { BankCache } from '../core/BankCache.js';
 import {
   cacheBankQuantity,
   readCachedBankQuantity,
@@ -67,6 +67,7 @@ import {
   OnHoldJobInfo,
   SimpleObjectiveInfo,
   ObjectiveResult as ObjectiveResult,
+  FightSimVerdict,
   ObjectiveFailed,
   ObjectiveCompleted,
 } from '../types/ObjectiveData.js';
@@ -118,6 +119,7 @@ import {
   NavigationGraph,
 } from '../core/navigation/graph.js';
 import { Fishing, GourmetChef, Restore } from '../names.js';
+import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
   CharRole,
@@ -1522,13 +1524,16 @@ export class Character {
    * utility 1 is reserved for health potions
    * @returns
    */
-  async topUpHealthPots(potionToEquip?: string): Promise<ObjectiveResult> {
+  async topUpHealthPots(
+    potionToEquip?: string,
+    forBossFight = false,
+  ): Promise<ObjectiveResult> {
     if (potionToEquip) {
       const numToEquip =
         MaxEquippedUtilities - this.data.utility1_slot_quantity;
       return await this.equipNow(potionToEquip, 'utility1', numToEquip);
     } else if (this.data.utility1_slot_quantity <= MinEquippedUtilities) {
-      return await this.equipUtility(Restore, 'utility1');
+      return await this.equipUtility(Restore, 'utility1', forBossFight);
     }
   }
 
@@ -2067,10 +2072,23 @@ export class Character {
   async equipUtility(
     utilityType: UtilityEffects,
     slot: ItemSlot,
+    forBossFight = false,
   ): Promise<ObjectiveResult> {
     const utility = this.utilitiesMap[utilityType];
     const charLevel = this.getCharacterLevel(this.data);
     const minPotionLevel = utilityType === Restore ? charLevel - 20 : 0;
+
+    const bankContents = await BankCache.create(this);
+    if (bankContents.stale) {
+      logger.warn(`Could not read the bank; not equipping any ${utilityType}`);
+      return ObjectiveFailed;
+    }
+
+    const spareInBank = this.spareOutsideBossReserve(
+      utilityType,
+      bankContents,
+      forBossFight,
+    );
 
     for (const potion of [...utility].reverse()) {
       logger.debug(`Evaluating ${potion.code}`);
@@ -2096,19 +2114,51 @@ export class Character {
           numNeeded = numNeeded - numInInv;
           logger.debug(`${numNeeded} needed from the bank`);
         }
-        const numInBank = await this.checkQuantityOfItemInBank(potion.code);
-        if (numInBank > 0) {
-          await this.withdrawNow(Math.min(numInBank, numNeeded), potion.code);
-          return await this.equipNow(
-            potion.code,
-            slot,
-            Math.min(numInBank, numNeeded),
-          );
+        const canTake = Math.min(
+          bankContents.quantityOf(potion.code),
+          spareInBank,
+        );
+        if (canTake > 0) {
+          const toWithdraw = Math.min(canTake, numNeeded);
+          await this.withdrawNow(toWithdraw, potion.code);
+          return await this.equipNow(potion.code, slot, toWithdraw);
         }
         logger.debug(`Can't find any ${potion.name}. Trying next best option`);
       }
     }
     return ObjectiveFailed;
+  }
+
+  /**
+   * @description How many potions of an effect an ordinary fight may take out
+   * of the bank.
+   *
+   * A slice of the stock is held back for boss fights, which kit out three
+   * characters at once and cannot break off to farm more once the party is
+   * assembled. The reserve counts across every tier of the effect rather than
+   * per tier, so a bank holding 280 restores of any mix reads as empty to a
+   * normal fight while a boss fight still sees all 280.
+   */
+  private spareOutsideBossReserve(
+    utilityType: UtilityEffects,
+    bankContents: BankCache,
+    forBossFight: boolean,
+  ): number {
+    const reserved = BossFightPotionReserve[utilityType] ?? 0;
+    if (forBossFight || reserved === 0) {
+      return MaxEquippedUtilities;
+    }
+
+    const totalOfEffect = this.utilitiesMap[utilityType].reduce(
+      (running, potion) => running + bankContents.quantityOf(potion.code),
+      0,
+    );
+
+    const spare = Math.max(0, totalOfEffect - reserved);
+    logger.info(
+      `${totalOfEffect} ${utilityType} banked, ${reserved} held for boss fights, ${spare} spare`,
+    );
+    return spare;
   }
 
   /**
@@ -3452,7 +3502,7 @@ export class Character {
     mockCharacters: FakeCharacterSchema[],
     targetMobCode: string,
     iterations?: number,
-  ) {
+  ): Promise<FightSimVerdict> {
     const job = new FightSimulator(
       this,
       mockCharacters,
@@ -3460,12 +3510,18 @@ export class Character {
       iterations,
     );
 
-    return await this.executeJobNow(
+    const result = await this.executeJobNow(
       job,
       true,
       true,
       this.currentExecutingJob?.objectiveId,
     );
+
+    return {
+      ...result,
+      winRate: job.winRate,
+      averageTurns: job.averageTurns,
+    };
   }
 
   /**

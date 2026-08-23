@@ -2,7 +2,25 @@ import {
   actionClaimPendingItems,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { MAX_SKILL_LEVEL } from '../constants.js';
+import {
+  FightPotionsToStock,
+  MAX_SKILL_LEVEL,
+  MinFightPotionsInBank,
+  RestorePotionCraftBatch,
+  RestorePotionStockTarget,
+} from '../constants.js';
+import {
+  Restore,
+  BoostDmgAir,
+  BoostDmgEarth,
+  BoostDmgFire,
+  BoostDmgWater,
+  BoostResAir,
+  BoostResEarth,
+  BoostResFire,
+  BoostResWater,
+} from '../names.js';
+import { UtilityEffects } from '../types/ItemData.js';
 import { Role } from '../types/CharacterData.js';
 import {
   ItemSchema,
@@ -71,6 +89,9 @@ export class IdleHealerObjective extends Objective {
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpRestorePotionsInBank();
+    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+
+    await this.topUpFightPotionsInBank();
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     await this.topUpFishInBank();
@@ -213,16 +234,33 @@ export class IdleHealerObjective extends Objective {
    * Ensure that we have a minimum amount of certain items in the bank
    */
   private async topUpRestorePotionsInBank(): Promise<ObjectiveResult> {
-    // The lowest amount of an item we'd like in the bank
-    const minPotionsInBank = 100;
-
-    // Alchemist should craft 200 of every usable health potion, the floor being the lowest character level
-    // and the ceiling being either the alchemists alchemy level or the highest character level
     const alchemyLevel = this.character.getCharacterLevel(
       this.character.data,
       'alchemy',
     );
-    const restorePotions = this.character.utilitiesMap['restore'];
+    const restorePotions = this.character.utilitiesMap[Restore];
+
+    const bankContents = await BankCache.create(this.character);
+    if (bankContents.stale) {
+      logger.warn(
+        'Could not read the bank; skipping the restore potion top-up',
+      );
+      return ObjectiveFailed;
+    }
+
+    // Counted across tiers, the same way the boss fight reserve is counted, so
+    // a bank full of one tier and a bank spread over three both read honestly
+    const banked = restorePotions.reduce(
+      (running, potion) => running + bankContents.quantityOf(potion.code),
+      0,
+    );
+
+    if (banked >= RestorePotionStockTarget) {
+      logger.info(
+        `${banked} restore potions banked, at or above the ${RestorePotionStockTarget} target. Brewing none`,
+      );
+      return ObjectiveCompleted;
+    }
 
     // Craft the best potion each character can actually use, so low-level
     // characters get low tiers and high-level characters get higher ones,
@@ -236,8 +274,15 @@ export class IdleHealerObjective extends Objective {
       if (!tiersToCraft.has(healingPotion.code)) {
         continue;
       }
-      logger.info(`Crafting ${minPotionsInBank} ${healingPotion.code}`);
-      await this.character.craftNow(minPotionsInBank, healingPotion.code);
+      logger.info(
+        `Crafting ${RestorePotionCraftBatch} ${healingPotion.code}; ${banked}/${RestorePotionStockTarget} restore potions banked`,
+      );
+      await this.character.craftNow(
+        RestorePotionCraftBatch,
+        healingPotion.code,
+      );
+
+      if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
     }
 
     return ObjectiveCompleted;
@@ -308,6 +353,83 @@ export class IdleHealerObjective extends Objective {
    * @todo Create a TopUpBank objective that handles this
    * @returns
    */
+  /**
+   * @description Keeps a stock of damage boost and resistance potions in the
+   * bank for the fighters to draw on.
+   *
+   * Unlike restores, these are stocked per element rather than per character
+   * level: which one a fighter wants is decided by the monster it is facing,
+   * not by how high level the fighter is. Every tier the alchemist can craft is
+   * kept, not just the best one, so a fighter still has something to reach for
+   * once the top tier runs out.
+   */
+  private async topUpFightPotionsInBank(): Promise<ObjectiveResult> {
+    const effects: UtilityEffects[] = [
+      BoostDmgAir,
+      BoostDmgEarth,
+      BoostDmgFire,
+      BoostDmgWater,
+      BoostResAir,
+      BoostResEarth,
+      BoostResFire,
+      BoostResWater,
+    ];
+
+    const alchemyLevel = this.character.getCharacterLevel(
+      this.character.data,
+      'alchemy',
+    );
+    const highestCharLevel = Math.max(
+      ...(this.character.allCharacterDetails ?? [this.character.data]).map(
+        (char) => char.level,
+      ),
+    );
+
+    const bankContents = await BankCache.create(this.character);
+    if (bankContents.stale) {
+      logger.warn('Could not read the bank; skipping the fight potion top-up');
+      return ObjectiveFailed;
+    }
+
+    // enhanced_boost_potion carries all four damage effects, so it turns up
+    // once per element. Crafting it four times over would be four times the mats
+    const alreadyConsidered = new Set<string>();
+
+    for (const effect of effects) {
+      for (const potion of this.character.utilitiesMap[effect]) {
+        if (alreadyConsidered.has(potion.code)) {
+          continue;
+        }
+        alreadyConsidered.add(potion.code);
+
+        // No point stocking a tier the alchemist cannot make or no fighter can
+        // drink
+        if (
+          potion.craft?.level > alchemyLevel ||
+          potion.level > highestCharLevel
+        ) {
+          continue;
+        }
+
+        const numInBank = bankContents.quantityOf(potion.code);
+        if (numInBank >= MinFightPotionsInBank) {
+          logger.debug(`${numInBank} ${potion.code} in the bank already`);
+          continue;
+        }
+
+        const potsToCraft = FightPotionsToStock - numInBank;
+        logger.info(
+          `Crafting ${potsToCraft} ${potion.code} to bring the bank up to ${FightPotionsToStock}`,
+        );
+        await this.character.craftNow(potsToCraft, potion.code);
+
+        if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+      }
+    }
+
+    return ObjectiveCompleted;
+  }
+
   private async topUpTeleportPotionsInBank(): Promise<boolean> {
     const maxPotionsToCraft = 100;
     const minPotionsInBank = 50;

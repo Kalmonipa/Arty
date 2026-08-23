@@ -14,12 +14,17 @@ import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { MonsterSchema, SimpleEffectSchema } from '../types/types.js';
 import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
 import { Antidote, Restore } from '../names.js';
+import {
+  PotionlessFightMaxConsecutiveLosses,
+  PotionlessFightWinRateFloor,
+} from '../constants.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
   useHealthPots: boolean;
   shouldEquipHealthPots: boolean;
   maxConsecutiveLosses = 3;
+  acceptedDryWinRate?: number;
   lostTooManyFights = false;
   participants?: string[];
   runFightSim?: boolean;
@@ -92,10 +97,25 @@ export class FightObjective extends Objective {
     logger.info(
       `Simulating fight against ${this.target.code} with no utilities`,
     );
-    if (
-      (await this.character.simulateFightNow([fakeSchema], this.target.code))
-        .success
-    ) {
+    const dryVerdict = await this.character.simulateFightNow(
+      [fakeSchema],
+      this.target.code,
+    );
+
+    if (dryVerdict.success) {
+      await this.dropHealthPotions();
+      return ObjectiveCompleted;
+    }
+
+    // Below the simulator's pass mark but still winning most of the time. A
+    // handful of lost fights costs a cooldown and some health; the alternative
+    // is a hundred potions on a fight that was already going our way
+    if (dryVerdict.winRate >= PotionlessFightWinRateFloor) {
+      logger.info(
+        `Winning ${this.target.code} ${dryVerdict.winRate}% of the time unaided. Fighting dry rather than spending potions`,
+      );
+      this.acceptedDryWinRate = dryVerdict.winRate;
+      this.maxConsecutiveLosses = PotionlessFightMaxConsecutiveLosses;
       await this.dropHealthPotions();
       return ObjectiveCompleted;
     }
@@ -298,6 +318,7 @@ export class FightObjective extends Objective {
             this.runFightSim &&
             this.useHealthPots &&
             !this.shouldEquipHealthPots &&
+            !this.acceptedDryWinRate &&
             this.mobInfo
           ) {
             const verdict = await this.decideOnHealthPotions(this.mobInfo);

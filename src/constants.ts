@@ -1,3 +1,5 @@
+import { UtilityEffects } from './types/ItemData.js';
+
 import { Role } from './types/CharacterData.js';
 import { getEnv } from './getEnv.js';
 import dotenv from 'dotenv';
@@ -76,6 +78,46 @@ export const MaxEquippedUtilities = 100;
  * Minimum number of potions to equip
  */
 export const MinEquippedUtilities = 20;
+
+/**
+ * @description Potions held back in the bank for boss fights, by effect.
+ * 300 potions is enough for 3 chars to do a boss fight
+ */
+export const BossFightPotionReserve: Partial<Record<UtilityEffects, number>> = {
+  restore: 300,
+};
+
+/**
+ * @description The unaided win rate a character will settle for rather than
+ * spend restore potions.
+ */
+export const PotionlessFightWinRateFloor = 60;
+
+/**
+ * @description How many losses in a row a deliberately unaided fight tolerates
+ * before giving up
+ */
+export const PotionlessFightMaxConsecutiveLosses = 6;
+
+/**
+ * @description How many restore potions the alchemist works toward across every
+ * tier: the boss fight reserve plus a working supply for ordinary fights.
+ */
+export const RestorePotionWorkingStock = 200;
+export const RestorePotionStockTarget =
+  (BossFightPotionReserve.restore ?? 0) + RestorePotionWorkingStock;
+
+/** How many of one tier the alchemist brews in a single pass */
+export const RestorePotionCraftBatch = 100;
+
+/**
+ * @description How many damage boost and resistance potions of each kind the
+ * alchemist keeps in the bank, and the level it lets the stock fall to before
+ * crafting more. A fighter equips up to a full stack per boss fight, so the
+ * stock is per potion rather than across all of them.
+ */
+export const FightPotionsToStock = 100;
+export const MinFightPotionsInBank = 50;
 /**
  * Desired number of food in inventory
  */

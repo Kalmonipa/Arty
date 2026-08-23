@@ -503,7 +503,7 @@ export class EvaluateGearObjective extends Objective {
       return;
     }
 
-    await this.character.topUpHealthPots();
+    await this.character.topUpHealthPots(undefined, true);
 
     for (const effect of await this.rolePotionEffects(targetMob)) {
       if (await this.equipRolePotion(effect)) {
@@ -620,7 +620,10 @@ export class EvaluateGearObjective extends Objective {
       );
     }
 
-    return (await this.character.equipUtility(effect, 'utility2')).success;
+    // The boss fight reserve exists for exactly this call, so it sees the
+    // whole stock rather than what is spare above it
+    return (await this.character.equipUtility(effect, 'utility2', true))
+      .success;
   }
 
   /**

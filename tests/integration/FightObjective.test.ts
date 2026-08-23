@@ -3,7 +3,12 @@ import {
   ObjectiveCompleted,
   ObjectiveFailed,
   ObjectiveResult,
+  FightSimVerdict,
 } from '../../src/types/ObjectiveData.js';
+import {
+  PotionlessFightMaxConsecutiveLosses,
+  PotionlessFightWinRateFloor,
+} from '../../src/constants.js';
 import { FightObjective } from '../../src/fights/fight.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
@@ -261,8 +266,8 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
-  simulateFightNow = jest.fn(async (): Promise<ObjectiveResult> => {
-    return ObjectiveCompleted;
+  simulateFightNow = jest.fn(async (): Promise<FightSimVerdict> => {
+    return { ...ObjectiveCompleted, winRate: 100, averageTurns: 12 };
   });
 
   trainCombatLevelNow = jest.fn(
@@ -571,13 +576,104 @@ describe('FightObjective Integration Tests', () => {
     // in the order the decision asks for them
     const simVerdicts = (...verdicts: ObjectiveResult[]) => {
       mockCharacter.simulateFightNow.mockReset();
+      // A loss with a 0% win rate: nowhere near the dry fight floor, so these
+      // verdicts exercise the potion decision rather than the floor
+      const withRate = (verdict: ObjectiveResult) => ({
+        ...verdict,
+        winRate: verdict.success ? 100 : 0,
+        averageTurns: 12,
+      });
       for (const verdict of verdicts) {
-        mockCharacter.simulateFightNow.mockResolvedValueOnce(verdict);
+        mockCharacter.simulateFightNow.mockResolvedValueOnce(withRate(verdict));
       }
       mockCharacter.simulateFightNow.mockResolvedValue(
-        verdicts[verdicts.length - 1],
+        withRate(verdicts[verdicts.length - 1]),
       );
     };
+
+    it('fights on without potions when it still wins most of the time', async () => {
+      mockCharacter.simulateFightNow.mockResolvedValue({
+        ...ObjectiveFailed,
+        winRate: PotionlessFightWinRateFloor + 10,
+        averageTurns: 20,
+      });
+      mockCharacter.data.utility1_slot = 'health_potion';
+      mockCharacter.data.utility1_slot_quantity = 90;
+
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(true);
+      expect(fightObjective.shouldEquipHealthPots).toBe(false);
+      expect(fightObjective.acceptedDryWinRate).toBe(
+        PotionlessFightWinRateFloor + 10,
+      );
+      // It only ever asked the one question: no point pricing the potion run
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalledTimes(1);
+      expect(mockCharacter.unequipNow).toHaveBeenCalledWith('utility1', 90);
+    });
+
+    it('still reaches for potions when the unaided rate is below the floor', async () => {
+      mockCharacter.simulateFightNow
+        .mockResolvedValueOnce({
+          ...ObjectiveFailed,
+          winRate: PotionlessFightWinRateFloor - 10,
+          averageTurns: 30,
+        })
+        .mockResolvedValue({
+          ...ObjectiveCompleted,
+          winRate: 100,
+          averageTurns: 14,
+        });
+
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(true);
+      expect(fightObjective.shouldEquipHealthPots).toBe(true);
+      expect(fightObjective.acceptedDryWinRate).toBeUndefined();
+      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
+        'restore',
+        'utility1',
+      );
+    });
+
+    it('tolerates more losses on a fight it knowingly took unaided', async () => {
+      mockCharacter.simulateFightNow.mockResolvedValue({
+        ...ObjectiveFailed,
+        winRate: PotionlessFightWinRateFloor,
+        averageTurns: 22,
+      });
+
+      await fightObjective.runPrerequisiteChecks();
+
+      // Losing is the expected cost of fighting below the pass mark, so the
+      // usual three strikes would abandon the objective almost at once
+      expect(fightObjective.maxConsecutiveLosses).toBe(
+        PotionlessFightMaxConsecutiveLosses,
+      );
+    });
+
+    it('does not retest the verdict after a loss it expected', async () => {
+      mockCharacter.addItemToInventory('apple', 20);
+      const target: ObjectiveTargets = { code: 'red_slime', quantity: 1 };
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      mockCharacter.simulateFightNow.mockResolvedValue({
+        ...ObjectiveFailed,
+        winRate: PotionlessFightWinRateFloor + 5,
+        averageTurns: 20,
+      });
+      await objective.runPrerequisiteChecks();
+
+      mockCharacter.simulateFightNow.mockClear();
+      (actionFight as jest.MockedFunction<typeof actionFight>)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValue(mockFightResponse);
+
+      await objective.run();
+
+      expect(mockCharacter.simulateFightNow).not.toHaveBeenCalled();
+      expect(objective.shouldEquipHealthPots).toBe(false);
+    });
 
     it('puts back potions it is carrying when the fight is won without them', async () => {
       mockCharacter.data.utility1_slot = 'small_health_potion';

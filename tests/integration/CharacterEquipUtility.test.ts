@@ -7,7 +7,10 @@ import {
   ObjectiveCompleted,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { MaxEquippedUtilities } from '../../src/constants.js';
+import {
+  BossFightPotionReserve,
+  MaxEquippedUtilities,
+} from '../../src/constants.js';
 
 jest.mock('../../src/api_calls/Items', () => ({
   actionEquipItem: jest.fn(),
@@ -39,6 +42,7 @@ const createRestorePotion = (
 
 describe('Character.equipUtility', () => {
   let character: Character;
+  let bankItems: Record<string, number>;
 
   const addItemToInventory = (code: string, quantity: number): void => {
     const item = character.data.inventory.find(
@@ -99,6 +103,16 @@ describe('Character.equipUtility', () => {
     character.checkQuantityOfItemInBank = jest.fn(
       async (): Promise<number> => 0,
     ) as jest.MockedFunction<(code: string) => Promise<number>>;
+
+    // equipUtility reads the bank through a single snapshot, both to save a
+    // request per tier and to total the boss fight reserve across tiers
+    bankItems = {};
+    character.getAllBankItems = jest.fn(async () =>
+      Object.entries(bankItems).map(([code, quantity]) => ({
+        code,
+        quantity,
+      })),
+    ) as never;
 
     character.withdrawNow = jest.fn(
       async (quantity: number, code: string): Promise<ObjectiveResult> => {
@@ -162,11 +176,10 @@ describe('Character.equipUtility', () => {
   });
 
   it('withdraws potions from the bank when the inventory is short', async () => {
-    (
-      character.checkQuantityOfItemInBank as jest.MockedFunction<
-        (code: string) => Promise<number>
-      >
-    ).mockResolvedValue(40);
+    // 40 above the boss fight reserve, so 40 is what an ordinary fight sees
+    bankItems = {
+      greater_health_potion: BossFightPotionReserve.restore + 40,
+    };
 
     const result = await character.equipUtility('restore', 'utility1');
 
@@ -201,18 +214,62 @@ describe('Character.equipUtility', () => {
   });
 
   it('falls back to a lesser potion held in the bank rather than crafting the best one', async () => {
-    (
-      character.checkQuantityOfItemInBank as jest.MockedFunction<
-        (code: string) => Promise<number>
-      >
-    ).mockImplementation(async (code: string) =>
-      code === 'health_potion' ? 30 : 0,
-    );
+    bankItems = { health_potion: BossFightPotionReserve.restore + 30 };
 
     const result = await character.equipUtility('restore', 'utility1');
 
     expect(character.craftNow).not.toHaveBeenCalled();
     expect(character.withdrawNow).toHaveBeenCalledWith(30, 'health_potion');
     expect(result.success).toBe(true);
+  });
+  it('hides the boss fight reserve from an ordinary fight', async () => {
+    // 20 short of the reserve: a boss fight would see all 280, this sees none
+    bankItems = { greater_health_potion: BossFightPotionReserve.restore - 20 };
+
+    const result = await character.equipUtility('restore', 'utility1');
+
+    expect(character.withdrawNow).not.toHaveBeenCalled();
+    expect(character.equipNow).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+  });
+
+  it('gives a boss fight the whole stock, reserve included', async () => {
+    bankItems = { greater_health_potion: BossFightPotionReserve.restore - 20 };
+
+    const result = await character.equipUtility('restore', 'utility1', true);
+
+    expect(character.withdrawNow).toHaveBeenCalledWith(
+      100,
+      'greater_health_potion',
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it('counts the reserve across every tier, not per tier', async () => {
+    // 200 + 130 = 330 restores banked, so 30 are spare whichever tier they are
+    bankItems = {
+      greater_health_potion: 200,
+      health_potion: 130,
+    };
+
+    await character.equipUtility('restore', 'utility1');
+
+    expect(character.withdrawNow).toHaveBeenCalledWith(
+      30,
+      'greater_health_potion',
+    );
+  });
+
+  it('equips nothing when the bank snapshot fails to load', async () => {
+    (character.getAllBankItems as jest.Mock).mockImplementation(
+      async () => undefined,
+    );
+
+    const result = await character.equipUtility('restore', 'utility1');
+
+    // A stale read reports nothing banked, which would look identical to a
+    // reserve that is fully committed
+    expect(character.withdrawNow).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
   });
 });
