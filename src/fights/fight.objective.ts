@@ -12,7 +12,8 @@ import {
 } from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { MonsterSchema, SimpleEffectSchema } from '../types/types.js';
-import { MinEquippedUtilities } from '../constants.js';
+import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
+import { Antidote, Restore } from '../names.js';
 
 export class FightObjective extends Objective {
   target: ObjectiveTargets;
@@ -22,6 +23,7 @@ export class FightObjective extends Objective {
   lostTooManyFights = false;
   participants?: string[];
   runFightSim?: boolean;
+  mobInfo?: MonsterSchema;
 
   combatWeapon: string;
 
@@ -62,130 +64,142 @@ export class FightObjective extends Objective {
       return ObjectiveFailed;
     }
 
+    this.mobInfo = mobInfo.data;
+
     if (this.runFightSim) {
-      const fakeSchema = this.character.createFakeCharacterSchema(
-        this.character.data,
+      return await this.decideOnHealthPotions(mobInfo.data);
+    }
+
+    return ObjectiveCompleted;
+  }
+
+  /**
+   * @description Works out whether restore potions are what decides this fight
+   * and stocks or drops utility1 to match.
+   *
+   * The `restore` effect fires on its own at the start of any turn the
+   * character is below half health, so carrying potions is the same as
+   * spending them. They are only worth equipping for a fight that is lost
+   * without them and won with them.
+   */
+  private async decideOnHealthPotions(
+    mob: MonsterSchema,
+  ): Promise<ObjectiveResult> {
+    const fakeSchema = this.character.createFakeCharacterSchema(
+      this.character.data,
+    );
+
+    logger.info(
+      `Simulating fight against ${this.target.code} with no utilities`,
+    );
+    if (
+      (await this.character.simulateFightNow([fakeSchema], this.target.code))
+        .success
+    ) {
+      await this.dropHealthPotions();
+      return ObjectiveCompleted;
+    }
+
+    // Check if the mob has poison effect and check if we can win without antidotes
+    const mobPoisonEffect: SimpleEffectSchema | undefined = mob.effects?.find(
+      (effect) => effect.code === 'poison',
+    );
+    if (mobPoisonEffect) {
+      const antidoteToEquip = this.character.utilitiesMap[Antidote].find(
+        (potion) =>
+          potion.effects.find(
+            (effect) => effect.value === mobPoisonEffect.value,
+          ),
       );
+      fakeSchema.utility2_slot = antidoteToEquip.code;
+      fakeSchema.utility2_slot_quantity = MaxEquippedUtilities;
 
       logger.info(
-        `Simulating fight against ${this.target.code} with no utilities`,
+        `Simulating fight against ${this.target.code} with antidote pots`,
       );
+
       if (
         (await this.character.simulateFightNow([fakeSchema], this.target.code))
           .success
       ) {
+        await this.dropHealthPotions();
         return ObjectiveCompleted;
       }
 
-      // Check if the mob has poison effect and check if we can win without antidotes
-      let mobPoisonEffect: SimpleEffectSchema;
-      if (mobInfo.data.effects) {
-        mobPoisonEffect = mobInfo.data.effects.find(
-          (effect) => effect.code === 'poison',
-        );
-      }
-      if (mobPoisonEffect) {
-        const antidoteToEquip = this.character.utilitiesMap['antipoison'].find(
-          (potion) =>
-            potion.effects.find(
-              (effect) => effect.value === mobPoisonEffect.value,
-            ),
-        );
-        fakeSchema.utility2_slot = antidoteToEquip.code;
-        fakeSchema.utility2_slot_quantity = 100;
-
-        logger.info(
-          `Simulating fight against ${this.target.code} with antidote pots`,
-        );
-
-        if (
-          (
-            await this.character.simulateFightNow(
-              [fakeSchema],
-              this.target.code,
-            )
-          ).success
-        ) {
-          return ObjectiveCompleted;
-        } else {
-          await this.topUpSecondaryPots(mobInfo.data);
-        }
-      }
-
-      if (!this.useHealthPots) {
-        logger.info(
-          `Cannot beat ${this.target.code} without restore potions. Skipping`,
-        );
-        return ObjectiveFailed;
-      }
-
-      // Find the highest potion that we could equip for the fight
-      let potionNeeded: string = this.character.utilitiesMap['restore'][0].code; // Usually small_health_potion
-      for (const potion of this.character.utilitiesMap[
-        'restore'
-      ].toReversed()) {
-        if (
-          potion.craft.level <=
-          this.character.getCharacterLevel(this.character.data)
-        ) {
-          potionNeeded = potion.code;
-          logger.debug(`Chose to equip ${potion.code}`);
-          break;
-        } else {
-          logger.debug(`${potion.code} is too high level to equip`);
-        }
-      }
-      fakeSchema.utility1_slot = potionNeeded;
-      fakeSchema.utility1_slot_quantity = 100;
-
-      logger.info(
-        `Simulating fight against ${this.target.code} with ${potionNeeded}`,
-      );
-      const shouldFightWithHealthPots = await this.character.simulateFightNow(
-        [fakeSchema],
-        this.target.code,
-      );
-
-      if (!shouldFightWithHealthPots.success) {
-        logger.info(
-          `Fight sim against ${this.target.code} was a failure. Skipping`,
-        );
-        return ObjectiveFailed;
-      }
-
-      if (shouldFightWithHealthPots.success) {
-        const fakeSchema = this.character.createFakeCharacterSchema(
-          this.character.data,
-        );
-
-        logger.info(
-          `Simulating fight against ${this.target.code} without ${potionNeeded}`,
-        );
-
-        const shouldFightWithoutHealthPots =
-          await this.character.simulateFightNow([fakeSchema], this.target.code);
-
-        if (shouldFightWithoutHealthPots.success) {
-          const utilOnePot = this.character.data.utility1_slot;
-          logger.info(`Unequipping ${utilOnePot} as not needed`);
-          this.shouldEquipHealthPots = false;
-          await this.character.unequipNow(
-            'utility1',
-            this.character.data.utility1_slot_quantity,
-          );
-          await this.character.depositNow(
-            this.character.data.utility1_slot_quantity,
-            utilOnePot,
-          );
-        } else if (
-          !shouldFightWithoutHealthPots.success &&
-          shouldFightWithHealthPots.success
-        ) {
-          return await this.character.topUpHealthPots(potionNeeded);
-        }
-      }
+      await this.topUpSecondaryPots(mob);
     }
-    return ObjectiveCompleted;
+
+    if (!this.useHealthPots) {
+      logger.info(
+        `Cannot beat ${this.target.code} without restore potions. Skipping`,
+      );
+      return ObjectiveFailed;
+    }
+
+    const potionNeeded = this.bestRestorePotion();
+    fakeSchema.utility1_slot = potionNeeded;
+    fakeSchema.utility1_slot_quantity = MaxEquippedUtilities;
+
+    logger.info(
+      `Simulating fight against ${this.target.code} with ${potionNeeded}`,
+    );
+    if (
+      !(await this.character.simulateFightNow([fakeSchema], this.target.code))
+        .success
+    ) {
+      logger.info(
+        `Fight sim against ${this.target.code} was a failure. Skipping`,
+      );
+      return ObjectiveFailed;
+    }
+
+    // The run with no utilities above already answered whether the fight is
+    // winnable without potions, so there is nothing to gain from simulating
+    // going without a second time
+    logger.info(`${potionNeeded} is what wins this fight. Equipping`);
+    this.shouldEquipHealthPots = true;
+    return await this.character.equipUtility(Restore, 'utility1');
+  }
+
+  /**
+   * @description Puts back any restore potions the character is carrying, for
+   * a fight that does not need them to be won.
+   */
+  private async dropHealthPotions(): Promise<void> {
+    this.shouldEquipHealthPots = false;
+
+    // Read before unequipping, which empties the slot
+    const potion = this.character.data.utility1_slot;
+    const quantity = this.character.data.utility1_slot_quantity;
+    if (potion === '' || quantity === 0) {
+      return;
+    }
+
+    logger.info(`Unequipping ${quantity} ${potion} as not needed`);
+    await this.character.unequipNow('utility1', quantity);
+    await this.character.depositNow(quantity, potion);
+  }
+
+  /**
+   * @description The restore potion the character would actually end up
+   * wearing, picked the same way {@link Character.equipUtility} picks it so the
+   * simulation tests the potion that goes into the slot.
+   */
+  private bestRestorePotion(): string {
+    const restorePotions = this.character.utilitiesMap[Restore];
+    const charLevel = this.character.getCharacterLevel(this.character.data);
+
+    const usable = restorePotions
+      .toReversed()
+      .find((potion) => potion.level <= charLevel);
+
+    if (!usable) {
+      logger.debug(`No restore potion is low enough level to equip`);
+      return restorePotions[0].code; // Usually small_health_potion
+    }
+
+    logger.debug(`Chose to equip ${usable.code}`);
+    return usable.code;
   }
 
   /**
@@ -238,7 +252,7 @@ export class FightObjective extends Objective {
         this.character.data.utility1_slot_quantity <= MinEquippedUtilities &&
         this.shouldEquipHealthPots
       ) {
-        await this.character.equipUtility('restore', 'utility1');
+        await this.character.equipUtility(Restore, 'utility1');
       }
 
       // Move back after healing
@@ -277,10 +291,24 @@ export class FightObjective extends Objective {
           logger.info(
             `Lost fight ${consecutiveLosses}/${this.maxConsecutiveLosses} against ${this.target.code}`,
           );
-          if (this.useHealthPots) {
-            logger.info(`Will equip health potions for future fights`);
-            this.shouldEquipHealthPots = true;
+          // Losing a fight the sim called winnable means the verdict on
+          // potions was wrong, so it gets retested rather than switching
+          // potions on for the rest of the objective
+          if (
+            this.runFightSim &&
+            this.useHealthPots &&
+            !this.shouldEquipHealthPots &&
+            this.mobInfo
+          ) {
+            const verdict = await this.decideOnHealthPotions(this.mobInfo);
+            if (!verdict.success) {
+              logger.warn(
+                `Cannot beat ${this.target.code} even with potions. Stopping fight objective`,
+              );
+              return verdict;
+            }
           }
+
           // Don't count a lost fight toward progress
           this.progress--;
 

@@ -14,7 +14,12 @@ import { actionFight, actionGather } from '../api_calls/Actions.js';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getAllNpcItems, getNpc } from '../api_calls/NPC.js';
 import { MinEquippedUtilities } from '../constants.js';
-import { FishMerchant, GemstoneMerchant, NomadicMerchant } from '../names.js';
+import {
+  FishMerchant,
+  GemstoneMerchant,
+  NomadicMerchant,
+  Restore,
+} from '../names.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,
@@ -350,9 +355,7 @@ export class EventObjective extends Objective {
 
       // Check these after each fight in case we need to top up
       if (this.character.data.utility1_slot_quantity <= MinEquippedUtilities) {
-        if (
-          (await this.character.equipUtility('restore', 'utility1')).success
-        ) {
+        if ((await this.character.equipUtility(Restore, 'utility1')).success) {
           // If we moved to the bank we need to move back to the monster location
           await this.character.equipNow(preferredWeapon, 'weapon');
           await this.character.move(event.map);

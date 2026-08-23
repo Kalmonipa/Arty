@@ -3,6 +3,7 @@ import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
@@ -14,7 +15,11 @@ import {
   MonsterSchema,
   CharacterSchema,
 } from '../../src/types/types.js';
-import { GearEffects, WeaponFlavours } from '../../src/types/ItemData.js';
+import {
+  GearEffects,
+  UtilityEffects,
+  WeaponFlavours,
+} from '../../src/types/ItemData.js';
 import { BankCache } from '../../src/core/BankCache.js';
 
 // Mock the API modules
@@ -97,6 +102,23 @@ const mockPoisonMonsterData = {
     ],
   } as MonsterSchema,
 };
+
+const createMockPotion = (
+  code: string,
+  level: number,
+  effect: UtilityEffects,
+): ItemSchema =>
+  ({
+    code,
+    name: code,
+    level,
+    type: 'utility',
+    subtype: 'potion',
+    description: '',
+    tradeable: true,
+    conditions: [],
+    effects: [{ code: effect, value: 100, description: '' }],
+  }) as unknown as ItemSchema;
 
 // Mock gear items
 const createMockGear = (
@@ -516,6 +538,10 @@ class SimpleMockCharacter {
         return this.data.shield_slot;
       case 'weapon':
         return this.data.weapon_slot;
+      case 'utility1':
+        return this.data.utility1_slot;
+      case 'utility2':
+        return this.data.utility2_slot;
       default:
         return '';
     }
@@ -542,11 +568,74 @@ class SimpleMockCharacter {
     artifact3_slot: charData.artifact3_slot,
   }));
 
-  equipUtility = jest.fn(async (): Promise<ObjectiveResult> => {
+  utilitiesMap: Record<UtilityEffects, ItemSchema[]> = {
+    antipoison: [createMockPotion('antidote', 30, 'antipoison')],
+    restore: [createMockPotion('health_potion', 30, 'restore')],
+    splash_restore: [
+      createMockPotion('health_splash_potion', 30, 'splash_restore'),
+    ],
+    boost_dmg_air: [createMockPotion('air_boost_potion', 10, 'boost_dmg_air')],
+    boost_dmg_earth: [
+      createMockPotion('earth_boost_potion', 10, 'boost_dmg_earth'),
+    ],
+    boost_dmg_fire: [
+      createMockPotion('fire_boost_potion', 10, 'boost_dmg_fire'),
+    ],
+    boost_dmg_water: [
+      createMockPotion('water_boost_potion', 10, 'boost_dmg_water'),
+    ],
+    boost_hp: [createMockPotion('health_boost_potion', 40, 'boost_hp')],
+    boost_res_air: [createMockPotion('air_res_potion', 40, 'boost_res_air')],
+    boost_res_earth: [
+      createMockPotion('earth_res_potion', 40, 'boost_res_earth'),
+    ],
+    boost_res_fire: [createMockPotion('fire_res_potion', 40, 'boost_res_fire')],
+    boost_res_water: [
+      createMockPotion('water_res_potion', 40, 'boost_res_water'),
+    ],
+  };
+
+  topUpHealthPots = jest.fn(async (): Promise<ObjectiveResult> => {
     this.data.utility1_slot = 'health_potion';
     this.data.utility1_slot_quantity = 100;
     return ObjectiveCompleted;
   });
+
+  unequipNow = jest.fn(async (slot: ItemSlot): Promise<ObjectiveResult> => {
+    if (slot === 'utility2') {
+      this.data.utility2_slot = '';
+      this.data.utility2_slot_quantity = 0;
+    }
+    return ObjectiveCompleted;
+  });
+
+  equipUtility = jest.fn(
+    async (
+      utilityType: UtilityEffects,
+      slot: ItemSlot,
+    ): Promise<ObjectiveResult> => {
+      const potion = [...this.utilitiesMap[utilityType]]
+        .reverse()
+        .find(
+          (candidate) =>
+            candidate.level <= this.data.level &&
+            (this.checkQuantityOfItemInInv(candidate.code) > 0 ||
+              this.bankItems[candidate.code] > 0),
+        );
+      if (!potion) {
+        return ObjectiveFailed;
+      }
+
+      if (slot === 'utility2') {
+        this.data.utility2_slot = potion.code;
+        this.data.utility2_slot_quantity = 100;
+      } else {
+        this.data.utility1_slot = potion.code;
+        this.data.utility1_slot_quantity = 100;
+      }
+      return ObjectiveCompleted;
+    },
+  );
 
   equipAntiEffectUtility = jest.fn(async (): Promise<boolean> => {
     this.data.utility2_slot = 'antidote';
@@ -662,6 +751,131 @@ describe('EvaluateGearObjective Integration Tests', () => {
       page: 1,
       size: 50,
       total: 0,
+    });
+  });
+
+  describe('Boss fight role potions', () => {
+    const gearUpFor = async (
+      role: 'tank' | 'dps' | 'healer',
+      mob = 'red_slime',
+    ): Promise<ObjectiveResult> => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        mob,
+        undefined,
+        role,
+      );
+      return await objective.run();
+    };
+
+    it('leaves utility2 alone outside a boss fight', async () => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      await objective.run();
+
+      expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
+      expect(mockCharacter.topUpHealthPots).not.toHaveBeenCalled();
+    });
+
+    beforeEach(() => {
+      // High enough for every potion tier the fleet can craft
+      mockCharacter.data.level = 40;
+    });
+
+    it('gives the healer a splash potion and its own health potions', async () => {
+      mockCharacter.bankItems.health_splash_potion = 100;
+
+      await gearUpFor('healer');
+
+      // splash_restore only heals the rest of the party, so the healer still
+      // needs restores of its own in utility1
+      expect(mockCharacter.topUpHealthPots).toHaveBeenCalled();
+      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
+        'splash_restore',
+        'utility2',
+      );
+      expect(mockCharacter.data.utility2_slot).toBe('health_splash_potion');
+    });
+
+    it('boosts the element the dps already hits hardest with', async () => {
+      mockCharacter.data.attack_fire = 40;
+      mockCharacter.data.attack_air = 12;
+      mockCharacter.data.attack_earth = 0;
+      mockCharacter.data.attack_water = 0;
+      mockCharacter.bankItems.fire_boost_potion = 100;
+
+      await gearUpFor('dps');
+
+      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
+        'boost_dmg_fire',
+        'utility2',
+      );
+    });
+
+    it('resists whatever the boss attacks the tank with', async () => {
+      // mockMonsterData only attacks with fire
+      mockCharacter.bankItems.fire_res_potion = 100;
+
+      await gearUpFor('tank');
+
+      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
+        'boost_res_fire',
+        'utility2',
+      );
+    });
+
+    it('falls back to boosting the tank HP when no resistance potion is held', async () => {
+      mockCharacter.bankItems.health_boost_potion = 100;
+
+      await gearUpFor('tank');
+
+      expect(mockCharacter.equipUtility).toHaveBeenLastCalledWith(
+        'boost_hp',
+        'utility2',
+      );
+      expect(mockCharacter.data.utility2_slot).toBe('health_boost_potion');
+    });
+
+    it('leaves utility2 as it is when the role has no usable potion', async () => {
+      // What a low level party hits: splash restores do not exist below level 30
+      mockCharacter.data.level = 15;
+      mockCharacter.data.utility2_slot = 'antidote';
+      mockCharacter.data.utility2_slot_quantity = 20;
+
+      const result = await gearUpFor('healer');
+
+      expect(result).toEqual(ObjectiveCompleted);
+      expect(mockCharacter.data.utility2_slot).toBe('antidote');
+    });
+
+    it('clears a leftover stack before stocking the role potion', async () => {
+      mockCharacter.bankItems.health_splash_potion = 100;
+      mockCharacter.data.utility2_slot = 'antidote';
+      mockCharacter.data.utility2_slot_quantity = 20;
+
+      await gearUpFor('healer');
+
+      expect(mockCharacter.unequipNow).toHaveBeenCalledWith('utility2', 20);
+      expect(mockCharacter.data.utility2_slot).toBe('health_splash_potion');
+    });
+
+    it('keeps a full stack of the right potion rather than topping it up', async () => {
+      mockCharacter.bankItems.health_splash_potion = 100;
+      mockCharacter.data.utility2_slot = 'health_splash_potion';
+      mockCharacter.data.utility2_slot_quantity = 100;
+
+      await gearUpFor('healer');
+
+      expect(mockCharacter.unequipNow).not.toHaveBeenCalled();
+      expect(mockCharacter.equipUtility).not.toHaveBeenCalledWith(
+        'splash_restore',
+        'utility2',
+      );
     });
   });
 

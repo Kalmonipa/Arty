@@ -13,15 +13,22 @@ import {
   acceptBossFightCompletion,
   setParticipantsState,
 } from './bossFightParticipantFunctions.js';
+import { BossFightReady, BossFightRole } from './bossFight.types.js';
 
 /**
  * Gets initialised when the character has been selected to participate in a boss fight
  */
 export class FightBossParticipantObjective extends Objective {
   target: ObjectiveTargets;
+  role: BossFightRole;
   fightId: number;
 
-  constructor(character: Character, target: ObjectiveTargets, fightId: number) {
+  constructor(
+    character: Character,
+    target: ObjectiveTargets,
+    role: BossFightRole,
+    fightId: number,
+  ) {
     super(
       character,
       `participate_bossfight_${target.quantity}_${target.code}`,
@@ -31,6 +38,7 @@ export class FightBossParticipantObjective extends Objective {
     this.character = character;
     this.jobFlavour = 'FightBossParticipant';
     this.target = target;
+    this.role = role;
     this.fightId = fightId;
   }
 
@@ -79,7 +87,13 @@ export class FightBossParticipantObjective extends Objective {
 
         logger.info(`Attempting to gear up for ${this.target.code} fight`);
         const gearUpJob = await this.character.executeJobNow(
-          new EvaluateGearObjective(this.character, 'combat', this.target.code),
+          new EvaluateGearObjective(
+            this.character,
+            'combat',
+            this.target.code,
+            undefined,
+            this.role,
+          ),
         );
         if (!gearUpJob.success) {
           logger.warn(`Gearing up for ${this.target.code} fight has failed`);
@@ -100,7 +114,7 @@ export class FightBossParticipantObjective extends Objective {
 
         await this.character.move(contentLocation);
 
-        await setParticipantsState(this.fightId, charName, 'ready');
+        await setParticipantsState(this.fightId, charName, BossFightReady);
 
         // Once the fights_done has been incremented by the leader we break out of this loop and start the prep process
         // fights_done will get incremented after the fight cooldown has completed for the leader

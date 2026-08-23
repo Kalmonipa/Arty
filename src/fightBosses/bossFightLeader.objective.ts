@@ -19,10 +19,17 @@ import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
 import { actionFight } from '../api_calls/Actions.js';
 import {
   checkAllParticipantsReady,
-  registerBossFightParticipants,
+  registerBossFightParticipant,
   setParticipantsState,
 } from './bossFightParticipantFunctions.js';
 import { BouncyBella, JumpyJimmy } from '../constants.js';
+import {
+  BossFightDps,
+  BossFightHealer,
+  BossFightParticipant,
+  BossFightTank,
+  BossFightUnready,
+} from './bossFight.types.js';
 
 export class FightBossLeaderObjective extends Objective {
   target: ObjectiveTargets;
@@ -59,7 +66,10 @@ export class FightBossLeaderObjective extends Objective {
     if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     let progress = 0;
-    const participants = [BouncyBella, JumpyJimmy];
+    const participants: BossFightParticipant[] = [
+      { characterName: BouncyBella, role: BossFightDps },
+      { characterName: JumpyJimmy, role: BossFightHealer },
+    ];
 
     const fightSimResult = await simulateBossFight(this.character, this.target);
 
@@ -77,29 +87,25 @@ export class FightBossLeaderObjective extends Objective {
 
     const fightId = await registerBossFight(this.character, this.target);
 
-    if (!(await registerBossFightParticipants(fightId, participants))) {
-      logger.error(`Failed to register participants`);
-      return ObjectiveFailed;
+    for (const participant of participants) {
+      if (!(await registerBossFightParticipant(fightId, participant))) {
+        logger.error(
+          `Failed to register ${participant.characterName} as a ${participant.role}`,
+        );
+        return ObjectiveFailed;
+      }
     }
-
-    // [x] Gear up for the fight
-    //    - Equip gear, potions etc
-    // [x] Move to the mob location
-    // [x] Check for ready status from both other participants
-    // [x] If not ready, sleep for 30 seconds (adjust as necessary)
-    // [x] If ready initiate fight
-    // [x] Set status of participants to unready in boss_fight_participants
-    // [x] Increment fights_done counter in boss_fights
-    // [x] If fights_done >= quantity:
-    //    - set state to complete
-    //    - delete rows from boss_fight_participants
-    // [x] If fights_done < quantity:
-    //    - go back to step 1
 
     while (progress < this.target.quantity) {
       logger.info(`Attempting to gear up for ${this.target.code} fight`);
       const gearUpJob = await this.character.executeJobNow(
-        new EvaluateGearObjective(this.character, 'combat', this.target.code),
+        new EvaluateGearObjective(
+          this.character,
+          'combat',
+          this.target.code,
+          undefined,
+          BossFightTank,
+        ),
       );
       if (!gearUpJob.success) {
         logger.warn(`Gearing up for ${this.target.code} fight has failed`);
@@ -141,7 +147,11 @@ export class FightBossLeaderObjective extends Objective {
       }
 
       for (const participant of participants) {
-        await setParticipantsState(fightId, participant, 'unready');
+        await setParticipantsState(
+          fightId,
+          participant.characterName,
+          BossFightUnready,
+        );
       }
 
       progress = await incrementBossFightCounter(fightId);

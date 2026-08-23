@@ -65,6 +65,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
         createMockUtility('antidote', 'Antidote', 5, 25),
         createMockUtility('strong_antidote', 'Strong Antidote', 10, 50),
       ],
+      splash_restore: [],
       restore: [],
       boost_dmg_air: [],
       boost_dmg_earth: [],
@@ -410,6 +411,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       // Arrange
       character.utilitiesMap = {
         antipoison: [],
+        splash_restore: [],
         restore: [],
         boost_dmg_air: [],
         boost_dmg_earth: [],
@@ -443,6 +445,7 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       // Create utilities map with only restore utilities
       character.utilitiesMap = {
         antipoison: [],
+        splash_restore: [],
         restore: [createMockUtility('health_potion', 'Health Potion', 1, 0)],
         boost_dmg_air: [],
         boost_dmg_earth: [],

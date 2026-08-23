@@ -22,7 +22,36 @@ export interface BossFightParticipantsRow {
  */
 export type ParticipantStatus = 'ready' | 'unready' | 'acknowledged';
 
+export const BossFightUnready = 'unready' as const satisfies ParticipantStatus;
+export const BossFightReady = 'ready' as const satisfies ParticipantStatus;
+export const BossFightAcked =
+  'acknowledged' as const satisfies ParticipantStatus;
+
 export type BossFightStatus = 'in_progress' | 'complete' | 'aborted';
+
+export type BossFightRole = 'tank' | 'dps' | 'healer';
+
+export const BossFightTank = 'tank' as const satisfies BossFightRole;
+export const BossFightDps = 'dps' as const satisfies BossFightRole;
+export const BossFightHealer = 'healer' as const satisfies BossFightRole;
+
+/**
+ * Defines each boss fight participant
+ */
+export type BossFightParticipant = {
+  characterName: string;
+  role: BossFightRole;
+};
+
+/**
+ * @description The fight a character has been called up to, and the role it was
+ * registered under. The role decides which party-wide potion it brings, so it
+ * has to travel with the fight id rather than being guessed at the call site.
+ */
+export type BossFightEnlistment = {
+  fightId: number;
+  role: BossFightRole;
+};
 
 /**
  * @description The verdict on a boss fight plus the numbers behind it. A bare

@@ -1,7 +1,29 @@
+import { UtilityEffects } from './types/ItemData.js';
+
 /**
  * Achievements
  */
 export const GourmetChef = 'gourmet_chef';
+
+/**
+ * Effects
+ */
+export const Antidote = 'antipoison' as const satisfies UtilityEffects;
+export const BoostDmgAir = 'boost_dmg_air' as const satisfies UtilityEffects;
+export const BoostDmgEarth =
+  'boost_dmg_earth' as const satisfies UtilityEffects;
+export const BoostDmgFire = 'boost_dmg_fire' as const satisfies UtilityEffects;
+export const BoostDmgWater =
+  'boost_dmg_water' as const satisfies UtilityEffects;
+export const BoostHp = 'boost_hp' as const satisfies UtilityEffects;
+export const BoostResAir = 'boost_res_air' as const satisfies UtilityEffects;
+export const BoostResEarth =
+  'boost_res_earth' as const satisfies UtilityEffects;
+export const BoostResFire = 'boost_res_fire' as const satisfies UtilityEffects;
+export const BoostResWater =
+  'boost_res_water' as const satisfies UtilityEffects;
+export const Restore = 'restore' as const satisfies UtilityEffects;
+export const SplashRestore = 'splash_restore' as const satisfies UtilityEffects;
 
 /**
  * @description Items
@@ -9,6 +31,7 @@ export const GourmetChef = 'gourmet_chef';
 export const TasksCoin = 'tasks_coin';
 export const Algae = 'algae';
 export const Sap = 'sap';
+export const HealthSplashPotion = 'health_splash_potion';
 
 /**
  * @description Map Areas

@@ -5,7 +5,11 @@ import {
 } from '../utils.js';
 import { Character } from '../character/character.js';
 import { Objective } from './Objective.js';
-import { WeaponFlavours, GearEffects } from '../types/ItemData.js';
+import {
+  WeaponFlavours,
+  GearEffects,
+  UtilityEffects,
+} from '../types/ItemData.js';
 import {
   FakeCharacterSchema,
   ItemSchema,
@@ -23,6 +27,25 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
+import {
+  BossFightDps,
+  BossFightHealer,
+  BossFightRole,
+  BossFightTank,
+} from '../fightBosses/bossFight.types.js';
+import {
+  BoostDmgAir,
+  BoostDmgEarth,
+  BoostDmgFire,
+  BoostDmgWater,
+  BoostHp,
+  BoostResAir,
+  BoostResEarth,
+  BoostResFire,
+  BoostResWater,
+  SplashRestore,
+} from '../names.js';
+import { MinEquippedUtilities } from '../constants.js';
 
 /**
  * @description Evaluates which gear is the best to use for the upcoming fight
@@ -34,6 +57,7 @@ export class EvaluateGearObjective extends Objective {
   activityType: WeaponFlavours;
   targetMob?: string;
   targetResource?: string;
+  bossFightRole?: BossFightRole;
   private bankCache?: BankCache;
 
   constructor(
@@ -41,6 +65,7 @@ export class EvaluateGearObjective extends Objective {
     activityType: WeaponFlavours,
     targetMob?: string,
     targetResource?: string,
+    bossFightRole?: BossFightRole,
   ) {
     super(character, `evaluate_${activityType}_gear`, 'not_started');
 
@@ -49,10 +74,11 @@ export class EvaluateGearObjective extends Objective {
     this.activityType = activityType;
     this.targetMob = targetMob;
     this.targetResource = targetResource;
+    this.bossFightRole = bossFightRole;
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
-    return { complete: true, success: true, reason: 'complete' };
+    return ObjectiveCompleted;
   }
 
   /**
@@ -92,7 +118,7 @@ export class EvaluateGearObjective extends Objective {
               this.activityType,
             );
 
-      // Gathering gear has no retriable failure mode, so evaluate once and finish
+      // Gearing up for gathering jobs
       if (this.activityType !== 'combat') {
         const overallLevel = this.character.getCharacterLevel(
           this.character.data,
@@ -106,6 +132,7 @@ export class EvaluateGearObjective extends Objective {
         return ObjectiveCompleted;
       }
 
+      // Gearing up for combat
       if (await this.evaluateCombatGear(charLevel, this.targetMob)) {
         return ObjectiveCompleted;
       }
@@ -451,7 +478,174 @@ export class EvaluateGearObjective extends Objective {
     }
 
     await this.checkRuneSlot();
+    await this.equipFightPotions(targetMob);
     return true;
+  }
+
+  /**
+   * @description Fills both utility slots ahead of a boss fight: utility1 with
+   * the character's own health potions and utility2 with the potion that serves
+   * its role in the party. Ordinary fights are left alone, since
+   * {@link FightObjective} already stocks their potions per monster.
+   *
+   * Potions go through {@link Character.equipUtility} rather than the gear
+   * selection above: they are consumable stacks, so they need a quantity and
+   * must never be wishlisted or crafted the way a single piece of gear is.
+   */
+  private async equipFightPotions(targetMob: string): Promise<void> {
+    if (!this.bossFightRole) {
+      return;
+    }
+
+    await this.character.topUpHealthPots();
+
+    for (const effect of await this.rolePotionEffects(targetMob)) {
+      if (await this.equipRolePotion(effect)) {
+        return;
+      }
+    }
+
+    // Every role potion is level gated (boosts at 10, splash restores at 30),
+    // so a party fighting a low level boss often has nothing to bring
+    logger.info(
+      `No ${this.bossFightRole} potion available for ${targetMob}. Leaving utility2 as it is`,
+    );
+  }
+
+  /**
+   * @description The potions that suit the character's role, best first, so a
+   * role can fall back when its first choice is out of reach.
+   */
+  private async rolePotionEffects(
+    targetMob: string,
+  ): Promise<UtilityEffects[]> {
+    switch (this.bossFightRole) {
+      // splash_restore only heals the *other* party members, which is why the
+      // healer still keeps its own restores in utility1
+      case BossFightHealer:
+        return [SplashRestore];
+      case BossFightDps:
+        return [this.strongestDamageBoost()];
+      case BossFightTank:
+        return await this.tankResistanceBoosts(targetMob);
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * @description The damage boost matching the element the character already
+   * hits hardest with. Bosses mostly have flat resistances, so the character's
+   * own kit is the better signal.
+   */
+  private strongestDamageBoost(): UtilityEffects {
+    const boosts: { effect: UtilityEffects; attack: number }[] = [
+      { effect: BoostDmgAir, attack: this.character.data.attack_air },
+      { effect: BoostDmgEarth, attack: this.character.data.attack_earth },
+      { effect: BoostDmgFire, attack: this.character.data.attack_fire },
+      { effect: BoostDmgWater, attack: this.character.data.attack_water },
+    ].sort((a, b) => b.attack - a.attack);
+
+    logger.debug(
+      `Boosting ${boosts[0].effect} (${boosts[0].attack} attack) for the dps role`,
+    );
+    return boosts[0].effect;
+  }
+
+  /**
+   * @description Resistance to whatever the boss actually hits with, falling
+   * back to raw HP when no matching resistance potion can be found.
+   */
+  private async tankResistanceBoosts(
+    targetMob: string,
+  ): Promise<UtilityEffects[]> {
+    const mobInfo = await getMonsterInformation(targetMob);
+    if (mobInfo instanceof ApiError) {
+      logger.warn(
+        `Could not read ${targetMob} to pick a tank potion, boosting HP instead`,
+      );
+      return [BoostHp];
+    }
+
+    const resistances: { effect: UtilityEffects; attack: number }[] = [
+      { effect: BoostResAir, attack: mobInfo.data.attack_air },
+      { effect: BoostResEarth, attack: mobInfo.data.attack_earth },
+      { effect: BoostResFire, attack: mobInfo.data.attack_fire },
+      { effect: BoostResWater, attack: mobInfo.data.attack_water },
+    ]
+      .filter((resistance) => resistance.attack > 0)
+      .sort((a, b) => b.attack - a.attack);
+
+    return [...resistances.map((resistance) => resistance.effect), BoostHp];
+  }
+
+  /**
+   * @description Stocks utility2 with a potion carrying the given effect.
+   * @returns whether the slot ended up holding that potion
+   */
+  private async equipRolePotion(effect: UtilityEffects): Promise<boolean> {
+    // Looked up before touching the slot: clearing it and then finding nothing
+    // to put back would strip a potion the character was already carrying
+    const potion = await this.availableRolePotion(effect);
+    if (!potion) {
+      logger.debug(`No ${effect} potion within reach`);
+      return false;
+    }
+
+    const equipped = this.character.getCharacterGearIn('utility2');
+
+    if (
+      equipped === potion.code &&
+      this.character.data.utility2_slot_quantity > MinEquippedUtilities
+    ) {
+      logger.debug(
+        `Already carrying ${this.character.data.utility2_slot_quantity} ${equipped}`,
+      );
+      return true;
+    }
+
+    // equipUtility can only add to a stack, so a leftover potion from an
+    // earlier job has to come out before the role potion can go in
+    if (equipped !== '' && equipped !== potion.code) {
+      logger.info(`Clearing ${equipped} out of utility2 to make room`);
+      await this.character.unequipNow(
+        'utility2',
+        this.character.data.utility2_slot_quantity,
+      );
+    }
+
+    return (await this.character.equipUtility(effect, 'utility2')).success;
+  }
+
+  /**
+   * @description The potion {@link Character.equipUtility} would reach for: the
+   * highest level one carrying the effect that the character can use and
+   * actually has to hand, in the inventory or the bank.
+   */
+  private async availableRolePotion(
+    effect: UtilityEffects,
+  ): Promise<ItemSchema | undefined> {
+    const charLevel = this.character.getCharacterLevel(this.character.data);
+
+    for (const potion of [...this.character.utilitiesMap[effect]].reverse()) {
+      if (potion.level > charLevel) {
+        continue;
+      }
+
+      if (this.character.checkQuantityOfItemInInv(potion.code) > 0) {
+        return potion;
+      }
+
+      const inBank = await this.character.checkQuantityOfItemInBank(
+        potion.code,
+        this.bankCache,
+      );
+      if (inBank > 0) {
+        return potion;
+      }
+    }
+
+    return undefined;
   }
 
   async selectCombatLoadout(

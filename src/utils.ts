@@ -319,22 +319,6 @@ export async function buildListOf(
   const allItems: ItemSchema[] = itemData.filter(
     (item) => item.type === itemType,
   );
-  // const allItems: ApiError | StaticDataPageItemSchema =
-  //   await getAllItemInformation({
-  //     type: itemType,
-  //     size: 100,
-  //   });
-  // if (allItems instanceof ApiError) {
-  //   logger.error(
-  //     `Failed to build list of useful ${itemType}: ${allItems.error.message} [Code: ${allItems.error.code}]`,
-  //   );
-  //   return {};
-  // }
-  // if (allItems.pages > 1) {
-  //   logger.error(
-  //     `Weapon list in buildListOf is ${allItems.pages} long. I should add logic to check multiple pages`,
-  //   );
-  // }
 
   allItems.forEach((item) => {
     if (item.effects) {

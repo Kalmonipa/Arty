@@ -117,7 +117,7 @@ import {
   getNavigationGraph,
   NavigationGraph,
 } from '../core/navigation/graph.js';
-import { Fishing, GourmetChef } from '../names.js';
+import { Fishing, GourmetChef, Restore } from '../names.js';
 import {
   BankFullRetryMs,
   CharRole,
@@ -164,6 +164,7 @@ import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequ
 import { AcquisitionMethod, WishlistRow } from '../wishlist/wishlist.types.js';
 import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.objective.js';
 import { checkEnlistments } from '../fightBosses/bossFightParticipantFunctions.js';
+import { BossFightEnlistment } from '../fightBosses/bossFight.types.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -1436,10 +1437,13 @@ export class Character {
   }
 
   /**
-   * @description The ID of the boss fight this character has been called up to
-   * join, or 0 when it has not been enlisted
+   * @description The boss fight this character has been called up to join and
+   * the role it was registered under, or undefined when it has not been
+   * enlisted
    */
-  async findEnlistedBossFight(charName: string): Promise<number> {
+  async findEnlistedBossFight(
+    charName: string,
+  ): Promise<BossFightEnlistment | undefined> {
     return await checkEnlistments(charName);
   }
 
@@ -1460,23 +1464,25 @@ export class Character {
       }
     }
 
-    const bossFightId = await this.findEnlistedBossFight(this.data.name);
-    if (bossFightId === 0) {
+    const enlistment = await this.findEnlistedBossFight(this.data.name);
+    if (!enlistment) {
       logger.debug(`No boss fights requested for ${this.data.name}`);
       return ObjectiveFailed;
     }
 
-    logger.info(`Found boss fight #${bossFightId}. Retrieving data`);
-    const targetData = await getBossFightTarget(bossFightId);
+    const { fightId, role } = enlistment;
+    logger.info(`Found boss fight #${fightId}. Retrieving data`);
+    const targetData = await getBossFightTarget(fightId);
     if (!targetData) {
-      logger.warn(`No target data for boss fight #${bossFightId}. Skipping`);
+      logger.warn(`No target data for boss fight #${fightId}. Skipping`);
       return ObjectiveFailed;
     }
 
     const bossFightJob = new FightBossParticipantObjective(
       this,
       targetData,
-      bossFightId,
+      role,
+      fightId,
     );
     await this.executeJobNow(bossFightJob, true, true);
     return ObjectiveCompleted;
@@ -1517,7 +1523,7 @@ export class Character {
         MaxEquippedUtilities - this.data.utility1_slot_quantity;
       return await this.equipNow(potionToEquip, 'utility1', numToEquip);
     } else if (this.data.utility1_slot_quantity <= MinEquippedUtilities) {
-      return await this.equipUtility('restore', 'utility1');
+      return await this.equipUtility(Restore, 'utility1');
     }
   }
 
@@ -2059,7 +2065,7 @@ export class Character {
   ): Promise<ObjectiveResult> {
     const utility = this.utilitiesMap[utilityType];
     const charLevel = this.getCharacterLevel(this.data);
-    const minPotionLevel = utilityType === 'restore' ? charLevel - 20 : 0;
+    const minPotionLevel = utilityType === Restore ? charLevel - 20 : 0;
 
     for (const potion of [...utility].reverse()) {
       logger.debug(`Evaluating ${potion.code}`);

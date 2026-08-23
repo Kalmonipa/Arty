@@ -69,6 +69,7 @@ describe('Character.equipUtility', () => {
 
     character.utilitiesMap = {
       antipoison: [],
+      splash_restore: [],
       restore: [
         createRestorePotion('health_potion', 'Health Potion', 20),
         createRestorePotion(

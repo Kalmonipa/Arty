@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import {
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
 import { FightObjective } from '../../src/fights/fight.objective.js';
@@ -561,6 +562,128 @@ describe('FightObjective Integration Tests', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(mockCharacter.recoverHealth).toHaveBeenCalled();
+    });
+  });
+
+  describe('Restore potions only when they decide the fight', () => {
+    // The restore effect triggers on its own below half health, so a potion in
+    // the slot is a potion spent. Each entry is one simulateFightNow verdict,
+    // in the order the decision asks for them
+    const simVerdicts = (...verdicts: ObjectiveResult[]) => {
+      mockCharacter.simulateFightNow.mockReset();
+      for (const verdict of verdicts) {
+        mockCharacter.simulateFightNow.mockResolvedValueOnce(verdict);
+      }
+      mockCharacter.simulateFightNow.mockResolvedValue(
+        verdicts[verdicts.length - 1],
+      );
+    };
+
+    it('puts back potions it is carrying when the fight is won without them', async () => {
+      mockCharacter.data.utility1_slot = 'small_health_potion';
+      mockCharacter.data.utility1_slot_quantity = 80;
+      simVerdicts(ObjectiveCompleted);
+
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(true);
+      expect(fightObjective.shouldEquipHealthPots).toBe(false);
+      expect(mockCharacter.unequipNow).toHaveBeenCalledWith('utility1', 80);
+      expect(mockCharacter.depositNow).toHaveBeenCalledWith(
+        80,
+        'small_health_potion',
+      );
+    });
+
+    it('does not stock potions during the fight loop when they are not needed', async () => {
+      mockCharacter.addItemToInventory('apple', 20);
+      mockCharacter.data.utility1_slot_quantity = 0;
+      simVerdicts(ObjectiveCompleted);
+
+      await fightObjective.runPrerequisiteChecks();
+      await fightObjective.run();
+
+      expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
+    });
+
+    it('equips potions for a fight that is lost without them and won with them', async () => {
+      simVerdicts(ObjectiveFailed, ObjectiveCompleted);
+
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(true);
+      expect(fightObjective.shouldEquipHealthPots).toBe(true);
+      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
+        'restore',
+        'utility1',
+      );
+    });
+
+    it('skips a fight that potions cannot win either', async () => {
+      simVerdicts(ObjectiveFailed, ObjectiveFailed);
+
+      const result = await fightObjective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(false);
+      expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
+    });
+
+    it('does not simulate going without potions a second time', async () => {
+      simVerdicts(ObjectiveFailed, ObjectiveCompleted);
+
+      await fightObjective.runPrerequisiteChecks();
+
+      // Once with no utilities, once with the potion. The old third run asked
+      // the first run's question again and acted on whichever way it fell
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalledTimes(2);
+    });
+
+    it('retests the verdict after a loss rather than switching potions on', async () => {
+      mockCharacter.addItemToInventory('apple', 20);
+      const target: ObjectiveTargets = { code: 'red_slime', quantity: 1 };
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      // Wins without potions, so none are equipped up front
+      simVerdicts(ObjectiveCompleted);
+      await objective.runPrerequisiteChecks();
+      expect(objective.shouldEquipHealthPots).toBe(false);
+
+      // Then it loses for real, and the retest says potions make the difference
+      simVerdicts(ObjectiveFailed, ObjectiveCompleted);
+      (actionFight as jest.MockedFunction<typeof actionFight>)
+        .mockResolvedValueOnce(mockLossResponse as any)
+        .mockResolvedValue(mockFightResponse);
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(true);
+      // simVerdicts cleared the call history, so these are the retest's sims
+      expect(mockCharacter.simulateFightNow).toHaveBeenCalledTimes(2);
+      expect(objective.shouldEquipHealthPots).toBe(true);
+      expect(mockCharacter.equipUtility).toHaveBeenCalledWith(
+        'restore',
+        'utility1',
+      );
+    });
+
+    it('stops the objective when the retest says the fight is unwinnable', async () => {
+      mockCharacter.addItemToInventory('apple', 20);
+      const target: ObjectiveTargets = { code: 'red_slime', quantity: 5 };
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      simVerdicts(ObjectiveCompleted);
+      await objective.runPrerequisiteChecks();
+
+      simVerdicts(ObjectiveFailed, ObjectiveFailed);
+      (
+        actionFight as jest.MockedFunction<typeof actionFight>
+      ).mockResolvedValue(mockLossResponse as any);
+
+      const result = await objective.run();
+
+      expect(result.success).toBe(false);
+      // Stopped on the retest rather than grinding out three losses
+      expect(actionFight).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -24,7 +24,8 @@ export type UtilityEffects =
   | 'boost_res_earth'
   | 'boost_res_fire'
   | 'boost_res_water'
-  | 'restore';
+  | 'restore'
+  | 'splash_restore';
 
 export type WeaponFlavours = GatheringSkill | 'combat';
 

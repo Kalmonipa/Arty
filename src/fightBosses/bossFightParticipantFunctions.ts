@@ -1,6 +1,13 @@
 import { db } from '../db.js';
 import { logger } from '../utils.js';
-import { ParticipantStatus } from './bossFight.types.js';
+import {
+  BossFightEnlistment,
+  BossFightParticipant,
+  BossFightReady,
+  BossFightRole,
+  BossFightUnready,
+  ParticipantStatus,
+} from './bossFight.types.js';
 
 /**
  * Registers a row per participant in the boss_fight_participants table
@@ -13,35 +20,35 @@ import { ParticipantStatus } from './bossFight.types.js';
  * @param participants List of the participants
  * @returns
  */
-export async function registerBossFightParticipants(
+export async function registerBossFightParticipant(
   bossFightId: number,
-  participants: string[],
+  participant: BossFightParticipant,
 ): Promise<boolean> {
   try {
-    for (const participant of participants) {
-      const result = await db.query<{ fight_id: number }>(
-        `
+    const result = await db.query<{ fight_id: number }>(
+      `
       INSERT INTO boss_fight_participants (
         fight_id, character_name, role, state, reason, updated_at
       )
       VALUES ($1, $2, $3, $4, $5, NOW())
       RETURNING fight_id;
       `,
-        [
-          bossFightId,
-          participant,
-          'fighter',
-          'unready', // Maybe this should just be a boolean?
-          'boss fight',
-        ],
-      );
-      logger.info(
-        `Registered boss fight ${result.rows[0].fight_id} for ${participant}`,
-      );
-    }
+      [
+        bossFightId,
+        participant.characterName,
+        participant.role,
+        BossFightUnready,
+        'boss fight',
+      ],
+    );
+    logger.info(
+      `Registered boss fight ${result.rows[0].fight_id} for ${participant.characterName}`,
+    );
     return true;
   } catch (err) {
-    logger.error(`Failed to register boss fight: ${err}`);
+    logger.error(
+      `Failed to register ${participant.characterName} for boss fight: ${err}`,
+    );
     return false;
   }
 }
@@ -84,7 +91,7 @@ export async function setParticipantsState(
  */
 export async function checkAllParticipantsReady(
   bossFightId: number,
-  participants: string[],
+  participants: BossFightParticipant[],
 ): Promise<boolean> {
   // If true then all participants are ready
   let allReady = false;
@@ -96,12 +103,13 @@ export async function checkAllParticipantsReady(
       SELECT state FROM boss_fight_participants
       WHERE fight_id = $1 AND character_name = $2
       `,
-        [bossFightId, participant],
+        [bossFightId, participant.characterName],
       );
+      const state = result.rows[0]?.state;
       logger.info(
-        `${participant} is ${result.rows[0].state} for fight #${bossFightId}`,
+        `${participant.characterName} is ${state ?? 'not registered'} for fight #${bossFightId}`,
       );
-      allReady = result.rows[0].state === 'ready';
+      allReady = state === BossFightReady;
       if (!allReady) {
         return false;
       }
@@ -149,13 +157,16 @@ export async function acceptBossFightCompletion(
  * running. Acknowledged rows are skipped, so a fight the character has already
  * seen through never calls it back.
  * @param participant Name of the character to check
- * @returns ID of the fight to join, or 0 when it is not enlisted in one
+ * @returns the fight to join and the role to play, or undefined when the
+ * character is not enlisted in one
  */
-export async function checkEnlistments(participant: string): Promise<number> {
+export async function checkEnlistments(
+  participant: string,
+): Promise<BossFightEnlistment | undefined> {
   try {
-    const result = await db.query<{ fight_id: number }>(
+    const result = await db.query<{ fight_id: number; role: BossFightRole }>(
       `
-      SELECT p.fight_id
+      SELECT p.fight_id, p.role
       FROM boss_fight_participants p
       JOIN boss_fights f ON f.id = p.fight_id
       WHERE p.character_name = $1
@@ -171,13 +182,15 @@ export async function checkEnlistments(participant: string): Promise<number> {
     // falling into the catch
     const enlistment = result.rows[0];
     if (!enlistment) {
-      return 0;
+      return undefined;
     }
 
-    logger.info(`${participant} is enlisted for fight #${enlistment.fight_id}`);
-    return enlistment.fight_id;
+    logger.info(
+      `${participant} is enlisted for fight #${enlistment.fight_id} as ${enlistment.role}`,
+    );
+    return { fightId: enlistment.fight_id, role: enlistment.role };
   } catch (err) {
     logger.error(`Failed to get enlistments: ${err}`);
-    return 0;
+    return undefined;
   }
 }
