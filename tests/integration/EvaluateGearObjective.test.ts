@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
+import { EvaluateGearObjective } from '../../src/evaluateGear/evaluateGear.objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
@@ -756,13 +756,12 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
   describe('Proposing potions for a boss fight sim', () => {
     const proposeFor = async (role: 'tank' | 'dps' | 'healer') => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-        undefined,
-        role,
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+        bossFightRole: role,
+      });
       return await objective.proposeCombatLoadout(
         mockCharacter.data.level,
         'red_slime',
@@ -822,11 +821,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     it('proposes nothing outside a boss fight role', async () => {
       mockCharacter.bankItems.health_potion = 100;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       const proposed = await objective.proposeCombatLoadout(
         mockCharacter.data.level,
@@ -843,22 +842,21 @@ describe('EvaluateGearObjective Integration Tests', () => {
       role: 'tank' | 'dps' | 'healer',
       mob = 'red_slime',
     ): Promise<ObjectiveResult> => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        mob,
-        undefined,
-        role,
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: mob,
+        bossFightRole: role,
+      });
       return await objective.run();
     };
 
     it('leaves utility2 alone outside a boss fight', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -966,11 +964,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
   describe('Basic functionality', () => {
     it('should create EvaluateGearObjective with correct properties', () => {
       // Arrange & Act
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Assert
       expect(objective.activityType).toBe('combat');
@@ -981,12 +979,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('should store targetResource on the objective', () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'iron_ore',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'iron_ore',
+      });
 
       expect(objective.targetResource).toBe('iron_ore');
     });
@@ -1009,11 +1006,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('res_fire_shield', 1);
       mockCharacter.addItemToInventory('health_potion', 50);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1028,10 +1025,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Arrange
       mockCharacter.addItemToInventory('iron_pickaxe', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+      });
 
       // Act
       const result = await objective.run();
@@ -1050,10 +1047,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.data.weapon_slot = 'iron_pickaxe';
       mockCharacter.addItemToInventory('iron_pickaxe', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+      });
 
       // Act
       const result = await objective.run();
@@ -1069,11 +1066,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.utility1_slot_quantity = 5; // Below minEquippedUtilities
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1087,11 +1084,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.utility1_slot_quantity = 50; // Above minEquippedUtilities
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1115,11 +1112,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
     //     mockCharacter.data.utility2_slot_quantity = 0;
 
-    //     const objective = new EvaluateGearObjective(
-    //       mockCharacter as any,
-    //       'combat',
-    //       'red_slime',
-    //     );
+    //     const objective = new EvaluateGearObjective({
+    //       character: mockCharacter as any,
+    //       activityType: 'combat',
+    //       targetMob: 'red_slime',
+    //     });
 
     //     // Act
     //     const result = await objective.run();
@@ -1136,11 +1133,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Arrange
       mockCharacter.data.utility2_slot_quantity = 0;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1160,11 +1157,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       mockCharacter.data.utility2_slot_quantity = 25; // Above minEquippedUtilities
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1195,11 +1192,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       mockCharacter.addItemToInventory('res_fire_shield', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1217,11 +1214,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1255,11 +1252,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       mockCharacter.addItemToInventory('fire_sword', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1306,11 +1303,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('gold_sword', 1);
       mockCharacter.addItemToInventory('greater_dreadful_staff', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'lich',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'lich',
+      });
 
       await objective.run();
 
@@ -1356,11 +1353,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // equipNow will handle the withdrawal via EquipObjective internally
       mockCharacter.equipNow.mockResolvedValue(ObjectiveCompleted);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1400,11 +1397,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('fire_helmet', 1);
       mockCharacter.addItemToInventory('fire_armor', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1441,11 +1438,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       mockCharacter.addItemToInventory('dmg_helmet', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1464,11 +1461,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       // Arrange
       mockCharacter.addItemToInventory('hp_boots', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1494,11 +1491,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       mockCharacter.handleErrors.mockResolvedValue(false);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1513,11 +1510,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.checkQuantityOfItemInInv.mockReturnValue(0);
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1530,11 +1527,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
   describe('Wishlisting gear it cannot find', () => {
     it('wishlists the best missing candidate for a slot', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       const result = await objective.run();
 
@@ -1548,11 +1545,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('leaves the gear request unowned so it parks nothing', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1565,11 +1562,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('only ever asks for one of each item', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1583,11 +1580,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     it('does not wishlist gear held in the inventory or the bank', async () => {
       mockCharacter.addItemToInventory('hp_boots', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1606,11 +1603,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
         characterName: mockCharacter.data.name,
       });
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1627,11 +1624,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
         characterName: mockCharacter.data.name,
       });
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1641,11 +1638,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     it('does not wishlist gear that is already equipped', async () => {
       mockCharacter.data.boots_slot = 'hp_boots';
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1658,11 +1655,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
         createMockGear('strong_hp_boots', 'Strong HP Boots', 10, 'hp'),
       ];
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1674,11 +1671,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
     it('waits on the open request rather than adding a second row for the same item', async () => {
       // ring1 and ring2 share ringsMap, so ring2 re-checks everything ring1 asked for
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1696,11 +1693,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
         createMockGear('future_boots', 'Future Boots', 40, 'hp'),
       ];
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -1710,10 +1707,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('does not wishlist anything when evaluating gathering gear', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+      });
 
       await objective.run();
 
@@ -1724,11 +1721,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     // proposeCombatLoadout shares chooseCombatGear with the equipping path, so
     // simulating a loadout also posts requests for gear the character lacks
     it('wishlists missing gear while proposing a loadout', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.proposeCombatLoadout(10, 'red_slime');
 
@@ -1742,11 +1739,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.data.weapon_slot = 'fire_sword';
       mockCharacter.data.shield_slot = 'res_fire_shield';
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1769,11 +1766,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
       mockCharacter.data.level = 10; // Character is level 10
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       // Act
       const result = await objective.run();
@@ -1785,11 +1782,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
     it('should handle cancellation during execution', async () => {
       // Arrange
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       objective.cancelJob();
 
@@ -1806,10 +1803,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.checkQuantityOfItemInBank.mockResolvedValue(0);
       mockCharacter.weaponMap.mining = [];
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+      });
 
       // Act
       const result = await objective.run();
@@ -1820,10 +1817,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('should not throw when no weapons are mapped for the activity type', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mob' as WeaponFlavours,
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mob' as WeaponFlavours,
+      });
 
       expect((await objective.run()).success).toBe(true);
     });
@@ -1838,10 +1835,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       for (const activityType of activityTypes) {
         // Arrange
         mockCharacter.data.weapon_slot = '';
-        const objective = new EvaluateGearObjective(
-          mockCharacter as any,
+        const objective = new EvaluateGearObjective({
+          character: mockCharacter as any,
           activityType,
-        );
+        });
 
         // Act
         const result = await objective.run();
@@ -1915,12 +1912,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue(mockProspectingResource);
       mockCharacter.addItemToInventory('lucky_charm', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'iron_ore',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'iron_ore',
+      });
       await objective.run();
 
       expect(getAllResourceInformation).toHaveBeenCalledWith({
@@ -1940,12 +1936,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue(mockWisdomResource);
       mockCharacter.addItemToInventory('wisdom_stone', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-        undefined,
-        'ash_wood',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+        targetResource: 'ash_wood',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
@@ -1957,10 +1952,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
     it('equips wisdom artifact when no targetResource is provided', async () => {
       mockCharacter.addItemToInventory('wisdom_stone', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+      });
       await objective.run();
 
       expect(getAllResourceInformation).not.toHaveBeenCalled();
@@ -1978,12 +1973,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue(new ApiError({ code: 500, message: 'server error' }));
       mockCharacter.addItemToInventory('wisdom_stone', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'iron_ore',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'iron_ore',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
@@ -2000,12 +1994,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue({ data: [], pages: 1, page: 1, size: 50, total: 0 });
       mockCharacter.addItemToInventory('wisdom_stone', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'unknown_item',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'unknown_item',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
@@ -2022,12 +2015,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue(mockProspectingResource);
       // No lucky_charm in inventory or bank
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'iron_ore',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'iron_ore',
+      });
       await objective.run();
 
       const artifactCalls = (
@@ -2047,12 +2039,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ).mockResolvedValue(mockProspectingResource);
       mockCharacter.data.artifact1_slot = 'lucky_charm';
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'iron_ore',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'iron_ore',
+      });
       await objective.run();
 
       const artifact1Calls = (
@@ -2085,12 +2076,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('novice_guide', 1);
       mockCharacter.addItemToInventory('perfect_pearl', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'iron_ore',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'iron_ore',
+      });
       await objective.run();
 
       // Should equip novice_guide (level 10), not perfect_pearl (level 20 > char level 10)
@@ -2113,12 +2103,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
             typeof getAllResourceInformation
           >
         ).mockResolvedValue(mockProspectingResource);
-        await new EvaluateGearObjective(
-          mockCharacter as any,
-          'mining',
-          undefined,
-          'iron_ore',
-        ).run();
+        await new EvaluateGearObjective({
+          character: mockCharacter as any,
+          activityType: 'mining',
+          targetResource: 'iron_ore',
+        }).run();
       };
 
       beforeEach(() => {
@@ -2281,11 +2270,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('fire_helmet', 1);
       mockCharacter.addItemToInventory('hp_boots', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       const loadout = await objective.selectCombatLoadout(10, 'red_slime');
 
@@ -2303,11 +2292,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('earth_ring', 1);
       mockCharacter.addItemToInventory('fire_ring', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       const loadout = await objective.selectCombatLoadout(10, 'red_slime');
 
@@ -2321,11 +2310,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     it('keeps an already-equipped item selectable for its own slot', async () => {
       mockCharacter.data.shield_slot = 'res_fire_shield';
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       const loadout = await objective.selectCombatLoadout(10, 'red_slime');
 
@@ -2340,11 +2329,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.addItemToInventory('fire_sword', 1);
       mockCharacter.addItemToInventory('res_fire_shield', 1);
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       const schema = await objective.proposeCombatLoadout(10, 'red_slime');
 
@@ -2361,11 +2350,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.data.utility2_slot = 'small_antidote';
       mockCharacter.data.utility2_slot_quantity = 100;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       const schema = await objective.proposeCombatLoadout(10, 'red_slime');
 
@@ -2376,11 +2365,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
   describe('Bank caching during gear evaluation', () => {
     it('builds a single bank snapshot and reads bank quantities from it', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.run();
 
@@ -2392,11 +2381,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('proposeCombatLoadout reuses a provided bank cache without building its own', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
       const cache = await BankCache.create(mockCharacter as any);
       mockCharacter.getAllBankItems.mockClear();
 
@@ -2410,11 +2399,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('proposeCombatLoadout builds its own snapshot when none is provided', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'combat',
-        'red_slime',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
 
       await objective.proposeCombatLoadout(10, 'red_slime');
 
@@ -2470,10 +2459,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       mockCharacter.bankItems.cheap_wisdom_helmet = 1;
       mockCharacter.bankItems.great_wisdom_helmet = 1;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
@@ -2487,10 +2476,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
 
     it('leaves a slot untouched when no wisdom or prospecting gear exists', async () => {
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
@@ -2509,10 +2498,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ];
       mockCharacter.bankItems.great_wisdom_helmet = 1;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+      });
       await objective.run();
 
       expect(mockCharacter.withdrawNow).toHaveBeenCalledWith(
@@ -2533,10 +2522,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ];
       mockCharacter.bankItems.bank_wisdom_helmet = 1;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).not.toHaveBeenCalledWith(
@@ -2553,10 +2542,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ];
       mockCharacter.bankItems.strong_bank_helmet = 1;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
@@ -2571,10 +2560,10 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ];
       mockCharacter.bankItems.wisdom_ring = 1;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'woodcutting',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'woodcutting',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(
@@ -2598,12 +2587,11 @@ describe('EvaluateGearObjective Integration Tests', () => {
       ];
       mockCharacter.bankItems.prospecting_coat = 1;
 
-      const objective = new EvaluateGearObjective(
-        mockCharacter as any,
-        'mining',
-        undefined,
-        'iron_ore',
-      );
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'mining',
+        targetResource: 'iron_ore',
+      });
       await objective.run();
 
       expect(mockCharacter.equipNow).toHaveBeenCalledWith(

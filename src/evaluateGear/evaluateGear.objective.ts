@@ -4,7 +4,7 @@ import {
   scoreWeaponAgainstResistances,
 } from '../utils.js';
 import { Character } from '../character/character.js';
-import { Objective } from './Objective.js';
+import { Objective } from '../core/Objective.js';
 import {
   WeaponFlavours,
   GearEffects,
@@ -18,8 +18,8 @@ import {
 } from '../types/types.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { ApiError } from './Error.js';
-import { BankCache } from './BankCache.js';
+import { ApiError } from '../core/Error.js';
+import { BankCache } from '../core/BankCache.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
 import {
   ObjectiveCancelled,
@@ -47,6 +47,7 @@ import {
   SplashRestore,
 } from '../names.js';
 import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
+import { EvaluateGearParams } from './evaluateGear.types.js';
 
 /** A potion the character can field, and how many of it it can muster */
 type PotionStock = {
@@ -67,21 +68,19 @@ export class EvaluateGearObjective extends Objective {
   bossFightRole?: BossFightRole;
   private bankCache?: BankCache;
 
-  constructor(
-    character: Character,
-    activityType: WeaponFlavours,
-    targetMob?: string,
-    targetResource?: string,
-    bossFightRole?: BossFightRole,
-  ) {
-    super(character, `evaluate_${activityType}_gear`, 'not_started');
+  constructor(params: EvaluateGearParams) {
+    super(
+      params.character,
+      `evaluate_${params.activityType}_gear`,
+      'not_started',
+    );
 
-    this.character = character;
+    this.character = params.character;
     this.jobFlavour = 'EvaluateGear';
-    this.activityType = activityType;
-    this.targetMob = targetMob;
-    this.targetResource = targetResource;
-    this.bossFightRole = bossFightRole;
+    this.activityType = params.activityType;
+    this.targetMob = params.targetMob;
+    this.targetResource = params.targetResource;
+    this.bossFightRole = params.bossFightRole;
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {

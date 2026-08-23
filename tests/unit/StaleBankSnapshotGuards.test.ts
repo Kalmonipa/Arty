@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { BankCache } from '../../src/core/BankCache.js';
 import { IdleHealerObjective } from '../../src/idleObjectives/idleHealer.js';
-import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
+import { EvaluateGearObjective } from '../../src/evaluateGear/evaluateGear.objective.js';
 import { Character } from '../../src/character/character.js';
 import { ItemSchema } from '../../src/types/types.js';
 
@@ -57,7 +57,11 @@ describe('stale bank snapshot guards', () => {
       recoverHealth,
     } as unknown as Character;
 
-    const objective = new EvaluateGearObjective(character, 'combat', 'chicken');
+    const objective = new EvaluateGearObjective({
+      character,
+      activityType: 'combat',
+      targetMob: 'chicken',
+    });
     objective.checkStatus = jest.fn(async () => true) as never;
 
     const result = await objective.run();

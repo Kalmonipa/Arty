@@ -25,7 +25,7 @@ jest.mock('../../src/fightBosses/bossFightParticipantFunctions.js', () => ({
 import { simulateBossFight } from '../../src/fightBosses/bossfightPreRequisite.js';
 import { registerBossFightParticipant } from '../../src/fightBosses/bossFightParticipantFunctions.js';
 import { FightBossLeaderObjective } from '../../src/fightBosses/bossFightLeader.objective.js';
-import { EvaluateGearObjective } from '../../src/core/EvaluateGearObjective.js';
+import { EvaluateGearObjective } from '../../src/evaluateGear/evaluateGear.objective.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

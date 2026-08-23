@@ -89,7 +89,7 @@ import {
 } from '../types/ItemData.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import { TidyBankObjective } from '../core/TidyBankObjective.js';
-import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
+import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from '../fights/fight.simulator.js';
@@ -690,6 +690,7 @@ export class Character {
         activityType: job.activityType,
         targetMob: job.targetMob,
         targetResource: job.targetResource,
+        bossFightRole: job.bossFightRole,
       };
     } else if (job instanceof EventObjective) {
       return {
@@ -794,12 +795,13 @@ export class Character {
           );
           break;
         case 'EvaluateGearObjective':
-          job = new EvaluateGearObjective(
-            this,
-            specificData.activityType as WeaponFlavours,
-            specificData.targetMob as string,
-            specificData.targetResource as string,
-          );
+          job = new EvaluateGearObjective({
+            character: this,
+            activityType: specificData.activityType as WeaponFlavours,
+            targetMob: specificData.targetMob as string,
+            targetResource: specificData.targetResource as string,
+            bossFightRole: specificData.bossFightRole as BossFightRole,
+          });
           break;
         case 'EventObjective':
           job = new EventObjective(
@@ -3180,13 +3182,15 @@ export class Character {
     activityType: WeaponFlavours,
     targetMob?: string,
     targetResource?: string,
+    bossfightRole?: BossFightRole,
   ) {
-    const evaluateGearJob = new EvaluateGearObjective(
-      this,
-      activityType,
-      targetMob,
-      targetResource,
-    );
+    const evaluateGearJob = new EvaluateGearObjective({
+      character: this,
+      activityType: activityType,
+      targetMob: targetMob,
+      targetResource: targetResource,
+      bossFightRole: bossfightRole,
+    });
 
     return await this.executeJobNow(
       evaluateGearJob,
@@ -3201,13 +3205,12 @@ export class Character {
     cache?: BankCache,
     bossFightRole?: BossFightRole,
   ): Promise<FakeCharacterSchema> {
-    const job = new EvaluateGearObjective(
-      this,
-      'combat',
-      targetMob,
-      undefined,
-      bossFightRole,
-    );
+    const job = new EvaluateGearObjective({
+      character: this,
+      activityType: 'combat',
+      targetMob: targetMob,
+      bossFightRole: bossFightRole,
+    });
     const charLevel = this.getCharacterLevel(this.data);
     return await job.proposeCombatLoadout(charLevel, targetMob, cache);
   }

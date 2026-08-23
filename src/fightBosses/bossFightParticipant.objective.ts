@@ -8,7 +8,7 @@ import {
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
 import { getBossFightState, getCurrentNumFights } from './bossFight.utils.js';
-import { EvaluateGearObjective } from '../core/EvaluateGearObjective.js';
+import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
 import {
   acceptBossFightCompletion,
   setParticipantsState,
@@ -87,13 +87,12 @@ export class FightBossParticipantObjective extends Objective {
 
         logger.info(`Attempting to gear up for ${this.target.code} fight`);
         const gearUpJob = await this.character.executeJobNow(
-          new EvaluateGearObjective(
-            this.character,
-            'combat',
-            this.target.code,
-            undefined,
-            this.role,
-          ),
+          new EvaluateGearObjective({
+            character: this.character,
+            activityType: 'combat',
+            targetMob: this.target.code,
+            bossFightRole: this.role,
+          }),
         );
         if (!gearUpJob.success) {
           logger.warn(`Gearing up for ${this.target.code} fight has failed`);
