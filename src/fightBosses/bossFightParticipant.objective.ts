@@ -13,7 +13,11 @@ import {
   acceptBossFightCompletion,
   setParticipantsState,
 } from './bossFightParticipantFunctions.js';
-import { BossFightReady, BossFightRole } from './bossFight.types.js';
+import {
+  BossFightReady,
+  BossFightRole,
+  isBossFightOver,
+} from './bossFight.types.js';
 
 /**
  * Gets initialised when the character has been selected to participate in a boss fight
@@ -69,7 +73,7 @@ export class FightBossParticipantObjective extends Objective {
        * If boss fight is marked as 'complete' we need to acknowledge that it's completed
        * then the leader will clean up
        */
-      if (currentFightState === 'complete' || currentFightState === 'aborted') {
+      if (isBossFightOver(currentFightState)) {
         logger.info(
           `Boss fight against ${this.target.code} has ${currentFightState}. Acknowledging and resuming prior activity`,
         );
@@ -117,8 +121,18 @@ export class FightBossParticipantObjective extends Objective {
 
         // Once the fights_done has been incremented by the leader we break out of this loop and start the prep process
         // fights_done will get incremented after the fight cooldown has completed for the leader
+        //
+        // The state is polled alongside the counter because a fight the leader
+        // ends early never increments it again. Watching the counter alone
+        // leaves the character sleeping here for good; the loop above is what
+        // acts on the state, so breaking out is enough to reach it.
         while (progress >= currentNumFights) {
           await sleep(10, 'boss_fight_sleep', true); // ToDo: doesn't need to log after debugging
+
+          if (isBossFightOver(await getBossFightState(this.fightId))) {
+            break;
+          }
+
           currentNumFights = await getCurrentNumFights(this.fightId);
         }
         progress = currentNumFights;

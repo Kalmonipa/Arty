@@ -87,6 +87,37 @@ export async function markBossFightComplete(
 }
 
 /**
+ * Sets the state of the fight to aborted in boss_fights
+ *
+ * A fight the leader gives up on has to say so. The participants wake on
+ * fights_done, which stops moving the moment the leader walks away, so an
+ * abandoned fight left in_progress strands them waiting on a counter that will
+ * never change again.
+ * @param bossFightId ID of the fight in the DB
+ * @returns
+ */
+export async function markBossFightAborted(
+  bossFightId: number,
+): Promise<boolean> {
+  try {
+    await db.query(
+      `
+      UPDATE boss_fights
+      SET state = 'aborted'
+      WHERE id = $1
+      `,
+      [bossFightId],
+    );
+    logger.info(`Set state to aborted for fight #${bossFightId}`);
+
+    return true;
+  } catch (err) {
+    logger.error(`Failed to mark boss fight as aborted: ${err}`);
+    return false;
+  }
+}
+
+/**
  * Takes in the boss fight ID and returns the monster code and quantity
  * @param bossFightId ID of the fight
  * @returns

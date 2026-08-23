@@ -7,6 +7,7 @@ jest.mock('../../src/fightBosses/bossfightPreRequisite', () => ({
 jest.mock('../../src/fightBosses/bossFight.utils.js', () => ({
   registerBossFight: jest.fn(async () => 42),
   incrementBossFightCounter: jest.fn(async () => 1),
+  markBossFightAborted: jest.fn(async () => true),
   setBossFightState: jest.fn(async () => true),
   cleanUpBossFight: jest.fn(async () => true),
   getBossFightState: jest.fn(async () => 'in_progress'),

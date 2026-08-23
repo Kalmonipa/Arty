@@ -31,6 +31,15 @@ export const BossFightAcked =
 
 export type BossFightStatus = 'in_progress' | 'complete' | 'aborted';
 
+/**
+ * @description Whether the fight has finished, however it finished. A
+ * participant treats both endings the same way: stand down and go back to what
+ * it was doing.
+ */
+export function isBossFightOver(state: BossFightStatus): boolean {
+  return state === 'complete' || state === 'aborted';
+}
+
 export type BossFightRole = 'tank' | 'dps' | 'healer';
 
 export const BossFightTank = 'tank' as const satisfies BossFightRole;
