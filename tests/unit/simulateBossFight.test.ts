@@ -58,6 +58,20 @@ class FakeLeader {
 
   handleErrors = jest.fn(async () => true);
 
+  // The leader proposes its own loadout rather than simulating what it happens
+  // to be wearing, since this runs before anybody gears up
+  proposedLoadout: Record<string, unknown> = {
+    level: 39,
+    weapon_slot: 'greater_dreadful_staff',
+    helmet_slot: 'LongLegLarry_helm',
+    utility1_slot: 'greater_health_potion',
+    utility1_slot_quantity: 100,
+    utility2_slot: 'fire_res_potion',
+    utility2_slot_quantity: 60,
+  };
+
+  proposeCombatLoadout = jest.fn(async () => this.proposedLoadout);
+
   executeJobNow = jest.fn(async (job: FightSimulator) => {
     job.winRate = this.simOutcome.winRate;
     job.averageTurns = this.simOutcome.averageTurns;
@@ -116,6 +130,63 @@ describe('simulateBossFight', () => {
       'BouncyBella_helm',
       'JumpyJimmy_helm',
     ]);
+  });
+
+  it('simulates the leader with the gear and potions it would bring as the tank', async () => {
+    const result = await simulateBossFight(leader as never, {
+      code: 'lich',
+      quantity: 10,
+    });
+
+    expect(leader.proposeCombatLoadout).toHaveBeenCalledWith(
+      'lich',
+      undefined,
+      'tank',
+    );
+    // Not the gear it is standing in: the sim runs before anyone gears up
+    expect(leader.createFakeCharacterSchema).not.toHaveBeenCalledWith(
+      leader.data,
+    );
+    expect(result.loadouts[0]).toMatchObject({
+      weapon_slot: 'greater_dreadful_staff',
+      utility1_slot: 'greater_health_potion',
+      utility1_slot_quantity: 100,
+      utility2_slot: 'fire_res_potion',
+      utility2_slot_quantity: 60,
+    });
+  });
+
+  it('asks each participant for the loadout that suits its role', async () => {
+    await simulateBossFight(leader as never, { code: 'lich', quantity: 10 });
+
+    expect(mockedLoadout.mock.calls).toEqual([
+      ['BouncyBella', 'lich', 'dps'],
+      ['JumpyJimmy', 'lich', 'healer'],
+    ]);
+  });
+
+  it('falls back to a potion free schema when a participant cannot be reached', async () => {
+    mockedLoadout.mockImplementation(async (charName: string) =>
+      charName === 'JumpyJimmy'
+        ? (new ApiError({ code: 500, message: 'unreachable' }) as never)
+        : {
+            message: 'ok',
+            character: charName,
+            proposedLoadout: loadoutFor(charName, 'gold_sword'),
+          },
+    );
+
+    const result = await simulateBossFight(leader as never, {
+      code: 'lich',
+      quantity: 10,
+    });
+
+    // Only the participant can see its own bank, so the leader cannot invent
+    // potions on its behalf
+    expect(result.loadouts[2]).toMatchObject({
+      helmet_slot: 'JumpyJimmy_helm',
+    });
+    expect(result.loadouts[2].utility1_slot).toBeUndefined();
   });
 
   it('still carries the win or loss verdict', async () => {

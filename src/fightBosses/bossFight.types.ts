@@ -1,3 +1,5 @@
+import { BouncyBella, JumpyJimmy } from '../constants.js';
+
 import { ObjectiveResult } from '../types/ObjectiveData.js';
 import { FakeCharacterSchema } from '../types/types.js';
 
@@ -35,6 +37,17 @@ export const BossFightTank = 'tank' as const satisfies BossFightRole;
 export const BossFightDps = 'dps' as const satisfies BossFightRole;
 export const BossFightHealer = 'healer' as const satisfies BossFightRole;
 
+export const BossFightRoles: BossFightRole[] = [
+  BossFightTank,
+  BossFightDps,
+  BossFightHealer,
+];
+
+/** Narrows a role arriving from outside the process, such as a query string */
+export function isBossFightRole(value: unknown): value is BossFightRole {
+  return BossFightRoles.includes(value as BossFightRole);
+}
+
 /**
  * Defines each boss fight participant
  */
@@ -42,6 +55,18 @@ export type BossFightParticipant = {
   characterName: string;
   role: BossFightRole;
 };
+
+/**
+ * @description Who plays which part in a boss fight. The leader tanks, so it is
+ * not in the roster; it never gets a boss_fight_participants row of its own.
+ * @todo Pick the party and the roles from the fleet rather than naming them
+ */
+export const BossFightLeaderRole = BossFightTank;
+
+export const BossFightRoster: BossFightParticipant[] = [
+  { characterName: BouncyBella, role: BossFightDps },
+  { characterName: JumpyJimmy, role: BossFightHealer },
+];
 
 /**
  * @description The fight a character has been called up to, and the role it was

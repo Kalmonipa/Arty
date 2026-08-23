@@ -3,13 +3,11 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import {
   CharacterSchema,
   CraftSkill,
-  StaticDataPageItemSchema,
   GatheringSkill,
   ItemSchema,
   ItemType,
   MapSchema,
 } from './types/types.js';
-import { getAllItemInformation } from './api_calls/Items.js';
 import { ApiError } from './core/Error.js';
 import { WeaponFlavours } from './types/ItemData.js';
 import { MonsterResistance } from './types/MonsterData.js';

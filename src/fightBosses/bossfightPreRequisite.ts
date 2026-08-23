@@ -2,7 +2,6 @@ import { requestLoadout } from '../api_calls/Account.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getMyCharacters } from '../character/character.apiCalls.js';
 import { Character } from '../character/character.js';
-import { BouncyBella, JumpyJimmy } from '../constants.js';
 import { ApiError } from '../core/Error.js';
 import {
   ObjectiveFailed,
@@ -12,7 +11,11 @@ import {
 import { CharacterSchema, FakeCharacterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { FightSimulator } from '../fights/fight.simulator.js';
-import { BossFightSimResult } from './bossFight.types.js';
+import {
+  BossFightLeaderRole,
+  BossFightRoster,
+  BossFightSimResult,
+} from './bossFight.types.js';
 
 /** A verdict with nothing behind it, for the paths that never reach the sim */
 function noSimResult(result: ObjectiveResult): BossFightSimResult {
@@ -35,45 +38,46 @@ export async function simulateBossFight(
     return noSimResult(ObjectiveFailed);
   }
 
-  // Build FakeCharacterSchemas to run a fight sim
-  const leaderFakeCharSchema = character.createFakeCharacterSchema(
-    character.data,
+  // Build FakeCharacterSchemas to run a fight sim. The leader proposes its own
+  // loadout the same way the participants do: this runs before anyone gears up,
+  // so simulating the gear it happens to be standing in would judge the fight
+  // on a gathering tool
+  const leaderFakeCharSchema = await character.proposeCombatLoadout(
+    target.code,
+    undefined,
+    BossFightLeaderRole,
   );
-  let part1FakeCharSchema: FakeCharacterSchema;
-  let part2FakeCharSchema: FakeCharacterSchema;
 
-  let part1FakeCharSchemaRequest = await requestLoadout(
-    participants[0].name,
-    mobInfo.data.code,
-  );
-  if (part1FakeCharSchemaRequest instanceof ApiError) {
-    logger.warn(
-      `Failed to get loadout for ${participants[0].name}: ${part1FakeCharSchemaRequest.error.message}. Building my own`,
+  const participantLoadouts: FakeCharacterSchema[] = [];
+
+  for (const [index, participant] of participants.entries()) {
+    const { role } = BossFightRoster[index];
+
+    const loadoutRequest = await requestLoadout(
+      participant.name,
+      mobInfo.data.code,
+      role,
     );
-    part1FakeCharSchema = character.createFakeCharacterSchema(participants[0]);
-  } else {
-    logger.info(`Successfully received loadout from ${participants[0].name}`);
-    part1FakeCharSchema = part1FakeCharSchemaRequest.proposedLoadout;
-  }
-  const part2FakeCharSchemaRequest = await requestLoadout(
-    participants[1].name,
-    mobInfo.data.code,
-  );
-  if (part2FakeCharSchemaRequest instanceof ApiError) {
-    logger.warn(
-      `Failed to get loadout for ${participants[1].name}: ${part2FakeCharSchemaRequest.error.message}. Building my own`,
+
+    if (loadoutRequest instanceof ApiError) {
+      logger.warn(
+        `Failed to get loadout for ${participant.name}: ${loadoutRequest.error.message}. Building my own`,
+      );
+      // A locally built schema carries no potions, since only the participant
+      // can see its own inventory and bank
+      participantLoadouts.push(
+        character.createFakeCharacterSchema(participant),
+      );
+      continue;
+    }
+
+    logger.info(
+      `Successfully received ${role} loadout from ${participant.name}`,
     );
-    part2FakeCharSchema = character.createFakeCharacterSchema(participants[1]);
-  } else {
-    logger.info(`Successfully received loadout from ${participants[1].name}`);
-    part2FakeCharSchema = part2FakeCharSchemaRequest.proposedLoadout;
+    participantLoadouts.push(loadoutRequest.proposedLoadout);
   }
 
-  const loadouts = [
-    leaderFakeCharSchema,
-    part1FakeCharSchema,
-    part2FakeCharSchema,
-  ];
+  const loadouts = [leaderFakeCharSchema, ...participantLoadouts];
 
   // Owning the job rather than going through simulateFightNow is what keeps the
   // win rate and turn count reachable; the helper returns only a pass/fail
@@ -116,10 +120,11 @@ async function findBestParticipants(
     return [];
   }
 
-  return [
-    allChars.find((char) => char.name === BouncyBella),
-    allChars.find((char) => char.name === JumpyJimmy),
-  ];
+  // Mapped over the roster so the returned order matches the roles the caller
+  // pairs them with by index
+  return BossFightRoster.map((member) =>
+    allChars.find((char) => char.name === member.characterName),
+  );
 
   // let part1: CharacterSchema;
   // let part2: CharacterSchema;

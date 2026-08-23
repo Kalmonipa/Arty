@@ -3,6 +3,11 @@ import { Character } from '../character/character.js';
 import { FightObjective } from './fight.objective.js';
 import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objective.js';
 import { simulateBossFight } from '../fightBosses/bossfightPreRequisite.js';
+import {
+  BossFightRole,
+  BossFightRoles,
+  isBossFightRole,
+} from '../fightBosses/bossFight.types.js';
 
 export default function FightRouter(char: Character) {
   const router = Router();
@@ -130,7 +135,7 @@ export default function FightRouter(char: Character) {
    */
   router.get('/propose-loadout', async (req: Request, res: Response) => {
     try {
-      const { targetMob } = req.query;
+      const { targetMob, role } = req.query;
 
       if (!targetMob || typeof targetMob !== 'string') {
         return res.status(400).json({
@@ -138,7 +143,23 @@ export default function FightRouter(char: Character) {
         });
       }
 
-      const proposedLoadout = await char.proposeCombatLoadout(targetMob);
+      let bossFightRole: BossFightRole | undefined;
+      if (role !== undefined) {
+        if (!isBossFightRole(role)) {
+          return res.status(400).json({
+            error: `Invalid role. Expected one of ${BossFightRoles.join(', ')}`,
+          });
+        }
+        bossFightRole = role;
+      }
+
+      // Without a role the loadout is gear only, which is what an ordinary
+      // fight sim wants. A role adds the potions for that part in the party
+      const proposedLoadout = await char.proposeCombatLoadout(
+        targetMob,
+        undefined,
+        bossFightRole,
+      );
 
       return res.status(200).json({
         message: `Proposed loadout for target mob ${targetMob}: helmet: ${proposedLoadout.helmet_slot}, weapon: ${proposedLoadout.weapon_slot}`,

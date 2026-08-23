@@ -754,6 +754,90 @@ describe('EvaluateGearObjective Integration Tests', () => {
     });
   });
 
+  describe('Proposing potions for a boss fight sim', () => {
+    const proposeFor = async (role: 'tank' | 'dps' | 'healer') => {
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+        undefined,
+        role,
+      );
+      return await objective.proposeCombatLoadout(
+        mockCharacter.data.level,
+        'red_slime',
+      );
+    };
+
+    beforeEach(() => {
+      mockCharacter.data.level = 40;
+    });
+
+    it('proposes restores in utility1 and the role potion in utility2', async () => {
+      mockCharacter.bankItems.health_potion = 100;
+      mockCharacter.bankItems.health_splash_potion = 100;
+
+      const proposed = await proposeFor('healer');
+
+      expect(proposed).toMatchObject({
+        utility1_slot: 'health_potion',
+        utility1_slot_quantity: 100,
+        utility2_slot: 'health_splash_potion',
+        utility2_slot_quantity: 100,
+      });
+    });
+
+    it('proposes no more potions than the character can muster', async () => {
+      mockCharacter.bankItems.health_potion = 12;
+      mockCharacter.bankItems.health_splash_potion = 30;
+
+      const proposed = await proposeFor('healer');
+
+      // A sim won by 100 potions the character does not own is worse than no
+      // sim at all
+      expect(proposed.utility1_slot_quantity).toBe(12);
+      expect(proposed.utility2_slot_quantity).toBe(30);
+    });
+
+    it('counts potions already in a utility slot', async () => {
+      mockCharacter.data.utility2_slot = 'health_splash_potion';
+      mockCharacter.data.utility2_slot_quantity = 40;
+      mockCharacter.bankItems.health_splash_potion = 25;
+
+      const proposed = await proposeFor('healer');
+
+      expect(proposed.utility2_slot_quantity).toBe(65);
+    });
+
+    it('leaves out a potion the character cannot get hold of', async () => {
+      mockCharacter.bankItems.health_potion = 50;
+
+      const proposed = await proposeFor('healer');
+
+      expect(proposed.utility1_slot).toBe('health_potion');
+      expect(proposed.utility2_slot).toBeUndefined();
+      expect(proposed.utility2_slot_quantity).toBeUndefined();
+    });
+
+    it('proposes nothing outside a boss fight role', async () => {
+      mockCharacter.bankItems.health_potion = 100;
+
+      const objective = new EvaluateGearObjective(
+        mockCharacter as any,
+        'combat',
+        'red_slime',
+      );
+
+      const proposed = await objective.proposeCombatLoadout(
+        mockCharacter.data.level,
+        'red_slime',
+      );
+
+      expect(proposed.utility1_slot).toBeUndefined();
+      expect(proposed.utility2_slot).toBeUndefined();
+    });
+  });
+
   describe('Boss fight role potions', () => {
     const gearUpFor = async (
       role: 'tank' | 'dps' | 'healer',

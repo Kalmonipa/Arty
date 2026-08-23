@@ -22,12 +22,9 @@ import {
   registerBossFightParticipant,
   setParticipantsState,
 } from './bossFightParticipantFunctions.js';
-import { BouncyBella, JumpyJimmy } from '../constants.js';
 import {
-  BossFightDps,
-  BossFightHealer,
-  BossFightParticipant,
-  BossFightTank,
+  BossFightLeaderRole,
+  BossFightRoster,
   BossFightUnready,
 } from './bossFight.types.js';
 
@@ -66,10 +63,7 @@ export class FightBossLeaderObjective extends Objective {
     if (!(await this.checkStatus())) return ObjectiveCancelled;
 
     let progress = 0;
-    const participants: BossFightParticipant[] = [
-      { characterName: BouncyBella, role: BossFightDps },
-      { characterName: JumpyJimmy, role: BossFightHealer },
-    ];
+    const participants = BossFightRoster;
 
     const fightSimResult = await simulateBossFight(this.character, this.target);
 
@@ -104,7 +98,7 @@ export class FightBossLeaderObjective extends Objective {
           'combat',
           this.target.code,
           undefined,
-          BossFightTank,
+          BossFightLeaderRole,
         ),
       );
       if (!gearUpJob.success) {

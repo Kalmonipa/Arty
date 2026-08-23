@@ -164,7 +164,10 @@ import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequ
 import { AcquisitionMethod, WishlistRow } from '../wishlist/wishlist.types.js';
 import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.objective.js';
 import { checkEnlistments } from '../fightBosses/bossFightParticipantFunctions.js';
-import { BossFightEnlistment } from '../fightBosses/bossFight.types.js';
+import {
+  BossFightEnlistment,
+  BossFightRole,
+} from '../fightBosses/bossFight.types.js';
 
 /**
  * Outcome of a single transition step. `reroute` is true when the step failed because the
@@ -3196,8 +3199,15 @@ export class Character {
   async proposeCombatLoadout(
     targetMob: string,
     cache?: BankCache,
+    bossFightRole?: BossFightRole,
   ): Promise<FakeCharacterSchema> {
-    const job = new EvaluateGearObjective(this, 'combat', targetMob);
+    const job = new EvaluateGearObjective(
+      this,
+      'combat',
+      targetMob,
+      undefined,
+      bossFightRole,
+    );
     const charLevel = this.getCharacterLevel(this.data);
     return await job.proposeCombatLoadout(charLevel, targetMob, cache);
   }

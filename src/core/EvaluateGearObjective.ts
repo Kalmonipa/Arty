@@ -43,9 +43,16 @@ import {
   BoostResEarth,
   BoostResFire,
   BoostResWater,
+  Restore,
   SplashRestore,
 } from '../names.js';
-import { MinEquippedUtilities } from '../constants.js';
+import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
+
+/** A potion the character can field, and how many of it it can muster */
+type PotionStock = {
+  code: string;
+  quantity: number;
+};
 
 /**
  * @description Evaluates which gear is the best to use for the upcoming fight
@@ -586,7 +593,7 @@ export class EvaluateGearObjective extends Objective {
   private async equipRolePotion(effect: UtilityEffects): Promise<boolean> {
     // Looked up before touching the slot: clearing it and then finding nothing
     // to put back would strip a potion the character was already carrying
-    const potion = await this.availableRolePotion(effect);
+    const potion = await this.availablePotionStock(effect);
     if (!potion) {
       logger.debug(`No ${effect} potion within reach`);
       return false;
@@ -618,13 +625,14 @@ export class EvaluateGearObjective extends Objective {
   }
 
   /**
-   * @description The potion {@link Character.equipUtility} would reach for: the
-   * highest level one carrying the effect that the character can use and
-   * actually has to hand, in the inventory or the bank.
+   * @description The potion {@link Character.equipUtility} would reach for -
+   * the highest level one carrying the effect that the character can use - and
+   * how many of it the character could actually field, counting what is in the
+   * inventory, already in a utility slot, and in the bank.
    */
-  private async availableRolePotion(
+  private async availablePotionStock(
     effect: UtilityEffects,
-  ): Promise<ItemSchema | undefined> {
+  ): Promise<PotionStock | undefined> {
     const charLevel = this.character.getCharacterLevel(this.character.data);
 
     for (const potion of [...this.character.utilitiesMap[effect]].reverse()) {
@@ -632,20 +640,68 @@ export class EvaluateGearObjective extends Objective {
         continue;
       }
 
-      if (this.character.checkQuantityOfItemInInv(potion.code) > 0) {
-        return potion;
+      let held = this.character.checkQuantityOfItemInInv(potion.code);
+
+      for (const slot of ['utility1', 'utility2'] as const) {
+        if (this.character.getCharacterGearIn(slot) === potion.code) {
+          held +=
+            slot === 'utility1'
+              ? this.character.data.utility1_slot_quantity
+              : this.character.data.utility2_slot_quantity;
+        }
       }
 
-      const inBank = await this.character.checkQuantityOfItemInBank(
+      held += await this.character.checkQuantityOfItemInBank(
         potion.code,
         this.bankCache,
       );
-      if (inBank > 0) {
-        return potion;
+
+      if (held > 0) {
+        return {
+          code: potion.code,
+          quantity: Math.min(held, MaxEquippedUtilities),
+        };
       }
     }
 
     return undefined;
+  }
+
+  /**
+   * @description The potions the character would take into a boss fight, as
+   * slots for a simulated loadout: its own restores in utility1 and its role
+   * potion in utility2.
+   *
+   * Only potions it can lay hands on are proposed, and only as many as it
+   * holds, so a simulated win is not won by potions that do not exist.
+   */
+  private async proposeRolePotions(
+    targetMob: string,
+  ): Promise<Partial<FakeCharacterSchema>> {
+    const proposed: Partial<FakeCharacterSchema> = {};
+    if (!this.bossFightRole) {
+      return proposed;
+    }
+
+    const restores = await this.availablePotionStock(Restore);
+    if (restores) {
+      proposed.utility1_slot = restores.code;
+      proposed.utility1_slot_quantity = restores.quantity;
+    }
+
+    for (const effect of await this.rolePotionEffects(targetMob)) {
+      const rolePotion = await this.availablePotionStock(effect);
+      if (rolePotion) {
+        proposed.utility2_slot = rolePotion.code;
+        proposed.utility2_slot_quantity = rolePotion.quantity;
+        break;
+      }
+    }
+
+    logger.info(
+      `Proposing ${proposed.utility1_slot_quantity ?? 0}x ${proposed.utility1_slot ?? 'nothing'} and ${proposed.utility2_slot_quantity ?? 0}x ${proposed.utility2_slot ?? 'nothing'} as the ${this.bossFightRole}`,
+    );
+    return proposed;
   }
 
   async selectCombatLoadout(
@@ -676,16 +732,19 @@ export class EvaluateGearObjective extends Objective {
     for (const [slot, code] of chosen) {
       (loadout as Record<string, string>)[`${slot}_slot`] = code;
     }
-    return loadout;
+
+    return { ...loadout, ...(await this.proposeRolePotions(targetMob)) };
   }
 
   /**
    * @description Proposes the best combat gear the character can assemble from
    * the bank.
-   * Note: The loadout is deliberately potion-free. Neither the base schema nor
-   * chooseCombatGear supplies a utility, and the sim API defaults an omitted
-   * utility quantity to 1, so passing one on would mean the fight sim defaults
-   * to having 1 potion which we don't want
+   *
+   * Note: potions are only proposed for a boss fight role. An ordinary fight
+   * gets a deliberately potion-free loadout, because the sim API defaults an
+   * omitted utility quantity to 1, so naming a utility without a quantity
+   * would simulate the fight with a single potion. Where potions are proposed
+   * the quantity is always set alongside the slot.
    */
   async proposeCombatLoadout(
     charLevel: number,

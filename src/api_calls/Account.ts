@@ -1,3 +1,4 @@
+import { BossFightRole } from '../fightBosses/bossFight.types.js';
 import { ApiError, toApiError } from '../core/Error.js';
 import { ProposeLoadoutResponse } from '../fights/fight.types.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
@@ -104,13 +105,18 @@ export async function requestCraftItem(
 export async function requestLoadout(
   charName: string,
   targetMob: string,
+  bossFightRole?: BossFightRole,
 ): Promise<ProposeLoadoutResponse | ApiError> {
   const requestOptions = {
     method: 'GET',
   };
 
   try {
-    const url = `http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}`;
+    // The role decides which potions the participant proposes, and it only
+    // knows it because the leader tells it: at sim time the fight has not been
+    // registered yet, so there is no row for it to read its own role from
+    const roleParam = bossFightRole ? `&role=${bossFightRole}` : '';
+    const url = `http://${charName.toLowerCase()}:3000/fight/propose-loadout?targetMob=${targetMob}${roleParam}`;
 
     logger.info(`Trying GET ${url}`);
 
