@@ -5,12 +5,24 @@ import {
   markAsFulfilled,
   markAsNotExecuting,
 } from './wishlist.utils.js';
-import { WishlistRow } from './wishlist.types.js';
+import { AcquisitionMethod, WishlistRow } from './wishlist.types.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
+import { Alchemy, Mining, Woodcutting } from '../names.js';
+
+/**
+ * These should be made unconditionally, without checking what's in the bank.
+ * Others should factor in the bank i.e. if we request an obsidian helmet but
+ * there's already on in the bank then we don't really need another one
+ */
+const UnconditionalMethods: Set<AcquisitionMethod> = new Set([
+  Mining,
+  Woodcutting,
+  Alchemy,
+]);
 
 /**
  * Fulfills the request that gets passed in. Some preliminary checks should have been
@@ -51,23 +63,27 @@ export class FulfillWishlistRequestObjective extends Objective {
 
     let successfull = false;
     try {
-      const alreadyBanked = await this.character.checkQuantityOfItemInBank(
-        this.request.item_code,
-      );
-      let outstanding = this.request.quantity - alreadyBanked;
+      let outstanding = this.request.quantity;
 
-      if (outstanding <= 0) {
-        this.log.info(
-          `Request #${this.request.id} for ${this.request.quantity}x ${this.request.item_code} is already covered by the ${alreadyBanked} in the bank; nothing to make`,
+      if (!UnconditionalMethods.has(this.request.acquisition_method)) {
+        const alreadyBanked = await this.character.checkQuantityOfItemInBank(
+          this.request.item_code,
         );
-        successfull = true;
-        return ObjectiveCompleted;
-      }
+        outstanding -= alreadyBanked;
 
-      if (alreadyBanked > 0) {
-        this.log.info(
-          `${alreadyBanked}x ${this.request.item_code} already banked; making the remaining ${outstanding} for request #${this.request.id}`,
-        );
+        if (outstanding <= 0) {
+          this.log.info(
+            `Request #${this.request.id} for ${this.request.quantity}x ${this.request.item_code} is already covered by the ${alreadyBanked} in the bank; nothing to make`,
+          );
+          successfull = true;
+          return ObjectiveCompleted;
+        }
+
+        if (alreadyBanked > 0) {
+          this.log.info(
+            `${alreadyBanked}x ${this.request.item_code} already banked; making the remaining ${outstanding} for request #${this.request.id}`,
+          );
+        }
       }
 
       // Gather in inventory sized batches so a large request doesn't try to

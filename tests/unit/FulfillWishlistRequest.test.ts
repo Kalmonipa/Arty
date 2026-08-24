@@ -138,6 +138,70 @@ describe('FulfillWishlistRequestObjective', () => {
     expect(mockedNotExecuting).toHaveBeenCalledWith(376, 'LongLegLarry');
   });
 
+  describe('materials requests ignore the bank', () => {
+    // A mining/woodcutting row records how many MORE the requester needs — it
+    // already netted off the bank when it raised the row. Measuring against the
+    // bank again subtracted the same balance twice and closed the row untouched,
+    // which parked LongLegLarry's crafting jobs 33 times over on the same gold_bar.
+    it.each([
+      ['mining', 'gold_bar'],
+      ['woodcutting', 'cursed_plank'],
+    ])(
+      'makes the full %s request even when the bank looks covered',
+      async (method, item) => {
+        const character = makeCharacter(30);
+        const job = new FulfillWishlistRequestObjective(
+          character as any,
+          makeRequest({
+            item_code: item,
+            quantity: 10,
+            acquisition_method: method as WishlistRow['acquisition_method'],
+          }),
+        );
+
+        await job.run();
+
+        expect(character.checkQuantityOfItemInBank).not.toHaveBeenCalled();
+        expect(character.gatherNow).toHaveBeenCalledWith(10, item);
+        expect(character.depositNow).toHaveBeenCalledWith(10, item);
+        expect(mockedFulfilled).toHaveBeenCalledWith(376, 'LongLegLarry');
+      },
+    );
+
+    it('still batches a materials request larger than the inventory', async () => {
+      const character = makeCharacter(0, 100);
+      const job = new FulfillWishlistRequestObjective(
+        character as any,
+        makeRequest({
+          item_code: 'iron_ore',
+          quantity: 150,
+          acquisition_method: 'mining',
+        }),
+      );
+
+      await job.run();
+
+      expect(character.gatherNow.mock.calls).toEqual([
+        [90, 'iron_ore'],
+        [60, 'iron_ore'],
+      ]);
+    });
+
+    it('leaves equipment requests checking the bank first', async () => {
+      const character = makeCharacter(1);
+      const job = new FulfillWishlistRequestObjective(
+        character as any,
+        makeRequest({ acquisition_method: 'gearcrafting' }),
+      );
+
+      await job.run();
+
+      expect(character.checkQuantityOfItemInBank).toHaveBeenCalled();
+      expect(character.gatherNow).not.toHaveBeenCalled();
+      expect(mockedFulfilled).toHaveBeenCalledWith(376, 'LongLegLarry');
+    });
+  });
+
   it('does not read the bank when the claim was lost to another character', async () => {
     mockedClaim.mockResolvedValue(false);
     const character = makeCharacter(0);
