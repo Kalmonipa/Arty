@@ -5,7 +5,10 @@ import {
 } from '../../../src/core/navigation/teleports.js';
 import { buildNavigationGraph } from '../../../src/core/navigation/graph.js';
 import { buildTransitionPath } from '../../../src/core/navigation/pathfinding.js';
-import { journeySeconds } from '../../../src/core/navigation/teleports.js';
+import {
+  journeyCost,
+  journeySeconds,
+} from '../../../src/core/navigation/teleports.js';
 import { ItemSchema, MapSchema } from '../../../src/types/types.js';
 import { loadMaps, loadConsumables } from '../../fixtures/gameData.js';
 
@@ -275,5 +278,58 @@ describe('only drinking when the saving is worth the potion', () => {
     expect(
       chooseTeleportPotion(SPAWN, forest, graph, allPotions, gated)?.code,
     ).toBe('enchanted_potion');
+  });
+});
+
+/**
+ * Three transitions in the game charge gold: 718 into the Enchanted Forest at
+ * 5000, and 1093/1336 either way to Sandwhisper Isle at 1000. The potions that
+ * skip them land past the gate, so a character holding one should never pay.
+ */
+describe('spending a potion rather than gold', () => {
+  it('drinks the enchanted potion for a saving too small to justify on time alone', () => {
+    // (-4,8) inside the forest: 70s on foot against 13s with the potion. The 57s
+    // saving is under the threshold, so time alone says walk — but walking means
+    // transitioning at 718 and paying 5000 gold.
+    const insideForest = mapById(667);
+
+    expect(journeyCost(SPAWN, insideForest, graph)).toEqual({
+      seconds: 70,
+      gold: 5000,
+    });
+    expect(
+      chooseTeleportPotion(SPAWN, insideForest, graph, allPotions)?.code,
+    ).toBe('enchanted_potion');
+  });
+
+  it('lands the chosen potion past the gate rather than short of it', () => {
+    const insideForest = mapById(667);
+
+    const chosen = chooseTeleportPotion(SPAWN, insideForest, graph, allPotions);
+
+    expect(journeyCost(chosen!.mapId, insideForest, graph)?.gold).toBe(0);
+  });
+
+  it('takes a potion off Sandwhisper Isle rather than pay the 1000 to leave', () => {
+    // The sandwhisper potion lands back inside the isle, so the potion that
+    // avoids the gold here is the plain recall to spawn.
+    const spawn = mapById(SPAWN);
+    const onIsle = potion('sandwhisper_potion').mapId;
+
+    expect(journeyCost(onIsle, spawn, graph)?.gold).toBe(1000);
+    expect(chooseTeleportPotion(onIsle, spawn, graph, allPotions)?.code).toBe(
+      'recall_potion',
+    );
+  });
+
+  it('still walks a free route whose saving is too small', () => {
+    // The guard against burning potions has to survive: 718 is the gate tile
+    // itself, reached without transitioning, so no gold is at stake.
+    const gateTile = mapById(718);
+
+    expect(journeyCost(SPAWN, gateTile, graph)?.gold).toBe(0);
+    expect(
+      chooseTeleportPotion(SPAWN, gateTile, graph, allPotions),
+    ).toBeUndefined();
   });
 });

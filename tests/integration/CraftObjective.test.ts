@@ -1308,13 +1308,17 @@ describe('CraftObjective Integration Tests', () => {
       // Act
       const result = await objective.run();
 
-      // Assert — one row for the 10 steel_bar actually missing, and the job
-      // still fails so it gets parked until that request is fulfilled
+      // Assert — one row, for all 35 the craft consumes rather than the 10 the
+      // character is short. What it already holds decides whether to ask, not how
+      // much to ask for: jobs sharing a material raise their rows together, so
+      // each netting off the same holding leaves the rows adding up to less than
+      // the jobs between them need. The job still fails so it gets parked until
+      // the request is fulfilled.
       expect(result.success).toBe(false);
       expect(addToWishlist).toHaveBeenCalledTimes(1);
       expect(addToWishlist).toHaveBeenCalledWith({
         itemCode: 'steel_bar',
-        quantity: 10,
+        quantity: 35,
         characterName: 'TestCharacter',
         jobId: OwningJobId,
         acquisitionMethod: 'mining',
