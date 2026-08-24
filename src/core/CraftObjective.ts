@@ -372,10 +372,14 @@ export class CraftObjective extends Objective {
    * while this character collects what it can get itself (i.e. the labourer
    * smelts bars while the crafter farms mob drops).
    *
-   * Requests only the shortfall: an ingredient already covered by the bank or
-   * inventory needs no help, and an oversized row parks the job on a request
-   * larger than it needs. gatherIngredients' own request for the same ingredient
-   * is deduplicated against this one, so the quantity here is the one that counts.
+   * The shortfall decides *whether* to ask; the row asks for the whole amount the
+   * craft consumes. Jobs sharing a material raise their rows together, before any
+   * of them has spent a thing, so each one measuring its own shortfall credits
+   * itself the same bank balance and the rows add up to far less than the jobs
+   * between them need. Surplus is cheap by comparison — it is bars and planks
+   * nearly every recipe wants, and it waits in the bank for the next job.
+   * gatherIngredients' own request for the same ingredient is deduplicated against
+   * this one, so the quantity here is the one that counts.
    * @returns a failing result if an ingredient couldn't be looked up, otherwise
    * undefined so the caller carries on
    */
@@ -408,10 +412,10 @@ export class CraftObjective extends Objective {
       }
 
       logger.info(
-        `${this.character.data.name} (${this.character.role}) needs ${skillNeeded} for ${shortfall} ${ingredient.code}; requesting it before gathering starts`,
+        `${this.character.data.name} (${this.character.role}) needs ${skillNeeded} for ${shortfall} more ${ingredient.code} (${totalNeeded} in total); requesting it before gathering starts`,
       );
       await this.requestIngredientFromWishlist(
-        { code: ingredient.code, quantity: shortfall },
+        { code: ingredient.code, quantity: totalNeeded },
         { acquisitionMethod: skillNeeded },
       );
     }
