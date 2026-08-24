@@ -1,33 +1,14 @@
 import {
   actionClaimPendingItems,
-  getAllItemInformation,
-  getItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { getAllMonsterInformation } from '../api_calls/Monsters.js';
-import { getAllNpcItems } from '../api_calls/NPC.js';
 import { MAX_SKILL_LEVEL } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
-import {
-  ItemSchema,
-  Skill,
-  StaticDataPageResourceSchema,
-} from '../types/types.js';
-import {
-  GetCharacterData,
-  getHighestCharLevel,
-  isGatheringSkill,
-  logger,
-} from '../utils.js';
+import { Skill, StaticDataPageResourceSchema } from '../types/types.js';
+import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
-import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
-import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { Objective } from '../core/Objective.js';
-import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
-import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
-import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
-import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,
@@ -232,7 +213,7 @@ export class IdleLabourerObjective extends Objective {
 
     if (skillLevel === MAX_SKILL_LEVEL) {
       logger.info(
-        `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+        `Max ${skill || 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
       );
       return ObjectiveCompleted;
     } else if (

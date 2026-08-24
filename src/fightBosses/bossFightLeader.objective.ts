@@ -79,12 +79,6 @@ export class FightBossLeaderObjective extends Objective {
 
     const fightId = await registerBossFight(this.character, this.target);
 
-    // Once the fight is registered every way out of it has to leave a terminal
-    // state behind. The participants wake on fights_done, which stops moving
-    // the moment this objective gives up, so a fight left in_progress keeps
-    // them standing at the boss indefinitely. Hence the finally rather than an
-    // abort at each early return: it also covers a thrown request and a
-    // cancellation, and the next early return added can't forget it.
     let fightFinished = false;
     try {
       const result = await this.leadFight(fightId);
