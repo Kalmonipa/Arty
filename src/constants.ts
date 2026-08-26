@@ -36,6 +36,10 @@ export const MIN_TASK_COINS_IN_BANK = 50;
  * The minimum coins we want in the bank before we start gambling
  */
 export const MIN_TASK_COINS_BEFORE_GAMBLING = 100;
+/**
+ * Maximum task coins we'd like in the bank
+ */
+export const MAX_COINS_NEEDED = 200;
 
 /**
  * How long a monster task is allowed to take before it's worth cancelling for a

@@ -5,6 +5,7 @@ import {
   getPendingItems,
 } from '../api_calls/Items.js';
 import {
+  MAX_COINS_NEEDED,
   MAX_SKILL_LEVEL,
   MIN_TASK_COINS_BEFORE_GAMBLING,
   MIN_TASK_COINS_IN_BANK,
@@ -219,9 +220,9 @@ export class IdleCrafterObjective extends Objective {
     const taskCoinsInBank =
       await this.character.checkQuantityOfItemInBank(TasksCoin);
 
-    if (taskCoinsInBank >= MIN_TASK_COINS_BEFORE_GAMBLING) {
+    if (taskCoinsInBank >= MAX_COINS_NEEDED) {
       logger.debug(
-        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MIN_TASK_COINS_BEFORE_GAMBLING}). Not doing a monster task`,
+        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MAX_COINS_NEEDED}). Not doing a monster task`,
       );
       return false;
     }
