@@ -4,6 +4,8 @@ import { UtilityEffects } from './types/ItemData.js';
  * Achievements
  */
 export const GourmetChef = 'gourmet_chef';
+export const CleanTheLab = 'clean_the_lab';
+export const SecureTheIsland = 'secure_the_island';
 
 /**
  * Effects
