@@ -5,7 +5,7 @@ import {
 } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
 import { CraftSkill, ItemSchema, SimpleItemSchema } from '../types/types.js';
-import { logger } from '../utils.js';
+import { getCraftableItems, logger } from '../utils.js';
 import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
@@ -321,16 +321,16 @@ export class TidyBankObjective extends Objective {
   ): Promise<ObjectiveResult> {
     const obsoleteThreshold = this.character.lowestCharLevel - 10;
 
-    const itemListResponse = await getAllItemInformation({
-      craft_skill: skill,
-      max_level: this.character.getCharacterLevel(this.character.data, skill),
-    });
-    if (itemListResponse instanceof ApiError) {
-      this.character.handleErrors(itemListResponse);
+    const craftableItems = await getCraftableItems(
+      skill,
+      this.character.getCharacterLevel(this.character.data, skill),
+    );
+    if (!craftableItems) {
+      logger.warn(`Could not read the ${skill} item list; skipping recycling`);
       return ObjectiveFailed;
     }
 
-    for (const gear of itemListResponse.data) {
+    for (const gear of craftableItems) {
       // Chars can equip 2 rings so we want to keep 10 of them, 5 of everything else
       const maxNumberNeededInBank = gear.type === 'ring' ? 10 : 5;
 

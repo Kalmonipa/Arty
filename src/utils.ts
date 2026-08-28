@@ -185,17 +185,7 @@ export async function buildListOfWeapons(): Promise<
   });
   weaponMap['combat'] = [];
 
-  /**
-   * Path to the game state file containing items
-   */
-  const itemStateFilePath: string = path.join(
-    process.cwd(),
-    'data',
-    'items-data.json',
-  );
-
-  const fileContent = await fs.readFile(itemStateFilePath, 'utf-8');
-  const itemData = JSON.parse(fileContent);
+  const itemData = await readItemCatalogue();
 
   const allWeapons: ItemSchema[] = itemData.filter(
     (item) => item.type === 'weapon',
@@ -316,24 +306,40 @@ export function isCraftingSkill(value: string): value is CraftSkill {
 /**
  * @description Builds a map of the specified item so we don't have to make API calls
  */
-export async function buildListOf(
-  itemType: ItemType,
-): Promise<Record<string, ItemSchema[]>> {
-  logger.info(`Building map of ${itemType}`);
-
-  /**
-   * Path to the game state file containing items
-   */
+export async function readItemCatalogue(): Promise<ItemSchema[]> {
   const itemStateFilePath: string = path.join(
     process.cwd(),
     'data',
     'items-data.json',
   );
 
+  const fileContent = await fs.readFile(itemStateFilePath, 'utf-8');
+  return JSON.parse(fileContent);
+}
+
+export async function getCraftableItems(
+  skill: CraftSkill,
+  maxLevel: number,
+): Promise<ItemSchema[] | undefined> {
+  try {
+    const items = await readItemCatalogue();
+    return items.filter(
+      (item) => item.craft?.skill === skill && item.level <= maxLevel,
+    );
+  } catch (error) {
+    logger.error(`Could not read the item catalogue: ${error.message}`);
+    return undefined;
+  }
+}
+
+export async function buildListOf(
+  itemType: ItemType,
+): Promise<Record<string, ItemSchema[]>> {
+  logger.info(`Building map of ${itemType}`);
+
   const itemMap: Record<string, ItemSchema[]> = {};
 
-  const fileContent = await fs.readFile(itemStateFilePath, 'utf-8');
-  const itemData = JSON.parse(fileContent);
+  const itemData = await readItemCatalogue();
 
   const allItems: ItemSchema[] = itemData.filter(
     (item) => item.type === itemType,

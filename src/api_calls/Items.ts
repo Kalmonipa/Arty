@@ -90,6 +90,8 @@ export async function actionUse(
   });
 }
 
+const MaxItemsPageSize = 10000;
+
 /**
  * Item data is static, so once fetched it is cached by code for the lifetime of
  * the process. Warmed in bulk by getAllItemInformation (Character.init loads the
@@ -130,9 +132,7 @@ export async function getAllItemInformation(
   if (data?.page) {
     apiUrl.searchParams.set('page', data.page.toString());
   }
-  if (data?.size) {
-    apiUrl.searchParams.set('size', data.size.toString());
-  }
+  apiUrl.searchParams.set('size', (data?.size ?? MaxItemsPageSize).toString());
   if (data?.type) {
     apiUrl.searchParams.set('type', data.type);
   }

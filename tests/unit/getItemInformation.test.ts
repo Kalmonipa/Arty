@@ -67,3 +67,54 @@ describe('getItemInformation caching', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('getAllItemInformation page size', () => {
+  beforeEach(() => clearItemCache());
+  afterEach(() => jest.restoreAllMocks());
+
+  const listResponse = () =>
+    jsonResponse(200, {
+      data: [item('gold_helm')],
+      total: 1,
+      page: 1,
+      size: 1,
+      pages: 1,
+    });
+
+  const requestedUrl = (fetchSpy: jest.SpiedFunction<typeof fetch>): URL =>
+    new URL(String(fetchSpy.mock.calls[0][0]));
+
+  it('asks for every match rather than the first page of them', async () => {
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(listResponse());
+
+    await getAllItemInformation({
+      craft_skill: 'gearcrafting',
+      max_level: 37,
+    });
+
+    expect(requestedUrl(fetchSpy).searchParams.get('size')).toBe('10000');
+  });
+
+  it('leaves a page size the caller chose alone', async () => {
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(listResponse());
+
+    await getAllItemInformation({ craft_skill: 'gearcrafting', size: 20 });
+
+    expect(requestedUrl(fetchSpy).searchParams.get('size')).toBe('20');
+  });
+
+  it('still asks for the page the caller chose', async () => {
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(listResponse());
+
+    await getAllItemInformation({ craft_skill: 'gearcrafting', page: 2 });
+
+    expect(requestedUrl(fetchSpy).searchParams.get('page')).toBe('2');
+    expect(requestedUrl(fetchSpy).searchParams.get('size')).toBe('10000');
+  });
+});

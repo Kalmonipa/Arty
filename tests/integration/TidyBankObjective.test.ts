@@ -1,7 +1,6 @@
 import { jest } from '@jest/globals';
 import { TidyBankObjective } from '../../src/core/TidyBankObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
-import { ApiError } from '../../src/core/Error.js';
 import { CraftSkill, ItemSchema } from '../../src/types/types.js';
 
 jest.mock('../../src/api_calls/Items', () => ({
@@ -9,14 +8,22 @@ jest.mock('../../src/api_calls/Items', () => ({
   getItemInformation: jest.fn(),
 }));
 
+jest.mock('../../src/utils.js', () => {
+  const actual =
+    jest.requireActual<typeof import('../../src/utils.js')>(
+      '../../src/utils.js',
+    );
+  return { ...actual, getCraftableItems: jest.fn() };
+});
+
 jest.mock('../../src/api_calls/Bank', () => ({
   getBankItems: jest.fn(),
 }));
 
-import { getAllItemInformation } from '../../src/api_calls/Items.js';
+import { getCraftableItems } from '../../src/utils.js';
 
-const mockGetAllItemInformation = getAllItemInformation as jest.MockedFunction<
-  typeof getAllItemInformation
+const mockGetCraftableItems = getCraftableItems as jest.MockedFunction<
+  typeof getCraftableItems
 >;
 
 const makeGear = (code: string, level: number): ItemSchema => ({
@@ -30,12 +37,6 @@ const makeGear = (code: string, level: number): ItemSchema => ({
   craft: { skill: 'gearcrafting' as CraftSkill, level, items: [], quantity: 1 },
 });
 
-const makeItemListResponse = (items: ItemSchema[]) => ({
-  data: items,
-  total: items.length,
-  page: 1,
-  size: 50,
-});
 
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
@@ -71,10 +72,8 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
     jest.clearAllMocks();
   });
 
-  it('returns false when getAllItemInformation fails', async () => {
-    mockGetAllItemInformation.mockResolvedValue(
-      new ApiError({ code: 500, message: 'Server error' }),
-    );
+  it('returns false when the item catalogue cannot be read', async () => {
+    mockGetCraftableItems.mockResolvedValue(undefined);
 
     const result = await makeObjective('gearcrafter').run();
 
@@ -83,9 +82,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
   });
 
   it('skips items not found in the bank', async () => {
-    mockGetAllItemInformation.mockResolvedValue(
-      makeItemListResponse([makeGear('iron_sword', 15)]) as any,
-    );
+    mockGetCraftableItems.mockResolvedValue([makeGear('iron_sword', 15)]);
     character.bankItems = {};
 
     await makeObjective('weaponcrafter').run();
@@ -96,9 +93,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
   describe('obsolete item recycling (>10 levels below lowestCharLevel)', () => {
     it('recycles all of an item that is more than 10 levels below lowest character level', async () => {
       character.lowestCharLevel = 19;
-      mockGetAllItemInformation.mockResolvedValue(
-        makeItemListResponse([makeGear('copper_dagger', 5)]) as any,
-      );
+      mockGetCraftableItems.mockResolvedValue([makeGear('copper_dagger', 5)]);
       character.bankItems = { copper_dagger: 3 };
 
       await makeObjective('weaponcrafter').run();
@@ -108,9 +103,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
 
     it('recycles all obsolete items regardless of quantity (does not keep 5)', async () => {
       character.lowestCharLevel = 19;
-      mockGetAllItemInformation.mockResolvedValue(
-        makeItemListResponse([makeGear('copper_dagger', 5)]) as any,
-      );
+      mockGetCraftableItems.mockResolvedValue([makeGear('copper_dagger', 5)]);
       character.bankItems = { copper_dagger: 2 };
 
       await makeObjective('weaponcrafter').run();
@@ -122,9 +115,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
     it('does not recycle an item exactly 10 levels below (boundary: level must be strictly below threshold)', async () => {
       character.lowestCharLevel = 19;
       // threshold = 19 - 10 = 9; item at level 9 is NOT obsolete (not strictly below)
-      mockGetAllItemInformation.mockResolvedValue(
-        makeItemListResponse([makeGear('iron_helm', 9)]) as any,
-      );
+      mockGetCraftableItems.mockResolvedValue([makeGear('iron_helm', 9)]);
       character.bankItems = { iron_helm: 3 };
 
       await makeObjective('gearcrafter').run();
@@ -136,9 +127,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
     it('recycles an item one level below the threshold', async () => {
       character.lowestCharLevel = 19;
       // threshold = 9; item at level 8 IS obsolete
-      mockGetAllItemInformation.mockResolvedValue(
-        makeItemListResponse([makeGear('wooden_shield', 8)]) as any,
-      );
+      mockGetCraftableItems.mockResolvedValue([makeGear('wooden_shield', 8)]);
       character.bankItems = { wooden_shield: 1 };
 
       await makeObjective('gearcrafter').run();
@@ -148,13 +137,11 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
 
     it('handles multiple items, recycling only the obsolete ones', async () => {
       character.lowestCharLevel = 19;
-      mockGetAllItemInformation.mockResolvedValue(
-        makeItemListResponse([
+      mockGetCraftableItems.mockResolvedValue([
           makeGear('copper_dagger', 5), // obsolete (5 <= 9)
           makeGear('iron_sword', 15), // not obsolete (15 > 9), quantity <= 5 → skip
           makeGear('steel_armor', 17), // not obsolete (17 > 9), quantity > 5 → trim
-        ]) as any,
-      );
+        ]);
       character.bankItems = {
         copper_dagger: 4,
         iron_sword: 3,
@@ -172,9 +159,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
   describe('keep-5 recycling (existing logic, non-obsolete items)', () => {
     it('does not recycle when quantity is at or below 5', async () => {
       character.lowestCharLevel = 19;
-      mockGetAllItemInformation.mockResolvedValue(
-        makeItemListResponse([makeGear('iron_helm', 15)]) as any,
-      );
+      mockGetCraftableItems.mockResolvedValue([makeGear('iron_helm', 15)]);
       character.bankItems = { iron_helm: 5 };
 
       await makeObjective('gearcrafter').run();
@@ -184,9 +169,7 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
 
     it('recycles the excess beyond 5 for non-obsolete items', async () => {
       character.lowestCharLevel = 19;
-      mockGetAllItemInformation.mockResolvedValue(
-        makeItemListResponse([makeGear('iron_helm', 15)]) as any,
-      );
+      mockGetCraftableItems.mockResolvedValue([makeGear('iron_helm', 15)]);
       character.bankItems = { iron_helm: 9 };
 
       await makeObjective('gearcrafter').run();
@@ -196,18 +179,17 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
   });
 
   describe('role routing', () => {
-    it.each(['gearcrafter', 'jewelrycrafter', 'weaponcrafter'] as const)(
-      'calls recycleExcessEquipment for role: %s',
-      async (role) => {
-        mockGetAllItemInformation.mockResolvedValue(
-          makeItemListResponse([]) as any,
-        );
+    it.each([
+      ['gearcrafter', 'gearcrafting'],
+      ['jewelrycrafter', 'jewelrycrafting'],
+      ['weaponcrafter', 'weaponcrafting'],
+    ] as const)('looks up %s gear under %s', async (role, skill) => {
+      mockGetCraftableItems.mockResolvedValue([]);
 
-        const result = await makeObjective(role).run();
+      const result = await makeObjective(role).run();
 
-        expect(result.success).toBe(true);
-        expect(mockGetAllItemInformation).toHaveBeenCalledTimes(1);
-      },
-    );
+      expect(result.success).toBe(true);
+      expect(mockGetCraftableItems).toHaveBeenCalledWith(skill, 10);
+    });
   });
 });
