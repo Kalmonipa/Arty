@@ -2,11 +2,7 @@ import { jest } from '@jest/globals';
 import { Character } from '../../src/character/character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import {
-  CharacterSchema,
-  ItemSchema,
-  SimpleEffectSchema,
-} from '../../src/types/types.js';
+import { CharacterSchema, ItemSchema } from '../../src/types/types.js';
 import {
   ObjectiveCompleted,
   ObjectiveResult,
@@ -167,34 +163,19 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
     (character as any).addItemToInventory = addItemToInventory;
   });
 
-  describe('Basic functionality', () => {
-    it('should equip antidote from inventory when sufficient quantity available', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 20,
-        description: 'Poison effect',
-      };
+  const weakAntidote = () => character.utilitiesMap.antipoison[0];
+  const antidote = () => character.utilitiesMap.antipoison[1];
+
+  describe('Topping up the slot', () => {
+    it('equips the utility it was given out of the inventory', async () => {
       character.data.utility2_slot_quantity = 0;
-      // weak_antidote (value 10) < 20, so it will be skipped with continue
-      // antidote (value 25) >= 20, so it will be used
       (character as any).addItemToInventory('antidote', 100);
 
-      // Act
       const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
+        antidote(),
+        'utility2',
       );
 
-      // Assert
-      // Should skip weak_antidote (value 10 < 20) via continue without checking inventory
-      // Should check inventory and use antidote (value 25 >= 20)
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
-        'antidote',
-      );
-      expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalledWith(
-        'weak_antidote',
-      );
       expect(character.equipNow).toHaveBeenCalledWith(
         'antidote',
         'utility2',
@@ -203,391 +184,116 @@ describe('Character.equipAntiEffectUtility Unit Tests', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should select the appropriate antidote based on mob effect value', async () => {
-      // Arrange
-      const weakMobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5,
-        description: 'Weak poison',
-      };
+    it('equips a tier that counters less than the mob inflicts', async () => {
+      // The fight simulation decides which tier wins; this method carries out
+      // that decision rather than second-guessing it on the numbers
       character.data.utility2_slot_quantity = 0;
       (character as any).addItemToInventory('weak_antidote', 100);
 
-      // Act
-      await character.equipAntiEffectUtility('antipoison', weakMobEffect);
-
-      // Assert
-      // Should try weak_antidote first since it's level 1 and suitable for value 5
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-    });
-
-    it('should skip weak antidotes and find suitable one', async () => {
-      // Arrange
-      const strongMobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 30,
-        description: 'Strong poison',
-      };
-      character.data.utility2_slot_quantity = 0;
-      (character as any).addItemToInventory('weak_antidote', 100); // Only 10 value - will be skipped
-      (character as any).addItemToInventory('antidote', 100); // 25 value - will be skipped
-      (character as any).addItemToInventory('strong_antidote', 100); // 50 value - will be used
-
-      // Act
       const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        strongMobEffect,
+        weakAntidote(),
+        'utility2',
       );
 
-      // Assert
-      // Should skip weak_antidote (value 10 < 30) and antidote (value 25 < 30) via continue
-      // Should check inventory and use strong_antidote (value 50 >= 30)
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
-        'strong_antidote',
-      );
-      expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalledWith(
-        'antidote',
-      );
       expect(character.equipNow).toHaveBeenCalledWith(
-        'strong_antidote',
+        'weak_antidote',
         'utility2',
         100,
       );
       expect(result.success).toBe(true);
     });
 
-    it('should skip utilities above character level', async () => {
-      // Arrange
-      character.data.level = 1; // Low level
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 10,
-        description: 'Poison effect',
-      };
+    it('never reaches for a tier other than the one it was given', async () => {
       character.data.utility2_slot_quantity = 0;
       (character as any).addItemToInventory('weak_antidote', 100);
+      (character as any).addItemToInventory('antidote', 100);
 
-      // Act
-      await character.equipAntiEffectUtility('antipoison', mobEffect);
+      await character.equipAntiEffectUtility(antidote(), 'utility2');
 
-      // Assert
-      // Should only check weak_antidote (level 1), skip antidote (level 5) and strong_antidote (level 10)
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
+      expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalledWith(
         'weak_antidote',
       );
-      expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalledWith(
+    });
+
+    it('tops up only what the slot is short of', async () => {
+      character.data.utility2_slot_quantity = 40;
+      (character as any).addItemToInventory('antidote', 100);
+
+      await character.equipAntiEffectUtility(antidote(), 'utility2');
+
+      expect(character.equipNow).toHaveBeenCalledWith(
         'antidote',
-      );
-      expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalledWith(
-        'strong_antidote',
+        'utility2',
+        60,
       );
     });
   });
 
   describe('Bank withdrawal', () => {
-    it('should withdraw from bank when inventory quantity is insufficient', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5, // Use value that works with weak_antidote (value 10)
-        description: 'Poison effect',
-      };
-      character.data.utility2_slot_quantity = 50; // Partially filled
-      (character as any).addItemToInventory('weak_antidote', 10); // Not enough in inventory (need 50 more)
+    it('withdraws from the bank when the inventory is short', async () => {
+      character.data.utility2_slot_quantity = 50;
       character.checkQuantityOfItemInBank = jest.fn(
-        async (code: string): Promise<number> => {
-          return code === 'weak_antidote' ? 100 : 0;
-        },
-      );
+        async () => 50,
+      ) as jest.MockedFunction<(code: string) => Promise<number>>;
 
-      // Act
       const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
+        antidote(),
+        'utility2',
       );
 
-      // Assert
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.checkQuantityOfItemInBank).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.withdrawNow).toHaveBeenCalled();
+      expect(character.withdrawNow).toHaveBeenCalledWith(50, 'antidote');
       expect(result.success).toBe(true);
     });
 
-    it('should withdraw partial amount from bank when needed', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5, // Use value that works with weak_antidote
-        description: 'Poison effect',
-      };
-      character.data.utility2_slot_quantity = 80;
-      (character as any).addItemToInventory('weak_antidote', 10); // Not enough (need 20 more)
+    it('takes only what the bank has when it cannot fill the slot', async () => {
+      character.data.utility2_slot_quantity = 0;
       character.checkQuantityOfItemInBank = jest.fn(
-        async (code: string): Promise<number> => {
-          return code === 'weak_antidote' ? 50 : 0; // Bank has 50, but we only need 20
-        },
-      );
+        async () => 30,
+      ) as jest.MockedFunction<(code: string) => Promise<number>>;
 
-      // Act
-      const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
+      await character.equipAntiEffectUtility(antidote(), 'utility2');
 
-      // Assert
-      expect(character.withdrawNow).toHaveBeenCalled();
-      const withdrawCall = (character.withdrawNow as jest.Mock).mock.calls[0];
-      expect(withdrawCall[0]).toBeLessThanOrEqual(50); // Should not withdraw more than available
-      expect(result.success).toBe(true);
+      expect(character.withdrawNow).toHaveBeenCalledWith(30, 'antidote');
+    });
+
+    it('uses what it carries and makes the rest up from the bank', async () => {
+      character.data.utility2_slot_quantity = 0;
+      (character as any).addItemToInventory('antidote', 30);
+      character.checkQuantityOfItemInBank = jest.fn(
+        async () => 70,
+      ) as jest.MockedFunction<(code: string) => Promise<number>>;
+
+      await character.equipAntiEffectUtility(antidote(), 'utility2');
+
+      expect(character.equipNow).toHaveBeenCalledWith(
+        'antidote',
+        'utility2',
+        30,
+      );
+      expect(character.withdrawNow).toHaveBeenCalledWith(70, 'antidote');
     });
   });
 
   describe('No crafting on the fight path', () => {
-    it('should not craft when the item is in neither inventory nor bank', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5, // Use value that works with weak_antidote (value 10)
-        description: 'Poison effect',
-      };
+    it('does not craft when the tier is in neither inventory nor bank', async () => {
       character.data.utility2_slot_quantity = 0;
-      character.data.alchemy_level = 1; // Could craft weak_antidote (level 1)
-      (character.checkQuantityOfItemInInv as jest.Mock).mockReturnValue(0);
-      (character.checkQuantityOfItemInBank as any).mockResolvedValue(0);
 
-      // Act
       const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
-
-      // Assert
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.checkQuantityOfItemInBank).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.craftNow).not.toHaveBeenCalled();
-      expect(character.equipNow).not.toHaveBeenCalled();
-      expect(result.success).toBe(false);
-    });
-
-    it('should not craft when alchemy level is too low either', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 20,
-        description: 'Poison effect',
-      };
-      character.data.utility2_slot_quantity = 0;
-      character.data.alchemy_level = 1; // Too low to craft antidote (level 5)
-      (character.checkQuantityOfItemInInv as jest.Mock).mockReturnValue(0);
-      (character.checkQuantityOfItemInBank as any).mockResolvedValue(0);
-
-      // Act
-      const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
-
-      // Assert
-      expect(character.craftNow).not.toHaveBeenCalled();
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('Edge cases', () => {
-    it('should handle empty utilities map', async () => {
-      // Arrange
-      character.utilitiesMap = {
-        antipoison: [],
-        splash_restore: [],
-        restore: [],
-        boost_dmg_air: [],
-        boost_dmg_earth: [],
-        boost_dmg_fire: [],
-        boost_dmg_water: [],
-        boost_hp: [],
-        boost_res_air: [],
-        boost_res_earth: [],
-        boost_res_fire: [],
-        boost_res_water: [],
-      };
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 20,
-        description: 'Poison effect',
-      };
-
-      // Act
-      const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
-
-      // Assert
-      expect(result.success).toBe(false);
-      expect(character.checkQuantityOfItemInInv).not.toHaveBeenCalled();
-    });
-
-    it('should handle mob effect with no matching utility', async () => {
-      // Arrange
-      // Create utilities map with only restore utilities
-      character.utilitiesMap = {
-        antipoison: [],
-        splash_restore: [],
-        restore: [createMockUtility('health_potion', 'Health Potion', 1, 0)],
-        boost_dmg_air: [],
-        boost_dmg_earth: [],
-        boost_dmg_fire: [],
-        boost_dmg_water: [],
-        boost_hp: [],
-        boost_res_air: [],
-        boost_res_earth: [],
-        boost_res_fire: [],
-        boost_res_water: [],
-      };
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 20,
-        description: 'Poison effect',
-      };
-
-      // Act
-      const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
-
-      // Assert
-      expect(result.success).toBe(false);
-    });
-
-    it('should handle utility items without effects array', async () => {
-      // Arrange
-      const utilityWithoutEffects: ItemSchema = {
-        code: 'mystery_potion',
-        name: 'Mystery Potion',
-        level: 1,
-        type: 'utility',
-        subtype: 'potion',
-        description: '',
-        craft: null,
-        tradeable: true,
-        conditions: [],
-        effects: undefined,
-      };
-      character.utilitiesMap.antipoison = [utilityWithoutEffects];
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 20,
-        description: 'Poison effect',
-      };
-
-      // Act
-      await character.equipAntiEffectUtility('antipoison', mobEffect);
-
-      // Assert
-      // Should handle gracefully without crashing
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalled();
-    });
-
-    it('should handle partial inventory and bank combination', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5, // Use value that works with weak_antidote
-        description: 'Poison effect',
-      };
-      character.data.utility2_slot_quantity = 50;
-      (character as any).addItemToInventory('weak_antidote', 30); // Partial amount (need 50 more)
-      character.checkQuantityOfItemInBank = jest.fn(
-        async (code: string): Promise<number> => {
-          return code === 'weak_antidote' ? 100 : 0;
-        },
-      );
-
-      // Act
-      const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
-
-      // Assert
-      // Should equip from inventory first (30), then withdraw from bank (50), then equip remaining
-      expect(character.equipNow).toHaveBeenCalled();
-      expect(character.checkQuantityOfItemInBank).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.withdrawNow).toHaveBeenCalled();
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe('Utility slot management', () => {
-    it('should equip to utility2 slot', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5, // Use value that works with weak_antidote
-        description: 'Poison effect',
-      };
-      character.data.utility2_slot_quantity = 0;
-      (character as any).addItemToInventory('weak_antidote', 100);
-
-      // Act
-      await character.equipAntiEffectUtility('antipoison', mobEffect);
-
-      // Assert
-      // All equipNow calls should use utility2 slot
-      const equipCalls = (character.equipNow as jest.Mock).mock.calls;
-      if (equipCalls.length > 0) {
-        equipCalls.forEach((call) => {
-          if (call.length >= 2) {
-            expect(call[1]).toBe('utility2');
-          }
-        });
-      }
-    });
-
-    it('should calculate needed quantity based on utility2 slot current quantity', async () => {
-      // Arrange
-      const mobEffect: SimpleEffectSchema = {
-        code: 'poison',
-        value: 5, // Use value that works with weak_antidote
-        description: 'Poison effect',
-      };
-      character.data.utility2_slot_quantity = 50;
-      (character as any).addItemToInventory('weak_antidote', 100);
-
-      // Act
-      const result = await character.equipAntiEffectUtility(
-        'antipoison',
-        mobEffect,
-      );
-
-      // Assert
-      // Should calculate needed quantity as maxEquippedUtilities - utility2_slot_quantity
-      // 100 - 50 = 50 needed
-      expect(character.checkQuantityOfItemInInv).toHaveBeenCalledWith(
-        'weak_antidote',
-      );
-      expect(character.equipNow).toHaveBeenCalledWith(
-        'weak_antidote',
+        antidote(),
         'utility2',
-        50, // Should equip the needed amount (50)
       );
-      expect(result.success).toBe(true);
+
+      expect(character.craftNow).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+    });
+
+    it('does not craft even when alchemy could make the tier', async () => {
+      character.data.alchemy_level = 50;
+      character.data.utility2_slot_quantity = 0;
+
+      await character.equipAntiEffectUtility(antidote(), 'utility2');
+
+      expect(character.craftNow).not.toHaveBeenCalled();
     });
   });
 });

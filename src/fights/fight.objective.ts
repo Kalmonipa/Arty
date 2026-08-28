@@ -1,5 +1,5 @@
 import { actionFight } from '../api_calls/Actions.js';
-import { logger } from '../utils.js';
+import { logger, usableUtilityTiers } from '../utils.js';
 import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
@@ -11,7 +11,12 @@ import {
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { MonsterSchema, SimpleEffectSchema } from '../types/types.js';
+import { BankCache } from '../core/BankCache.js';
+import {
+  ItemSchema,
+  MonsterSchema,
+  SimpleEffectSchema,
+} from '../types/types.js';
 import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
 import { Antidote, Restore } from '../names.js';
 import {
@@ -125,28 +130,43 @@ export class FightObjective extends Objective {
       (effect) => effect.code === 'poison',
     );
     if (mobPoisonEffect) {
-      const antidoteToEquip = this.character.utilitiesMap[Antidote].find(
-        (potion) =>
-          potion.effects.find(
-            (effect) => effect.value === mobPoisonEffect.value,
-          ),
-      );
-      fakeSchema.utility2_slot = antidoteToEquip.code;
-      fakeSchema.utility2_slot_quantity = MaxEquippedUtilities;
+      const stocked = await this.stockedAntidotes();
 
-      logger.info(
-        `Simulating fight against ${this.target.code} with antidote pots`,
-      );
+      if (stocked.length === 0) {
+        logger.warn(
+          `No antidote in stock for the ${mobPoisonEffect.value} poison from ${this.target.code}. Preparing without one`,
+        );
+      } else {
+        // Weakest first. A tier that neutralises less poison than the mob
+        // inflicts can still carry the fight, and it's the tier the bank holds
+        // most of, so the simulation decides rather than the numbers lining up
+        for (const { item, available } of stocked) {
+          fakeSchema.utility2_slot = item.code;
+          fakeSchema.utility2_slot_quantity = available;
 
-      if (
-        (await this.character.simulateFightNow([fakeSchema], this.target.code))
-          .success
-      ) {
-        await this.dropHealthPotions();
-        return ObjectiveCompleted;
+          logger.info(
+            `Simulating fight against ${this.target.code} with ${available} ${item.code}`,
+          );
+
+          if (
+            (
+              await this.character.simulateFightNow(
+                [fakeSchema],
+                this.target.code,
+              )
+            ).success
+          ) {
+            logger.info(`${item.code} is what wins this fight. Equipping`);
+            await this.dropHealthPotions();
+            await this.topUpSecondaryPots(item);
+            return ObjectiveCompleted;
+          }
+        }
+
+        // None of them wins on its own, but the poison still lands, so carry
+        // the strongest tier we hold alongside the restores
+        await this.topUpSecondaryPots(stocked.at(-1).item);
       }
-
-      await this.topUpSecondaryPots(mob);
     }
 
     if (!this.useHealthPots) {
@@ -374,33 +394,44 @@ export class FightObjective extends Objective {
    * @todo Only equip antidotes if we need them. Higher level chars probably don't need antidotes
    */
   private async topUpSecondaryPots(
-    mobInfo: MonsterSchema,
+    antidote: ItemSchema,
   ): Promise<ObjectiveResult> {
-    if (!mobInfo.effects || mobInfo.effects.length === 0) {
-      return ObjectiveCompleted;
-    } else if (mobInfo.effects.some((effect) => effect.code === 'poison')) {
-      const poisonEffect = mobInfo.effects.find(
-        (effect) => effect.code === 'poison',
-      );
-      logger.info(`${mobInfo.name} has the ${poisonEffect?.code} effect`);
-      if (
-        !this.character.data.utility2_slot_quantity ||
-        (this.character.data.utility2_slot_quantity &&
-          this.character.data.utility2_slot_quantity < MinEquippedUtilities)
-      ) {
-        logger.info(`Equipping antidotes`);
-        return await this.character.equipAntiEffectUtility(
-          'antipoison',
-          poisonEffect,
-        );
-      } else {
-        return ObjectiveCompleted;
-      }
-    } else {
+    if (
+      this.character.data.utility2_slot_quantity >= MinEquippedUtilities
+    ) {
       logger.info(
-        `Counter of ${mobInfo.effects[0].code} from ${mobInfo.code} not found.`,
+        `Already carrying ${this.character.data.utility2_slot_quantity} in utility2`,
       );
-      return ObjectiveFailed;
+      return ObjectiveCompleted;
     }
+
+    logger.info(`Equipping ${antidote.code}`);
+    return await this.character.equipAntiEffectUtility(antidote, 'utility2');
+  }
+
+  /**
+   * @description The antidote tiers this character could equip for the fight
+   * about to start, weakest first.
+   *
+   * Simulating a tier the bank hasn't got answers a question about potions
+   * nobody can drink: the sim wins, the equip finds nothing, and the character
+   * walks into the fight unprotected believing it is covered.
+   */
+  private async stockedAntidotes(): Promise<
+    { item: ItemSchema; available: number }[]
+  > {
+    const bankContents = await BankCache.create(this.character);
+    if (bankContents.stale) {
+      logger.warn('Could not read the bank; preparing without antidotes');
+      return [];
+    }
+
+    return usableUtilityTiers(
+      this.character.utilitiesMap[Antidote],
+      this.character.getCharacterLevel(this.character.data),
+      (code) =>
+        this.character.checkQuantityOfItemInInv(code) +
+        bankContents.quantityOf(code),
+    );
   }
 }

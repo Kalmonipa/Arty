@@ -2168,71 +2168,49 @@ export class Character {
   }
 
   /**
-   * @description Equips a utility into slot 2 that will counteract the effect of a monster.
-   * Calculates how many potions we need to reach max number.
-   * Equips the most minor potion so we aren't overusing potions.
-   * E.g We only get 20 poison when fighting spiders so equipping antidotes that recover 50 is unnecessary
+   * @description Equips the given anti-effect utility into slot 2, topping up to
+   * a full stack from the inventory and then the bank.
+   *
+   * Which tier to bring is the caller's decision, not this method's: the fight
+   * simulation settles it against what the bank actually holds, and a tier that
+   * covers less of the effect than the mob inflicts can still be the one that
+   * wins.
    *
    * Never crafts, for the same reason as {@link equipUtility}.
-   *
-   * @returns a boolean stating whether we need to move back to our original location
    */
   async equipAntiEffectUtility(
-    utilityType: UtilityEffects,
-    mobEffect: SimpleEffectSchema,
+    utility: ItemSchema,
+    slot: ItemSlot,
   ): Promise<ObjectiveResult> {
-    const utility = this.utilitiesMap[utilityType];
+    let numNeeded =
+      MaxEquippedUtilities -
+      (slot === 'utility1'
+        ? this.data.utility1_slot_quantity
+        : this.data.utility2_slot_quantity);
 
-    // Find the best potion for the attack
-    for (let ind = 0; ind <= utility.length - 1; ind++) {
-      if (utility[ind].level > this.getCharacterLevel(this.data)) {
-        continue;
-      }
-      // ToDo: Figure out a way to check all effects for the value
-      if (
-        utility[ind].effects &&
-        utility[ind].effects[0].value < mobEffect.value
-      ) {
-        logger.debug(
-          `${utility[ind].code} only counteracts ${utility[ind].effects[0].value} ${mobEffect.code}. Skipping`,
-        );
-        continue;
-      }
+    const numInInv = this.checkQuantityOfItemInInv(utility.code);
 
-      let numNeeded: number =
-        MaxEquippedUtilities - this.data.utility2_slot_quantity;
-
-      const numInInv = this.checkQuantityOfItemInInv(utility[ind].code);
-
-      logger.debug(`Attempting to equip ${utility[ind].name}`);
-      if (numInInv >= numNeeded) {
-        logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-        return await this.equipNow(utility[ind].code, 'utility2', numNeeded);
-      } else if (numInInv > 0 && numInInv < numNeeded) {
-        logger.debug(
-          `Carrying ${numInInv} in inv. Equipping them and checking bank`,
-        );
-        await this.equipNow(utility[ind].code, 'utility2', numInInv);
-        numNeeded = numNeeded - numInInv;
-        logger.debug(`${numNeeded} needed from the bank`);
-      }
-      const numInBank = await this.checkQuantityOfItemInBank(utility[ind].code);
-      if (numInBank > 0) {
-        await this.withdrawNow(
-          Math.min(numInBank, numNeeded),
-          utility[ind].code,
-        );
-        return await this.equipNow(
-          utility[ind].code,
-          'utility2',
-          Math.min(numInBank, numNeeded),
-        );
-      }
+    logger.debug(`Attempting to equip ${utility.name}`);
+    if (numInInv >= numNeeded) {
+      logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
+      return await this.equipNow(utility.code, slot, numNeeded);
+    } else if (numInInv > 0) {
       logger.debug(
-        `Can't find any ${utility[ind].name}. Trying next best option`,
+        `Carrying ${numInInv} in inv. Equipping them and checking bank`,
       );
+      await this.equipNow(utility.code, slot, numInInv);
+      numNeeded = numNeeded - numInInv;
+      logger.debug(`${numNeeded} needed from the bank`);
     }
 
+    const numInBank = await this.checkQuantityOfItemInBank(utility.code);
+    if (numInBank > 0) {
+      const toTake = Math.min(numInBank, numNeeded);
+      await this.withdrawNow(toTake, utility.code);
+      return await this.equipNow(utility.code, slot, toTake);
+    }
+
+    logger.debug(`Can't find any ${utility.name} to equip`);
     return ObjectiveFailed;
   }
 

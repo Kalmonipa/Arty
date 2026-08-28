@@ -7,13 +7,19 @@ import {
   ItemSchema,
   ItemType,
   MapSchema,
+  SimpleEffectSchema,
 } from './types/types.js';
 import { ApiError } from './core/Error.js';
-import { WeaponFlavours } from './types/ItemData.js';
+import { UtilityEffects, WeaponFlavours } from './types/ItemData.js';
 import { MonsterResistance } from './types/MonsterData.js';
 import { Role, ROLES } from './types/CharacterData.js';
 import { getCharacter } from './character/character.apiCalls.js';
-import { CharName, AllCharNames, ApiToken } from './constants.js';
+import {
+  CharName,
+  AllCharNames,
+  ApiToken,
+  MaxEquippedUtilities,
+} from './constants.js';
 import { getAllMaps } from './api_calls/Maps.js';
 import {
   Alchemy,
@@ -238,9 +244,24 @@ export function effectValueOf(item: ItemSchema, effect: string): number {
 }
 
 /**
- * @description How much damage a weapon lands on a mob once its resistances are
- * applied, summed across every element the weapon attacks with.
+ * @description The utility tiers a character could actually equip right now:
+ * high enough level, and some in hand or in the bank. Weakest first.
  */
+export function usableUtilityTiers(
+  utilities: ItemSchema[],
+  charLevel: number,
+  stockOf: (code: string) => number,
+): { item: ItemSchema; available: number }[] {
+  return [...utilities]
+    .filter((item) => item.level <= charLevel)
+    .sort((first, second) => first.level - second.level)
+    .map((item) => ({
+      item,
+      available: Math.min(stockOf(item.code), MaxEquippedUtilities),
+    }))
+    .filter((tier) => tier.available > 0);
+}
+
 export function scoreWeaponAgainstResistances(
   weapon: ItemSchema,
   resistances: MonsterResistance[],
