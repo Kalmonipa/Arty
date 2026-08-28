@@ -43,6 +43,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { CraftObjective } from '../core/CraftObjective.js';
 import { FightBossParticipantObjective } from '../fightBosses/bossFightParticipant.objective.js';
+import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objective.js';
 import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
@@ -701,6 +702,12 @@ export class Character {
       };
     } else if (job instanceof FightObjective) {
       return { target: job.target };
+    } else if (job instanceof FightBossLeaderObjective) {
+      return { target: job.target };
+    } else if (job instanceof FightBossParticipantObjective) {
+      // The fight id has to survive too: without it a resumed participant can't
+      // tell whether the fight it was enlisted in is still running
+      return { target: job.target, role: job.role, fightId: job.fightId };
     } else if (job instanceof DepositObjective) {
       return { target: job.target };
     } else if (job instanceof WithdrawObjective) {
@@ -803,6 +810,20 @@ export class Character {
           job = new FightObjective(
             this,
             specificData.target as ObjectiveTargets,
+          );
+          break;
+        case 'FightBossLeaderObjective':
+          job = new FightBossLeaderObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+          );
+          break;
+        case 'FightBossParticipantObjective':
+          job = new FightBossParticipantObjective(
+            this,
+            specificData.target as ObjectiveTargets,
+            specificData.role as BossFightRole,
+            specificData.fightId as number,
           );
           break;
         case 'FulfillWishlistRequestObjective':

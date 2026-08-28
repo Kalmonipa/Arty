@@ -169,6 +169,18 @@ export async function getBossFightState(
 
     const state = result.rows[0];
 
+    // A fight that isn't there is over as far as every caller is concerned. A
+    // participant restored after a restart still holds the id it was enlisted
+    // under, and reading a vanished fight as 'unknown' leaves it polling one
+    // nobody is running — while its queued job blocks it joining the next one.
+    // A failed query is different, and still falls through to the catch below.
+    if (!state) {
+      logger.warn(
+        `Boss fight #${bossFightId} no longer exists; treating it as aborted`,
+      );
+      return 'aborted';
+    }
+
     logger.info(`State of fight #${bossFightId}: ${state.state}`);
     return state.state;
   } catch (err) {
