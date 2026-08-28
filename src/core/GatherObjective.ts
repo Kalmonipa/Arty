@@ -22,6 +22,7 @@ import { Objective } from './Objective.js';
 import { selectResourceNode } from './resourceNodeSelection.js';
 import { selectMobsForDrop } from './monsterSelection.js';
 import { isEventOnlyDrop } from '../events/events.cache.js';
+import { Sap } from '../names.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;
@@ -206,7 +207,7 @@ export class GatherObjective extends Objective {
         } else {
           return { complete: true, success: true, reason: 'complete' };
         }
-      } else if (resourceDetails.craft && resourceDetails.code !== 'sap') {
+      } else if (resourceDetails.craft && resourceDetails.code !== Sap) {
         if (
           !(
             await this.character.craftNow(
