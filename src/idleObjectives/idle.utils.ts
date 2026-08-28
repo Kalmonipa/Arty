@@ -5,9 +5,9 @@ import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, ItemSlot, Skill } from '../types/types.js';
 import {
+  applyFleetSnapshot,
   effectValueOf,
   GetCharacterData,
-  getHighestCharLevel,
   logger,
 } from '../utils.js';
 import {
@@ -151,8 +151,9 @@ export async function checkOnHoldQueue(character: Character): Promise<number> {
 export async function checkWithinLevelRange(
   character: Character,
 ): Promise<ObjectiveResult> {
-  const allCharacterDetails = await GetCharacterData();
-  character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
+  // Every character's data is already paid for here, so this is the cheapest
+  // place to refresh the fleet snapshot the idle jobs plan against
+  applyFleetSnapshot(character, await GetCharacterData());
 
   if (character.data.level < character.highestCharLevel - MAX_LEVEL_DISPARITY) {
     const targetLevel = character.highestCharLevel - MAX_LEVEL_DISPARITY / 2;

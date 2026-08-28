@@ -262,10 +262,7 @@ export class IdleHealerObjective extends Objective {
       return ObjectiveCompleted;
     }
 
-    // Craft the best potion each character can actually use, so low-level
-    // characters get low tiers and high-level characters get higher ones,
-    // without wasting mats on tiers no character is stuck at.
-    const tiersToCraft = await this.findBestPotionsToCraft(
+    const tiersToCraft = this.findPotionTiersToStock(
       restorePotions,
       alchemyLevel,
     );
@@ -321,32 +318,60 @@ export class IdleHealerObjective extends Objective {
   }
 
   /**
-   * Figure out the best potion to craft
+   * @description The restore tiers worth keeping in the bank: every one from
+   * the weakest character's best up to the strongest character's best.
    */
-  private async findBestPotionsToCraft(
+  private findPotionTiersToStock(
     restorePotions: ItemSchema[],
     alchemyLevel: number,
-  ): Promise<Set<string>> {
-    let tiersToCraft = new Set<string>();
+  ): Set<string> {
+    const bestTierLevels = (this.character.allCharacterDetails ?? [])
+      .map((char) => this.bestTierFor(restorePotions, alchemyLevel, char.level))
+      .filter((potion) => potion !== undefined)
+      .map((potion) => potion.level);
 
-    for (const char of this.character.allCharacterDetails ?? []) {
-      let best: ItemSchema | undefined;
-      for (const potion of restorePotions) {
-        if (
-          potion.craft.level <= alchemyLevel &&
-          potion.level <= char.level &&
-          (best === undefined || potion.level > best.level)
-        ) {
-          best = potion;
-        }
-      }
+    if (bestTierLevels.length === 0) {
+      logger.warn('No character can drink any restore potion we can craft');
+      return new Set();
+    }
 
-      if (best) {
-        tiersToCraft.add(best.code);
+    const weakestBest = Math.min(...bestTierLevels);
+    const strongestBest = Math.max(...bestTierLevels);
+
+    return new Set(
+      restorePotions
+        .filter(
+          (potion) =>
+            potion.craft.level <= alchemyLevel &&
+            potion.level >= weakestBest &&
+            potion.level <= strongestBest,
+        )
+        .map((potion) => potion.code),
+    );
+  }
+
+  /**
+   * @description The strongest potion a character of this level can drink and
+   * the alchemist can brew
+   */
+  private bestTierFor(
+    restorePotions: ItemSchema[],
+    alchemyLevel: number,
+    charLevel: number,
+  ): ItemSchema | undefined {
+    let best: ItemSchema | undefined;
+
+    for (const potion of restorePotions) {
+      if (
+        potion.craft.level <= alchemyLevel &&
+        potion.level <= charLevel &&
+        (best === undefined || potion.level > best.level)
+      ) {
+        best = potion;
       }
     }
 
-    return tiersToCraft;
+    return best;
   }
 
   /**

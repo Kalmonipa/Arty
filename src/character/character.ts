@@ -35,13 +35,7 @@ import {
   AllMaps,
   buildListOf,
   buildListOfWeapons,
-  getHighestCharLevel,
-  getHighestWeaponcraftingLevel,
-  getLowestAlchemyLevel,
-  getLowestCharLevel,
-  getLowestFishingLevel,
-  getLowestMiningLevel,
-  getLowestWoodcuttingLevel,
+  applyFleetSnapshot,
   logger,
   sleep,
 } from '../utils.js';
@@ -429,17 +423,7 @@ export class Character {
     this.navigationGraph = getNavigationGraph(this.allMaps);
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
-    this.allCharacterDetails = allCharacterDetails;
-
-    this.lowestCharLevel = getLowestCharLevel(allCharacterDetails);
-    this.highestCharLevel = getHighestCharLevel(allCharacterDetails);
-    this.lowestAlchemyLevel = getLowestAlchemyLevel(allCharacterDetails);
-    this.lowestFishingLevel = getLowestFishingLevel(allCharacterDetails);
-    this.lowestMiningLevel = getLowestMiningLevel(allCharacterDetails);
-    this.lowestWoodcuttingLevel =
-      getLowestWoodcuttingLevel(allCharacterDetails);
-    this.highestWeaponcraftingLevel =
-      getHighestWeaponcraftingLevel(allCharacterDetails);
+    applyFleetSnapshot(this, allCharacterDetails);
 
     this.role = CharRole;
 

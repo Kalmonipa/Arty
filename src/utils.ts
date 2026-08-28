@@ -420,3 +420,47 @@ export function getHighestWeaponcraftingLevel(
     prev.weaponcrafting_level > curr.weaponcrafting_level ? prev : curr,
   ).weaponcrafting_level;
 }
+
+/**
+ * The fields a fleet snapshot fills in. Kept structural so utils doesn't have to
+ * import Character, which imports utils.
+ */
+type FleetSnapshotTarget = {
+  allCharacterDetails?: CharacterSchema[];
+  lowestCharLevel?: number;
+  highestCharLevel?: number;
+  lowestAlchemyLevel?: number;
+  lowestFishingLevel?: number;
+  lowestMiningLevel?: number;
+  lowestWoodcuttingLevel?: number;
+  highestWeaponcraftingLevel?: number;
+};
+
+/**
+ * @description Points a character at a fresh reading of the whole fleet.
+ *
+ * The snapshot drives decisions about what the fleet as a whole needs — which
+ * potion tiers are worth brewing, which gear is worth making — so a stale one
+ * quietly plans for a fleet that no longer exists. It's applied at startup and
+ * refreshed whenever a job has already paid for the character data.
+ */
+export function applyFleetSnapshot(
+  character: FleetSnapshotTarget,
+  allCharacterDetails: CharacterSchema[],
+): void {
+  if (allCharacterDetails.length === 0) {
+    logger.warn('Empty fleet snapshot; keeping the previous one');
+    return;
+  }
+
+  character.allCharacterDetails = allCharacterDetails;
+  character.lowestCharLevel = getLowestCharLevel(allCharacterDetails);
+  character.highestCharLevel = getHighestCharLevel(allCharacterDetails);
+  character.lowestAlchemyLevel = getLowestAlchemyLevel(allCharacterDetails);
+  character.lowestFishingLevel = getLowestFishingLevel(allCharacterDetails);
+  character.lowestMiningLevel = getLowestMiningLevel(allCharacterDetails);
+  character.lowestWoodcuttingLevel =
+    getLowestWoodcuttingLevel(allCharacterDetails);
+  character.highestWeaponcraftingLevel =
+    getHighestWeaponcraftingLevel(allCharacterDetails);
+}

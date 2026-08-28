@@ -167,14 +167,20 @@ describe('stocking the bank with fight potions', () => {
 
 describe('building the restore potion stock past the boss reserve', () => {
   const restorePotions = [
+    potion('small_health_potion', 5, 5),
     potion('health_potion', 30, 30),
     potion('greater_health_potion', 40, 40),
+    potion('enhanced_health_potion', 45, 45),
   ];
 
-  const healerWith = (craftNow: jest.Mock, bank: Record<string, number>) =>
+  const healerWith = (
+    craftNow: jest.Mock,
+    bank: Record<string, number>,
+    charLevels: number[] = [44, 39],
+  ) =>
     ({
       data: { name: 'ZippyZoe', level: 37 },
-      allCharacterDetails: [44, 39].map(
+      allCharacterDetails: charLevels.map(
         (level) => ({ level }) as CharacterSchema,
       ),
       getAllBankItems: jest.fn(async () =>
@@ -242,6 +248,26 @@ describe('building the restore potion stock past the boss reserve', () => {
     );
 
     expect(craftNow).toHaveBeenCalled();
+  });
+
+  it('brews a tier no character is sitting on, so a run-out has a fallback', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    // Nobody is level 40-44, so greater_health_potion has no character whose
+    // best tier it is, but the level 45 fighter still falls back to it
+    await runTopUp(healerWith(craftNow, {}, [45, 39]));
+
+    expect(craftedCodes(craftNow)).toContain('greater_health_potion');
+  });
+
+  it("leaves out tiers below the weakest character's best", async () => {
+    const craftNow = jest.fn(async () => true);
+
+    await runTopUp(healerWith(craftNow, {}, [45, 39]));
+
+    // The level 39 character already reaches health_potion, so the level 5
+    // tier is wasted mats for everyone
+    expect(craftedCodes(craftNow)).not.toContain('small_health_potion');
   });
 
   it('brews nothing off a bank snapshot that failed to load', async () => {

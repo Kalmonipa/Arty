@@ -91,6 +91,8 @@ function onHoldEntry(overrides: Partial<any> = {}) {
 
 class MockCharacter {
   data = { level: 30 };
+  allCharacterDetails: CharacterSchema[] = [];
+  lowestCharLevel = 0;
   highestCharLevel = 0;
   trainCombatLevelNow = jest.fn(async () => ObjectiveCompleted);
 }
@@ -126,6 +128,22 @@ describe('checkWithinLevelRange', () => {
 
     expect(character.highestCharLevel).toBe(40);
     expect(character.trainCombatLevelNow).toHaveBeenCalledWith(35);
+  });
+
+  it('refreshes the whole fleet snapshot, not just the highest level', async () => {
+    mockedGetCharacterData.mockResolvedValue([
+      { level: 30 },
+      { level: 40 },
+    ] as CharacterSchema[]);
+
+    const character = new MockCharacter();
+
+    await checkWithinLevelRange(character as any);
+
+    expect(character.allCharacterDetails.map((char) => char.level)).toEqual([
+      30, 40,
+    ]);
+    expect(character.lowestCharLevel).toBe(30);
   });
 });
 
