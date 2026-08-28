@@ -33,6 +33,7 @@ export const SplashRestore = 'splash_restore' as const satisfies UtilityEffects;
 export const TasksCoin = 'tasks_coin';
 export const Algae = 'algae';
 export const Sap = 'sap';
+export const MapleSap = 'maple_sap';
 export const HealthSplashPotion = 'health_splash_potion';
 
 /**

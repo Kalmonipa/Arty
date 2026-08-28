@@ -15,6 +15,7 @@ import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
 import { Role } from '../types/CharacterData.js';
 import { eventBlockedIngredients } from '../events/events.cache.js';
+import { MapleSap, Sap } from '../names.js';
 
 /**
  * Maps a craft skill to the role responsible for it. Skills without an entry
@@ -510,7 +511,8 @@ export class CraftObjective extends Objective {
           if (!(await this.checkStatus())) return ObjectiveCancelled;
         } else if (
           craftingItemInfo.craft !== null &&
-          craftingItemInfo.code !== 'sap'
+          craftingItemInfo.code !== Sap &&
+          craftingItemInfo.code !== MapleSap
         ) {
           logger.debug(`Resource ${craftingItemInfo.code} is a craftable item`);
 
