@@ -118,6 +118,7 @@ import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
   CharRole,
+  MaxRouteReplans,
   TeleportPotionStock,
   DesiredFoodCount,
   MaxEquippedUtilities,
@@ -165,13 +166,11 @@ import {
   BossFightEnlistment,
   BossFightRole,
 } from '../fightBosses/bossFight.types.js';
-
-/**
- * Outcome of a single transition step. `reroute` is true when the step failed because the
- * game reported no walkable path (595), meaning move() should try a different route rather
- * than give up.
- */
-type TransitionStepResult = { ok: boolean; reroute?: boolean };
+import {
+  PreparedRouteResult,
+  SettledRoute,
+  TransitionStepResult,
+} from './character.types.js';
 
 export class Character {
   data: CharacterSchema;
@@ -2792,8 +2791,10 @@ export class Character {
    */
   async move(destination: MapSchema): Promise<boolean> {
     if (
-      (this.data.x === destination.x && this.data.y === destination.y) ||
-      this.data.map_id === destination.map_id
+      this.data.map_id === destination.map_id ||
+      (this.data.x === destination.x &&
+        this.data.y === destination.y &&
+        this.data.layer === destination.layer)
     ) {
       return true;
     }
@@ -2877,9 +2878,26 @@ export class Character {
         return false;
       }
 
+      // Pay for every gate on the route before walking any of it. Drawing a key or a
+      // toll walks to the bank, which would otherwise strand the character mid-route on
+      // the wrong layer, so the route is re-planned from wherever the bank trip finished.
+      const settled = await this.settleRoute(
+        transitionPath,
+        destination,
+        excludedTransitionIds,
+      );
+      if (!settled.ok) {
+        if (settled.blockedTransitionId === null) return false;
+        blockedTransitionIds.add(settled.blockedTransitionId);
+        logger.warn(
+          `Could not meet the requirements of transition ${settled.blockedTransitionId}; rerouting to ${destination.name} (attempt ${attempt + 1}/${MAX_REROUTES})`,
+        );
+        continue;
+      }
+
       let blockedTransitionId: number | null = null;
       let stepFailed = false;
-      for (const transitionPoint of transitionPath) {
+      for (const transitionPoint of settled.path) {
         const result = await this.performTransitionStep(transitionPoint);
         if (!result.ok) {
           stepFailed = true;
@@ -2902,16 +2920,14 @@ export class Character {
       );
 
       const moveResponse = await actionMove(this.data, {
-        x: destination.x,
-        y: destination.y,
+        map_id: destination.map_id,
       });
 
       if (moveResponse instanceof ApiError) {
         // The final hop can also be blocked (595) when the last transition landed us in a region
         // not connected to the destination. Exclude that transition and try another route.
-        if (moveResponse.error.code === 595 && transitionPath.length > 0) {
-          const lastTransitionId =
-            transitionPath[transitionPath.length - 1].map_id;
+        if (moveResponse.error.code === 595 && settled.path.length > 0) {
+          const lastTransitionId = settled.path[settled.path.length - 1].map_id;
           blockedTransitionIds.add(lastTransitionId);
           logger.warn(
             `No path from landing point to ${destination.name} [Code: 595]; rerouting (attempt ${attempt + 1}/${MAX_REROUTES})`,
@@ -3004,13 +3020,12 @@ export class Character {
       `Moving to transition point at (${transitionPoint.x}, ${transitionPoint.y}, ${transitionPoint.layer})`,
     );
 
-    if (
-      this.data.x !== transitionPoint.x ||
-      this.data.y !== transitionPoint.y
-    ) {
+    // By map_id, not coordinates: every tile exists on all three layers, so an x/y move
+    // walks to whichever one the character is standing on and silently arrives at a map
+    // with no transition to take.
+    if (this.data.map_id !== transitionPoint.map_id) {
       const moveResponse = await actionMove(this.data, {
-        x: transitionPoint.x,
-        y: transitionPoint.y,
+        map_id: transitionPoint.map_id,
       });
       if (moveResponse instanceof ApiError) {
         // 595 = the game found no walkable path to this transition tile. Signal a reroute so
@@ -3851,6 +3866,133 @@ export class Character {
         // /transition API enforce it.
         return true;
     }
+  }
+
+  /**
+   * @description Draws everything the whole route costs out of the bank before a single
+   * step of it is walked, and reports whether doing so moved the character.
+   */
+  private async prepareRouteRequirements(
+    path: MapSchema[],
+  ): Promise<PreparedRouteResult> {
+    const costs = new Map<string, number>();
+    const holds = new Map<string, number>();
+
+    for (const transitionPoint of path) {
+      const conditions = transitionPoint.interactions.transition?.conditions;
+      if (!conditions) continue;
+      for (const condition of conditions) {
+        const required = condition.value || 1;
+        switch (condition.operator) {
+          case ConditionOperator.achievement_unlocked:
+            if (
+              !this.completedAchievements.some(
+                (achievement) => achievement.code === condition.code,
+              )
+            ) {
+              return {
+                ok: false,
+                moved: false,
+                blockedTransitionId: transitionPoint.map_id,
+              };
+            }
+            break;
+          case ConditionOperator.cost:
+            costs.set(
+              condition.code,
+              (costs.get(condition.code) ?? 0) + required,
+            );
+            break;
+          case ConditionOperator.has_item:
+            holds.set(
+              condition.code,
+              Math.max(holds.get(condition.code) ?? 0, required),
+            );
+            break;
+          default:
+            // eq/ne/gt/lt and anything unmodelled: nothing to draw, the API enforces it.
+            break;
+        }
+      }
+    }
+
+    // A has_item gate still has to be satisfied once every cost along the route has been
+    // paid, so the two stack rather than overlap.
+    const totals = new Map(costs);
+    for (const [code, quantity] of holds) {
+      if (this.getEquippedSlot(code)) continue;
+      totals.set(code, (totals.get(code) ?? 0) + quantity);
+    }
+
+    const startedAtMapId = this.data.map_id;
+    for (const [code, quantity] of totals) {
+      const onHand =
+        code === 'gold' ? this.data.gold : this.checkQuantityOfItemInInv(code);
+      const shortfall = quantity - onHand;
+      if (shortfall <= 0) continue;
+
+      logger.info(
+        `Drawing ${shortfall} ${code} for the route before setting off`,
+      );
+      if (!(await this.withdrawNow(shortfall, code)).success) {
+        logger.warn(`Could not draw ${shortfall} ${code} for the route`);
+        const gate = path.find((transitionPoint) =>
+          transitionPoint.interactions.transition?.conditions?.some(
+            (condition) => condition.code === code,
+          ),
+        );
+        return {
+          ok: false,
+          moved: this.data.map_id !== startedAtMapId,
+          blockedTransitionId: gate?.map_id ?? null,
+        };
+      }
+    }
+
+    return { ok: true, moved: this.data.map_id !== startedAtMapId };
+  }
+
+  /**
+   * @description Pays for every gate on a route and returns a route that starts from where
+   * the character ends up, so the walk that follows is uninterrupted by bank trips.
+   */
+  private async settleRoute(
+    initialPath: MapSchema[],
+    destination: MapSchema,
+    excludedTransitionIds: Set<number>,
+  ): Promise<SettledRoute> {
+    let path = initialPath;
+
+    for (let replan = 0; replan <= MaxRouteReplans; replan++) {
+      const prepared = await this.prepareRouteRequirements(path);
+      if (!prepared.ok) {
+        return {
+          ok: false,
+          path: [],
+          blockedTransitionId: prepared.blockedTransitionId ?? null,
+        };
+      }
+      if (!prepared.moved) return { ok: true, path };
+
+      const replanned = buildTransitionPath(
+        this.data.map_id,
+        destination,
+        this.navigationGraph,
+        excludedTransitionIds,
+      );
+      if (replanned === null) {
+        logger.error(
+          `No route to ${destination.name} from (${this.data.x}, ${this.data.y}, ${this.data.layer}) after drawing the route's requirements`,
+        );
+        return { ok: false, path: [], blockedTransitionId: null };
+      }
+      path = replanned;
+    }
+
+    logger.warn(
+      `Route to ${destination.name} kept shifting while drawing its requirements; walking the latest one`,
+    );
+    return { ok: true, path };
   }
 
   /**

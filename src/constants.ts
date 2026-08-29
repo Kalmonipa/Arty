@@ -168,6 +168,13 @@ export const BankFullRetryMs = 10 * 60 * 1000;
  */
 export const TeleportPotionStock = 1;
 
+/**
+ * How many times move() re-plans a route after drawing its requirements from the bank.
+ * The trip to the bank relocates the character, so the first re-plan is expected; a
+ * second covers the re-planned route introducing a gate the first one didn't have.
+ */
+export const MaxRouteReplans = 2;
+
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 
 /**
