@@ -396,9 +396,7 @@ export class FightObjective extends Objective {
   private async topUpSecondaryPots(
     antidote: ItemSchema,
   ): Promise<ObjectiveResult> {
-    if (
-      this.character.data.utility2_slot_quantity >= MinEquippedUtilities
-    ) {
+    if (this.character.data.utility2_slot_quantity >= MinEquippedUtilities) {
       logger.info(
         `Already carrying ${this.character.data.utility2_slot_quantity} in utility2`,
       );

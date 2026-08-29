@@ -65,9 +65,7 @@ describe('surviving a restart', () => {
       (path: string, contents: string) => Promise<void>
     >;
     const written = writeFile.mock.calls.at(-1)[1];
-    const readFile = fs.readFile as unknown as jest.Mock<
-      () => Promise<string>
-    >;
+    const readFile = fs.readFile as unknown as jest.Mock<() => Promise<string>>;
     readFile.mockResolvedValue(written);
 
     const restarted = new Character({ ...mockCharacterData });

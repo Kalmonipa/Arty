@@ -149,7 +149,10 @@ export class FightBossLeaderObjective extends Objective {
         }
       }
 
-      const response = await actionFight(this.character.data, []);
+      const response = await actionFight(this.character.data, [
+        participants[0].characterName,
+        participants[1].characterName,
+      ]);
 
       if (response instanceof ApiError) {
         logger.warn(

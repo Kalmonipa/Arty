@@ -116,7 +116,8 @@ describe('preparing for a fight against a poisonous mob', () => {
         utility2_slot_quantity: 0,
       },
       createFakeCharacterSchema: () => ({}),
-      simulateFightNow: simulateFightNow as unknown as Character['simulateFightNow'],
+      simulateFightNow:
+        simulateFightNow as unknown as Character['simulateFightNow'],
       getCharacterLevel: () => charLevel,
       checkQuantityOfItemInInv: () => 0,
       unequipNow: jest.fn(async () => ({

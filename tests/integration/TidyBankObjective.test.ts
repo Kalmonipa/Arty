@@ -37,7 +37,6 @@ const makeGear = (code: string, level: number): ItemSchema => ({
   craft: { skill: 'gearcrafting' as CraftSkill, level, items: [], quantity: 1 },
 });
 
-
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
   lowestCharLevel = 19;
@@ -138,10 +137,10 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
     it('handles multiple items, recycling only the obsolete ones', async () => {
       character.lowestCharLevel = 19;
       mockGetCraftableItems.mockResolvedValue([
-          makeGear('copper_dagger', 5), // obsolete (5 <= 9)
-          makeGear('iron_sword', 15), // not obsolete (15 > 9), quantity <= 5 → skip
-          makeGear('steel_armor', 17), // not obsolete (17 > 9), quantity > 5 → trim
-        ]);
+        makeGear('copper_dagger', 5), // obsolete (5 <= 9)
+        makeGear('iron_sword', 15), // not obsolete (15 > 9), quantity <= 5 → skip
+        makeGear('steel_armor', 17), // not obsolete (17 > 9), quantity > 5 → trim
+      ]);
       character.bankItems = {
         copper_dagger: 4,
         iron_sword: 3,
