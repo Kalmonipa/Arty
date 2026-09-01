@@ -2071,15 +2071,12 @@ export class Character {
    *
    * Deliberately never crafts health potions. If some are available, use them
    * otherwise fight without
-   *
-   * @returns a boolean stating whether we need to move back to our original location
    */
   async equipUtility(
     utilityType: UtilityEffects,
     slot: ItemSlot,
     forBossFight = false,
   ): Promise<ObjectiveResult> {
-    const utility = this.utilitiesMap[utilityType];
     const charLevel = this.getCharacterLevel(this.data);
     const minPotionLevel = utilityType === Restore ? charLevel - 20 : 0;
 
@@ -2095,43 +2092,124 @@ export class Character {
       forBossFight,
     );
 
-    for (const potion of [...utility].reverse()) {
-      logger.debug(`Evaluating ${potion.code}`);
-      if (potion.level <= charLevel && potion.level >= minPotionLevel) {
-        let numNeeded: number;
-        if (slot === 'utility1') {
-          numNeeded = MaxEquippedUtilities - this.data.utility1_slot_quantity;
-        } else {
-          numNeeded = MaxEquippedUtilities - this.data.utility2_slot_quantity;
-        }
+    const chosen = this.bestReachableUtility(
+      utilityType,
+      charLevel,
+      minPotionLevel,
+      bankContents,
+      spareInBank,
+    );
+    if (!chosen) {
+      logger.debug(`No ${utilityType} potion is reachable`);
+      return ObjectiveFailed;
+    }
 
-        const numInInv = this.checkQuantityOfItemInInv(potion.code);
+    // Anything of another code in the slot is displaced by the first equip, so
+    // only a stack of the chosen potion counts toward the target
+    const alreadyEquipped =
+      this.getCharacterGearIn(slot) === chosen.potion.code
+        ? this.quantityEquippedIn(slot)
+        : 0;
+    let numNeeded = MaxEquippedUtilities - alreadyEquipped;
 
-        logger.debug(`Attempting to equip ${potion.name}`);
-        if (numInInv >= numNeeded) {
-          logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-          return await this.equipNow(potion.code, slot, numNeeded);
-        } else if (numInInv > 0 && numInInv < numNeeded) {
-          logger.debug(
-            `Carrying ${numInInv} in inv. Equipping them and checking bank`,
-          );
-          await this.equipNow(potion.code, slot, numInInv);
-          numNeeded = numNeeded - numInInv;
-          logger.debug(`${numNeeded} needed from the bank`);
-        }
-        const canTake = Math.min(
-          bankContents.quantityOf(potion.code),
-          spareInBank,
-        );
-        if (canTake > 0) {
-          const toWithdraw = Math.min(canTake, numNeeded);
-          await this.withdrawNow(toWithdraw, potion.code);
-          return await this.equipNow(potion.code, slot, toWithdraw);
-        }
-        logger.debug(`Can't find any ${potion.name}. Trying next best option`);
+    logger.debug(`Attempting to equip ${chosen.potion.name}`);
+
+    const fromInventory = Math.min(chosen.inInventory, numNeeded);
+    if (fromInventory > 0) {
+      logger.debug(`Carrying ${chosen.inInventory} in inv. Equipping them`);
+      const equipped = await this.equipNow(
+        chosen.potion.code,
+        slot,
+        fromInventory,
+      );
+      if (!equipped.success) {
+        return equipped;
+      }
+      numNeeded -= fromInventory;
+    }
+
+    const fromBank = Math.min(chosen.inBank, numNeeded);
+    if (fromBank > 0) {
+      logger.debug(`${fromBank} needed from the bank`);
+      await this.withdrawNow(fromBank, chosen.potion.code);
+      const equipped = await this.equipNow(chosen.potion.code, slot, fromBank);
+      if (!equipped.success) {
+        return equipped;
       }
     }
-    return ObjectiveFailed;
+
+    const carrying = this.quantityEquippedIn(slot);
+    if (carrying < MinEquippedUtilities) {
+      logger.debug(
+        `Only ${carrying} ${chosen.potion.name} available, fewer than the ${MinEquippedUtilities} worth carrying`,
+      );
+      return ObjectiveFailed;
+    }
+
+    logger.debug(`Carrying ${carrying} ${chosen.potion.name} in ${slot}`);
+    return ObjectiveCompleted;
+  }
+
+  /**
+   * @description The tier to commit the slot to: the highest usable one that
+   * can field a worthwhile stack, or failing that whichever reaches furthest.
+   *
+   * Counts the inventory and the reachable part of the bank together, since a
+   * tier that is short in one may be covered by the other.
+   */
+  private bestReachableUtility(
+    utilityType: UtilityEffects,
+    charLevel: number,
+    minPotionLevel: number,
+    bankContents: BankCache,
+    spareInBank: number,
+  ): { potion: ItemSchema; inInventory: number; inBank: number } | undefined {
+    let best:
+      | { potion: ItemSchema; inInventory: number; inBank: number }
+      | undefined;
+
+    for (const potion of [...this.utilitiesMap[utilityType]].reverse()) {
+      logger.debug(`Evaluating ${potion.code}`);
+      if (potion.level > charLevel || potion.level < minPotionLevel) {
+        continue;
+      }
+
+      const inInventory = this.checkQuantityOfItemInInv(potion.code);
+      const inBank = Math.min(
+        bankContents.quantityOf(potion.code),
+        spareInBank,
+      );
+      const reachable = inInventory + inBank;
+      if (reachable === 0) {
+        logger.debug(`Can't find any ${potion.name}. Trying next best option`);
+        continue;
+      }
+
+      if (!best || reachable > best.inInventory + best.inBank) {
+        best = { potion, inInventory, inBank };
+      }
+
+      // Tiers run best first, so the first one that fields a worthwhile stack
+      // beats anything weaker that might field more
+      if (reachable >= MinEquippedUtilities) {
+        break;
+      }
+      logger.debug(
+        `Only ${reachable} ${potion.name} reachable. Trying next best option`,
+      );
+    }
+
+    return best;
+  }
+
+  /**
+   * @description How many of whatever is in the given utility slot the
+   * character is carrying.
+   */
+  private quantityEquippedIn(slot: ItemSlot): number {
+    return slot === 'utility1'
+      ? this.data.utility1_slot_quantity
+      : this.data.utility2_slot_quantity;
   }
 
   /**
