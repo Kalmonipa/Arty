@@ -446,7 +446,7 @@ export function fishFoodsToStock(
         consumable.craft.items.some((ingredient) =>
           fishingDropCodes.has(ingredient.code),
         ) &&
-        consumable.craft.level < bounds.fishingLevel &&
+        consumable.craft.level <= bounds.fishingLevel &&
         consumable.craft.level <= bounds.highestCharLevel &&
         consumable.craft.level >= bounds.lowestCharLevel - FoodTierLookback,
     )
