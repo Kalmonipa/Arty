@@ -30,6 +30,7 @@ import {
   checkOnHoldQueue,
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
+  fishFoodsForCharacter,
 } from './idle.utils.js';
 import {
   ObjectiveCancelled,
@@ -214,25 +215,12 @@ export class IdleObjective extends Objective {
   private async isFishSufficientlyStocked(): Promise<boolean> {
     const minimumFoodInBank = 500;
 
-    for (const fish of this.character.consumablesMap['heal'].filter(
-      (consumable) =>
-        consumable.craft?.skill === 'cooking' &&
-        consumable.craft.items.some((ingredient) =>
-          this.character.fishingDropCodes.has(ingredient.code),
-        ),
-    )) {
-      if (
-        fish.craft.level <
-          this.character.getCharacterLevel(this.character.data, 'fishing') &&
-        fish.craft.level <= this.character.highestCharLevel &&
-        fish.craft.level >= this.character.lowestCharLevel - 9
-      ) {
-        const numInBank = await this.character.checkQuantityOfItemInBank(
-          fish.code,
-        );
-        if (numInBank < minimumFoodInBank) {
-          return false;
-        }
+    for (const fish of fishFoodsForCharacter(this.character)) {
+      const numInBank = await this.character.checkQuantityOfItemInBank(
+        fish.code,
+      );
+      if (numInBank < minimumFoodInBank) {
+        return false;
       }
     }
     return true;
@@ -381,31 +369,15 @@ export class IdleObjective extends Objective {
         }
       }
     } else if (this.role === 'fisherman') {
-      for (const fish of this.character.consumablesMap['heal'].filter(
-        (consumable) =>
-          consumable.craft?.skill === 'cooking' &&
-          consumable.craft.items.some((ingredient) =>
-            this.character.fishingDropCodes.has(ingredient.code),
-          ),
-      )) {
-        if (
-          fish.craft.level <
-            this.character.getCharacterLevel(this.character.data, 'fishing') &&
-          fish.craft.level <= this.character.highestCharLevel &&
-          // e.g. Char lvl is 29, we should cook lvl 20 fish so they can use it
-          fish.craft.level >= this.character.lowestCharLevel - 9
-        ) {
-          // If we can cook the fish, get the number in the bank
-          const numInBank = await this.character.checkQuantityOfItemInBank(
+      for (const fish of fishFoodsForCharacter(this.character)) {
+        const numInBank = await this.character.checkQuantityOfItemInBank(
+          fish.code,
+        );
+        if (numInBank < minimumFoodInBank) {
+          await this.character.craftNow(
+            minimumFoodInBank - numInBank,
             fish.code,
           );
-          // Ensure quantity is greater than the required amount
-          if (numInBank < minimumFoodInBank) {
-            await this.character.craftNow(
-              minimumFoodInBank - numInBank,
-              fish.code,
-            );
-          }
         }
       }
     } else if (this.role === 'miner') {

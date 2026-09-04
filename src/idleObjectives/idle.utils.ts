@@ -414,3 +414,61 @@ export function craftingSkillsToTrain(
     .sort((a, b) => a.level - b.level)
     .map(({ skill }) => skill);
 }
+
+/**
+ * How far below the lowest character's level a recipe can sit and still be
+ * worth cooking. A character can eat food a few levels behind them, so this
+ * keeps the fisherman from dropping a tier the moment someone levels up.
+ */
+const FoodTierLookback = 9;
+
+/**
+ * @description The fish-based food the fisherman should keep in the bank, best
+ * first. "Best" is the most healing per item, and on a tie the recipe that
+ * yields more per craft, since a craft costs the same 5s either way.
+ * @param consumables every healing consumable in the catalogue
+ * @param fishingDropCodes the codes that drop from fishing spots
+ * @param bounds the cook's fishing level and the fleet's level spread
+ */
+export function fishFoodsToStock(
+  consumables: ItemSchema[],
+  fishingDropCodes: Set<string>,
+  bounds: {
+    fishingLevel: number;
+    highestCharLevel: number;
+    lowestCharLevel: number;
+  },
+): ItemSchema[] {
+  return consumables
+    .filter(
+      (consumable) =>
+        consumable.craft?.skill === 'cooking' &&
+        consumable.craft.items.some((ingredient) =>
+          fishingDropCodes.has(ingredient.code),
+        ) &&
+        consumable.craft.level < bounds.fishingLevel &&
+        consumable.craft.level <= bounds.highestCharLevel &&
+        consumable.craft.level >= bounds.lowestCharLevel - FoodTierLookback,
+    )
+    .sort(
+      (a, b) =>
+        effectValueOf(b, 'heal') - effectValueOf(a, 'heal') ||
+        (b.craft.quantity ?? 1) - (a.craft.quantity ?? 1),
+    );
+}
+
+/**
+ * @description fishFoodsToStock for a character, reading their fishing level
+ * and the fleet's level spread off them
+ */
+export function fishFoodsForCharacter(character: Character): ItemSchema[] {
+  return fishFoodsToStock(
+    character.consumablesMap['heal'],
+    character.fishingDropCodes,
+    {
+      fishingLevel: character.getCharacterLevel(character.data, 'fishing'),
+      highestCharLevel: character.highestCharLevel,
+      lowestCharLevel: character.lowestCharLevel,
+    },
+  );
+}
