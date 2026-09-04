@@ -381,6 +381,16 @@ export class IdleCrafterObjective extends Objective {
       // Ensure there is at least 1 of each tool in the bank. We might have crafted more
       // but if they're in use then we'd like to have spares in case someone else needs one
       if (!bankItem || bankItem.quantity < 1) {
+        // A parked craft never reaches the bank, so the tool looks missing on
+        // every pass; without this the idle loop parks a fresh copy every few
+        // minutes until the duplicates fill the onHold queue
+        if (this.character.hasParkedCraftFor(craftableItem.code)) {
+          logger.debug(
+            `Skipping ${craftableItem.code} because a craft for it is already on hold`,
+          );
+          continue;
+        }
+
         if (await this.needsBossDrop(craftableItem)) {
           logger.warn(
             `Skipping ${craftableItem.code} because it needs a boss drop`,

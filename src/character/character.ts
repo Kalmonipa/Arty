@@ -1134,6 +1134,19 @@ export class Character {
       return false;
     }
 
+    if (
+      job instanceof CraftObjective &&
+      this.hasParkedCraftFor(job.target.code)
+    ) {
+      logger.warn(
+        `A craft for ${job.target.code} is already on hold; not parking ${job.objectiveId}`,
+      );
+      // Same reasoning as the full-queue path: nothing will consume the requests
+      // this copy raised, and the parked twin is already waiting on its own
+      await deleteWishlistRequestsForJob(this.data.name, job.objectiveId);
+      return false;
+    }
+
     const waitingOn = await getWishlistRequestsForJob(
       this.data.name,
       job.objectiveId,
@@ -1184,6 +1197,23 @@ export class Character {
     // No other job can be waiting on these: a request belongs to one job
     await deleteWishlistRequestsForJob(this.data.name, entry.job.objectiveId);
     await this.saveJobQueue();
+  }
+
+  /**
+   * @description Whether a craft for this item is already parked on the onHold
+   * queue.
+   *
+   * Matched on the serialized target rather than the objectiveId: ids overlap as
+   * substrings, so 'craft_1_mithril_pickaxe_4a75' would report mithril_axe as
+   * parked. Quantity is ignored — two parked crafts each raise their own
+   * wishlist request against the same ingredient whatever their order size.
+   */
+  hasParkedCraftFor(itemCode: string): boolean {
+    return this.onHold.some(
+      (entry) =>
+        entry.job.type === 'CraftObjective' &&
+        (entry.job.target as ObjectiveTargets | undefined)?.code === itemCode,
+    );
   }
 
   /**
