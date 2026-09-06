@@ -13,6 +13,8 @@ import { logger } from '../utils.js';
 import { FightSimulator } from '../fights/fight.simulator.js';
 import {
   BossFightLeaderRole,
+  BossFightParticipant,
+  BossFightRole,
   BossFightRoster,
   BossFightSimResult,
 } from './bossFight.types.js';
@@ -30,17 +32,32 @@ function noSimResult(result: ObjectiveResult): BossFightSimResult {
   return { ...result, winRate: -1, averageTurns: -1, loadouts: [] };
 }
 
+/**
+ * @param options.roster who fights alongside the leader, and in what part.
+ * Defaults to the boss fight roster; a raid passes its own all-tank one.
+ * @param options.leaderRole the part the leader plays. Separate from the roster,
+ * which never includes the leader.
+ * @param options.winRateThreshold how sure the sim has to be before committing.
+ */
 export async function simulateBossFight(
   character: Character,
   target: ObjectiveTargets,
+  options?: {
+    roster?: BossFightParticipant[];
+    leaderRole?: BossFightRole;
+    winRateThreshold?: number;
+  },
 ): Promise<BossFightSimResult> {
+  const roster = options?.roster ?? BossFightRoster;
+  const leaderRole = options?.leaderRole ?? BossFightLeaderRole;
+
   const mobInfo = await getMonsterInformation(target.code);
   if (mobInfo instanceof ApiError) {
     await character.handleErrors(mobInfo);
     return noSimResult(ObjectiveFailed);
   }
 
-  const participants = await findBestParticipants(character);
+  const participants = await findBestParticipants(character, roster);
   if (!participants) {
     logger.warn(`No participants found for fight against ${target.code}`);
     return noSimResult(ObjectiveFailed);
@@ -53,13 +70,13 @@ export async function simulateBossFight(
   const leaderFakeCharSchema = await character.proposeCombatLoadout(
     target.code,
     undefined,
-    BossFightLeaderRole,
+    leaderRole,
   );
 
   const participantLoadouts: FakeCharacterSchema[] = [];
 
   for (const [index, participant] of participants.entries()) {
-    const { role } = BossFightRoster[index];
+    const { role } = roster[index];
 
     const loadoutRequest = await requestLoadout(
       participant.name,
@@ -94,6 +111,7 @@ export async function simulateBossFight(
     loadouts,
     target.code,
     target.quantity,
+    { winRateThreshold: options?.winRateThreshold },
   );
   const simResult = await character.executeJobNow(
     sim,
@@ -121,6 +139,7 @@ export async function simulateBossFight(
  */
 async function findBestParticipants(
   char: Character,
+  roster: BossFightParticipant[],
 ): Promise<CharacterSchema[]> {
   const allChars = await getMyCharacters();
   if (allChars instanceof ApiError) {
@@ -128,9 +147,7 @@ async function findBestParticipants(
     return [];
   }
 
-  // Mapped over the roster so the returned order matches the roles the caller
-  // pairs them with by index
-  return BossFightRoster.map((member) =>
+  return roster.map((member) =>
     allChars.find((char) => char.name === member.characterName),
   );
 

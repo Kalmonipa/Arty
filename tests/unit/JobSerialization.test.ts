@@ -11,6 +11,8 @@ import { Character } from '../../src/character/character.js';
 import { CraftObjective } from '../../src/core/CraftObjective.js';
 import { FightBossLeaderObjective } from '../../src/fightBosses/bossFightLeader.objective.js';
 import { FightBossParticipantObjective } from '../../src/fightBosses/bossFightParticipant.objective.js';
+import { RaidLeaderObjective } from '../../src/fightRaids/raidLeader.objective.js';
+import { RaidParticipantObjective } from '../../src/fightRaids/raidParticipant.objective.js';
 import { Objective } from '../../src/core/Objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
@@ -105,5 +107,35 @@ describe('surviving a restart', () => {
     // Without the id it can't tell whether the fight it was enlisted in is
     // still running, so it would wait on a fight that no longer exists
     expect(participant.fightId).toBe(42);
+  });
+
+  it('keeps a raid the character was leading', async () => {
+    const restored = await afterRestart([
+      new RaidLeaderObjective(character, { code: 'enchanted_fairy' }),
+    ]);
+
+    expect(restored).toHaveLength(1);
+    expect(restored[0]).toBeInstanceOf(RaidLeaderObjective);
+    expect((restored[0] as RaidLeaderObjective).target).toEqual({
+      code: 'enchanted_fairy',
+    });
+  });
+
+  it('keeps a raid a participant was enlisted in', async () => {
+    const restored = await afterRestart([
+      new RaidParticipantObjective(
+        character,
+        { code: 'enchanted_fairy' },
+        'tank',
+        21,
+      ),
+    ]);
+
+    expect(restored).toHaveLength(1);
+    const participant = restored[0] as RaidParticipantObjective;
+    expect(participant).toBeInstanceOf(RaidParticipantObjective);
+    expect(participant.target).toEqual({ code: 'enchanted_fairy' });
+    expect(participant.role).toBe('tank');
+    expect(participant.fightId).toBe(21);
   });
 });

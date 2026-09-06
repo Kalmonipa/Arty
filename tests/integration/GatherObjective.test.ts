@@ -248,6 +248,10 @@ class SimpleMockCharacter {
     return true;
   });
 
+  checkForRaidWindow = jest.fn((): boolean => {
+    return true;
+  });
+
   checkForBossFightParticipation = jest.fn((): boolean => {
     return false;
   });

@@ -3,6 +3,14 @@ import { Character } from '../character/character.js';
 import { FightObjective } from './fight.objective.js';
 import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objective.js';
 import { simulateBossFight } from '../fightBosses/bossfightPreRequisite.js';
+import { RaidLeaderObjective } from '../fightRaids/raidLeader.objective.js';
+import { findRaid } from '../api_calls/Raids.js';
+import {
+  RaidLeaderRole,
+  RaidRoster,
+  RaidSimIterations,
+  RaidWinRateThreshold,
+} from '../fightRaids/raid.utils.js';
 import {
   BossFightRole,
   BossFightRoles,
@@ -173,14 +181,16 @@ export default function FightRouter(char: Character) {
     }
   });
 
-  router.post('/raid/simulate', async (req: Request, res: Response) => {
+  /**
+   * Initiates a raid as the leader. A raid has no quantity: it runs until the
+   * boss dies or the party loses too many fights in a row.
+   */
+  router.post('/raid', async (req: Request, res: Response) => {
     try {
-      const { quantity, targetMob } = req.body;
+      const { raid } = req.body;
 
-      if (Number.isNaN(quantity) || !targetMob) {
-        return res
-          .status(400)
-          .json({ error: 'Invalid quantity or targetMob.' });
+      if (!raid || typeof raid !== 'string') {
+        return res.status(400).json({ error: 'Invalid or missing raid.' });
       }
 
       if (char === undefined || !char) {
@@ -189,13 +199,63 @@ export default function FightRouter(char: Character) {
           .json({ error: 'Character instance not available.' });
       }
 
-      const result = await simulateBossFight(char, {
-        code: targetMob,
-        quantity: quantity,
+      const job = new RaidLeaderObjective(char, { code: raid });
+
+      await char.appendJob(job);
+
+      return res.status(201).json({
+        message: `Raid job ${job.objectiveId} added to queue.`,
+        character: char.data.name,
+        job: {
+          id: job.objectiveId,
+          code: job.target.code,
+          status: job.status,
+        },
       });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
+   * Simulates a raid without queueing anything. Uses the raid party and the
+   * raid win bar, so the verdict matches what the leader would decide.
+   */
+  router.post('/raid/simulate', async (req: Request, res: Response) => {
+    try {
+      const { raid } = req.body;
+
+      if (!raid || typeof raid !== 'string') {
+        return res.status(400).json({ error: 'Invalid or missing raid.' });
+      }
+
+      if (char === undefined || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      // The caller may name the raid or its monster; only the monster can be
+      // simulated
+      const raidData = await findRaid(raid);
+      if (!raidData) {
+        return res.status(404).json({ error: `No raid found for ${raid}.` });
+      }
+
+      const result = await simulateBossFight(
+        char,
+        { code: raidData.monster, quantity: RaidSimIterations },
+        {
+          roster: RaidRoster,
+          leaderRole: RaidLeaderRole,
+          winRateThreshold: RaidWinRateThreshold,
+        },
+      );
 
       return res.status(200).json({
-        message: `Raid fight sim against ${targetMob} was a ${result.success ? 'win' : 'loss'}`,
+        message: `Raid sim against ${raidData.code} was a ${result.success ? 'win' : 'loss'}`,
         character: char.data.name,
         winRate: result.winRate,
         averageTurns: result.averageTurns,

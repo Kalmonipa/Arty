@@ -44,6 +44,11 @@ import * as path from 'node:path';
 import { CraftObjective } from '../core/CraftObjective.js';
 import { FightBossParticipantObjective } from '../fightBosses/bossFightParticipant.objective.js';
 import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objective.js';
+import { RaidLeaderObjective } from '../fightRaids/raidLeader.objective.js';
+import { RaidParticipantObjective } from '../fightRaids/raidParticipant.objective.js';
+import { RaidTarget } from '../fightRaids/raid.types.js';
+import { raidWindowEnd } from '../fightRaids/raid.utils.js';
+import { loadRaidSchedules } from '../api_calls/Raids.js';
 import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
@@ -118,6 +123,8 @@ import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
   DepositRetryLimit,
+  RaidCheckIntervalSeconds,
+  RaidLeaderRoleName,
   CharRole,
   MaxRouteReplans,
   TeleportPotionStock,
@@ -310,6 +317,15 @@ export class Character {
    */
   lastEventCheckTimestamp: number = Math.round(Date.now() / 1000) - 300;
 
+  lastRaidCheckTimestamp: number = Math.round(Date.now() / 1000) - RaidCheckIntervalSeconds;
+
+  /**
+   * Raids written off for the rest of their window, by code, against the epoch
+   * second the window shuts. In memory only: a restart is rare and re-checking
+   * costs one sim, which self-corrects if the gear has improved since.
+   */
+  raidBackoffs: Map<string, number> = new Map();
+
   /**
    * Per-event exponential backoff state. Maps event code to { failCount, nextRetryAt } where
    * nextRetryAt is a unix timestamp in seconds. Persisted in the job queue file.
@@ -421,6 +437,7 @@ export class Character {
     }
 
     this.allMaps = await AllMaps();
+    await loadRaidSchedules();
     this.navigationGraph = getNavigationGraph(this.allMaps);
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
@@ -708,6 +725,10 @@ export class Character {
       // The fight id has to survive too: without it a resumed participant can't
       // tell whether the fight it was enlisted in is still running
       return { target: job.target, role: job.role, fightId: job.fightId };
+    } else if (job instanceof RaidLeaderObjective) {
+      return { target: job.target };
+    } else if (job instanceof RaidParticipantObjective) {
+      return { target: job.target, role: job.role, fightId: job.fightId };
     } else if (job instanceof DepositObjective) {
       return { target: job.target };
     } else if (job instanceof WithdrawObjective) {
@@ -822,6 +843,17 @@ export class Character {
           job = new FightBossParticipantObjective(
             this,
             specificData.target as ObjectiveTargets,
+            specificData.role as BossFightRole,
+            specificData.fightId as number,
+          );
+          break;
+        case 'RaidLeaderObjective':
+          job = new RaidLeaderObjective(this, specificData.target as RaidTarget);
+          break;
+        case 'RaidParticipantObjective':
+          job = new RaidParticipantObjective(
+            this,
+            specificData.target as RaidTarget,
             specificData.role as BossFightRole,
             specificData.fightId as number,
           );
@@ -1348,6 +1380,78 @@ export class Character {
    ********/
 
   /**
+   * @description Leads a raid if one is open. Only the crafter does this: it is
+   * the party leader, and the other characters are called up by it rather than
+   * finding the raid for themselves.
+   *
+   * Any failure writes the raid off until its window shuts. The sim refusing is
+   * the expected one, but a raid that cannot be geared for or fought is no more
+   * worth retrying every few minutes for the next twelve hours.
+   */
+  async checkForRaidWindow(): Promise<ObjectiveResult> {
+    if (this.role !== RaidLeaderRoleName) {
+      return ObjectiveFailed;
+    }
+
+    // Strictly greater, so the first check after a restart runs rather than
+    // waiting out an interval it never spent
+    const currentTimestamp = Math.round(Date.now() / 1000);
+    if (
+      this.lastRaidCheckTimestamp + RaidCheckIntervalSeconds >
+      currentTimestamp
+    ) {
+      return ObjectiveFailed;
+    }
+
+    for (const job of this.jobList) {
+      if (job instanceof RaidLeaderObjective) {
+        logger.info(
+          `Raid job ${job.objectiveId} already in queue. Not starting another`,
+        );
+        this.lastRaidCheckTimestamp = currentTimestamp;
+        return ObjectiveFailed;
+      }
+    }
+
+    this.lastRaidCheckTimestamp = currentTimestamp;
+
+    for (const raid of await loadRaidSchedules()) {
+      const windowEnd = raidWindowEnd(raid.schedule);
+      if (!windowEnd) continue;
+
+      const writtenOffUntil = this.raidBackoffs.get(raid.code);
+      if (writtenOffUntil && currentTimestamp < writtenOffUntil) {
+        logger.debug(
+          `Raid ${raid.code} was written off until ${writtenOffUntil}. Skipping`,
+        );
+        continue;
+      }
+
+      logger.info(
+        `Raid ${raid.code} is open until ${windowEnd.toISOString()}. Leading it`,
+      );
+      const result = await this.executeJobNow(
+        new RaidLeaderObjective(this, { code: raid.code }),
+        true,
+        true,
+      );
+
+      if (!result.success) {
+        const until = Math.round(windowEnd.getTime() / 1000);
+        this.raidBackoffs.set(raid.code, until);
+        logger.warn(
+          `Raid ${raid.code} did not go ahead. Leaving it until ${windowEnd.toISOString()}`,
+        );
+        continue;
+      }
+
+      return ObjectiveCompleted;
+    }
+
+    return ObjectiveFailed;
+  }
+
+  /**
    * @description Checks if there are any active jobs and creates an EventObjective to do it
    */
   async checkForActiveEvents(): Promise<ObjectiveResult> {
@@ -1497,9 +1601,12 @@ export class Character {
     // This for loop avoids creating an infinite loop
     for (const job of this.jobList) {
       logger.debug(`Checking Job ${job.objectiveId}`);
-      if (job instanceof FightBossParticipantObjective) {
+      if (
+        job instanceof FightBossParticipantObjective ||
+        job instanceof RaidParticipantObjective
+      ) {
         logger.info(
-          `Boss fight job ${job.objectiveId} already in queue. Not starting a new boss fight`,
+          `Participant job ${job.objectiveId} already in queue. Not joining another`,
         );
 
         return ObjectiveFailed;
@@ -1512,21 +1619,27 @@ export class Character {
       return ObjectiveFailed;
     }
 
-    const { fightId, role } = enlistment;
-    logger.info(`Found boss fight #${fightId}. Retrieving data`);
+    const { fightId, role, isRaid } = enlistment;
+    logger.info(
+      `Found ${isRaid ? 'raid' : 'boss fight'} #${fightId}. Retrieving data`,
+    );
     const targetData = await getBossFightTarget(fightId);
     if (!targetData) {
-      logger.warn(`No target data for boss fight #${fightId}. Skipping`);
+      logger.warn(`No target data for fight #${fightId}. Skipping`);
       return ObjectiveFailed;
     }
 
-    const bossFightJob = new FightBossParticipantObjective(
-      this,
-      targetData,
-      role,
-      fightId,
-    );
-    await this.executeJobNow(bossFightJob, true, true);
+    // A raid has no quantity, so only the code carries over
+    const participantJob = isRaid
+      ? new RaidParticipantObjective(
+          this,
+          { code: targetData.code },
+          role,
+          fightId,
+        )
+      : new FightBossParticipantObjective(this, targetData, role, fightId);
+
+    await this.executeJobNow(participantJob, true, true);
     return ObjectiveCompleted;
   }
 

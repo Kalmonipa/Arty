@@ -171,6 +171,12 @@ export const BankFullRetryMs = 10 * 60 * 1000;
  */
 export const DepositRetryLimit = 3;
 
+/** How often the crafter looks for an open raid window */
+export const RaidCheckIntervalSeconds = 300;
+
+/** The role that leads raids. It tanks, and calls the rest of the party up */
+export const RaidLeaderRoleName = 'crafter';
+
 /**
  * How many of each teleport potion a character carries
  */

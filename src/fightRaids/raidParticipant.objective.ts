@@ -1,3 +1,4 @@
+import { findRaid } from '../api_calls/Raids.js';
 import { Character } from '../character/character.js';
 import { Objective } from '../core/Objective.js';
 import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
@@ -18,26 +19,22 @@ import {
   ObjectiveCompleted,
   ObjectiveFailed,
   ObjectiveResult,
-  ObjectiveTargets,
 } from '../types/ObjectiveData.js';
 import { logger, sleep } from '../utils.js';
+import { RaidTarget } from './raid.types.js';
 
 export class RaidParticipantObjective extends Objective {
-  target: ObjectiveTargets;
+  target: RaidTarget;
   role: BossFightRole;
   fightId: number;
 
   constructor(
     character: Character,
-    target: ObjectiveTargets,
+    target: RaidTarget,
     role: BossFightRole,
     fightId: number,
   ) {
-    super(
-      character,
-      `participate_raid_${target.quantity}_${target.code}`,
-      'not_started',
-    );
+    super(character, `participate_raid_${target.code}`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'RaidParticipant';
@@ -51,7 +48,9 @@ export class RaidParticipantObjective extends Objective {
   }
 
   /**
-   * @description Gear up for a fight and move to the location of the mob
+   * @description Gears up for each fight the leader calls and stands on the
+   * raid map until it does. A raid has no fight count to work towards, so the
+   * only thing that ends this is the leader marking the fight over.
    */
   async run(): Promise<ObjectiveResult> {
     const charName = this.character.data.name;
@@ -61,88 +60,72 @@ export class RaidParticipantObjective extends Objective {
     let progress = await getCurrentNumFights(this.fightId);
     let currentNumFights = progress;
 
-    // Checks progress against target number but maybe should just be while true
-    // and rely on the 'complete' state update from the leader?
-    logger.info(`Progress: ${progress}, Target: ${this.target.quantity}`);
-    while (progress < this.target.quantity) {
-      logger.info(`Started boss fight preparation against ${this.target.code}`);
-
+    while (true) {
       const currentFightState = await getBossFightState(this.fightId);
 
       /**
-       * If boss fight is marked as 'complete' we need to acknowledge that it's completed
-       * then the leader will clean up
+       * However the leader ended it, the participant treats it the same way:
+       * acknowledge, then go back to whatever it was doing
        */
       if (isBossFightOver(currentFightState)) {
         logger.info(
-          `Boss fight against ${this.target.code} has ${currentFightState}. Acknowledging and resuming prior activity`,
+          `Raid ${this.target.code} has ${currentFightState}. Acknowledging and resuming prior activity`,
         );
         await acceptBossFightCompletion(this.fightId, charName);
         return ObjectiveCompleted;
-      } else {
-        // [x] Gear up for the fight
-        // [x] Get food and potions
-        // [x] Move to the location of the boss
-        // [x] Mark themselves as ready in the boss_fight_participants table
-        // [x] Some way for char to know fight has been initiated
-        // [x] Check fight count vs target count
-        //    - If fights_done >= target then finish job and go back to prior job
-        //    - If not, start from step 1 again
-
-        logger.info(`Attempting to gear up for ${this.target.code} fight`);
-        const gearUpJob = await this.character.executeJobNow(
-          new EvaluateGearObjective({
-            character: this.character,
-            activityType: 'combat',
-            targetMob: this.target.code,
-            bossFightRole: this.role,
-          }),
-        );
-        if (!gearUpJob.success) {
-          logger.warn(`Gearing up for ${this.target.code} fight has failed`);
-          return ObjectiveFailed;
-        }
-
-        logger.info(`Finding location of ${this.target.code}`);
-
-        const maps = this.character.findMaps({
-          content_code: this.target.code,
-        });
-        if (maps.length === 0) {
-          logger.error(`Cannot find any maps for ${this.target.code}`);
-          return ObjectiveFailed;
-        }
-
-        const contentLocation = this.character.evaluateClosestMap(maps);
-
-        await this.character.move(contentLocation);
-
-        await setParticipantsState(this.fightId, charName, BossFightReady);
-
-        // Once the fights_done has been incremented by the leader we break out of this loop and start the prep process
-        // fights_done will get incremented after the fight cooldown has completed for the leader
-        //
-        // The state is polled alongside the counter because a fight the leader
-        // ends early never increments it again. Watching the counter alone
-        // leaves the character sleeping here for good; the loop above is what
-        // acts on the state, so breaking out is enough to reach it.
-        while (progress >= currentNumFights) {
-          await sleep(10, 'boss_fight_sleep', true); // ToDo: doesn't need to log after debugging
-
-          if (isBossFightOver(await getBossFightState(this.fightId))) {
-            break;
-          }
-
-          currentNumFights = await getCurrentNumFights(this.fightId);
-        }
-        progress = currentNumFights;
       }
+
+      // The enlistment names the raid; the gear has to be picked against the
+      // monster the party actually fights
+      const raid = await findRaid(this.target.code);
+      if (!raid) {
+        logger.warn(`Could not read the raid for ${this.target.code}. Exiting`);
+        return ObjectiveFailed;
+      }
+
+      logger.info(`Attempting to gear up for the ${raid.code} raid`);
+      const gearUpJob = await this.character.executeJobNow(
+        new EvaluateGearObjective({
+          character: this.character,
+          activityType: 'combat',
+          targetMob: raid.monster,
+          bossFightRole: this.role,
+        }),
+      );
+      if (!gearUpJob.success) {
+        logger.warn(`Gearing up for the ${raid.code} raid has failed`);
+        return ObjectiveFailed;
+      }
+
+      logger.info(`Finding location of ${raid.code}`);
+
+      const maps = this.character.findMaps({ content_code: raid.code });
+      if (maps.length === 0) {
+        logger.error(`Cannot find any maps for ${raid.code}`);
+        return ObjectiveFailed;
+      }
+
+      await this.character.move(this.character.evaluateClosestMap(maps));
+
+      await setParticipantsState(this.fightId, charName, BossFightReady);
+
+      // Once the fights_done has been incremented by the leader we break out of this loop and start the prep process
+      // fights_done will get incremented after the fight cooldown has completed for the leader
+      //
+      // The state is polled alongside the counter because a fight the leader
+      // ends early never increments it again. Watching the counter alone
+      // leaves the character sleeping here for good; the loop above is what
+      // acts on the state, so breaking out is enough to reach it.
+      while (progress >= currentNumFights) {
+        await sleep(10, 'raid_fight_sleep', true);
+
+        if (isBossFightOver(await getBossFightState(this.fightId))) {
+          break;
+        }
+
+        currentNumFights = await getCurrentNumFights(this.fightId);
+      }
+      progress = currentNumFights;
     }
-
-    logger.info(
-      `Boss fight against ${this.target.quantity}x ${this.target.code} has completed`,
-    );
-
-    return ObjectiveCompleted;
   }
 }

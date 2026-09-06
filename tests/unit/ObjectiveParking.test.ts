@@ -52,6 +52,7 @@ const makeCharacter = () =>
     enableEvents: false,
     cooldownStatus: jest.fn(async () => undefined),
     checkForBossFightParticipation: jest.fn(async () => undefined),
+    checkForRaidWindow: jest.fn(async () => undefined),
     parkJob: jest.fn(async () => true),
   }) as any;
 

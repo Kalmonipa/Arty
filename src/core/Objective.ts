@@ -182,6 +182,7 @@ export abstract class Objective {
     }
 
     await this.character.checkForBossFightParticipation();
+    await this.character.checkForRaidWindow();
 
     return true;
   }
