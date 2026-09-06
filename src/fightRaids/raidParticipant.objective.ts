@@ -1,11 +1,26 @@
 import { Character } from '../character/character.js';
 import { Objective } from '../core/Objective.js';
-import { BossFightRole } from '../fightBosses/bossFight.types.js';
+import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
+import {
+  BossFightReady,
+  BossFightRole,
+  isBossFightOver,
+} from '../fightBosses/bossFight.types.js';
+import {
+  getBossFightState,
+  getCurrentNumFights,
+} from '../fightBosses/bossFight.utils.js';
+import {
+  acceptBossFightCompletion,
+  setParticipantsState,
+} from '../fightBosses/bossFightParticipantFunctions.js';
 import {
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
+import { logger, sleep } from '../utils.js';
 
 export class FightBossParticipantObjective extends Objective {
   target: ObjectiveTargets;
@@ -39,6 +54,95 @@ export class FightBossParticipantObjective extends Objective {
    * @description Gear up for a fight and move to the location of the mob
    */
   async run(): Promise<ObjectiveResult> {
+    const charName = this.character.data.name;
+
+    // Used to tell when a fight has been initiated. Once fights_done gets incremented in the DB
+    // the participant knows that they need to go through the preparation routine again
+    let progress = await getCurrentNumFights(this.fightId);
+    let currentNumFights = progress;
+
+    // Checks progress against target number but maybe should just be while true
+    // and rely on the 'complete' state update from the leader?
+    logger.info(`Progress: ${progress}, Target: ${this.target.quantity}`);
+    while (progress < this.target.quantity) {
+      logger.info(`Started boss fight preparation against ${this.target.code}`);
+
+      const currentFightState = await getBossFightState(this.fightId);
+
+      /**
+       * If boss fight is marked as 'complete' we need to acknowledge that it's completed
+       * then the leader will clean up
+       */
+      if (isBossFightOver(currentFightState)) {
+        logger.info(
+          `Boss fight against ${this.target.code} has ${currentFightState}. Acknowledging and resuming prior activity`,
+        );
+        await acceptBossFightCompletion(this.fightId, charName);
+        return ObjectiveCompleted;
+      } else {
+        // [x] Gear up for the fight
+        // [x] Get food and potions
+        // [x] Move to the location of the boss
+        // [x] Mark themselves as ready in the boss_fight_participants table
+        // [x] Some way for char to know fight has been initiated
+        // [x] Check fight count vs target count
+        //    - If fights_done >= target then finish job and go back to prior job
+        //    - If not, start from step 1 again
+
+        logger.info(`Attempting to gear up for ${this.target.code} fight`);
+        const gearUpJob = await this.character.executeJobNow(
+          new EvaluateGearObjective({
+            character: this.character,
+            activityType: 'combat',
+            targetMob: this.target.code,
+            bossFightRole: this.role,
+          }),
+        );
+        if (!gearUpJob.success) {
+          logger.warn(`Gearing up for ${this.target.code} fight has failed`);
+          return ObjectiveFailed;
+        }
+
+        logger.info(`Finding location of ${this.target.code}`);
+
+        const maps = this.character.findMaps({
+          content_code: this.target.code,
+        });
+        if (maps.length === 0) {
+          logger.error(`Cannot find any maps for ${this.target.code}`);
+          return ObjectiveFailed;
+        }
+
+        const contentLocation = this.character.evaluateClosestMap(maps);
+
+        await this.character.move(contentLocation);
+
+        await setParticipantsState(this.fightId, charName, BossFightReady);
+
+        // Once the fights_done has been incremented by the leader we break out of this loop and start the prep process
+        // fights_done will get incremented after the fight cooldown has completed for the leader
+        //
+        // The state is polled alongside the counter because a fight the leader
+        // ends early never increments it again. Watching the counter alone
+        // leaves the character sleeping here for good; the loop above is what
+        // acts on the state, so breaking out is enough to reach it.
+        while (progress >= currentNumFights) {
+          await sleep(10, 'boss_fight_sleep', true); // ToDo: doesn't need to log after debugging
+
+          if (isBossFightOver(await getBossFightState(this.fightId))) {
+            break;
+          }
+
+          currentNumFights = await getCurrentNumFights(this.fightId);
+        }
+        progress = currentNumFights;
+      }
+    }
+
+    logger.info(
+      `Boss fight against ${this.target.quantity}x ${this.target.code} has completed`,
+    );
+
     return ObjectiveCompleted;
   }
 }

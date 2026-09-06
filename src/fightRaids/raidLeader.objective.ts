@@ -1,10 +1,33 @@
+import { actionFight } from '../api_calls/Actions.js';
 import { Character } from '../character/character.js';
+import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
+import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
 import {
+  BossFightLeaderRole,
+  BossFightRoster,
+  BossFightUnready,
+} from '../fightBosses/bossFight.types.js';
+import {
+  incrementBossFightCounter,
+  markBossFightAborted,
+  markBossFightComplete,
+  registerBossFight,
+} from '../fightBosses/bossFight.utils.js';
+import {
+  checkAllParticipantsReady,
+  registerBossFightParticipant,
+  setParticipantsState,
+} from '../fightBosses/bossFightParticipantFunctions.js';
+import { simulateBossFight } from '../fightBosses/bossfightPreRequisite.js';
+import {
+  ObjectiveCancelled,
   ObjectiveCompleted,
+  ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
 } from '../types/ObjectiveData.js';
+import { logger, sleep } from '../utils.js';
 
 export class RaidObjective extends Objective {
   target: ObjectiveTargets;
@@ -38,6 +61,138 @@ export class RaidObjective extends Objective {
    * - Resume the participants activities so they can go back to what they were doing
    */
   async run(): Promise<ObjectiveResult> {
+    if (!(await this.checkStatus())) return ObjectiveCancelled;
+
+    const fightSimResult = await simulateBossFight(this.character, this.target);
+
+    if (!fightSimResult.success) {
+      logger.warn(
+        `Boss fight against ${this.target.code} isn't winnable at a ${fightSimResult.winRate}% win rate. Exiting`,
+      );
+      logger.warn(
+        `Simulated with ${fightSimResult.loadouts
+          .map((loadout) => `${loadout.weapon_slot} [${loadout.level}]`)
+          .join(', ')}`,
+      );
+      return ObjectiveFailed;
+    }
+
+    const fightId = await registerBossFight(this.character, this.target);
+
+    let fightFinished = false;
+    try {
+      const result = await this.leadFight(fightId);
+      fightFinished = result.success;
+      return result;
+    } finally {
+      if (!fightFinished && fightId) {
+        await markBossFightAborted(fightId);
+      }
+    }
+  }
+
+  /**
+   * @description Musters the party and fights the boss the requested number of
+   * times. Registered fights are torn down by the caller, so this is free to
+   * return early on any failure.
+   */
+  private async leadFight(fightId: number): Promise<ObjectiveResult> {
+    let progress = 0;
+    const participants = BossFightRoster;
+
+    for (const participant of participants) {
+      if (
+        !(await registerBossFightParticipant({
+          bossFightId: fightId,
+          participant,
+          isRaid: true,
+        }))
+      ) {
+        logger.error(
+          `Failed to register ${participant.characterName} as a ${participant.role}`,
+        );
+        return ObjectiveFailed;
+      }
+    }
+
+    while (progress < this.target.quantity) {
+      logger.info(`Attempting to gear up for ${this.target.code} fight`);
+      const gearUpJob = await this.character.executeJobNow(
+        new EvaluateGearObjective({
+          character: this.character,
+          activityType: 'combat',
+          targetMob: this.target.code,
+          bossFightRole: BossFightLeaderRole,
+        }),
+      );
+      if (!gearUpJob.success) {
+        logger.warn(`Gearing up for ${this.target.code} fight has failed`);
+        return ObjectiveFailed;
+      }
+
+      logger.info(`Finding location of ${this.target.code}`);
+
+      const maps = this.character.findMaps({ content_code: this.target.code });
+      if (maps.length === 0) {
+        logger.error(`Cannot find any maps for ${this.target.code}`);
+        return ObjectiveFailed;
+      }
+
+      const contentLocation = this.character.evaluateClosestMap(maps);
+
+      await this.character.move(contentLocation);
+
+      // If there's just one participant we don't need to check statuses
+      if (participants.length > 0) {
+        // Check statuses
+        let allReady = await checkAllParticipantsReady(fightId, participants);
+
+        // Sleep for a period until all participants are ready
+        while (!allReady) {
+          await sleep(30, 'waiting_for_participants');
+
+          allReady = await checkAllParticipantsReady(fightId, participants);
+        }
+      }
+
+      const response = await actionFight(this.character.data, [
+        participants[0].characterName,
+        participants[1].characterName,
+      ]);
+
+      if (response instanceof ApiError) {
+        logger.warn(
+          `Fight responded with an [${response.error.code}] error: ${response.error.message}`,
+        );
+        return ObjectiveFailed;
+      }
+
+      for (const participant of participants) {
+        await setParticipantsState(
+          fightId,
+          participant.characterName,
+          BossFightUnready,
+        );
+      }
+
+      progress = await incrementBossFightCounter(fightId);
+
+      logger.info(
+        `Fought ${progress}/${this.target.quantity} ${this.target.code}`,
+      );
+
+      if (progress >= this.target.quantity) {
+        logger.info(
+          `Successfully fought ${progress}/${this.target.quantity}x ${this.target.code}`,
+        );
+        // Participant rows are left in place. Each participant sees this state
+        // change, acknowledges it and moves on, and its row stays as the record
+        // of the fight.
+        await markBossFightComplete(fightId);
+        return ObjectiveCompleted;
+      }
+    }
+
     return ObjectiveCompleted;
   }
 }

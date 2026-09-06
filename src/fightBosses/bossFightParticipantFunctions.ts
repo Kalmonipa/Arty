@@ -7,6 +7,7 @@ import {
   BossFightRole,
   BossFightUnready,
   ParticipantStatus,
+  registerBossFightParticipantParams,
 } from './bossFight.types.js';
 
 /**
@@ -21,10 +22,11 @@ import {
  * @returns
  */
 export async function registerBossFightParticipant(
-  bossFightId: number,
-  participant: BossFightParticipant,
+  params: registerBossFightParticipantParams,
 ): Promise<boolean> {
   try {
+    const reason = params.isRaid ? 'raid' : 'boss fight';
+
     const result = await db.query<{ fight_id: number }>(
       `
       INSERT INTO boss_fight_participants (
@@ -34,20 +36,20 @@ export async function registerBossFightParticipant(
       RETURNING fight_id;
       `,
       [
-        bossFightId,
-        participant.characterName,
-        participant.role,
+        params.bossFightId,
+        params.participant.characterName,
+        params.participant.role,
         BossFightUnready,
-        'boss fight',
+        reason,
       ],
     );
     logger.info(
-      `Registered boss fight ${result.rows[0].fight_id} for ${participant.characterName}`,
+      `Registered boss fight ${result.rows[0].fight_id} for ${params.participant.characterName}`,
     );
     return true;
   } catch (err) {
     logger.error(
-      `Failed to register ${participant.characterName} for boss fight: ${err}`,
+      `Failed to register ${params.participant.characterName} for boss fight: ${err}`,
     );
     return false;
   }

@@ -17,9 +17,17 @@ import {
   BossFightSimResult,
 } from './bossFight.types.js';
 
-/** A verdict with nothing behind it, for the paths that never reach the sim */
+/**
+ * A lot of these functions are also used by RaidObjective because they are kind of the same procedure
+ * Raid specific functions are in the fightRaids folder to avoid crossing over too much
+ */
+
+/**
+ * A verdict with nothing behind it, for the paths that never reach the sim
+ * Sets -1 so that it's obvious it is a failure rather than a quick fight
+ */
 function noSimResult(result: ObjectiveResult): BossFightSimResult {
-  return { ...result, winRate: 0, averageTurns: 0, loadouts: [] };
+  return { ...result, winRate: -1, averageTurns: -1, loadouts: [] };
 }
 
 export async function simulateBossFight(

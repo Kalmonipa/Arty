@@ -117,6 +117,7 @@ import { Fishing, GourmetChef, Restore } from '../names.js';
 import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
+  DepositRetryLimit,
   CharRole,
   MaxRouteReplans,
   TeleportPotionStock,
@@ -2479,6 +2480,7 @@ export class Character {
    * @param priorLocation If we move to the bank to deposit, we move back to these coordinates to continue activities
    * @param makeSpaceForOtherItems If we need to make space but not above the 90% threshold, this will empty our inv
    * except for the items we're keeping
+   * @param attempt Which try this is, counting from 1. Set by the retry itself
    * @returns {boolean}
    *  - true means bank was visited and items deposited
    *  - false means nothing happened
@@ -2487,6 +2489,7 @@ export class Character {
     itemsToKeep?: string[],
     priorLocation?: MapSchema,
     makeSpaceForOtherItems?: boolean,
+    attempt: number = 1,
   ): Promise<boolean> {
     const usedInventorySpace = this.getInventoryFullness();
     // We may have handed in the items to the task master so we now have space
@@ -2562,8 +2565,24 @@ export class Character {
       const response = await actionDepositItems(this.data, itemsToDeposit);
 
       if (response instanceof ApiError) {
-        this.handleErrors(response);
-        await this.evaluateDepositItemsInBank(itemsToKeep, priorLocation);
+        // handleErrors answers whether a retry can succeed. A full bank says no,
+        // and ignoring that answer is what turned one full bank into ~4,000
+        // deposits an hour and starved every character on the host of API budget.
+        if (!(await this.handleErrors(response))) {
+          return false;
+        }
+        if (attempt >= DepositRetryLimit) {
+          logger.warn(
+            `Deposit failed ${attempt} times; carrying the inventory instead`,
+          );
+          return false;
+        }
+        return await this.evaluateDepositItemsInBank(
+          itemsToKeep,
+          priorLocation,
+          makeSpaceForOtherItems,
+          attempt + 1,
+        );
       } else {
         if (response.data.character) {
           this.data = response.data.character;

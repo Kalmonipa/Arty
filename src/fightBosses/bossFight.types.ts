@@ -100,3 +100,9 @@ export type BossFightSimResult = ObjectiveResult & {
   /** The loadouts the fight was simulated with, leader first */
   loadouts: FakeCharacterSchema[];
 };
+
+export type registerBossFightParticipantParams = {
+  bossFightId: number;
+  participant: BossFightParticipant;
+  isRaid?: boolean;
+};

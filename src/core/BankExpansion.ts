@@ -64,14 +64,35 @@ export class ExpandBankObjective extends Objective {
     // Check if we have enough gold to purchase
     const leftoverGold =
       bankDetails.data.gold - bankDetails.data.next_expansion_cost;
+
+    // A bank with no free slot is worse than a thin wallet: every character
+    // that fills its inventory has nowhere to put it, and each one spends its
+    // action budget on deposits that can only come back 462. At that point the
+    // only thing worth checking is whether the gold is there at all.
+    const bankIsFull = slotsUsed >= bankDetails.data.slots;
+
+    if (leftoverGold < 0) {
+      logger.debug(
+        `An upgrade costs ${bankDetails.data.next_expansion_cost} and we have ${bankDetails.data.gold}. Not purchasing`,
+      );
+      return { complete: true, success: false, reason: 'complete' };
+    }
+
     if (
+      !bankIsFull &&
       bankDetails.data.gold * (targetPercentageLeftoverCash / 100) >
-      leftoverGold
+        leftoverGold
     ) {
       logger.debug(
         `Purchasing an upgrade would leave us with ${leftoverGold}. Not purchasing`,
       );
       return { complete: true, success: false, reason: 'complete' };
+    }
+
+    if (bankIsFull) {
+      logger.warn(
+        `Bank is completely full (${slotsUsed}/${bankDetails.data.slots}); buying an upgrade for ${bankDetails.data.next_expansion_cost} and keeping ${leftoverGold}`,
+      );
     }
 
     const maps = await this.character.getAvailableBanks();

@@ -86,12 +86,20 @@ describe('FightBossLeaderObjective role assignment', () => {
     await objective.run();
 
     const registered = (
-      registerBossFightParticipant as jest.Mock
-    ).mock.calls.map(([, participant]) => participant);
+      registerBossFightParticipant as jest.MockedFunction<
+        typeof registerBossFightParticipant
+      >
+    ).mock.calls.map(([params]) => params);
 
     expect(registered).toEqual([
-      { characterName: 'BouncyBella', role: 'dps' },
-      { characterName: 'JumpyJimmy', role: 'healer' },
+      {
+        bossFightId: 42,
+        participant: { characterName: 'BouncyBella', role: 'dps' },
+      },
+      {
+        bossFightId: 42,
+        participant: { characterName: 'JumpyJimmy', role: 'healer' },
+      },
     ]);
   });
 });

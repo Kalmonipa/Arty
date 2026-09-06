@@ -204,7 +204,7 @@ describe('simulateBossFight', () => {
     expect(result.success).toBe(true);
   });
 
-  it('reports zeroed stats when the monster cannot be looked up', async () => {
+  it('reports -1 stats when the monster cannot be looked up', async () => {
     mockedMonster.mockResolvedValue(
       new ApiError({ code: 404, message: 'not found' }) as never,
     );
@@ -215,7 +215,8 @@ describe('simulateBossFight', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.winRate).toBe(0);
+    expect(result.winRate).toBe(-1);
+    expect(result.averageTurns).toBe(-1);
     expect(result.loadouts).toEqual([]);
   });
 

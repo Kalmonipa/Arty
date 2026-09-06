@@ -164,6 +164,14 @@ export const TeleportMinimumSavingSeconds = 60;
 export const BankFullRetryMs = 10 * 60 * 1000;
 
 /**
+ * How many times a deposit is attempted before the character gives up and
+ * carries its inventory away. Only errors handleErrors calls retryable get
+ * this far, and even those are worth only a few goes: the retry is immediate,
+ * so a loop here spends the whole fleet's action budget within the minute.
+ */
+export const DepositRetryLimit = 3;
+
+/**
  * How many of each teleport potion a character carries
  */
 export const TeleportPotionStock = 1;

@@ -10,6 +10,7 @@ jest.mock('../../src/api_calls/Bank', () => ({
 import {
   getBankItems,
   getBankDetails,
+  actionWithdrawGold,
   purchaseBankExpansion,
 } from '../../src/api_calls/Bank.js';
 import { ExpandBankObjective } from '../../src/core/BankExpansion.js';
@@ -26,12 +27,24 @@ const mockedDetails = getBankDetails as jest.MockedFunction<
 const mockedPurchase = purchaseBankExpansion as jest.MockedFunction<
   typeof purchaseBankExpansion
 >;
+const mockedWithdrawGold = actionWithdrawGold as jest.MockedFunction<
+  typeof actionWithdrawGold
+>;
 
 const character = {
   data: { name: 'LongLegLarry' },
   jobList: [],
   handleErrors: jest.fn(async () => true),
   getAvailableBanks: jest.fn(async () => []),
+} as never;
+
+/** The same character, standing somewhere it can actually buy the expansion */
+const atABank = {
+  ...(character as object),
+  getAvailableBanks: jest.fn(async () => [{ map_id: 1, x: 4, y: 1 }]),
+  evaluateClosestMap: jest.fn(() => ({ map_id: 1, x: 4, y: 1 })),
+  move: jest.fn(async () => true),
+  topUpTeleportPotions: jest.fn(async () => undefined),
 } as never;
 
 /** `total` is the number of occupied slots; `slots` is the bank's capacity */
@@ -80,6 +93,30 @@ describe('ExpandBankObjective fullness check', () => {
 
     expect(result.success).toBe(false);
     expect(mockedPurchase).not.toHaveBeenCalled();
+  });
+
+  it('buys the expansion once the bank is completely full', async () => {
+    // A bank with no free slot costs more than the cash buffer protects: every
+    // character that fills its inventory sits there retrying a deposit that
+    // cannot succeed. The reserve refused exactly this shape on 06 Sep while
+    // the fleet burned its API budget on 462s
+    bankHolding(200, 200, 600_000, 470_000);
+    mockedWithdrawGold.mockResolvedValue({ data: {} } as never);
+    mockedPurchase.mockResolvedValue({ data: {} } as never);
+
+    const result = await new ExpandBankObjective(atABank).run();
+
+    expect(mockedPurchase).toHaveBeenCalled();
+    expect(result.success).toBe(true);
+  });
+
+  it('cannot buy the expansion it has no gold for, full or not', async () => {
+    bankHolding(200, 200, 100, 399_975);
+
+    const result = await new ExpandBankObjective(atABank).run();
+
+    expect(mockedPurchase).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
   });
 
   it('survives a bank that reports no capacity', async () => {
