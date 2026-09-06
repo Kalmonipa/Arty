@@ -173,5 +173,40 @@ export default function FightRouter(char: Character) {
     }
   });
 
+  router.post('/raid/simulate', async (req: Request, res: Response) => {
+    try {
+      const { quantity, targetMob } = req.body;
+
+      if (Number.isNaN(quantity) || !targetMob) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid quantity or targetMob.' });
+      }
+
+      if (char === undefined || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      const result = await simulateBossFight(char, {
+        code: targetMob,
+        quantity: quantity,
+      });
+
+      return res.status(200).json({
+        message: `Raid fight sim against ${targetMob} was a ${result.success ? 'win' : 'loss'}`,
+        character: char.data.name,
+        winRate: result.winRate,
+        averageTurns: result.averageTurns,
+        loadouts: result.loadouts,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error' });
+    }
+  });
+
   return router;
 }

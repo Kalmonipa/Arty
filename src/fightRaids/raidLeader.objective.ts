@@ -29,7 +29,7 @@ import {
 } from '../types/ObjectiveData.js';
 import { logger, sleep } from '../utils.js';
 
-export class RaidObjective extends Objective {
+export class RaidLeaderObjective extends Objective {
   target: ObjectiveTargets;
   runFightSim?: boolean;
   participant1Ready = false;

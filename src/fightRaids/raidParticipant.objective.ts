@@ -22,7 +22,7 @@ import {
 } from '../types/ObjectiveData.js';
 import { logger, sleep } from '../utils.js';
 
-export class FightBossParticipantObjective extends Objective {
+export class RaidParticipantObjective extends Objective {
   target: ObjectiveTargets;
   role: BossFightRole;
   fightId: number;
