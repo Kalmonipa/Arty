@@ -37,6 +37,28 @@ const makeGear = (code: string, level: number): ItemSchema => ({
   craft: { skill: 'gearcrafting' as CraftSkill, level, items: [], quantity: 1 },
 });
 
+const makeTool = (
+  code: string,
+  level: number,
+  skill: 'mining' | 'woodcutting' | 'fishing' | 'alchemy',
+  cooldown: number,
+): ItemSchema => ({
+  code,
+  name: code,
+  level,
+  type: 'weapon',
+  subtype: 'tool',
+  description: '',
+  tradeable: true,
+  craft: {
+    skill: 'weaponcrafting' as CraftSkill,
+    level,
+    items: [],
+    quantity: 1,
+  },
+  effects: [{ code: skill, value: cooldown, description: '' }],
+});
+
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
   lowestCharLevel = 19;
@@ -174,6 +196,114 @@ describe('TidyBankObjective - recycleExcessEquipment', () => {
       await makeObjective('gearcrafter').run();
 
       expect(character.recycleItemNow).toHaveBeenCalledWith('iron_helm', 4); // 9 - 5
+    });
+  });
+
+  describe('keeping the best tool tier the bank holds', () => {
+    // The fleet's real shape in Sep 2026: gold tools are level 30, every
+    // character is past 40, and the mithril replacements need 80 mithril ore
+    // apiece that nobody has. The obsolete sweep would take the lot.
+    it('keeps gold tools that the obsolete sweep would otherwise wipe out', async () => {
+      character.lowestCharLevel = 41;
+      mockGetCraftableItems.mockResolvedValue([
+        makeTool('gold_pickaxe', 30, 'mining', -40),
+        makeTool('gold_axe', 30, 'woodcutting', -40),
+        makeTool('gold_fishing_rod', 30, 'fishing', -40),
+        makeTool('golden_gloves', 30, 'alchemy', -40),
+      ]);
+      character.bankItems = {
+        gold_pickaxe: 5,
+        gold_axe: 3,
+        gold_fishing_rod: 3,
+        golden_gloves: 1,
+      };
+
+      await makeObjective('weaponcrafter').run();
+
+      expect(character.recycleItemNow).not.toHaveBeenCalled();
+    });
+
+    it('recycles a lower tier once a better one is in the bank', async () => {
+      character.lowestCharLevel = 41;
+      mockGetCraftableItems.mockResolvedValue([
+        makeTool('steel_pickaxe', 20, 'mining', -30),
+        makeTool('gold_pickaxe', 30, 'mining', -40),
+      ]);
+      character.bankItems = { steel_pickaxe: 2, gold_pickaxe: 4 };
+
+      await makeObjective('weaponcrafter').run();
+
+      expect(character.recycleItemNow).toHaveBeenCalledTimes(1);
+      expect(character.recycleItemNow).toHaveBeenCalledWith('steel_pickaxe', 2);
+    });
+
+    it('ranks tiers on cooldown reduction, not level', async () => {
+      // Voidstone and adamantite tools are both level 50; voidstone is better
+      character.lowestCharLevel = 61;
+      mockGetCraftableItems.mockResolvedValue([
+        makeTool('adamantite_pickaxe', 50, 'mining', -60),
+        makeTool('voidstone_pickaxe', 50, 'mining', -70),
+      ]);
+      character.bankItems = { adamantite_pickaxe: 1, voidstone_pickaxe: 1 };
+
+      await makeObjective('weaponcrafter').run();
+
+      expect(character.recycleItemNow).toHaveBeenCalledTimes(1);
+      expect(character.recycleItemNow).toHaveBeenCalledWith(
+        'adamantite_pickaxe',
+        1,
+      );
+    });
+
+    it('protects the best tier of each skill independently', async () => {
+      character.lowestCharLevel = 41;
+      mockGetCraftableItems.mockResolvedValue([
+        makeTool('gold_pickaxe', 30, 'mining', -40),
+        makeTool('steel_axe', 20, 'woodcutting', -30),
+      ]);
+      character.bankItems = { gold_pickaxe: 2, steel_axe: 2 };
+
+      await makeObjective('weaponcrafter').run();
+
+      // A gold pickaxe is no reason to throw away the only axe we own
+      expect(character.recycleItemNow).not.toHaveBeenCalled();
+    });
+
+    it('only counts a tier as held when the bank actually has one', async () => {
+      character.lowestCharLevel = 41;
+      mockGetCraftableItems.mockResolvedValue([
+        makeTool('gold_pickaxe', 30, 'mining', -40),
+        makeTool('mithril_pickaxe', 40, 'mining', -50),
+      ]);
+      // The mithril one exists in the catalogue but nobody has made one
+      character.bankItems = { gold_pickaxe: 5 };
+
+      await makeObjective('weaponcrafter').run();
+
+      expect(character.recycleItemNow).not.toHaveBeenCalled();
+    });
+
+    it('still trims a protected tool back to 5', async () => {
+      character.lowestCharLevel = 41;
+      mockGetCraftableItems.mockResolvedValue([
+        makeTool('gold_pickaxe', 30, 'mining', -40),
+      ]);
+      character.bankItems = { gold_pickaxe: 9 };
+
+      await makeObjective('weaponcrafter').run();
+
+      expect(character.recycleItemNow).toHaveBeenCalledWith('gold_pickaxe', 4);
+    });
+
+    it('leaves ordinary gear alone', async () => {
+      character.lowestCharLevel = 19;
+      mockGetCraftableItems.mockResolvedValue([makeGear('copper_dagger', 5)]);
+      character.bankItems = { copper_dagger: 3 };
+
+      await makeObjective('weaponcrafter').run();
+
+      // Nothing about tools should rescue an obsolete sword
+      expect(character.recycleItemNow).toHaveBeenCalledWith('copper_dagger', 3);
     });
   });
 

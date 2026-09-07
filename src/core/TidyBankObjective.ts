@@ -4,12 +4,22 @@ import {
   getItemInformation,
 } from '../api_calls/Items.js';
 import { Role } from '../types/CharacterData.js';
-import { CraftSkill, ItemSchema, SimpleItemSchema } from '../types/types.js';
+import {
+  CraftSkill,
+  GatheringSkill,
+  ItemSchema,
+  SimpleItemSchema,
+} from '../types/types.js';
 import { getCraftableItems, logger } from '../utils.js';
 import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';
+import {
+  Gearcrafting,
+  Jewelrycrafting,
+  Tool,
+  Weaponcrafting,
+} from '../names.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,
@@ -312,6 +322,45 @@ export class TidyBankObjective extends Objective {
   }
 
   /**
+   * @description The best tool the bank holds for each gathering skill, ranked on
+   * the cooldown reduction it gives rather than its level. Level can't separate
+   * the top tier: voidstone and adamantite tools are both level 50, and voidstone
+   * is the better one.
+   */
+  private bestHeldTools(
+    craftableItems: ItemSchema[],
+    contentsOfBank: SimpleItemSchema[],
+  ): Set<string> {
+    const best = new Map<string, { code: string; cooldown: number }>();
+
+    for (const item of craftableItems) {
+      if (item.subtype !== Tool) continue;
+
+      const held = contentsOfBank.find(
+        (bankItem) => bankItem.code === item.code,
+      );
+      if (!held?.quantity) continue;
+
+      for (const effect of item.effects ?? []) {
+        if (!(effect.code in GatheringSkill)) continue;
+
+        const incumbent = best.get(effect.code);
+        if (!incumbent || effect.value < incumbent.cooldown) {
+          best.set(effect.code, { code: item.code, cooldown: effect.value });
+        }
+      }
+    }
+
+    for (const [skill, tool] of best) {
+      logger.debug(
+        `Best ${skill} tool in the bank is ${tool.code} (${tool.cooldown}); keeping it whatever its level`,
+      );
+    }
+
+    return new Set([...best.values()].map((tool) => tool.code));
+  }
+
+  /**
    * @description Recycle any excess gear if there are more than 5 in the bank.
    * Also recycles all of any item whose level is more than 10 below the lowest character level.
    */
@@ -329,6 +378,8 @@ export class TidyBankObjective extends Objective {
       logger.warn(`Could not read the ${skill} item list; skipping recycling`);
       return ObjectiveFailed;
     }
+
+    const bestTools = this.bestHeldTools(craftableItems, contentsOfBank);
 
     for (const gear of craftableItems) {
       // Chars can equip 2 rings so we want to keep 10 of them, 5 of everything else
@@ -364,7 +415,11 @@ export class TidyBankObjective extends Objective {
         }
       }
 
-      if (gear.level < obsoleteThreshold) {
+      if (bestTools.has(gear.code)) {
+        logger.info(
+          `${gear.code} is the best tool the bank holds for its skill; keeping it`,
+        );
+      } else if (gear.level < obsoleteThreshold) {
         logger.info(
           `${gear.code} (level ${gear.level}) is more than 10 levels below lowest character level (${this.character.lowestCharLevel}). Recycling all ${numInBank}`,
         );

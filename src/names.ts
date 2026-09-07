@@ -98,6 +98,7 @@ export const Weapon = 'weapon';
  * Equipment Subtypes
  */
 export const Potion = 'potion';
+export const Tool = 'tool';
 
 /**
  * Skills
