@@ -120,8 +120,10 @@ export class IdleCrafterObjective extends Objective {
     await checkWithinLevelRange(this.character);
     if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
-    await this.craftMissingTools();
-    if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
+    // ToDo: I don't actualy think we need this, chars should request tools
+    // as they need them
+    // await this.craftMissingTools();
+    // if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
 
     // Commenting this out because I don't think it's necessary. Characters should request
     // things via the wishlist if they need gear for a fight
