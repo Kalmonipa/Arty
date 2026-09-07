@@ -65,6 +65,8 @@ import {
   addToWishlist,
   dropUnclaimedWishlistRequest,
 } from '../../src/wishlist/wishlist.utils.js';
+import { BodyArmor, Weapon } from '../../src/names.js';
+import { MAX_SKILL_LEVEL } from '../../src/constants.js';
 
 // Mock monster data
 const mockMonsterData = {
@@ -130,8 +132,8 @@ const createMockGear = (
   code,
   name,
   level,
-  type: 'armor',
-  subtype: 'body_armor',
+  type: BodyArmor,
+  subtype: '',
   description: '',
   craft: null,
   tradeable: true,
@@ -150,8 +152,8 @@ const createMockWeapon = (
   code,
   name,
   level,
-  type: 'weapon',
-  subtype: 'sword',
+  type: Weapon,
+  subtype: '',
   description: '',
   craft: null,
   tradeable: true,
@@ -160,6 +162,17 @@ const createMockWeapon = (
     { code: effectType, value: 15, description: `${effectType} effect` },
   ],
 });
+
+/** Turns a mock item into one somebody has to craft, so the fleet-level gate applies */
+const craftedAt = (
+  item: ItemSchema,
+  skill: 'weaponcrafting' | 'gearcrafting' | 'jewelrycrafting',
+  level: number = item.level,
+): ItemSchema =>
+  ({
+    ...item,
+    craft: { skill, level, items: [], quantity: 1 },
+  }) as ItemSchema;
 
 const createMockMultiElementWeapon = (
   code: string,
@@ -234,6 +247,11 @@ const OwningJobId = 'train_28_gearcrafting_d194';
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
   minEquippedUtilities = 20;
+
+  // The best crafter in the fleet, as applyFleetSnapshot would set it
+  highestWeaponcraftingLevel: number | undefined = MAX_SKILL_LEVEL;
+  highestGearcraftingLevel: number | undefined = MAX_SKILL_LEVEL;
+  highestJewelrycraftingLevel: number | undefined = MAX_SKILL_LEVEL;
 
   // Gear maps
   weaponMap: Record<WeaponFlavours, ItemSchema[]> = {
@@ -1735,6 +1753,187 @@ describe('EvaluateGearObjective Integration Tests', () => {
       await objective.proposeCombatLoadout(10, 'red_slime');
 
       expect(wishlistedItems()).toContain('hp_boots');
+    });
+  });
+
+  describe('Gating wishlist requests on the fleet crafting level', () => {
+    const combatObjective = () =>
+      new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'red_slime',
+      });
+
+    // Every other mapped item sits at level 10, more than 15 levels below a
+    // level 30 character, so boots are the only slot still in the window and
+    // the only thing that can reach the wishlist
+    const bootsOnlyFleet = (boots: ItemSchema[]) => {
+      mockCharacter.data.level = 30;
+      mockCharacter.bootsMap.hp = boots;
+    };
+
+    it('skips gear no crafter can reach and asks for the best one that is in reach', async () => {
+      mockCharacter.highestGearcraftingLevel = 25;
+      bootsOnlyFleet([
+        craftedAt(
+          createMockGear('steel_boots', 'Steel Boots', 20, 'hp'),
+          'gearcrafting',
+        ),
+        craftedAt(
+          createMockGear('mithril_boots', 'Mithril Boots', 25, 'hp'),
+          'gearcrafting',
+        ),
+        craftedAt(
+          createMockGear('diamond_boots', 'Diamond Boots', 30, 'hp'),
+          'gearcrafting',
+        ),
+      ]);
+
+      await combatObjective().run();
+
+      // diamond needs gearcrafting 30 and nobody is there yet; mithril is
+      // exactly at the fleet's level, which is craftable today
+      expect(wishlistedItems()).toEqual(['mithril_boots']);
+    });
+
+    it('treats one level short of the requirement as out of reach', async () => {
+      mockCharacter.highestGearcraftingLevel = 24;
+      bootsOnlyFleet([
+        craftedAt(
+          createMockGear('steel_boots', 'Steel Boots', 20, 'hp'),
+          'gearcrafting',
+        ),
+        craftedAt(
+          createMockGear('mithril_boots', 'Mithril Boots', 25, 'hp'),
+          'gearcrafting',
+        ),
+      ]);
+
+      await combatObjective().run();
+
+      expect(wishlistedItems()).toEqual(['steel_boots']);
+    });
+
+    it('judges the craft level rather than the level the item is worn at', async () => {
+      mockCharacter.highestGearcraftingLevel = 25;
+      bootsOnlyFleet([
+        // Worn at 30 but cheap to make, so it is a fair thing to ask for
+        craftedAt(
+          createMockGear('cheap_boots', 'Cheap Boots', 30, 'hp'),
+          'gearcrafting',
+          20,
+        ),
+      ]);
+
+      await combatObjective().run();
+
+      expect(wishlistedItems()).toEqual(['cheap_boots']);
+    });
+
+    it('measures rings against jewelrycrafting, not the slot they sit in', async () => {
+      mockCharacter.data.level = 30;
+      mockCharacter.highestGearcraftingLevel = MAX_SKILL_LEVEL;
+      mockCharacter.highestJewelrycraftingLevel = 20;
+      mockCharacter.bootsMap.hp = [];
+      mockCharacter.ringsMap.dmg = [
+        craftedAt(
+          createMockGear('plain_ring', 'Plain Ring', 20, 'dmg'),
+          'jewelrycrafting',
+        ),
+        craftedAt(
+          createMockGear('gilded_ring', 'Gilded Ring', 30, 'dmg'),
+          'jewelrycrafting',
+        ),
+      ];
+
+      await combatObjective().run();
+
+      // A maxed gearcrafter must not vouch for a ring nobody can make
+      expect(wishlistedItems()).toEqual(['plain_ring']);
+    });
+
+    it('measures weapons against weaponcrafting', async () => {
+      mockCharacter.data.level = 30;
+      mockCharacter.highestWeaponcraftingLevel = 20;
+      mockCharacter.bootsMap.hp = [];
+      mockCharacter.weaponMap.combat = [
+        craftedAt(
+          createMockWeapon('iron_sword', 'Iron Sword', 20, 'attack_water'),
+          'weaponcrafting',
+        ),
+        craftedAt(
+          createMockWeapon('steel_sword', 'Steel Sword', 30, 'attack_water'),
+          'weaponcrafting',
+        ),
+      ];
+
+      await combatObjective().run();
+
+      expect(wishlistedItems()).toEqual(['iron_sword']);
+    });
+
+    it('still asks for gear that is dropped or bought rather than crafted', async () => {
+      // Nothing about a crafter's level decides whether a boss drop turns up,
+      // so the gate has no business blocking these
+      mockCharacter.highestGearcraftingLevel = 1;
+      bootsOnlyFleet([createMockGear('lich_boots', 'Lich Boots', 30, 'hp')]);
+
+      await combatObjective().run();
+
+      expect(wishlistedItems()).toEqual(['lich_boots']);
+    });
+
+    it('asks anyway when the fleet snapshot has no level for the skill', async () => {
+      mockCharacter.highestGearcraftingLevel = undefined;
+      bootsOnlyFleet([
+        craftedAt(
+          createMockGear('diamond_boots', 'Diamond Boots', 30, 'hp'),
+          'gearcrafting',
+        ),
+      ]);
+
+      await combatObjective().run();
+
+      expect(wishlistedItems()).toEqual(['diamond_boots']);
+    });
+
+    it("asks for nothing when every candidate is out of the fleet's reach", async () => {
+      mockCharacter.highestGearcraftingLevel = 10;
+      bootsOnlyFleet([
+        craftedAt(
+          createMockGear('steel_boots', 'Steel Boots', 20, 'hp'),
+          'gearcrafting',
+        ),
+        craftedAt(
+          createMockGear('diamond_boots', 'Diamond Boots', 30, 'hp'),
+          'gearcrafting',
+        ),
+      ]);
+
+      await combatObjective().run();
+
+      expect(wishlistedItems()).toEqual([]);
+    });
+
+    it('equips gear beyond the fleet crafting level if it already has it', async () => {
+      // The gate is about what is worth requesting; something already in hand
+      // is worth wearing however it was come by
+      mockCharacter.highestGearcraftingLevel = 1;
+      bootsOnlyFleet([
+        craftedAt(
+          createMockGear('diamond_boots', 'Diamond Boots', 30, 'hp'),
+          'gearcrafting',
+        ),
+      ]);
+      mockCharacter.addItemToInventory('diamond_boots', 1);
+
+      await combatObjective().run();
+
+      expect(mockCharacter.equipNow).toHaveBeenCalledWith(
+        'diamond_boots',
+        'boots',
+      );
+      expect(wishlistedItems()).toEqual([]);
     });
   });
 

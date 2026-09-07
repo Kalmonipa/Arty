@@ -448,6 +448,22 @@ export function getHighestWeaponcraftingLevel(
   ).weaponcrafting_level;
 }
 
+export function getHighestGearcraftingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.gearcrafting_level > curr.gearcrafting_level ? prev : curr,
+  ).gearcrafting_level;
+}
+
+export function getHighestJewelrycraftingLevel(
+  allCharacterDetails: CharacterSchema[],
+): number {
+  return allCharacterDetails.reduce((prev, curr) =>
+    prev.jewelrycrafting_level > curr.jewelrycrafting_level ? prev : curr,
+  ).jewelrycrafting_level;
+}
+
 /**
  * The fields a fleet snapshot fills in. Kept structural so utils doesn't have to
  * import Character, which imports utils.
@@ -461,6 +477,8 @@ type FleetSnapshotTarget = {
   lowestMiningLevel?: number;
   lowestWoodcuttingLevel?: number;
   highestWeaponcraftingLevel?: number;
+  highestGearcraftingLevel?: number;
+  highestJewelrycraftingLevel?: number;
 };
 
 /**
@@ -490,4 +508,8 @@ export function applyFleetSnapshot(
     getLowestWoodcuttingLevel(allCharacterDetails);
   character.highestWeaponcraftingLevel =
     getHighestWeaponcraftingLevel(allCharacterDetails);
+  character.highestGearcraftingLevel =
+    getHighestGearcraftingLevel(allCharacterDetails);
+  character.highestJewelrycraftingLevel =
+    getHighestJewelrycraftingLevel(allCharacterDetails);
 }

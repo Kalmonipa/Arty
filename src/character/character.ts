@@ -317,7 +317,8 @@ export class Character {
    */
   lastEventCheckTimestamp: number = Math.round(Date.now() / 1000) - 300;
 
-  lastRaidCheckTimestamp: number = Math.round(Date.now() / 1000) - RaidCheckIntervalSeconds;
+  lastRaidCheckTimestamp: number =
+    Math.round(Date.now() / 1000) - RaidCheckIntervalSeconds;
 
   /**
    * Raids written off for the rest of their window, by code, against the epoch
@@ -366,6 +367,14 @@ export class Character {
    * weaponcrafting, so this caps how good a tool any character can be given
    */
   highestWeaponcraftingLevel: number;
+  /**
+   * The best gearcrafting level in the village
+   */
+  highestGearcraftingLevel: number;
+  /**
+   * The best jewelrycrafting level in the village
+   */
+  highestJewelrycraftingLevel: number;
 
   hasVoidStonePickaxe: boolean = false;
   hasRune: boolean = false;
@@ -848,7 +857,10 @@ export class Character {
           );
           break;
         case 'RaidLeaderObjective':
-          job = new RaidLeaderObjective(this, specificData.target as RaidTarget);
+          job = new RaidLeaderObjective(
+            this,
+            specificData.target as RaidTarget,
+          );
           break;
         case 'RaidParticipantObjective':
           job = new RaidParticipantObjective(

@@ -43,8 +43,11 @@ import {
   BoostResEarth,
   BoostResFire,
   BoostResWater,
+  Gearcrafting,
+  Jewelrycrafting,
   Restore,
   SplashRestore,
+  Weaponcrafting,
 } from '../names.js';
 import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
 import { EvaluateGearParams } from './evaluateGear.types.js';
@@ -1003,15 +1006,47 @@ export class EvaluateGearObjective extends Objective {
   }
 
   /**
-   * @description Iterates through all the gear within 10 levels of the character to find the one that suits best
-   * @todo Make this work better. I've commented out the code that finds the best weapon because it wasn't working
-   * as well as I'd like. Now it just gets the first, highest level weapon we have in inventory or bank and sets that
-   * as the best, regardless of target mob strengths/weaknesses.
-   * @param gearMap
-   * @param targetEffect
-   * @param charLevel
-   * @returns
+   * @description Whether anybody in the fleet can craft this item yet.
+   *
+   * We only want to wishlist gear that can actually be crafted. If the
+   * gear level is above our crafting level then we should request the next
+   * best craftable item.
+   * @returns true if the gear is above the fleet's crafting level, false otherwise
    */
+  private beyondFleetCrafting(candidate: ItemSchema): boolean {
+    const craft = candidate.craft;
+    if (!craft?.skill) return false;
+
+    let fleetLevel: number | undefined;
+    switch (craft.skill) {
+      case Weaponcrafting:
+        fleetLevel = this.character.highestWeaponcraftingLevel;
+        break;
+      case Gearcrafting:
+        fleetLevel = this.character.highestGearcraftingLevel;
+        break;
+      case Jewelrycrafting:
+        fleetLevel = this.character.highestJewelrycraftingLevel;
+        break;
+    }
+
+    if (fleetLevel === undefined) {
+      logger.warn(
+        `No fleet ${craft.skill} level to judge ${candidate.code} against; requesting it anyway`,
+      );
+      return false;
+    }
+
+    if (craft.level > fleetLevel) {
+      logger.debug(
+        `Skipping ${candidate.code}: needs ${craft.skill} ${craft.level}, fleet best is ${fleetLevel}`,
+      );
+      return true;
+    }
+
+    return false;
+  }
+
   /**
    * @description Walks candidates in preference order and takes the first one
    * the character can actually lay hands on, wishlisting at most one of the
@@ -1048,6 +1083,9 @@ export class EvaluateGearObjective extends Objective {
       }
 
       if (!wishlistRequested) {
+        if (this.beyondFleetCrafting(candidate)) {
+          continue;
+        }
         logger.info(
           `Requesting ${candidate.code} from wishlist for ${gearSlot}`,
         );

@@ -79,6 +79,27 @@ export const Utility1Slot = 'utility1_slot';
 export const Utility2Slot = 'utility2_slot';
 
 /**
+ * Equipment Types
+ */
+export const Amulet = 'amulet';
+export const Artifact = 'artifact';
+export const Bag = 'bag';
+export const BodyArmor = 'body_armor';
+export const Boots = 'boots';
+export const Helmet = 'helmet';
+export const LegArmor = 'leg_armor';
+export const Ring = 'ring';
+export const Rune = 'rune';
+export const Shield = 'shield';
+export const Utility = 'utility';
+export const Weapon = 'weapon';
+
+/**
+ * Equipment Subtypes
+ */
+export const Potion = 'potion';
+
+/**
  * Skills
  */
 export const Alchemy = 'alchemy';
