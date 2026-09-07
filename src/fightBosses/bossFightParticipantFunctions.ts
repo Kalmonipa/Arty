@@ -7,6 +7,8 @@ import {
   BossFightRole,
   BossFightUnready,
   ParticipantStatus,
+  RaidReason,
+  registerBossFightParticipantParams,
 } from './bossFight.types.js';
 
 /**
@@ -21,10 +23,11 @@ import {
  * @returns
  */
 export async function registerBossFightParticipant(
-  bossFightId: number,
-  participant: BossFightParticipant,
+  params: registerBossFightParticipantParams,
 ): Promise<boolean> {
   try {
+    const reason = params.isRaid ? RaidReason : 'boss fight';
+
     const result = await db.query<{ fight_id: number }>(
       `
       INSERT INTO boss_fight_participants (
@@ -34,20 +37,20 @@ export async function registerBossFightParticipant(
       RETURNING fight_id;
       `,
       [
-        bossFightId,
-        participant.characterName,
-        participant.role,
+        params.bossFightId,
+        params.participant.characterName,
+        params.participant.role,
         BossFightUnready,
-        'boss fight',
+        reason,
       ],
     );
     logger.info(
-      `Registered boss fight ${result.rows[0].fight_id} for ${participant.characterName}`,
+      `Registered boss fight ${result.rows[0].fight_id} for ${params.participant.characterName}`,
     );
     return true;
   } catch (err) {
     logger.error(
-      `Failed to register ${participant.characterName} for boss fight: ${err}`,
+      `Failed to register ${params.participant.characterName} for boss fight: ${err}`,
     );
     return false;
   }
@@ -164,9 +167,13 @@ export async function checkEnlistments(
   participant: string,
 ): Promise<BossFightEnlistment | undefined> {
   try {
-    const result = await db.query<{ fight_id: number; role: BossFightRole }>(
+    const result = await db.query<{
+      fight_id: number;
+      role: BossFightRole;
+      reason: string | null;
+    }>(
       `
-      SELECT p.fight_id, p.role
+      SELECT p.fight_id, p.role, p.reason
       FROM boss_fight_participants p
       JOIN boss_fights f ON f.id = p.fight_id
       WHERE p.character_name = $1
@@ -185,10 +192,16 @@ export async function checkEnlistments(
       return undefined;
     }
 
+    const isRaid = enlistment.reason === RaidReason;
+
     logger.info(
-      `${participant} is enlisted for fight #${enlistment.fight_id} as ${enlistment.role}`,
+      `${participant} is enlisted for ${isRaid ? 'raid' : 'fight'} #${enlistment.fight_id} as ${enlistment.role}`,
     );
-    return { fightId: enlistment.fight_id, role: enlistment.role };
+    return {
+      fightId: enlistment.fight_id,
+      role: enlistment.role,
+      isRaid,
+    };
   } catch (err) {
     logger.error(`Failed to get enlistments: ${err}`);
     return undefined;

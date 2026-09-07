@@ -10,6 +10,9 @@ import {
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
 
+/** Percentage of simulated fights that have to be wins before committing */
+const DefaultWinRateThreshold = 80;
+
 /**
  * @description Simulates fights against the target mob using the ArtifactsMMO provided fight sim
  * @returns true if the sim was a win, false if it was a loss
@@ -18,6 +21,7 @@ export class FightSimulator extends Objective {
   mockCharacters: FakeCharacterSchema[];
   targetMobCode: string;
   iterations: number;
+  winRateThreshold: number;
   /** Average turns across the winning simulations; 0 if none were won */
   averageTurns: number = 0;
   /** Percentage of simulations won */
@@ -28,12 +32,14 @@ export class FightSimulator extends Objective {
     mockCharacters: FakeCharacterSchema[],
     targetMobCode: string,
     iterations?: number,
+    options?: { winRateThreshold?: number },
   ) {
     super(character, `fight_sim_${targetMobCode}`, 'not_started');
     this.jobFlavour = 'FightSimulator';
     this.mockCharacters = mockCharacters;
     this.targetMobCode = targetMobCode;
     this.iterations = iterations ?? 10;
+    this.winRateThreshold = options?.winRateThreshold ?? DefaultWinRateThreshold;
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
@@ -72,7 +78,7 @@ export class FightSimulator extends Objective {
       `Fight sim showed a ${fightSimResponse.data.winrate}% win rate (${fightSimResponse.data.wins}/${this.iterations}) with ${averageTurns} avg turns per fight`,
     );
 
-    if (fightSimResponse.data.winrate >= 80) {
+    if (fightSimResponse.data.winrate >= this.winRateThreshold) {
       return ObjectiveCompleted;
     } else {
       return ObjectiveFailed;

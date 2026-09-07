@@ -114,6 +114,10 @@ class MockCharacter {
     if (!this.itemsToKeep.includes(code)) this.itemsToKeep.push(code);
   });
 
+  checkForRaidWindow = jest.fn((): boolean => {
+    return true;
+  });
+
   checkForBossFightParticipation = jest.fn((): boolean => {
     return false;
   });

@@ -204,6 +204,10 @@ class SimpleMockCharacter {
     // Mock implementation
   });
 
+  checkForRaidWindow = jest.fn(async (): Promise<void> => {
+    return undefined;
+  });
+
   checkForBossFightParticipation = jest.fn(async (): Promise<void> => {
     // Not enlisted in a boss fight
   });

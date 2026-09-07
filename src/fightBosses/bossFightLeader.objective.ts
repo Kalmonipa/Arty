@@ -101,7 +101,12 @@ export class FightBossLeaderObjective extends Objective {
     const participants = BossFightRoster;
 
     for (const participant of participants) {
-      if (!(await registerBossFightParticipant(fightId, participant))) {
+      if (
+        !(await registerBossFightParticipant({
+          bossFightId: fightId,
+          participant,
+        }))
+      ) {
         logger.error(
           `Failed to register ${participant.characterName} as a ${participant.role}`,
         );

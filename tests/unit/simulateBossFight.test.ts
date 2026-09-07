@@ -22,6 +22,11 @@ import {
   ObjectiveFailed,
 } from '../../src/types/ObjectiveData.js';
 import { ApiError } from '../../src/core/Error.js';
+import {
+  RaidLeaderRole,
+  RaidRoster,
+  RaidWinRateThreshold,
+} from '../../src/fightRaids/raid.utils.js';
 
 const mockedMonster = getMonsterInformation as jest.MockedFunction<
   typeof getMonsterInformation
@@ -204,7 +209,7 @@ describe('simulateBossFight', () => {
     expect(result.success).toBe(true);
   });
 
-  it('reports zeroed stats when the monster cannot be looked up', async () => {
+  it('reports -1 stats when the monster cannot be looked up', async () => {
     mockedMonster.mockResolvedValue(
       new ApiError({ code: 404, message: 'not found' }) as never,
     );
@@ -215,7 +220,8 @@ describe('simulateBossFight', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.winRate).toBe(0);
+    expect(result.winRate).toBe(-1);
+    expect(result.averageTurns).toBe(-1);
     expect(result.loadouts).toEqual([]);
   });
 
@@ -225,5 +231,52 @@ describe('simulateBossFight', () => {
     const job = leader.executeJobNow.mock.calls[0][0] as FightSimulator;
     expect(job.iterations).toBe(10);
     expect(job.targetMobCode).toBe('lich');
+  });
+
+  it('gates on the ordinary win rate unless told otherwise', async () => {
+    await simulateBossFight(leader as never, { code: 'lich', quantity: 10 });
+
+    const job = leader.executeJobNow.mock.calls[0][0] as FightSimulator;
+    expect(job.winRateThreshold).toBe(80);
+  });
+});
+
+describe('simulateBossFight for a party that is not the boss roster', () => {
+  it('asks each participant for the part its own roster gives them', async () => {
+    await simulateBossFight(
+      leader as never,
+      { code: 'pixie', quantity: 1 },
+      { roster: RaidRoster },
+    );
+
+    expect(mockedLoadout).toHaveBeenNthCalledWith(1, 'BouncyBella', 'lich', 'tank');
+    expect(mockedLoadout).toHaveBeenNthCalledWith(2, 'JumpyJimmy', 'lich', 'tank');
+  });
+
+  it('takes the leader part from the caller, not from the first participant', async () => {
+    // The boss roster's first entry is the dps, so deriving the leader's part
+    // from it would gear the tank as a damage dealer
+    await simulateBossFight(
+      leader as never,
+      { code: 'pixie', quantity: 1 },
+      { roster: RaidRoster, leaderRole: RaidLeaderRole },
+    );
+
+    expect(leader.proposeCombatLoadout).toHaveBeenCalledWith(
+      'pixie',
+      undefined,
+      'tank',
+    );
+  });
+
+  it('gates the sim at the threshold it was given', async () => {
+    await simulateBossFight(
+      leader as never,
+      { code: 'pixie', quantity: 1 },
+      { winRateThreshold: RaidWinRateThreshold },
+    );
+
+    const job = leader.executeJobNow.mock.calls[0][0] as FightSimulator;
+    expect(job.winRateThreshold).toBe(50);
   });
 });

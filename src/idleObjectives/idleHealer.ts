@@ -37,6 +37,7 @@ import {
   completeTasksFarmerAchievement,
   checkAndBuyArtifacts,
   checkWishlistToFulfill,
+  fishFoodsForCharacter,
 } from './idle.utils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
 import { BankCache } from '../core/BankCache.js';
@@ -145,36 +146,24 @@ export class IdleHealerObjective extends Objective {
   private async topUpFishInBank(): Promise<boolean> {
     const minimumFoodInBank = 500;
 
-    for (const cookedFish of this.character.consumablesMap['heal'].filter(
-      (consumable) =>
-        consumable.craft?.skill === 'cooking' &&
-        consumable.craft.items.some((ingredient) =>
-          this.character.fishingDropCodes.has(ingredient.code),
-        ),
-    )) {
-      if (
-        cookedFish.craft.level <
-          this.character.getCharacterLevel(this.character.data, 'fishing') &&
-        cookedFish.craft.level <= this.character.highestCharLevel &&
-        cookedFish.craft.level >= this.character.lowestCharLevel - 9
-      ) {
-        const numInBank = await this.character.checkQuantityOfItemInBank(
-          cookedFish.code,
+    for (const cookedFish of fishFoodsForCharacter(this.character)) {
+      if (cookedFish.craft.items.length !== 1) {
+        logger.debug(
+          `${cookedFish.code} requires more than 1 ingredient. Skipping`,
         );
-        if (cookedFish.craft.items.length === 1) {
-          if (numInBank < minimumFoodInBank) {
-            const numToGather = Math.round(
-              this.character.data.inventory_max_items * 0.95,
-            );
-            const fishToGather = cookedFish.craft.items[0].code;
-            await this.character.gatherNow(numToGather, fishToGather);
-            await this.character.depositNow(numToGather, fishToGather);
-          }
-        } else {
-          logger.debug(
-            `${cookedFish.code} requires more than 1 ingredient. Skipping`,
-          );
-        }
+        continue;
+      }
+
+      const numInBank = await this.character.checkQuantityOfItemInBank(
+        cookedFish.code,
+      );
+      if (numInBank < minimumFoodInBank) {
+        const numToGather = Math.round(
+          this.character.data.inventory_max_items * 0.95,
+        );
+        const fishToGather = cookedFish.craft.items[0].code;
+        await this.character.gatherNow(numToGather, fishToGather);
+        await this.character.depositNow(numToGather, fishToGather);
       }
     }
     return true;

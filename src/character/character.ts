@@ -44,6 +44,11 @@ import * as path from 'node:path';
 import { CraftObjective } from '../core/CraftObjective.js';
 import { FightBossParticipantObjective } from '../fightBosses/bossFightParticipant.objective.js';
 import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objective.js';
+import { RaidLeaderObjective } from '../fightRaids/raidLeader.objective.js';
+import { RaidParticipantObjective } from '../fightRaids/raidParticipant.objective.js';
+import { RaidTarget } from '../fightRaids/raid.types.js';
+import { raidWindowEnd } from '../fightRaids/raid.utils.js';
+import { loadRaidSchedules } from '../api_calls/Raids.js';
 import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
 import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
@@ -117,7 +122,11 @@ import { Fishing, GourmetChef, Restore } from '../names.js';
 import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
+  DepositRetryLimit,
+  RaidCheckIntervalSeconds,
+  RaidLeaderRoleName,
   CharRole,
+  MaxRouteReplans,
   TeleportPotionStock,
   DesiredFoodCount,
   MaxEquippedUtilities,
@@ -165,13 +174,11 @@ import {
   BossFightEnlistment,
   BossFightRole,
 } from '../fightBosses/bossFight.types.js';
-
-/**
- * Outcome of a single transition step. `reroute` is true when the step failed because the
- * game reported no walkable path (595), meaning move() should try a different route rather
- * than give up.
- */
-type TransitionStepResult = { ok: boolean; reroute?: boolean };
+import {
+  PreparedRouteResult,
+  SettledRoute,
+  TransitionStepResult,
+} from './character.types.js';
 
 export class Character {
   data: CharacterSchema;
@@ -310,6 +317,15 @@ export class Character {
    */
   lastEventCheckTimestamp: number = Math.round(Date.now() / 1000) - 300;
 
+  lastRaidCheckTimestamp: number = Math.round(Date.now() / 1000) - RaidCheckIntervalSeconds;
+
+  /**
+   * Raids written off for the rest of their window, by code, against the epoch
+   * second the window shuts. In memory only: a restart is rare and re-checking
+   * costs one sim, which self-corrects if the gear has improved since.
+   */
+  raidBackoffs: Map<string, number> = new Map();
+
   /**
    * Per-event exponential backoff state. Maps event code to { failCount, nextRetryAt } where
    * nextRetryAt is a unix timestamp in seconds. Persisted in the job queue file.
@@ -421,6 +437,7 @@ export class Character {
     }
 
     this.allMaps = await AllMaps();
+    await loadRaidSchedules();
     this.navigationGraph = getNavigationGraph(this.allMaps);
 
     // Pulls all characters information so we can make judgements about equipment, potions, etc
@@ -708,6 +725,10 @@ export class Character {
       // The fight id has to survive too: without it a resumed participant can't
       // tell whether the fight it was enlisted in is still running
       return { target: job.target, role: job.role, fightId: job.fightId };
+    } else if (job instanceof RaidLeaderObjective) {
+      return { target: job.target };
+    } else if (job instanceof RaidParticipantObjective) {
+      return { target: job.target, role: job.role, fightId: job.fightId };
     } else if (job instanceof DepositObjective) {
       return { target: job.target };
     } else if (job instanceof WithdrawObjective) {
@@ -822,6 +843,17 @@ export class Character {
           job = new FightBossParticipantObjective(
             this,
             specificData.target as ObjectiveTargets,
+            specificData.role as BossFightRole,
+            specificData.fightId as number,
+          );
+          break;
+        case 'RaidLeaderObjective':
+          job = new RaidLeaderObjective(this, specificData.target as RaidTarget);
+          break;
+        case 'RaidParticipantObjective':
+          job = new RaidParticipantObjective(
+            this,
+            specificData.target as RaidTarget,
             specificData.role as BossFightRole,
             specificData.fightId as number,
           );
@@ -1135,6 +1167,19 @@ export class Character {
       return false;
     }
 
+    if (
+      job instanceof CraftObjective &&
+      this.hasParkedCraftFor(job.target.code)
+    ) {
+      logger.warn(
+        `A craft for ${job.target.code} is already on hold; not parking ${job.objectiveId}`,
+      );
+      // Same reasoning as the full-queue path: nothing will consume the requests
+      // this copy raised, and the parked twin is already waiting on its own
+      await deleteWishlistRequestsForJob(this.data.name, job.objectiveId);
+      return false;
+    }
+
     const waitingOn = await getWishlistRequestsForJob(
       this.data.name,
       job.objectiveId,
@@ -1185,6 +1230,23 @@ export class Character {
     // No other job can be waiting on these: a request belongs to one job
     await deleteWishlistRequestsForJob(this.data.name, entry.job.objectiveId);
     await this.saveJobQueue();
+  }
+
+  /**
+   * @description Whether a craft for this item is already parked on the onHold
+   * queue.
+   *
+   * Matched on the serialized target rather than the objectiveId: ids overlap as
+   * substrings, so 'craft_1_mithril_pickaxe_4a75' would report mithril_axe as
+   * parked. Quantity is ignored — two parked crafts each raise their own
+   * wishlist request against the same ingredient whatever their order size.
+   */
+  hasParkedCraftFor(itemCode: string): boolean {
+    return this.onHold.some(
+      (entry) =>
+        entry.job.type === 'CraftObjective' &&
+        (entry.job.target as ObjectiveTargets | undefined)?.code === itemCode,
+    );
   }
 
   /**
@@ -1316,6 +1378,78 @@ export class Character {
   /********
    * Character activity functions
    ********/
+
+  /**
+   * @description Leads a raid if one is open. Only the crafter does this: it is
+   * the party leader, and the other characters are called up by it rather than
+   * finding the raid for themselves.
+   *
+   * Any failure writes the raid off until its window shuts. The sim refusing is
+   * the expected one, but a raid that cannot be geared for or fought is no more
+   * worth retrying every few minutes for the next twelve hours.
+   */
+  async checkForRaidWindow(): Promise<ObjectiveResult> {
+    if (this.role !== RaidLeaderRoleName) {
+      return ObjectiveFailed;
+    }
+
+    // Strictly greater, so the first check after a restart runs rather than
+    // waiting out an interval it never spent
+    const currentTimestamp = Math.round(Date.now() / 1000);
+    if (
+      this.lastRaidCheckTimestamp + RaidCheckIntervalSeconds >
+      currentTimestamp
+    ) {
+      return ObjectiveFailed;
+    }
+
+    for (const job of this.jobList) {
+      if (job instanceof RaidLeaderObjective) {
+        logger.info(
+          `Raid job ${job.objectiveId} already in queue. Not starting another`,
+        );
+        this.lastRaidCheckTimestamp = currentTimestamp;
+        return ObjectiveFailed;
+      }
+    }
+
+    this.lastRaidCheckTimestamp = currentTimestamp;
+
+    for (const raid of await loadRaidSchedules()) {
+      const windowEnd = raidWindowEnd(raid.schedule);
+      if (!windowEnd) continue;
+
+      const writtenOffUntil = this.raidBackoffs.get(raid.code);
+      if (writtenOffUntil && currentTimestamp < writtenOffUntil) {
+        logger.debug(
+          `Raid ${raid.code} was written off until ${writtenOffUntil}. Skipping`,
+        );
+        continue;
+      }
+
+      logger.info(
+        `Raid ${raid.code} is open until ${windowEnd.toISOString()}. Leading it`,
+      );
+      const result = await this.executeJobNow(
+        new RaidLeaderObjective(this, { code: raid.code }),
+        true,
+        true,
+      );
+
+      if (!result.success) {
+        const until = Math.round(windowEnd.getTime() / 1000);
+        this.raidBackoffs.set(raid.code, until);
+        logger.warn(
+          `Raid ${raid.code} did not go ahead. Leaving it until ${windowEnd.toISOString()}`,
+        );
+        continue;
+      }
+
+      return ObjectiveCompleted;
+    }
+
+    return ObjectiveFailed;
+  }
 
   /**
    * @description Checks if there are any active jobs and creates an EventObjective to do it
@@ -1467,9 +1601,12 @@ export class Character {
     // This for loop avoids creating an infinite loop
     for (const job of this.jobList) {
       logger.debug(`Checking Job ${job.objectiveId}`);
-      if (job instanceof FightBossParticipantObjective) {
+      if (
+        job instanceof FightBossParticipantObjective ||
+        job instanceof RaidParticipantObjective
+      ) {
         logger.info(
-          `Boss fight job ${job.objectiveId} already in queue. Not starting a new boss fight`,
+          `Participant job ${job.objectiveId} already in queue. Not joining another`,
         );
 
         return ObjectiveFailed;
@@ -1482,21 +1619,27 @@ export class Character {
       return ObjectiveFailed;
     }
 
-    const { fightId, role } = enlistment;
-    logger.info(`Found boss fight #${fightId}. Retrieving data`);
+    const { fightId, role, isRaid } = enlistment;
+    logger.info(
+      `Found ${isRaid ? 'raid' : 'boss fight'} #${fightId}. Retrieving data`,
+    );
     const targetData = await getBossFightTarget(fightId);
     if (!targetData) {
-      logger.warn(`No target data for boss fight #${fightId}. Skipping`);
+      logger.warn(`No target data for fight #${fightId}. Skipping`);
       return ObjectiveFailed;
     }
 
-    const bossFightJob = new FightBossParticipantObjective(
-      this,
-      targetData,
-      role,
-      fightId,
-    );
-    await this.executeJobNow(bossFightJob, true, true);
+    // A raid has no quantity, so only the code carries over
+    const participantJob = isRaid
+      ? new RaidParticipantObjective(
+          this,
+          { code: targetData.code },
+          role,
+          fightId,
+        )
+      : new FightBossParticipantObjective(this, targetData, role, fightId);
+
+    await this.executeJobNow(participantJob, true, true);
     return ObjectiveCompleted;
   }
 
@@ -2072,15 +2215,12 @@ export class Character {
    *
    * Deliberately never crafts health potions. If some are available, use them
    * otherwise fight without
-   *
-   * @returns a boolean stating whether we need to move back to our original location
    */
   async equipUtility(
     utilityType: UtilityEffects,
     slot: ItemSlot,
     forBossFight = false,
   ): Promise<ObjectiveResult> {
-    const utility = this.utilitiesMap[utilityType];
     const charLevel = this.getCharacterLevel(this.data);
     const minPotionLevel = utilityType === Restore ? charLevel - 20 : 0;
 
@@ -2096,43 +2236,124 @@ export class Character {
       forBossFight,
     );
 
-    for (const potion of [...utility].reverse()) {
-      logger.debug(`Evaluating ${potion.code}`);
-      if (potion.level <= charLevel && potion.level >= minPotionLevel) {
-        let numNeeded: number;
-        if (slot === 'utility1') {
-          numNeeded = MaxEquippedUtilities - this.data.utility1_slot_quantity;
-        } else {
-          numNeeded = MaxEquippedUtilities - this.data.utility2_slot_quantity;
-        }
+    const chosen = this.bestReachableUtility(
+      utilityType,
+      charLevel,
+      minPotionLevel,
+      bankContents,
+      spareInBank,
+    );
+    if (!chosen) {
+      logger.debug(`No ${utilityType} potion is reachable`);
+      return ObjectiveFailed;
+    }
 
-        const numInInv = this.checkQuantityOfItemInInv(potion.code);
+    // Anything of another code in the slot is displaced by the first equip, so
+    // only a stack of the chosen potion counts toward the target
+    const alreadyEquipped =
+      this.getCharacterGearIn(slot) === chosen.potion.code
+        ? this.quantityEquippedIn(slot)
+        : 0;
+    let numNeeded = MaxEquippedUtilities - alreadyEquipped;
 
-        logger.debug(`Attempting to equip ${potion.name}`);
-        if (numInInv >= numNeeded) {
-          logger.debug(`Carrying ${numInInv} in inv. Equipping them`);
-          return await this.equipNow(potion.code, slot, numNeeded);
-        } else if (numInInv > 0 && numInInv < numNeeded) {
-          logger.debug(
-            `Carrying ${numInInv} in inv. Equipping them and checking bank`,
-          );
-          await this.equipNow(potion.code, slot, numInInv);
-          numNeeded = numNeeded - numInInv;
-          logger.debug(`${numNeeded} needed from the bank`);
-        }
-        const canTake = Math.min(
-          bankContents.quantityOf(potion.code),
-          spareInBank,
-        );
-        if (canTake > 0) {
-          const toWithdraw = Math.min(canTake, numNeeded);
-          await this.withdrawNow(toWithdraw, potion.code);
-          return await this.equipNow(potion.code, slot, toWithdraw);
-        }
-        logger.debug(`Can't find any ${potion.name}. Trying next best option`);
+    logger.debug(`Attempting to equip ${chosen.potion.name}`);
+
+    const fromInventory = Math.min(chosen.inInventory, numNeeded);
+    if (fromInventory > 0) {
+      logger.debug(`Carrying ${chosen.inInventory} in inv. Equipping them`);
+      const equipped = await this.equipNow(
+        chosen.potion.code,
+        slot,
+        fromInventory,
+      );
+      if (!equipped.success) {
+        return equipped;
+      }
+      numNeeded -= fromInventory;
+    }
+
+    const fromBank = Math.min(chosen.inBank, numNeeded);
+    if (fromBank > 0) {
+      logger.debug(`${fromBank} needed from the bank`);
+      await this.withdrawNow(fromBank, chosen.potion.code);
+      const equipped = await this.equipNow(chosen.potion.code, slot, fromBank);
+      if (!equipped.success) {
+        return equipped;
       }
     }
-    return ObjectiveFailed;
+
+    const carrying = this.quantityEquippedIn(slot);
+    if (carrying < MinEquippedUtilities) {
+      logger.debug(
+        `Only ${carrying} ${chosen.potion.name} available, fewer than the ${MinEquippedUtilities} worth carrying`,
+      );
+      return ObjectiveFailed;
+    }
+
+    logger.debug(`Carrying ${carrying} ${chosen.potion.name} in ${slot}`);
+    return ObjectiveCompleted;
+  }
+
+  /**
+   * @description The tier to commit the slot to: the highest usable one that
+   * can field a worthwhile stack, or failing that whichever reaches furthest.
+   *
+   * Counts the inventory and the reachable part of the bank together, since a
+   * tier that is short in one may be covered by the other.
+   */
+  private bestReachableUtility(
+    utilityType: UtilityEffects,
+    charLevel: number,
+    minPotionLevel: number,
+    bankContents: BankCache,
+    spareInBank: number,
+  ): { potion: ItemSchema; inInventory: number; inBank: number } | undefined {
+    let best:
+      | { potion: ItemSchema; inInventory: number; inBank: number }
+      | undefined;
+
+    for (const potion of [...this.utilitiesMap[utilityType]].reverse()) {
+      logger.debug(`Evaluating ${potion.code}`);
+      if (potion.level > charLevel || potion.level < minPotionLevel) {
+        continue;
+      }
+
+      const inInventory = this.checkQuantityOfItemInInv(potion.code);
+      const inBank = Math.min(
+        bankContents.quantityOf(potion.code),
+        spareInBank,
+      );
+      const reachable = inInventory + inBank;
+      if (reachable === 0) {
+        logger.debug(`Can't find any ${potion.name}. Trying next best option`);
+        continue;
+      }
+
+      if (!best || reachable > best.inInventory + best.inBank) {
+        best = { potion, inInventory, inBank };
+      }
+
+      // Tiers run best first, so the first one that fields a worthwhile stack
+      // beats anything weaker that might field more
+      if (reachable >= MinEquippedUtilities) {
+        break;
+      }
+      logger.debug(
+        `Only ${reachable} ${potion.name} reachable. Trying next best option`,
+      );
+    }
+
+    return best;
+  }
+
+  /**
+   * @description How many of whatever is in the given utility slot the
+   * character is carrying.
+   */
+  private quantityEquippedIn(slot: ItemSlot): number {
+    return slot === 'utility1'
+      ? this.data.utility1_slot_quantity
+      : this.data.utility2_slot_quantity;
   }
 
   /**
@@ -2372,6 +2593,7 @@ export class Character {
    * @param priorLocation If we move to the bank to deposit, we move back to these coordinates to continue activities
    * @param makeSpaceForOtherItems If we need to make space but not above the 90% threshold, this will empty our inv
    * except for the items we're keeping
+   * @param attempt Which try this is, counting from 1. Set by the retry itself
    * @returns {boolean}
    *  - true means bank was visited and items deposited
    *  - false means nothing happened
@@ -2380,6 +2602,7 @@ export class Character {
     itemsToKeep?: string[],
     priorLocation?: MapSchema,
     makeSpaceForOtherItems?: boolean,
+    attempt: number = 1,
   ): Promise<boolean> {
     const usedInventorySpace = this.getInventoryFullness();
     // We may have handed in the items to the task master so we now have space
@@ -2455,8 +2678,24 @@ export class Character {
       const response = await actionDepositItems(this.data, itemsToDeposit);
 
       if (response instanceof ApiError) {
-        this.handleErrors(response);
-        await this.evaluateDepositItemsInBank(itemsToKeep, priorLocation);
+        // handleErrors answers whether a retry can succeed. A full bank says no,
+        // and ignoring that answer is what turned one full bank into ~4,000
+        // deposits an hour and starved every character on the host of API budget.
+        if (!(await this.handleErrors(response))) {
+          return false;
+        }
+        if (attempt >= DepositRetryLimit) {
+          logger.warn(
+            `Deposit failed ${attempt} times; carrying the inventory instead`,
+          );
+          return false;
+        }
+        return await this.evaluateDepositItemsInBank(
+          itemsToKeep,
+          priorLocation,
+          makeSpaceForOtherItems,
+          attempt + 1,
+        );
       } else {
         if (response.data.character) {
           this.data = response.data.character;
@@ -2792,8 +3031,10 @@ export class Character {
    */
   async move(destination: MapSchema): Promise<boolean> {
     if (
-      (this.data.x === destination.x && this.data.y === destination.y) ||
-      this.data.map_id === destination.map_id
+      this.data.map_id === destination.map_id ||
+      (this.data.x === destination.x &&
+        this.data.y === destination.y &&
+        this.data.layer === destination.layer)
     ) {
       return true;
     }
@@ -2877,9 +3118,26 @@ export class Character {
         return false;
       }
 
+      // Pay for every gate on the route before walking any of it. Drawing a key or a
+      // toll walks to the bank, which would otherwise strand the character mid-route on
+      // the wrong layer, so the route is re-planned from wherever the bank trip finished.
+      const settled = await this.settleRoute(
+        transitionPath,
+        destination,
+        excludedTransitionIds,
+      );
+      if (!settled.ok) {
+        if (settled.blockedTransitionId === null) return false;
+        blockedTransitionIds.add(settled.blockedTransitionId);
+        logger.warn(
+          `Could not meet the requirements of transition ${settled.blockedTransitionId}; rerouting to ${destination.name} (attempt ${attempt + 1}/${MAX_REROUTES})`,
+        );
+        continue;
+      }
+
       let blockedTransitionId: number | null = null;
       let stepFailed = false;
-      for (const transitionPoint of transitionPath) {
+      for (const transitionPoint of settled.path) {
         const result = await this.performTransitionStep(transitionPoint);
         if (!result.ok) {
           stepFailed = true;
@@ -2902,16 +3160,14 @@ export class Character {
       );
 
       const moveResponse = await actionMove(this.data, {
-        x: destination.x,
-        y: destination.y,
+        map_id: destination.map_id,
       });
 
       if (moveResponse instanceof ApiError) {
         // The final hop can also be blocked (595) when the last transition landed us in a region
         // not connected to the destination. Exclude that transition and try another route.
-        if (moveResponse.error.code === 595 && transitionPath.length > 0) {
-          const lastTransitionId =
-            transitionPath[transitionPath.length - 1].map_id;
+        if (moveResponse.error.code === 595 && settled.path.length > 0) {
+          const lastTransitionId = settled.path[settled.path.length - 1].map_id;
           blockedTransitionIds.add(lastTransitionId);
           logger.warn(
             `No path from landing point to ${destination.name} [Code: 595]; rerouting (attempt ${attempt + 1}/${MAX_REROUTES})`,
@@ -3004,13 +3260,12 @@ export class Character {
       `Moving to transition point at (${transitionPoint.x}, ${transitionPoint.y}, ${transitionPoint.layer})`,
     );
 
-    if (
-      this.data.x !== transitionPoint.x ||
-      this.data.y !== transitionPoint.y
-    ) {
+    // By map_id, not coordinates: every tile exists on all three layers, so an x/y move
+    // walks to whichever one the character is standing on and silently arrives at a map
+    // with no transition to take.
+    if (this.data.map_id !== transitionPoint.map_id) {
       const moveResponse = await actionMove(this.data, {
-        x: transitionPoint.x,
-        y: transitionPoint.y,
+        map_id: transitionPoint.map_id,
       });
       if (moveResponse instanceof ApiError) {
         // 595 = the game found no walkable path to this transition tile. Signal a reroute so
@@ -3851,6 +4106,133 @@ export class Character {
         // /transition API enforce it.
         return true;
     }
+  }
+
+  /**
+   * @description Draws everything the whole route costs out of the bank before a single
+   * step of it is walked, and reports whether doing so moved the character.
+   */
+  private async prepareRouteRequirements(
+    path: MapSchema[],
+  ): Promise<PreparedRouteResult> {
+    const costs = new Map<string, number>();
+    const holds = new Map<string, number>();
+
+    for (const transitionPoint of path) {
+      const conditions = transitionPoint.interactions.transition?.conditions;
+      if (!conditions) continue;
+      for (const condition of conditions) {
+        const required = condition.value || 1;
+        switch (condition.operator) {
+          case ConditionOperator.achievement_unlocked:
+            if (
+              !this.completedAchievements.some(
+                (achievement) => achievement.code === condition.code,
+              )
+            ) {
+              return {
+                ok: false,
+                moved: false,
+                blockedTransitionId: transitionPoint.map_id,
+              };
+            }
+            break;
+          case ConditionOperator.cost:
+            costs.set(
+              condition.code,
+              (costs.get(condition.code) ?? 0) + required,
+            );
+            break;
+          case ConditionOperator.has_item:
+            holds.set(
+              condition.code,
+              Math.max(holds.get(condition.code) ?? 0, required),
+            );
+            break;
+          default:
+            // eq/ne/gt/lt and anything unmodelled: nothing to draw, the API enforces it.
+            break;
+        }
+      }
+    }
+
+    // A has_item gate still has to be satisfied once every cost along the route has been
+    // paid, so the two stack rather than overlap.
+    const totals = new Map(costs);
+    for (const [code, quantity] of holds) {
+      if (this.getEquippedSlot(code)) continue;
+      totals.set(code, (totals.get(code) ?? 0) + quantity);
+    }
+
+    const startedAtMapId = this.data.map_id;
+    for (const [code, quantity] of totals) {
+      const onHand =
+        code === 'gold' ? this.data.gold : this.checkQuantityOfItemInInv(code);
+      const shortfall = quantity - onHand;
+      if (shortfall <= 0) continue;
+
+      logger.info(
+        `Drawing ${shortfall} ${code} for the route before setting off`,
+      );
+      if (!(await this.withdrawNow(shortfall, code)).success) {
+        logger.warn(`Could not draw ${shortfall} ${code} for the route`);
+        const gate = path.find((transitionPoint) =>
+          transitionPoint.interactions.transition?.conditions?.some(
+            (condition) => condition.code === code,
+          ),
+        );
+        return {
+          ok: false,
+          moved: this.data.map_id !== startedAtMapId,
+          blockedTransitionId: gate?.map_id ?? null,
+        };
+      }
+    }
+
+    return { ok: true, moved: this.data.map_id !== startedAtMapId };
+  }
+
+  /**
+   * @description Pays for every gate on a route and returns a route that starts from where
+   * the character ends up, so the walk that follows is uninterrupted by bank trips.
+   */
+  private async settleRoute(
+    initialPath: MapSchema[],
+    destination: MapSchema,
+    excludedTransitionIds: Set<number>,
+  ): Promise<SettledRoute> {
+    let path = initialPath;
+
+    for (let replan = 0; replan <= MaxRouteReplans; replan++) {
+      const prepared = await this.prepareRouteRequirements(path);
+      if (!prepared.ok) {
+        return {
+          ok: false,
+          path: [],
+          blockedTransitionId: prepared.blockedTransitionId ?? null,
+        };
+      }
+      if (!prepared.moved) return { ok: true, path };
+
+      const replanned = buildTransitionPath(
+        this.data.map_id,
+        destination,
+        this.navigationGraph,
+        excludedTransitionIds,
+      );
+      if (replanned === null) {
+        logger.error(
+          `No route to ${destination.name} from (${this.data.x}, ${this.data.y}, ${this.data.layer}) after drawing the route's requirements`,
+        );
+        return { ok: false, path: [], blockedTransitionId: null };
+      }
+      path = replanned;
+    }
+
+    logger.warn(
+      `Route to ${destination.name} kept shifting while drawing its requirements; walking the latest one`,
+    );
+    return { ok: true, path };
   }
 
   /**

@@ -85,7 +85,12 @@ export const BossFightRoster: BossFightParticipant[] = [
 export type BossFightEnlistment = {
   fightId: number;
   role: BossFightRole;
+  /** Raids and boss fights share these tables but not their participant loop */
+  isRaid: boolean;
 };
+
+/** What the reason column holds for a raid participant */
+export const RaidReason = 'raid';
 
 /**
  * @description The verdict on a boss fight plus the numbers behind it. A bare
@@ -99,4 +104,10 @@ export type BossFightSimResult = ObjectiveResult & {
   averageTurns: number;
   /** The loadouts the fight was simulated with, leader first */
   loadouts: FakeCharacterSchema[];
+};
+
+export type registerBossFightParticipantParams = {
+  bossFightId: number;
+  participant: BossFightParticipant;
+  isRaid?: boolean;
 };

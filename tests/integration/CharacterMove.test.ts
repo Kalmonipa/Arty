@@ -169,8 +169,7 @@ describe('Character.move()', () => {
       expect(result).toBe(true);
       expect(mockActionMove).toHaveBeenCalledTimes(1);
       expect(mockActionMove).toHaveBeenCalledWith(mockCharacter, {
-        x: destination.x,
-        y: destination.y,
+        map_id: destination.map_id,
       });
       expect(mockActionTransition).not.toHaveBeenCalled();
       expect(character.data.x).toBe(10);
@@ -412,20 +411,14 @@ describe('Character.move()', () => {
           y: 0,
           layer: 'overworld',
         }),
-        {
-          x: transitionLocation.x,
-          y: transitionLocation.y,
-        },
+        { map_id: transitionLocation.map_id },
       );
       expect(mockActionMove).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
           layer: 'underground',
         }),
-        {
-          x: destination.x,
-          y: destination.y,
-        },
+        { map_id: destination.map_id },
       );
       expect(mockActionTransition).toHaveBeenCalledTimes(1);
       expect(character.data.layer).toBe('underground');
@@ -583,7 +576,7 @@ describe('Character.move()', () => {
       expect(mockActionMove).toHaveBeenCalledTimes(1);
       expect(mockActionMove).toHaveBeenCalledWith(
         expect.objectContaining({ x: -3, y: 12, layer: 'overworld' }),
-        { x: destination.x, y: destination.y },
+        { map_id: destination.map_id },
       );
       expect(mockActionTransition).toHaveBeenCalledTimes(1);
       expect(character.data.layer).toBe('overworld');
@@ -1350,9 +1343,329 @@ describe('Character.move()', () => {
       expect(result).toBe(true);
       // First move must target the FREE transition point (7,7), not the gated (5,5).
       expect(mockActionMove).toHaveBeenNthCalledWith(1, expect.anything(), {
-        x: 7,
-        y: 7,
+        map_id: 602,
       });
+    });
+
+    it('does not count itself as arrived when the destination shares its coordinates on another layer', async () => {
+      const surfaceTwin: MapSchema = {
+        map_id: 76,
+        name: 'Forest',
+        skin: 's',
+        x: 3,
+        y: -4,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+      const surfaceEntrance: MapSchema = {
+        map_id: 133,
+        name: 'Forest',
+        skin: 's',
+        x: 5,
+        y: -3,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 134,
+            x: 5,
+            y: -3,
+            layer: 'underground',
+            conditions: [],
+          },
+        },
+      };
+      // Directly below the twin, and the actual destination.
+      const guardMine: MapSchema = {
+        map_id: 77,
+        name: 'Mine',
+        skin: 's',
+        x: 3,
+        y: -4,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+
+      mockCharacter = {
+        ...mockCharacterData,
+        x: 3,
+        y: -4,
+        map_id: 76,
+        layer: 'overworld',
+      };
+      character = new Character(mockCharacter);
+      character.navigationGraph = makeGraph(
+        { 76: 0, 133: 0, 134: 1, 77: 1 },
+        [{ from: 0, to: 1, transitionPoint: surfaceEntrance }],
+        [surfaceTwin, guardMine],
+      );
+
+      mockActionMove
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination: surfaceEntrance,
+            path: [],
+            character: {
+              ...mockCharacter,
+              x: 5,
+              y: -3,
+              map_id: 133,
+              layer: 'overworld',
+            },
+          },
+        } as never)
+        .mockResolvedValueOnce({
+          data: {
+            cooldown: cd('movement'),
+            destination: guardMine,
+            path: [],
+            character: {
+              ...mockCharacter,
+              x: 3,
+              y: -4,
+              map_id: 77,
+              layer: 'underground',
+            },
+          },
+        } as never);
+      mockActionTransition.mockResolvedValue({
+        data: {
+          cooldown: cd('transition'),
+          destination: {
+            ...surfaceEntrance,
+            map_id: 134,
+            layer: 'underground',
+          },
+          transition: surfaceEntrance.interactions.transition,
+          character: {
+            ...mockCharacter,
+            x: 5,
+            y: -3,
+            map_id: 134,
+            layer: 'underground',
+          },
+        },
+      } as never);
+
+      const result = await character.move(guardMine);
+
+      expect(result).toBe(true);
+      expect(mockActionTransition).toHaveBeenCalledTimes(1);
+      expect(character.data.map_id).toBe(77);
+      expect(character.data.layer).toBe('underground');
+    });
+
+    // Regression (the goblin priestess run): satisfying a gate's condition walks the
+    // character to the bank, which takes it off the route that was planned from where
+    // it used to be standing. Every gate has to be settled before any of the route is
+    // walked, and the route re-planned from wherever the bank trip finished.
+    it('satisfies every gate on the route before walking it, then re-plans from the bank', async () => {
+      const start: MapSchema = {
+        map_id: 91,
+        name: 'Forest',
+        skin: 's',
+        x: 0,
+        y: 0,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+      const bank: MapSchema = {
+        map_id: 334,
+        name: 'City',
+        skin: 's',
+        x: 4,
+        y: 1,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+      const surfaceEntrance: MapSchema = {
+        map_id: 133,
+        name: 'Forest',
+        skin: 's',
+        x: 5,
+        y: -3,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 134,
+            x: 5,
+            y: -3,
+            layer: 'underground',
+            conditions: [],
+          },
+        },
+      };
+      const undergroundEntrance: MapSchema = {
+        map_id: 134,
+        name: 'Mine',
+        skin: 's',
+        x: 5,
+        y: -3,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+      const guardMine: MapSchema = {
+        map_id: 77,
+        name: 'Mine',
+        skin: 's',
+        x: 3,
+        y: -4,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {
+          transition: {
+            map_id: 71,
+            x: 1,
+            y: -4,
+            layer: 'underground',
+            conditions: [
+              { code: 'priestess_hideout_key', operator: 'cost', value: 1 },
+            ],
+          },
+        },
+      };
+      // The overworld tile sharing (3, -4) with the guard's mine. A move that names
+      // only x and y lands here instead, and it has no transition to take.
+      const surfaceTwin: MapSchema = {
+        map_id: 76,
+        name: 'Forest',
+        skin: 's',
+        x: 3,
+        y: -4,
+        layer: 'overworld',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+      const priestessMine: MapSchema = {
+        map_id: 71,
+        name: 'Mine',
+        skin: 's',
+        x: 1,
+        y: -4,
+        layer: 'underground',
+        access: { type: 'standard', conditions: [] },
+        interactions: {},
+      };
+      const world = [
+        start,
+        bank,
+        surfaceEntrance,
+        undergroundEntrance,
+        guardMine,
+        surfaceTwin,
+        priestessMine,
+      ];
+
+      mockCharacter = {
+        ...mockCharacterData,
+        x: 0,
+        y: 0,
+        map_id: 91,
+        layer: 'overworld',
+        inventory: [{ slot: 1, code: '', quantity: 0 }],
+      };
+      character = new Character(mockCharacter);
+      character.navigationGraph = makeGraph(
+        { 91: 0, 334: 0, 133: 0, 76: 0, 134: 1, 77: 1, 71: 2 },
+        [
+          { from: 0, to: 1, transitionPoint: surfaceEntrance },
+          { from: 1, to: 2, transitionPoint: guardMine },
+        ],
+        world,
+      );
+      character.computeUnsatisfiableTransitions = jest.fn(
+        async () => new Set<number>(),
+      );
+
+      const events: string[] = [];
+      character.withdrawNow = jest.fn(
+        async (quantity: number, code: string) => {
+          events.push(`withdraw:${code}`);
+          // The real WithdrawObjective walks to the bank, stranding the character on
+          // the overworld partway through an underground route.
+          character.data = {
+            ...character.data,
+            x: bank.x,
+            y: bank.y,
+            map_id: bank.map_id,
+            layer: bank.layer,
+            inventory: [{ slot: 1, code, quantity }],
+          } as CharacterSchema;
+          return ObjectiveCompleted;
+        },
+      );
+
+      const arriveAt = (map: MapSchema) =>
+        ({
+          ...character.data,
+          x: map.x,
+          y: map.y,
+          map_id: map.map_id,
+          layer: map.layer,
+        }) as CharacterSchema;
+
+      mockActionMove.mockImplementation((async (
+        _char: CharacterSchema,
+        target: { x?: number; y?: number; map_id?: number },
+      ) => {
+        const map =
+          target.map_id !== undefined
+            ? world.find((m) => m.map_id === target.map_id)
+            : world.find(
+                (m) =>
+                  m.x === target.x &&
+                  m.y === target.y &&
+                  m.layer === character.data.layer,
+              );
+        if (!map) return new ApiError({ code: 404, message: 'Map not found' });
+        events.push(`move:${map.map_id}`);
+        return {
+          data: {
+            cooldown: cd('movement'),
+            destination: map,
+            path: [],
+            character: arriveAt(map),
+          },
+        };
+      }) as never);
+
+      mockActionTransition.mockImplementation((async () => {
+        const here = world.find((m) => m.map_id === character.data.map_id);
+        const transition = here?.interactions.transition;
+        if (!transition)
+          return new ApiError({ code: 404, message: 'Map not found.' });
+        events.push(`transition:${here!.map_id}`);
+        const landing = world.find((m) => m.map_id === transition.map_id)!;
+        return {
+          data: {
+            cooldown: cd('transition'),
+            destination: landing,
+            transition,
+            character: arriveAt(landing),
+          },
+        };
+      }) as never);
+
+      const result = await character.move(priestessMine);
+
+      // The key is drawn before a single step of the route is walked, and the route
+      // that is then walked starts from the bank rather than from the original spot.
+      expect(result).toBe(true);
+      expect(events).toEqual([
+        'withdraw:priestess_hideout_key',
+        'move:133',
+        'transition:133',
+        'move:77',
+        'transition:77',
+        'move:71',
+      ]);
     });
   });
 

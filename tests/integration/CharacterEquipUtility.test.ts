@@ -10,6 +10,7 @@ import {
 import {
   BossFightPotionReserve,
   MaxEquippedUtilities,
+  MinEquippedUtilities,
 } from '../../src/constants.js';
 
 jest.mock('../../src/api_calls/Items', () => ({
@@ -130,6 +131,18 @@ describe('Character.equipUtility', () => {
         quantity?: number,
       ): Promise<ObjectiveResult> => {
         if (slot === 'utility1') {
+          // A utility slot holds a single item code: equipping a different one
+          // turns the stack already there back into inventory
+          if (
+            character.data.utility1_slot !== '' &&
+            character.data.utility1_slot !== code
+          ) {
+            addItemToInventory(
+              character.data.utility1_slot,
+              character.data.utility1_slot_quantity,
+            );
+            character.data.utility1_slot_quantity = 0;
+          }
           character.data.utility1_slot = code;
           character.data.utility1_slot_quantity =
             (character.data.utility1_slot_quantity || 0) + (quantity || 1);
@@ -270,6 +283,71 @@ describe('Character.equipUtility', () => {
     // A stale read reports nothing banked, which would look identical to a
     // reserve that is fully committed
     expect(character.withdrawNow).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+  });
+  it('keeps a usable partial stack instead of displacing it with a lower tier', async () => {
+    // The state LongLegLarry span in: a full stock sits in the bank but all of
+    // it is inside the boss reserve, so no tier can ever top the slot up
+    character.data.utility1_slot = 'health_potion';
+    character.data.utility1_slot_quantity = 40;
+    addItemToInventory('greater_health_potion', 39);
+    addItemToInventory('health_potion', 40);
+    bankItems = { greater_health_potion: BossFightPotionReserve.restore };
+
+    const result = await character.equipUtility('restore', 'utility1');
+
+    expect(character.equipNow).toHaveBeenCalledWith(
+      'greater_health_potion',
+      'utility1',
+      39,
+    );
+    expect(character.equipNow).not.toHaveBeenCalledWith(
+      'health_potion',
+      'utility1',
+      expect.anything(),
+    );
+    expect(character.data.utility1_slot).toBe('greater_health_potion');
+    expect(result.success).toBe(true);
+  });
+
+  it('reports success once the slot holds the minimum, short of a full stack', async () => {
+    addItemToInventory('greater_health_potion', MinEquippedUtilities + 1);
+
+    const result = await character.equipUtility('restore', 'utility1');
+
+    expect(character.data.utility1_slot).toBe('greater_health_potion');
+    expect(character.data.utility1_slot_quantity).toBe(
+      MinEquippedUtilities + 1,
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it('takes the lower tier when the higher one cannot field a usable stack', async () => {
+    addItemToInventory('greater_health_potion', 5);
+    addItemToInventory('health_potion', 40);
+
+    const result = await character.equipUtility('restore', 'utility1');
+
+    expect(character.equipNow).toHaveBeenCalledWith(
+      'health_potion',
+      'utility1',
+      40,
+    );
+    expect(character.equipNow).not.toHaveBeenCalledWith(
+      'greater_health_potion',
+      'utility1',
+      expect.anything(),
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it('fails without churning the slot when no tier reaches the minimum', async () => {
+    addItemToInventory('greater_health_potion', 5);
+    addItemToInventory('health_potion', 6);
+
+    const result = await character.equipUtility('restore', 'utility1');
+
+    expect(character.equipNow).toHaveBeenCalledTimes(1);
     expect(result.success).toBe(false);
   });
 });

@@ -164,9 +164,30 @@ export const TeleportMinimumSavingSeconds = 60;
 export const BankFullRetryMs = 10 * 60 * 1000;
 
 /**
+ * How many times a deposit is attempted before the character gives up and
+ * carries its inventory away. Only errors handleErrors calls retryable get
+ * this far, and even those are worth only a few goes: the retry is immediate,
+ * so a loop here spends the whole fleet's action budget within the minute.
+ */
+export const DepositRetryLimit = 3;
+
+/** How often the crafter looks for an open raid window */
+export const RaidCheckIntervalSeconds = 300;
+
+/** The role that leads raids. It tanks, and calls the rest of the party up */
+export const RaidLeaderRoleName = 'crafter';
+
+/**
  * How many of each teleport potion a character carries
  */
 export const TeleportPotionStock = 1;
+
+/**
+ * How many times move() re-plans a route after drawing its requirements from the bank.
+ * The trip to the bank relocates the character, so the first re-plan is expected; a
+ * second covers the re-planned route introducing a gate the first one didn't have.
+ */
+export const MaxRouteReplans = 2;
 
 export const ApiUrl = process.env.API_URL || `https://api.artifactsmmo.com`; // Sometimes we use the test server
 
