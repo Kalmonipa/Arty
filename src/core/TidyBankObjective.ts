@@ -17,8 +17,10 @@ import { Objective } from './Objective.js';
 import {
   Gearcrafting,
   Jewelrycrafting,
+  Ring,
   Tool,
   Weaponcrafting,
+  WoodenStick,
 } from '../names.js';
 import {
   ObjectiveCompleted,
@@ -362,13 +364,14 @@ export class TidyBankObjective extends Objective {
 
   /**
    * @description Recycle any excess gear if there are more than 5 in the bank.
-   * Also recycles all of any item whose level is more than 10 below the lowest character level.
+   * Also recycles all of any item whose level is more than levlGap below the lowest character level.
    */
   private async recycleExcessEquipment(
     skill: CraftSkill,
     contentsOfBank: SimpleItemSchema[],
   ): Promise<ObjectiveResult> {
-    const obsoleteThreshold = this.character.lowestCharLevel - 10;
+    const levelGap = 10;
+    const obsoleteThreshold = this.character.lowestCharLevel - levelGap;
 
     const craftableItems = await getCraftableItems(
       skill,
@@ -383,7 +386,7 @@ export class TidyBankObjective extends Objective {
 
     for (const gear of craftableItems) {
       // Chars can equip 2 rings so we want to keep 10 of them, 5 of everything else
-      const maxNumberNeededInBank = gear.type === 'ring' ? 10 : 5;
+      const maxNumberNeededInBank = gear.type === Ring ? 10 : 5;
 
       const content = contentsOfBank.find(
         (bankItem) => bankItem.code === gear.code,
@@ -399,9 +402,9 @@ export class TidyBankObjective extends Objective {
         continue;
       }
 
-      if (gear.code === 'wooden_stick') {
+      if (gear.code === WoodenStick) {
         logger.info(
-          `wooden_stick found. Deleting item as it can't be recycled.`,
+          `${WoodenStick} found. Deleting item as it can't be recycled.`,
         );
         const deleteResult = await actionDeleteItem(this.character.data, {
           code: gear.code,
@@ -409,7 +412,7 @@ export class TidyBankObjective extends Objective {
         });
         if (deleteResult instanceof ApiError) {
           logger.error(
-            `Failed to delete ${numInBank} wooden_stick. [${deleteResult.error.code}] Message: ${deleteResult.error.message}`,
+            `Failed to delete ${numInBank} ${WoodenStick}. [${deleteResult.error.code}] Message: ${deleteResult.error.message}`,
           );
           continue;
         }
@@ -421,7 +424,7 @@ export class TidyBankObjective extends Objective {
         );
       } else if (gear.level < obsoleteThreshold) {
         logger.info(
-          `${gear.code} (level ${gear.level}) is more than 10 levels below lowest character level (${this.character.lowestCharLevel}). Recycling all ${numInBank}`,
+          `${gear.code} (level ${gear.level}) is more than ${levelGap} levels below lowest character level (${this.character.lowestCharLevel}). Recycling all ${numInBank}`,
         );
         await this.character.recycleItemNow(gear.code, numInBank);
         continue;

@@ -6,7 +6,7 @@ import {
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
 import { MonsterTaskObjective } from '../../src/core/MonsterTaskObjective.js';
-import { FIGHTS_PER_YIELD_CHECK } from '../../src/constants.js';
+import { FightsPerYieldCheck } from '../../src/constants.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
 
@@ -730,12 +730,12 @@ describe('MonsterTaskObjective Integration Tests', () => {
       expect(result.success).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1);
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(
-        FIGHTS_PER_YIELD_CHECK,
+        FightsPerYieldCheck,
         'mushmush',
       );
       // The task isn't finished, so it must not be handed in
       expect(handInTaskSpy).not.toHaveBeenCalled();
-      expect(mockCharacter.data.task_progress).toBe(FIGHTS_PER_YIELD_CHECK);
+      expect(mockCharacter.data.task_progress).toBe(FightsPerYieldCheck);
     });
 
     it('works through the whole task in chunks while nothing is waiting', async () => {

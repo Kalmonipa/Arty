@@ -22,7 +22,7 @@ import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
 import { Objective } from '../core/Objective.js';
 import { ObjectiveCompleted, ObjectiveResult } from '../types/ObjectiveData.js';
-import { MAX_LEVEL_DISPARITY } from '../constants.js';
+import { MaxLevelDisparity } from '../constants.js';
 
 /**
  * @description We can't trade with the Tasks Master until the tasks_farmer achievement is complete
@@ -155,8 +155,8 @@ export async function checkWithinLevelRange(
   // place to refresh the fleet snapshot the idle jobs plan against
   applyFleetSnapshot(character, await GetCharacterData());
 
-  if (character.data.level < character.highestCharLevel - MAX_LEVEL_DISPARITY) {
-    const targetLevel = character.highestCharLevel - MAX_LEVEL_DISPARITY / 2;
+  if (character.data.level < character.highestCharLevel - MaxLevelDisparity) {
+    const targetLevel = character.highestCharLevel - MaxLevelDisparity / 2;
     logger.info(
       `${character.data.name}s level (${character.data.level}) is more than 10 levels behind the highest (${character.highestCharLevel}). Training to level ${targetLevel}`,
     );

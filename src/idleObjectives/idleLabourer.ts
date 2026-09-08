@@ -2,7 +2,7 @@ import {
   actionClaimPendingItems,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { MAX_SKILL_LEVEL } from '../constants.js';
+import { MaxSkillLevel } from '../constants.js';
 import { Role } from '../types/CharacterData.js';
 import { Skill, StaticDataPageResourceSchema } from '../types/types.js';
 import { logger } from '../utils.js';
@@ -211,9 +211,9 @@ export class IdleLabourerObjective extends Objective {
       ? 0
       : 5;
 
-    if (skillLevel === MAX_SKILL_LEVEL) {
+    if (skillLevel === MaxSkillLevel) {
       logger.info(
-        `Max ${skill || 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+        `Max ${skill || 'combat'} level (${MaxSkillLevel}) reached. Not training anymore levels`,
       );
       return ObjectiveCompleted;
     } else if (

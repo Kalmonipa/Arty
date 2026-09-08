@@ -35,6 +35,7 @@ export const Algae = 'algae';
 export const Sap = 'sap';
 export const MapleSap = 'maple_sap';
 export const HealthSplashPotion = 'health_splash_potion';
+export const WoodenStick = 'wooden_stick';
 
 /**
  * @description Map Areas

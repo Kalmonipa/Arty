@@ -4,7 +4,7 @@ import {
 } from '../api_calls/Items.js';
 import {
   FightPotionsToStock,
-  MAX_SKILL_LEVEL,
+  MaxSkillLevel,
   MinFightPotionsInBank,
   RestorePotionCraftBatch,
   RestorePotionStockTarget,
@@ -491,9 +491,9 @@ export class IdleHealerObjective extends Objective {
     );
     const maxLevelGap = 5;
 
-    if (skillLevel === MAX_SKILL_LEVEL) {
+    if (skillLevel === MaxSkillLevel) {
       logger.info(
-        `Max ${skill} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+        `Max ${skill} level (${MaxSkillLevel}) reached. Not training anymore levels`,
       );
       return ObjectiveCompleted;
     } else if (

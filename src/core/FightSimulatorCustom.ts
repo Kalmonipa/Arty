@@ -1,5 +1,5 @@
 import { getMonsterInformation } from '../api_calls/Monsters.js';
-import { CRITICAL_MODIFIER } from '../constants.js';
+import { CriticalModifier } from '../constants.js';
 import { TurnsDetails } from '../types/FightData.js';
 import { CharacterSchema, MonsterSchema } from '../types/types.js';
 import { logger } from '../utils.js';
@@ -256,7 +256,7 @@ export class FightSimulatorCustom extends Objective {
       // Decide if it's a critical hit
       const randomRoll = Math.random() * 100;
       if (randomRoll <= attack.criticalChance) {
-        dmg = dmg * (1 + CRITICAL_MODIFIER);
+        dmg = dmg * (1 + CriticalModifier);
       }
 
       // Remove resistances to the damage

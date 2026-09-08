@@ -3,7 +3,7 @@ import {
   getAllItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { MAX_SKILL_LEVEL } from '../constants.js';
+import { MaxSkillLevel } from '../constants.js';
 import {
   Alchemy,
   Fishing,
@@ -436,9 +436,9 @@ export class IdleObjective extends Objective {
       ? 0
       : 5;
 
-    if (skillLevel === MAX_SKILL_LEVEL) {
+    if (skillLevel === MaxSkillLevel) {
       logger.info(
-        `Max ${skill ? skill : 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+        `Max ${skill ? skill : 'combat'} level (${MaxSkillLevel}) reached. Not training anymore levels`,
       );
       return ObjectiveCompleted;
     } else if (

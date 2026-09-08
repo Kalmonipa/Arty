@@ -15,7 +15,7 @@ import {
 } from '../../src/types/ObjectiveData.js';
 import { Character } from '../../src/character/character.js';
 import { TaskCancelledResponseSchema } from '../../src/types/types.js';
-import { MAX_TASK_REROLLS } from '../../src/constants.js';
+import { MaxTaskRerolls } from '../../src/constants.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 /**
@@ -81,7 +81,7 @@ describe('cancelCurrentTask coin handling', () => {
     await objective.cancelCurrentTask('items');
 
     expect(character.withdrawNow).toHaveBeenCalledWith(
-      MAX_TASK_REROLLS,
+      MaxTaskRerolls,
       'tasks_coin',
     );
   });

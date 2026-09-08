@@ -24,7 +24,7 @@ import {
 } from '../wishlist/wishlist.utils.js';
 import { WishlistRequest } from '../wishlist/wishlist.types.js';
 import { TasksCoin } from '../names.js';
-import { MAX_TASK_REROLLS } from '../constants.js';
+import { MaxTaskRerolls } from '../constants.js';
 
 export abstract class Objective {
   character: Character;
@@ -403,7 +403,7 @@ export abstract class Objective {
   async cancelCurrentTask(taskType: TaskType): Promise<boolean> {
     if (this.character.checkQuantityOfItemInInv(TasksCoin) < 1) {
       const banked = await this.character.checkQuantityOfItemInBank(TasksCoin);
-      const numToWithdraw = Math.min(MAX_TASK_REROLLS, banked);
+      const numToWithdraw = Math.min(MaxTaskRerolls, banked);
 
       if (numToWithdraw < 1) {
         return false;

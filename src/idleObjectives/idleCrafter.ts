@@ -5,10 +5,10 @@ import {
   getPendingItems,
 } from '../api_calls/Items.js';
 import {
-  MAX_COINS_NEEDED,
-  MAX_SKILL_LEVEL,
-  MIN_TASK_COINS_BEFORE_GAMBLING,
-  MIN_TASK_COINS_IN_BANK,
+  MaxCoinsNeeded,
+  MaxSkillLevel,
+  MinTaskCoinsBeforeGambling,
+  MinTaskCoinsInBank,
 } from '../constants.js';
 import {
   Gearcrafting,
@@ -222,9 +222,9 @@ export class IdleCrafterObjective extends Objective {
     const taskCoinsInBank =
       await this.character.checkQuantityOfItemInBank(TasksCoin);
 
-    if (taskCoinsInBank >= MAX_COINS_NEEDED) {
+    if (taskCoinsInBank >= MaxCoinsNeeded) {
       logger.debug(
-        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MAX_COINS_NEEDED}). Not doing a monster task`,
+        `${taskCoinsInBank} ${TasksCoin} in the bank (target ${MaxCoinsNeeded}). Not doing a monster task`,
       );
       return false;
     }
@@ -290,7 +290,7 @@ export class IdleCrafterObjective extends Objective {
     const costToExchange = 6;
     // Minimum required for us to gamble. If we have 50 coins, we shouldn't. 106 we can gamble once
     // 160 coins, we can gamble 10 times, etc
-    const maxCoinsInBank = MIN_TASK_COINS_BEFORE_GAMBLING + costToExchange;
+    const maxCoinsInBank = MinTaskCoinsBeforeGambling + costToExchange;
     const coinsInBank =
       await this.character.checkQuantityOfItemInBank(TasksCoin);
 
@@ -302,7 +302,7 @@ export class IdleCrafterObjective extends Objective {
     }
 
     const numExchangesToMake = Math.floor(
-      (coinsInBank - MIN_TASK_COINS_BEFORE_GAMBLING) / costToExchange,
+      (coinsInBank - MinTaskCoinsBeforeGambling) / costToExchange,
     );
     const coinsToSpend = numExchangesToMake * costToExchange;
 
@@ -551,9 +551,9 @@ export class IdleCrafterObjective extends Objective {
       ? 0
       : 5;
 
-    if (skillLevel === MAX_SKILL_LEVEL) {
+    if (skillLevel === MaxSkillLevel) {
       logger.info(
-        `Max ${skill || 'combat'} level (${MAX_SKILL_LEVEL}) reached. Not training anymore levels`,
+        `Max ${skill || 'combat'} level (${MaxSkillLevel}) reached. Not training anymore levels`,
       );
       return ObjectiveCompleted;
     } else if (

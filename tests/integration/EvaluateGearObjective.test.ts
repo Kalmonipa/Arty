@@ -66,7 +66,7 @@ import {
   dropUnclaimedWishlistRequest,
 } from '../../src/wishlist/wishlist.utils.js';
 import { BodyArmor, Weapon } from '../../src/names.js';
-import { MAX_SKILL_LEVEL } from '../../src/constants.js';
+import { MaxSkillLevel } from '../../src/constants.js';
 
 // Mock monster data
 const mockMonsterData = {
@@ -249,9 +249,9 @@ class SimpleMockCharacter {
   minEquippedUtilities = 20;
 
   // The best crafter in the fleet, as applyFleetSnapshot would set it
-  highestWeaponcraftingLevel: number | undefined = MAX_SKILL_LEVEL;
-  highestGearcraftingLevel: number | undefined = MAX_SKILL_LEVEL;
-  highestJewelrycraftingLevel: number | undefined = MAX_SKILL_LEVEL;
+  highestWeaponcraftingLevel: number | undefined = MaxSkillLevel;
+  highestGearcraftingLevel: number | undefined = MaxSkillLevel;
+  highestJewelrycraftingLevel: number | undefined = MaxSkillLevel;
 
   // Gear maps
   weaponMap: Record<WeaponFlavours, ItemSchema[]> = {
@@ -1832,7 +1832,7 @@ describe('EvaluateGearObjective Integration Tests', () => {
 
     it('measures rings against jewelrycrafting, not the slot they sit in', async () => {
       mockCharacter.data.level = 30;
-      mockCharacter.highestGearcraftingLevel = MAX_SKILL_LEVEL;
+      mockCharacter.highestGearcraftingLevel = MaxSkillLevel;
       mockCharacter.highestJewelrycraftingLevel = 20;
       mockCharacter.bootsMap.hp = [];
       mockCharacter.ringsMap.dmg = [

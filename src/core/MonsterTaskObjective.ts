@@ -4,11 +4,11 @@ import { DepositObjective } from './DepositObjective.js';
 import { FightSimulator } from '../fights/fight.simulator.js';
 import { Objective } from './Objective.js';
 import {
-  FIGHTS_PER_YIELD_CHECK,
-  MAX_MONSTER_TASK_SECONDS,
-  MAX_TASK_REROLLS,
-  MIN_TASK_COINS_TO_REROLL,
-  TASK_ESTIMATE_SIM_ITERATIONS,
+  FightsPerYieldCheck,
+  MaxMonsterTaskSeconds,
+  MaxTaskRerolls,
+  MinTaskCoinsToReroll,
+  TaskEstimateSimIterations,
 } from '../constants.js';
 import { TasksCoin } from '../names.js';
 import {
@@ -148,7 +148,7 @@ export class MonsterTaskObjective extends Objective {
       const before = this.character.data.task_progress;
 
       result = await this.character.fightNow(
-        Math.min(FIGHTS_PER_YIELD_CHECK, remaining()),
+        Math.min(FightsPerYieldCheck, remaining()),
         this.character.data.task,
       );
 
@@ -181,10 +181,10 @@ export class MonsterTaskObjective extends Objective {
    * and stop while there are still coins left.
    */
   private async rerollTasksThatCostTooMuch(): Promise<void> {
-    for (let reroll = 0; reroll <= MAX_TASK_REROLLS; reroll++) {
+    for (let reroll = 0; reroll <= MaxTaskRerolls; reroll++) {
       const estimate = await this.estimateRemainingTaskSeconds();
 
-      if (estimate !== null && estimate <= MAX_MONSTER_TASK_SECONDS) {
+      if (estimate !== null && estimate <= MaxMonsterTaskSeconds) {
         logger.info(
           `Task of ${this.remainingFights()} ${this.character.data.task} should take ${(estimate / 3600).toFixed(1)}h. Getting on with it`,
         );
@@ -194,11 +194,11 @@ export class MonsterTaskObjective extends Objective {
       const reason =
         estimate === null
           ? `can't be won`
-          : `would take ${(estimate / 3600).toFixed(1)}h (max ${MAX_MONSTER_TASK_SECONDS / 3600}h)`;
+          : `would take ${(estimate / 3600).toFixed(1)}h (max ${MaxMonsterTaskSeconds / 3600}h)`;
 
-      if (reroll === MAX_TASK_REROLLS) {
+      if (reroll === MaxTaskRerolls) {
         logger.warn(
-          `Task of ${this.remainingFights()} ${this.character.data.task} ${reason}, but ${MAX_TASK_REROLLS} rerolls is enough. Keeping it`,
+          `Task of ${this.remainingFights()} ${this.character.data.task} ${reason}, but ${MaxTaskRerolls} rerolls is enough. Keeping it`,
         );
         return;
       }
@@ -234,7 +234,7 @@ export class MonsterTaskObjective extends Objective {
       this.character,
       [this.character.createFakeCharacterSchema(this.character.data)],
       this.character.data.task,
-      TASK_ESTIMATE_SIM_ITERATIONS,
+      TaskEstimateSimIterations,
     );
     await this.character.executeJobNow(sim, true, true, this.objectiveId);
 
@@ -263,6 +263,6 @@ export class MonsterTaskObjective extends Objective {
       this.character.checkQuantityOfItemInInv(TasksCoin) +
       (await this.character.checkQuantityOfItemInBank(TasksCoin));
 
-    return coins >= (taskIsUnwinnable ? 1 : MIN_TASK_COINS_TO_REROLL);
+    return coins >= (taskIsUnwinnable ? 1 : MinTaskCoinsToReroll);
   }
 }
