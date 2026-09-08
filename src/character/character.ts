@@ -2146,15 +2146,29 @@ export class Character {
 
   /**
    * @description Find the best way to recover health fully
+   * If current health is greater than 90%, do nothing
    * If current health is greater than 70%, rest (which takes 1 second per % of health)
    * Otherwise eat food to heal
    * Last configured from 80% to 70% on 24/08/2026
    */
   async recoverHealth(): Promise<boolean> {
     const healthStatus: HealthStatus = this.checkHealth();
+    /**
+     * Above this threshold, characters shouldn't heal to save time
+     */
+    const healingThreshold = 90;
+    /**
+     * Thresold to eat. Below this threshold, characters should eat food to heal
+     */
+    const eatingThreshold = 70;
 
     if (healthStatus.percentage !== 100) {
-      if (healthStatus.percentage > 70) {
+      if (healthStatus.percentage > healingThreshold) {
+        logger.debug(
+          `Not healing because health is ${healthStatus.percentage}%. Threshold to heal is ${healingThreshold}%`,
+        );
+        return true;
+      } else if (healthStatus.percentage > eatingThreshold) {
         await this.rest();
         return true;
       } else {
@@ -2172,7 +2186,7 @@ export class Character {
           bestFood = {
             code: fishToCook,
             quantity: 40,
-            healValue: 75,
+            healValue: 75, // ToDo: What are these harcoded values?
             source: 'inventory',
           };
         }
