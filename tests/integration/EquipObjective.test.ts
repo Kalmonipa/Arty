@@ -23,6 +23,16 @@ import { actionEquipItem } from '../../src/api_calls/Items.js';
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
 
+  itemsToKeep: string[] = [];
+
+  addItemToItemsToKeep = jest.fn((code: string): void => {
+    this.itemsToKeep.push(code);
+  });
+
+  removeItemFromItemsToKeep = jest.fn((code: string): void => {
+    this.itemsToKeep = this.itemsToKeep.filter((kept) => kept !== code);
+  });
+
   checkQuantityOfItemInInv = jest.fn((code: string): number => {
     const item = this.data.inventory.find(
       (item: InventorySlot) => item.code === code,

@@ -118,7 +118,13 @@ import {
   getNavigationGraph,
   NavigationGraph,
 } from '../core/navigation/graph.js';
-import { Fishing, GourmetChef, Restore } from '../gameDataConstants.js';
+import {
+  DepositableEquipmentTypes,
+  Fishing,
+  GourmetChef,
+  Restore,
+  Tool,
+} from '../gameDataConstants.js';
 import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
@@ -293,6 +299,8 @@ export class Character {
   // Guards the potion top-up against itself: withdrawing walks to a bank, which
   // is the very thing that asks for a top-up.
   private toppingUpTeleportPotions = false;
+  // Depositing walks to a bank, which is what asks for the deposit
+  private depositingSpareEquipment = false;
 
   allCharacterDetails?: CharacterSchema[];
 
@@ -4043,6 +4051,57 @@ export class Character {
       }
     } finally {
       this.toppingUpTeleportPotions = false;
+    }
+  }
+
+  /**
+   * @description Banks equipment the character is carrying but not wearing.
+   */
+  async depositSpareEquipment(): Promise<void> {
+    if (this.depositingSpareEquipment || !this.allMaps) return;
+
+    const onBank = this.findMaps({ content_type: 'bank' }).some(
+      (bank) => bank.map_id === this.data.map_id,
+    );
+    if (!onBank) return;
+
+    this.depositingSpareEquipment = true;
+    try {
+      const spare: SimpleItemSchema[] = [];
+
+      for (const slot of this.data.inventory) {
+        if (!slot.code || slot.quantity === 0) continue;
+        if (this.itemsToKeep?.includes(slot.code)) continue;
+
+        const item = await getItemInformation(slot.code);
+        if (item instanceof ApiError) continue;
+        if (!DepositableEquipmentTypes.includes(item.type)) continue;
+        if (item.subtype === Tool) continue;
+
+        spare.push({ code: slot.code, quantity: slot.quantity });
+      }
+
+      if (spare.length === 0) return;
+
+      logger.info(
+        `Depositing spare equipment: ${spare
+          .map((item) => `${item.quantity} ${item.code}`)
+          .join(', ')}`,
+      );
+
+      const response = await actionDepositItems(this.data, spare);
+      if (response instanceof ApiError) {
+        await this.handleErrors(response);
+        return;
+      }
+
+      if (response.data.character) {
+        this.data = response.data.character;
+      } else {
+        logger.error('Deposit response missing character data');
+      }
+    } finally {
+      this.depositingSpareEquipment = false;
     }
   }
 

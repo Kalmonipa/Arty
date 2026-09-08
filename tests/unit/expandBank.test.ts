@@ -45,6 +45,7 @@ const atABank = {
   evaluateClosestMap: jest.fn(() => ({ map_id: 1, x: 4, y: 1 })),
   move: jest.fn(async () => true),
   topUpTeleportPotions: jest.fn(async () => undefined),
+  depositSpareEquipment: jest.fn(async () => undefined),
 } as never;
 
 /** `total` is the number of occupied slots; `slots` is the bank's capacity */

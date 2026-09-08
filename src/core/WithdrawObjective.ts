@@ -52,6 +52,7 @@ export class WithdrawObjective extends Objective {
 
       await this.character.move(contentLocation);
       await this.character.topUpTeleportPotions();
+      await this.character.depositSpareEquipment();
 
       // If we're withdrawing gold, do it and return early
       if (this.target.code === 'gold') {

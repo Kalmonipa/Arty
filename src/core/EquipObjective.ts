@@ -41,63 +41,76 @@ export class EquipObjective extends Objective {
    * @description equip the item
    */
   async run(): Promise<ObjectiveResult> {
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      if (!(await this.checkStatus())) return ObjectiveCancelled;
+    // A bank trip between the withdraw below and the equip would sweep the very
+    // item being equipped into the bank, so hold it off the spare-equipment sweep
+    const alreadyKept = !!this.character.itemsToKeep?.includes(this.itemCode);
+    if (!alreadyKept) {
+      this.character.addItemToItemsToKeep(this.itemCode);
+    }
 
-      logger.debug(`Equip attempt ${attempt}/${this.maxRetries}`);
+    try {
+      for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+        if (!(await this.checkStatus())) return ObjectiveCancelled;
 
-      if (!this.quantity) this.quantity = 1;
+        logger.debug(`Equip attempt ${attempt}/${this.maxRetries}`);
 
-      if (
-        (this.itemSlot === 'utility1' || this.itemSlot === 'utility2') &&
-        this.quantity > 100
-      ) {
-        logger.warn(
-          `Quantity can only be provided for utility slots and must be less than 100`,
-        );
-        return ObjectiveFailed;
-      }
+        if (!this.quantity) this.quantity = 1;
 
-      if (this.character.checkQuantityOfItemInInv(this.itemCode) === 0) {
-        logger.info(`Character not carrying ${this.itemCode}. Checking bank`);
         if (
-          (await this.character.checkQuantityOfItemInBank(this.itemCode)) > 0
+          (this.itemSlot === 'utility1' || this.itemSlot === 'utility2') &&
+          this.quantity > 100
         ) {
-          await this.character.withdrawNow(this.quantity || 1, this.itemCode);
-        } else {
-          logger.warn(`No potions found in bank. Not equipping anything`);
+          logger.warn(
+            `Quantity can only be provided for utility slots and must be less than 100`,
+          );
           return ObjectiveFailed;
+        }
+
+        if (this.character.checkQuantityOfItemInInv(this.itemCode) === 0) {
+          logger.info(`Character not carrying ${this.itemCode}. Checking bank`);
+          if (
+            (await this.character.checkQuantityOfItemInBank(this.itemCode)) > 0
+          ) {
+            await this.character.withdrawNow(this.quantity || 1, this.itemCode);
+          } else {
+            logger.warn(`No potions found in bank. Not equipping anything`);
+            return ObjectiveFailed;
+          }
+        }
+
+        logger.info(
+          `Equipping ${this.quantity} ${this.itemCode} into ${this.itemSlot}`,
+        );
+
+        const equipSchema: EquipSchema = {
+          code: this.itemCode,
+          slot: this.itemSlot,
+          quantity: this.quantity,
+        };
+
+        // ToDo: Make this build an array of EquipSchema and call the equip endpoint once
+        const response = await actionEquipItem(this.character.data, [
+          equipSchema,
+        ]);
+        if (response instanceof ApiError) {
+          const shouldRetry = await this.character.handleErrors(response);
+
+          if (!shouldRetry || attempt === this.maxRetries) {
+            logger.error(`Equip failed after ${attempt} attempts`);
+            return ObjectiveFailed;
+          }
+        } else {
+          if (response.data.character) {
+            this.character.data = response.data.character;
+          } else {
+            logger.error('Equip response missing character data');
+          }
+          return { complete: true, success: true, reason: 'complete' };
         }
       }
-
-      logger.info(
-        `Equipping ${this.quantity} ${this.itemCode} into ${this.itemSlot}`,
-      );
-
-      const equipSchema: EquipSchema = {
-        code: this.itemCode,
-        slot: this.itemSlot,
-        quantity: this.quantity,
-      };
-
-      // ToDo: Make this build an array of EquipSchema and call the equip endpoint once
-      const response = await actionEquipItem(this.character.data, [
-        equipSchema,
-      ]);
-      if (response instanceof ApiError) {
-        const shouldRetry = await this.character.handleErrors(response);
-
-        if (!shouldRetry || attempt === this.maxRetries) {
-          logger.error(`Equip failed after ${attempt} attempts`);
-          return ObjectiveFailed;
-        }
-      } else {
-        if (response.data.character) {
-          this.character.data = response.data.character;
-        } else {
-          logger.error('Equip response missing character data');
-        }
-        return { complete: true, success: true, reason: 'complete' };
+    } finally {
+      if (!alreadyKept) {
+        this.character.removeItemFromItemsToKeep(this.itemCode);
       }
     }
   }

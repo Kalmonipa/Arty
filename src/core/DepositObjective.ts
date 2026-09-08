@@ -6,6 +6,7 @@ import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import {
   ObjectiveCancelled,
+  ObjectiveCompleted,
   ObjectiveFailed,
   ObjectiveResult,
   ObjectiveTargets,
@@ -93,6 +94,7 @@ export class DepositObjective extends Objective {
 
       await this.character.move(contentLocation);
       await this.character.topUpTeleportPotions();
+      await this.character.depositSpareEquipment();
 
       let response:
         | ApiError
@@ -169,7 +171,7 @@ export class DepositObjective extends Objective {
       // replace the stock before leaving the bank
       await this.character.topUpTeleportPotions();
 
-      return { complete: true, success: true, reason: 'complete' };
+      return ObjectiveCompleted;
     }
   }
 }

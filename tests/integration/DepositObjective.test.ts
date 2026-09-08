@@ -64,6 +64,8 @@ class SimpleMockCharacter {
 
   topUpTeleportPotions = jest.fn(async (): Promise<void> => {});
 
+  depositSpareEquipment = jest.fn(async (): Promise<void> => {});
+
   consumablesMap: { heal: unknown[]; teleport: unknown[] } = {
     heal: [],
     teleport: [],

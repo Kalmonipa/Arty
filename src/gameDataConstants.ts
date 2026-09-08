@@ -107,6 +107,21 @@ export const Potion = 'potion';
 export const Tool = 'tool';
 
 /**
+ * Gear worth banking when it is carried but not worn, so the rest of the village
+ * can find it.
+ */
+export const DepositableEquipmentTypes: string[] = [
+  Amulet,
+  BodyArmor,
+  Boots,
+  Helmet,
+  LegArmor,
+  Ring,
+  Shield,
+  Weapon,
+];
+
+/**
  * Skills
  */
 export const Alchemy = 'alchemy';

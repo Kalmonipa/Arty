@@ -106,6 +106,7 @@ export class ExpandBankObjective extends Objective {
 
     await this.character.move(contentLocation);
     await this.character.topUpTeleportPotions();
+    await this.character.depositSpareEquipment();
 
     const withdrawGold = await actionWithdrawGold(
       this.character.data,
