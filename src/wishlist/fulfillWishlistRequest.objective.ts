@@ -11,7 +11,7 @@ import {
   ObjectiveCompleted,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
-import { Alchemy, Mining, Woodcutting } from '../names.js';
+import { Alchemy, Mining, Woodcutting } from '../gameDataConstants.js';
 
 /**
  * These should be made unconditionally, without checking what's in the bank.

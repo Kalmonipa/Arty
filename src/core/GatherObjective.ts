@@ -22,7 +22,7 @@ import { Objective } from './Objective.js';
 import { selectResourceNode } from './resourceNodeSelection.js';
 import { selectMobsForDrop } from './monsterSelection.js';
 import { isEventOnlyDrop } from '../events/events.cache.js';
-import { Sap } from '../names.js';
+import { Sap } from '../gameDataConstants.js';
 
 export class GatherObjective extends Objective {
   target: ObjectiveTargets;

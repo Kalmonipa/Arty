@@ -42,7 +42,7 @@ import {
   Mining,
   Weaponcrafting,
   Woodcutting,
-} from '../../src/names.js';
+} from '../../src/gameDataConstants.js';
 
 // Mock craftable items
 const createMockCraftableItem = (

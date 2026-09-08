@@ -1,5 +1,5 @@
 import type { Character } from '../character/character.js';
-import { Algae, Sap } from '../names.js';
+import { Algae, Sap } from '../gameDataConstants.js';
 import { GatheringSkill, ResourceSchema } from '../types/types.js';
 
 /**

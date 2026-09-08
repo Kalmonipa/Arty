@@ -1,6 +1,11 @@
 import { UtilityEffects } from './types/ItemData.js';
 
 /**
+ * This file should only contain constants from the game data itself
+ * Game implementation constants are in src/constants.ts
+ */
+
+/**
  * Achievements
  */
 export const GourmetChef = 'gourmet_chef';

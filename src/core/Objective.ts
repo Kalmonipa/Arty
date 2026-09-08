@@ -23,7 +23,7 @@ import {
   getWishlistRequestsForJob,
 } from '../wishlist/wishlist.utils.js';
 import { WishlistRequest } from '../wishlist/wishlist.types.js';
-import { TasksCoin } from '../names.js';
+import { TasksCoin } from '../gameDataConstants.js';
 import { MaxTaskRerolls } from '../constants.js';
 
 export abstract class Objective {

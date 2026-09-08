@@ -48,7 +48,7 @@ import {
   Restore,
   SplashRestore,
   Weaponcrafting,
-} from '../names.js';
+} from '../gameDataConstants.js';
 import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
 import { EvaluateGearParams } from './evaluateGear.types.js';
 

@@ -21,7 +21,11 @@ import {
 } from './idle.utils.js';
 import { AcquisitionMethod } from '../wishlist/wishlist.types.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { Gearcrafting, Jewelrycrafting, Weaponcrafting } from '../names.js';
+import {
+  Gearcrafting,
+  Jewelrycrafting,
+  Weaponcrafting,
+} from '../gameDataConstants.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

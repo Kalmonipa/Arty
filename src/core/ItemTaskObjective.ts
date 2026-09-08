@@ -5,7 +5,7 @@ import { Character } from '../character/character.js';
 import { DepositObjective } from './DepositObjective.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
-import { TasksCoin } from '../names.js';
+import { TasksCoin } from '../gameDataConstants.js';
 import {
   ObjectiveCancelled,
   ObjectiveFailed,

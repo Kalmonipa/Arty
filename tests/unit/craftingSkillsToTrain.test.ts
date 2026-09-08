@@ -3,7 +3,7 @@ import {
   Gearcrafting,
   Jewelrycrafting,
   Weaponcrafting,
-} from '../../src/names.js';
+} from '../../src/gameDataConstants.js';
 
 describe('craftingSkillsToTrain', () => {
   it('puts the furthest-behind skill first', () => {

@@ -7,6 +7,11 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 /**
+ * This file should contain constants from my implementation
+ * Game data constants are in src/gameDataConstants.ts
+ */
+
+/**
  * My ArtifactsMMO character names
  */
 export const BouncyBella = 'BouncyBella';
@@ -29,13 +34,24 @@ export const MaxSkillLevel = 50;
 export const CriticalModifier = 0.5;
 
 /**
- * Bank stock of task coins to keep.
+ * Roles
+ */
+export const Alchemist = 'alchemist';
+export const Crafter = 'crafter';
+export const Healer = 'healer';
+export const Fisherman = 'fisherman';
+export const Gearcrafter = 'gearcrafter';
+export const Jewelrycrafter = 'jewelrycrafter';
+export const Labourer = 'labourer';
+export const Lumberjack = 'lumberjack';
+export const Miner = 'miner';
+export const Weaponcrafter = 'weaponcrafter';
+
+/**
+ * Bank stock of task coins to keep. Rerolls and task cancels are paid in coins,
+ * so this reserve is what stops gambling from leaving a task unabandonable.
  */
 export const MinTaskCoinsInBank = 50;
-/**
- * The minimum coins we want in the bank before we start gambling
- */
-export const MinTaskCoinsBeforeGambling = 100;
 /**
  * Maximum task coins we'd like in the bank
  */

@@ -21,7 +21,7 @@ import {
   Tool,
   Weaponcrafting,
   WoodenStick,
-} from '../names.js';
+} from '../gameDataConstants.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

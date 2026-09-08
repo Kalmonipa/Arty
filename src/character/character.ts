@@ -118,7 +118,7 @@ import {
   getNavigationGraph,
   NavigationGraph,
 } from '../core/navigation/graph.js';
-import { Fishing, GourmetChef, Restore } from '../names.js';
+import { Fishing, GourmetChef, Restore } from '../gameDataConstants.js';
 import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
@@ -155,7 +155,7 @@ import {
   Utility2Slot,
   Weaponcrafting,
   WeaponSlot,
-} from '../names.js';
+} from '../gameDataConstants.js';
 import { actionCompleteTask, actionTasksTrade } from '../api_calls/Tasks.js';
 import { getAccountAchievements } from '../api_calls/Achievements.js';
 import { shouldDoEvent } from '../events/events.utils.js';

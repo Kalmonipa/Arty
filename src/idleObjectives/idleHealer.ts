@@ -19,7 +19,7 @@ import {
   BoostResEarth,
   BoostResFire,
   BoostResWater,
-} from '../names.js';
+} from '../gameDataConstants.js';
 import { UtilityEffects } from '../types/ItemData.js';
 import { Role } from '../types/CharacterData.js';
 import {

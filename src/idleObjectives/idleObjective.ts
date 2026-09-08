@@ -3,7 +3,17 @@ import {
   getAllItemInformation,
   getPendingItems,
 } from '../api_calls/Items.js';
-import { MaxSkillLevel } from '../constants.js';
+import {
+  Alchemist,
+  Fisherman,
+  Gearcrafter,
+  Jewelrycrafter,
+  Lumberjack,
+  MaxCoinsNeeded,
+  MaxSkillLevel,
+  Miner,
+  Weaponcrafter,
+} from '../constants.js';
 import {
   Alchemy,
   Fishing,
@@ -13,7 +23,7 @@ import {
   TasksCoin,
   Weaponcrafting,
   Woodcutting,
-} from '../names.js';
+} from '../gameDataConstants.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, Skill } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
@@ -88,14 +98,14 @@ export class IdleObjective extends Objective {
     // Alchemist never does tasks — sole responsibility is crafting potions.
     // All other roles only do tasks if the bank is low on task coins.
     // Fisherman has an additional check: food must be sufficiently stocked first.
-    if (this.role !== 'alchemist') {
+    if (this.role !== Alchemist) {
       const taskCoinsInBank =
         await this.character.checkQuantityOfItemInBank(TasksCoin);
 
-      if (taskCoinsInBank < 100) {
+      if (taskCoinsInBank < MaxCoinsNeeded) {
         let shouldDoTasks = true;
 
-        if (this.role === 'fisherman') {
+        if (this.role === Fisherman) {
           shouldDoTasks = await this.isFishSufficientlyStocked();
         }
 
@@ -103,13 +113,13 @@ export class IdleObjective extends Objective {
           // Weapon, gear and jewelrycrafters do monster tasks if their crafting level
           // exceeds their combat level, otherwise item tasks
           if (
-            (this.role === 'weaponcrafter' &&
+            (this.role === Weaponcrafter &&
               this.character.data.level <
                 this.character.data.weaponcrafting_level) ||
-            (this.role === 'gearcrafter' &&
+            (this.role === Gearcrafter &&
               this.character.data.level <
                 this.character.data.gearcrafting_level) ||
-            (this.role === 'jewelrycrafter' &&
+            (this.role === Jewelrycrafter &&
               this.character.data.level <
                 this.character.data.jewelrycrafting_level)
           ) {
@@ -126,7 +136,7 @@ export class IdleObjective extends Objective {
     // If the skill gets 5 levels ahead of their combat level then they won't train the skill any further
     // There's no need for skills to get too far ahead of combat level
     switch (this.role) {
-      case 'alchemist':
+      case Alchemist:
         if (
           this.character.getCharacterLevel(this.character.data, Alchemy) >=
             this.character.getCharacterLevel(this.character.data) + 5 &&
@@ -146,23 +156,23 @@ export class IdleObjective extends Objective {
         }
         if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
-      case 'fisherman':
+      case Fisherman:
         await this.trainSkill(Fishing);
         if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         await this.character.trainCombatLevelNow(this.character.data.level + 1);
         if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
-      case 'lumberjack':
+      case Lumberjack:
         await this.trainSkill(Woodcutting);
         if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
-      case 'miner':
+      case Miner:
         await this.trainSkill(Mining);
         if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         break;
 
       // Crafting skills should aim to be at the combat level
-      case 'gearcrafter':
+      case Gearcrafter:
         if (
           this.character.getCharacterLevel(this.character.data, Gearcrafting) <
           this.character.getCharacterLevel(this.character.data)
@@ -174,7 +184,7 @@ export class IdleObjective extends Objective {
           if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         }
         break;
-      case 'jewelrycrafter':
+      case Jewelrycrafter:
         if (
           this.character.getCharacterLevel(
             this.character.data,
@@ -188,7 +198,7 @@ export class IdleObjective extends Objective {
           if (this.checkIdleJobIsLast()) return ObjectiveCancelled;
         }
         break;
-      case 'weaponcrafter':
+      case Weaponcrafter:
         if (
           this.character.getCharacterLevel(
             this.character.data,

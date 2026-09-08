@@ -18,7 +18,7 @@ import {
   SimpleEffectSchema,
 } from '../types/types.js';
 import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
-import { Antidote, Restore } from '../names.js';
+import { Antidote, Restore } from '../gameDataConstants.js';
 import {
   PotionlessFightMaxConsecutiveLosses,
   PotionlessFightWinRateFloor,

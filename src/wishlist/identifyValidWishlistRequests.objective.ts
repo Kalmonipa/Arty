@@ -21,7 +21,7 @@ import {
   Mining,
   Weaponcrafting,
   Woodcutting,
-} from '../names.js';
+} from '../gameDataConstants.js';
 
 export class IdentifyValidWishlistRequestsObjective extends Objective {
   acquisitionMethod: AcquisitionMethod;

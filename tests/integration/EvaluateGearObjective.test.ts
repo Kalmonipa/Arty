@@ -65,7 +65,7 @@ import {
   addToWishlist,
   dropUnclaimedWishlistRequest,
 } from '../../src/wishlist/wishlist.utils.js';
-import { BodyArmor, Weapon } from '../../src/names.js';
+import { BodyArmor, Weapon } from '../../src/gameDataConstants.js';
 import { MaxSkillLevel } from '../../src/constants.js';
 
 // Mock monster data

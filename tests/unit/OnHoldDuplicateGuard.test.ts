@@ -17,7 +17,7 @@ import {
   ObjectiveCompleted,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { Gearcrafting, Weaponcrafting } from '../../src/names.js';
+import { Gearcrafting, Weaponcrafting } from '../../src/gameDataConstants.js';
 
 class TestObjective extends Objective {
   async run(): Promise<ObjectiveResult> {

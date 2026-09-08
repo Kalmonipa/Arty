@@ -10,7 +10,7 @@ import {
   MinTaskCoinsToReroll,
   TaskEstimateSimIterations,
 } from '../constants.js';
-import { TasksCoin } from '../names.js';
+import { TasksCoin } from '../gameDataConstants.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

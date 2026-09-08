@@ -13,7 +13,7 @@ import { getAllMaps } from '../api_calls/Maps.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { Objective } from './Objective.js';
 import { MonsterTaskObjective } from './MonsterTaskObjective.js';
-import { TasksCoin } from '../names.js';
+import { TasksCoin } from '../gameDataConstants.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

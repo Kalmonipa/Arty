@@ -19,7 +19,7 @@ import {
   GemstoneMerchant,
   NomadicMerchant,
   Restore,
-} from '../names.js';
+} from '../gameDataConstants.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

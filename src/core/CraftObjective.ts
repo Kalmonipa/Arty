@@ -15,7 +15,7 @@ import { getItemInformation } from '../api_calls/Items.js';
 import { ItemSchema, SimpleItemSchema, Skill } from '../types/types.js';
 import { Role } from '../types/CharacterData.js';
 import { eventBlockedIngredients } from '../events/events.cache.js';
-import { MapleSap, Sap } from '../names.js';
+import { MapleSap, Sap } from '../gameDataConstants.js';
 
 /**
  * Maps a craft skill to the role responsible for it. Skills without an entry
