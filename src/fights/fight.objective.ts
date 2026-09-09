@@ -4,6 +4,7 @@ import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import {
+  FightSimVerdict,
   ObjectiveCancelled,
   ObjectiveCompleted,
   ObjectiveFailed,
@@ -34,6 +35,8 @@ export class FightObjective extends Objective {
   participants?: string[];
   runFightSim?: boolean;
   mobInfo?: MonsterSchema;
+  /** The unaided verdict the viability gate already paid for */
+  private dryVerdict?: FightSimVerdict;
 
   combatWeapon: string;
 
@@ -58,6 +61,18 @@ export class FightObjective extends Objective {
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
+    const mobInfo = await getMonsterInformation(this.target.code);
+    if (mobInfo instanceof ApiError) {
+      await this.character.handleErrors(mobInfo);
+      return ObjectiveFailed;
+    }
+
+    this.mobInfo = mobInfo.data;
+
+    if (this.runFightSim && !(await this.fightIsWorthPreparingFor())) {
+      return ObjectiveFailed;
+    }
+
     const foodItems = this.character.findFoodInInventory();
     const foodCodes = foodItems.map((food) => food.code);
     const itemsToKeep = [...foodCodes];
@@ -68,19 +83,64 @@ export class FightObjective extends Objective {
 
     this.combatWeapon = this.character.data.weapon_slot;
 
-    const mobInfo = await getMonsterInformation(this.target.code);
-    if (mobInfo instanceof ApiError) {
-      await this.character.handleErrors(mobInfo);
-      return ObjectiveFailed;
-    }
-
-    this.mobInfo = mobInfo.data;
-
     if (this.runFightSim) {
       return await this.decideOnHealthPotions(mobInfo.data);
     }
 
     return ObjectiveCompleted;
+  }
+
+  /**
+   * @description Whether this fight has any chance of going ahead, asked
+   * before a single action is spent getting ready for it.
+   *
+   * Fitting combat gear costs a deposit, a withdrawal and an equip per slot,
+   * and the answer does not depend on any of it: a fight that is lost dry and
+   * needs restore potions the bank cannot spare is going to be skipped whatever
+   * the character is wearing. Judged against the loadout the character *would*
+   * wear rather than the one it has on, so a fight is never written off over
+   * gear it was about to change out of.
+   */
+  private async fightIsWorthPreparingFor(): Promise<boolean> {
+    const loadout = await this.character.proposeCombatLoadout(this.target.code);
+
+    const dryVerdict = await this.character.simulateFightNow(
+      [loadout],
+      this.target.code,
+    );
+    this.dryVerdict = dryVerdict;
+
+    if (
+      dryVerdict.success ||
+      dryVerdict.winRate >= PotionlessFightWinRateFloor
+    ) {
+      return true;
+    }
+
+    if (!this.useHealthPots) {
+      logger.info(
+        `Cannot beat ${this.target.code} without restore potions. Skipping`,
+      );
+      return false;
+    }
+
+    // A poisonous mob can be carried by an antidote instead, so leave that
+    // judgement to the full run rather than second-guessing it here
+    const poisons = this.mobInfo.effects?.some(
+      (effect) => effect.code === 'poison',
+    );
+    if (poisons && (await this.stockedAntidotes()).length > 0) {
+      return true;
+    }
+
+    if (await this.character.canReachUtility(Restore)) {
+      return true;
+    }
+
+    logger.warn(
+      `${this.target.code} cannot be beaten without restore potions and the bank has none to spare. Skipping before fitting gear`,
+    );
+    return false;
   }
 
   /**
@@ -99,13 +159,20 @@ export class FightObjective extends Objective {
       this.character.data,
     );
 
-    logger.info(
-      `Simulating fight against ${this.target.code} with no utilities`,
-    );
-    const dryVerdict = await this.character.simulateFightNow(
-      [fakeSchema],
-      this.target.code,
-    );
+    // The viability gate already asked this against the loadout the refit was
+    // told to fit, so asking again would price the same fight twice. Consumed
+    // once: a retest after a real loss has to put the question again.
+    let dryVerdict = this.dryVerdict;
+    this.dryVerdict = undefined;
+    if (!dryVerdict) {
+      logger.info(
+        `Simulating fight against ${this.target.code} with no utilities`,
+      );
+      dryVerdict = await this.character.simulateFightNow(
+        [fakeSchema],
+        this.target.code,
+      );
+    }
 
     if (dryVerdict.success) {
       await this.dropHealthPotions();

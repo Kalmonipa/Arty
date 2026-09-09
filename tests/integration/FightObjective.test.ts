@@ -304,6 +304,14 @@ class SimpleMockCharacter {
     return ObjectiveCompleted;
   });
 
+  canReachUtility = jest.fn(async (): Promise<boolean> => {
+    return true;
+  });
+
+  proposeCombatLoadout = jest.fn(async (): Promise<any> => {
+    return { ...this.data };
+  });
+
   addItemToInventory = (code: string, quantity: number): void => {
     const item = this.data.inventory.find(
       (item: InventorySlot) => item.code === code,
@@ -1356,6 +1364,78 @@ describe('FightObjective Integration Tests', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(mockCharacter.simulateFightNow).toHaveBeenCalled();
+    });
+  });
+  describe('Skipping unwinnable fights before refitting gear', () => {
+    beforeEach(() => {
+      // Lost dry and well under the floor, so the fight turns on potions
+      mockCharacter.simulateFightNow.mockResolvedValue({
+        ...ObjectiveFailed,
+        winRate: 10,
+        averageTurns: 40,
+      });
+    });
+
+    it('does not evaluate gear when no restore potion can be reached', async () => {
+      mockCharacter.canReachUtility.mockResolvedValue(false);
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      const result = await objective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(false);
+      expect(mockCharacter.evaluateGear).not.toHaveBeenCalled();
+      expect(mockCharacter.evaluateDepositItemsInBank).not.toHaveBeenCalled();
+      expect(mockCharacter.equipUtility).not.toHaveBeenCalled();
+    });
+
+    it('judges the fight on the gear it would wear, not what it has on', async () => {
+      mockCharacter.canReachUtility.mockResolvedValue(false);
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      await objective.runPrerequisiteChecks();
+
+      expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
+        'red_slime',
+      );
+    });
+
+    it('still refits when the potions it needs are reachable', async () => {
+      mockCharacter.canReachUtility.mockResolvedValue(true);
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      await objective.runPrerequisiteChecks();
+
+      expect(mockCharacter.evaluateGear).toHaveBeenCalled();
+    });
+
+    it('still refits for a fight winnable without potions', async () => {
+      mockCharacter.canReachUtility.mockResolvedValue(false);
+      mockCharacter.simulateFightNow.mockResolvedValue({
+        ...ObjectiveCompleted,
+        winRate: 100,
+        averageTurns: 12,
+      });
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      const result = await objective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(true);
+      expect(mockCharacter.evaluateGear).toHaveBeenCalled();
+    });
+
+    it('still refits for a fight worth taking dry', async () => {
+      mockCharacter.canReachUtility.mockResolvedValue(false);
+      mockCharacter.simulateFightNow.mockResolvedValue({
+        ...ObjectiveFailed,
+        winRate: PotionlessFightWinRateFloor + 5,
+        averageTurns: 20,
+      });
+      const objective = new FightObjective(mockCharacter as any, target);
+
+      const result = await objective.runPrerequisiteChecks();
+
+      expect(result.success).toBe(true);
+      expect(mockCharacter.evaluateGear).toHaveBeenCalled();
     });
   });
 });

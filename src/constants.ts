@@ -108,6 +108,18 @@ export const BossFightPotionReserve: Partial<Record<UtilityEffects, number>> = {
 };
 
 /**
+ * @description The largest share of the banked stock the boss fight reserve is
+ * allowed to claim.
+ *
+ * A flat reserve turns into a hard floor the moment stock falls below it: every
+ * ordinary fight in the fleet is refused a potion, so nothing fights, nothing
+ * drops, and the reserve is never spent either. Capping it at a share of what
+ * is actually banked keeps the reserve meaningful when stock is healthy and
+ * still leaves ordinary fights something to draw on when it is not.
+ */
+export const BossFightReserveMaxShare = 0.5;
+
+/**
  * @description The unaided win rate a character will settle for rather than
  * spend restore potions.
  */

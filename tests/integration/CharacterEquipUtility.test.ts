@@ -189,10 +189,8 @@ describe('Character.equipUtility', () => {
   });
 
   it('withdraws potions from the bank when the inventory is short', async () => {
-    // 40 above the boss fight reserve, so 40 is what an ordinary fight sees
-    bankItems = {
-      greater_health_potion: BossFightPotionReserve.restore + 40,
-    };
+    // Half of 80 is held back for boss fights, so 40 is what this fight sees
+    bankItems = { greater_health_potion: 80 };
 
     const result = await character.equipUtility('restore', 'utility1');
 
@@ -227,7 +225,8 @@ describe('Character.equipUtility', () => {
   });
 
   it('falls back to a lesser potion held in the bank rather than crafting the best one', async () => {
-    bankItems = { health_potion: BossFightPotionReserve.restore + 30 };
+    // Half of 60 held back, so 30 are spare
+    bankItems = { health_potion: 60 };
 
     const result = await character.equipUtility('restore', 'utility1');
 
@@ -235,15 +234,31 @@ describe('Character.equipUtility', () => {
     expect(character.withdrawNow).toHaveBeenCalledWith(30, 'health_potion');
     expect(result.success).toBe(true);
   });
-  it('hides the boss fight reserve from an ordinary fight', async () => {
-    // 20 short of the reserve: a boss fight would see all 280, this sees none
-    bankItems = { greater_health_potion: BossFightPotionReserve.restore - 20 };
+  it('holds back a share of the stock from an ordinary fight', async () => {
+    bankItems = { greater_health_potion: 120 };
 
     const result = await character.equipUtility('restore', 'utility1');
 
-    expect(character.withdrawNow).not.toHaveBeenCalled();
-    expect(character.equipNow).not.toHaveBeenCalled();
-    expect(result.success).toBe(false);
+    // Half stays behind for boss fights; a boss fight would see all 120
+    expect(character.withdrawNow).toHaveBeenCalledWith(
+      60,
+      'greater_health_potion',
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it('leaves ordinary fights something even when stock is below the reserve', async () => {
+    // The state the fleet stalled in: well short of the reserve, yet a flat
+    // reserve would refuse every character a potion indefinitely
+    bankItems = { greater_health_potion: BossFightPotionReserve.restore - 144 };
+
+    const result = await character.equipUtility('restore', 'utility1');
+
+    expect(character.withdrawNow).toHaveBeenCalledWith(
+      78,
+      'greater_health_potion',
+    );
+    expect(result.success).toBe(true);
   });
 
   it('gives a boss fight the whole stock, reserve included', async () => {
@@ -259,10 +274,10 @@ describe('Character.equipUtility', () => {
   });
 
   it('counts the reserve across every tier, not per tier', async () => {
-    // 200 + 130 = 330 restores banked, so 30 are spare whichever tier they are
+    // 40 + 20 = 60 restores banked, so 30 are spare whichever tier they are
     bankItems = {
-      greater_health_potion: 200,
-      health_potion: 130,
+      greater_health_potion: 40,
+      health_potion: 20,
     };
 
     await character.equipUtility('restore', 'utility1');
@@ -286,13 +301,13 @@ describe('Character.equipUtility', () => {
     expect(result.success).toBe(false);
   });
   it('keeps a usable partial stack instead of displacing it with a lower tier', async () => {
-    // The state LongLegLarry span in: a full stock sits in the bank but all of
-    // it is inside the boss reserve, so no tier can ever top the slot up
+    // The state LongLegLarry span in: what the bank can spare is short of a
+    // full stack, so no tier can top the slot up on its own
     character.data.utility1_slot = 'health_potion';
     character.data.utility1_slot_quantity = 40;
     addItemToInventory('greater_health_potion', 39);
     addItemToInventory('health_potion', 40);
-    bankItems = { greater_health_potion: BossFightPotionReserve.restore };
+    bankItems = { greater_health_potion: 0 };
 
     const result = await character.equipUtility('restore', 'utility1');
 

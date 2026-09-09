@@ -125,7 +125,10 @@ import {
   Restore,
   Tool,
 } from '../gameDataConstants.js';
-import { BossFightPotionReserve } from '../constants.js';
+import {
+  BossFightPotionReserve,
+  BossFightReserveMaxShare,
+} from '../constants.js';
 import {
   BankFullRetryMs,
   DepositRetryLimit,
@@ -2243,6 +2246,35 @@ export class Character {
   }
 
   /**
+   * @description Whether any tier of the given utility could actually be got
+   * hold of right now, without withdrawing or equipping anything.
+   *
+   * Lets a caller find out that a fight is off before it spends actions
+   * preparing for one.
+   */
+  async canReachUtility(
+    utilityType: UtilityEffects,
+    forBossFight = false,
+  ): Promise<boolean> {
+    const bankContents = await BankCache.create(this);
+    if (bankContents.stale) {
+      return false;
+    }
+
+    const charLevel = this.getCharacterLevel(this.data);
+
+    return (
+      this.bestReachableUtility(
+        utilityType,
+        charLevel,
+        utilityType === Restore ? charLevel - 20 : 0,
+        bankContents,
+        this.spareOutsideBossReserve(utilityType, bankContents, forBossFight),
+      ) !== undefined
+    );
+  }
+
+  /**
    * @description Equips a utility into the specified slot.
    * Calculates how many potions we need to reach max number.
    * Checks inventory and bank for the amount we need.
@@ -2397,16 +2429,19 @@ export class Character {
    * A slice of the stock is held back for boss fights, which kit out three
    * characters at once and cannot break off to farm more once the party is
    * assembled. The reserve counts across every tier of the effect rather than
-   * per tier, so a bank holding 280 restores of any mix reads as empty to a
-   * normal fight while a boss fight still sees all 280.
+   * per tier, so a bank holding a mix of tiers reads as one pool.
+   *
+   * The reserve is capped at a share of what is banked rather than held flat:
+   * a flat reserve larger than the stock leaves nothing spare, which stops the
+   * whole fleet fighting without making the boss fight any more possible.
    */
   private spareOutsideBossReserve(
     utilityType: UtilityEffects,
     bankContents: BankCache,
     forBossFight: boolean,
   ): number {
-    const reserved = BossFightPotionReserve[utilityType] ?? 0;
-    if (forBossFight || reserved === 0) {
+    const configured = BossFightPotionReserve[utilityType] ?? 0;
+    if (forBossFight || configured === 0) {
       return MaxEquippedUtilities;
     }
 
@@ -2415,6 +2450,10 @@ export class Character {
       0,
     );
 
+    const reserved = Math.min(
+      configured,
+      Math.floor(totalOfEffect * BossFightReserveMaxShare),
+    );
     const spare = Math.max(0, totalOfEffect - reserved);
     logger.info(
       `${totalOfEffect} ${utilityType} banked, ${reserved} held for boss fights, ${spare} spare`,
