@@ -8,4 +8,12 @@ export type EvaluateGearParams = {
   targetMob?: string;
   targetResource?: string;
   bossFightRole?: BossFightRole;
+  /** Which of the fight plan's loadout variants to gear for */
+  gearVariant?: string;
+};
+
+/** A potion the character can field, and how many of it it can muster */
+export type PotionStock = {
+  code: string;
+  quantity: number;
 };

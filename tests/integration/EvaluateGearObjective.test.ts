@@ -269,7 +269,7 @@ class SimpleMockCharacter {
     ],
   };
 
-  amuletMap: Record<GearEffects, ItemSchema[]> = {
+  amuletMap: Partial<Record<GearEffects, ItemSchema[]>> = {
     dmg_air: [createMockGear('air_amulet', 'Air Amulet', 10, 'dmg_air')],
     dmg_earth: [
       createMockGear('earth_amulet', 'Earth Amulet', 10, 'dmg_earth'),
@@ -302,7 +302,7 @@ class SimpleMockCharacter {
     wisdom: [],
   };
 
-  armorMap: Record<GearEffects, ItemSchema[]> = {
+  armorMap: Partial<Record<GearEffects, ItemSchema[]>> = {
     dmg_air: [createMockGear('air_armor', 'Air Armor', 10, 'dmg_air')],
     dmg_earth: [createMockGear('earth_armor', 'Earth Armor', 10, 'dmg_earth')],
     dmg_fire: [createMockGear('fire_armor', 'Fire Armor', 10, 'dmg_fire')],
@@ -329,7 +329,7 @@ class SimpleMockCharacter {
     wisdom: [],
   };
 
-  helmetMap: Record<GearEffects, ItemSchema[]> = {
+  helmetMap: Partial<Record<GearEffects, ItemSchema[]>> = {
     dmg_air: [createMockGear('air_helmet', 'Air Helmet', 10, 'dmg_air')],
     dmg_earth: [
       createMockGear('earth_helmet', 'Earth Helmet', 10, 'dmg_earth'),
@@ -362,7 +362,7 @@ class SimpleMockCharacter {
     wisdom: [],
   };
 
-  legsArmorMap: Record<GearEffects, ItemSchema[]> = {
+  legsArmorMap: Partial<Record<GearEffects, ItemSchema[]>> = {
     dmg_air: [createMockGear('air_legs', 'Air Legs', 10, 'dmg_air')],
     dmg_earth: [createMockGear('earth_legs', 'Earth Legs', 10, 'dmg_earth')],
     dmg_fire: [createMockGear('fire_legs', 'Fire Legs', 10, 'dmg_fire')],
@@ -389,7 +389,7 @@ class SimpleMockCharacter {
     wisdom: [],
   };
 
-  ringsMap: Record<GearEffects, ItemSchema[]> = {
+  ringsMap: Partial<Record<GearEffects, ItemSchema[]>> = {
     dmg_air: [createMockGear('air_ring', 'Air Ring', 10, 'dmg_air')],
     dmg_earth: [createMockGear('earth_ring', 'Earth Ring', 10, 'dmg_earth')],
     dmg_fire: [createMockGear('fire_ring', 'Fire Ring', 10, 'dmg_fire')],
@@ -416,7 +416,7 @@ class SimpleMockCharacter {
     wisdom: [],
   };
 
-  shieldMap: Record<GearEffects, ItemSchema[]> = {
+  shieldMap: Partial<Record<GearEffects, ItemSchema[]>> = {
     dmg_air: [],
     dmg_earth: [],
     dmg_fire: [],
@@ -445,7 +445,7 @@ class SimpleMockCharacter {
     wisdom: [],
   };
 
-  bootsMap: Record<GearEffects, ItemSchema[]> = {
+  bootsMap: Partial<Record<GearEffects, ItemSchema[]>> = {
     dmg_air: [],
     dmg_earth: [],
     dmg_fire: [],
@@ -769,6 +769,49 @@ describe('EvaluateGearObjective Integration Tests', () => {
       page: 1,
       size: 50,
       total: 0,
+    });
+  });
+
+  describe('Gearing a raid tank from a fight plan', () => {
+    const airRaidBoss = {
+      data: {
+        ...mockMonsterData.data,
+        code: 'pixie',
+        type: 'raid_boss' as const,
+        level: 40,
+        attack_fire: 0,
+        attack_air: 675,
+        res_fire: 10,
+        res_air: 5,
+      } as MonsterSchema,
+    };
+
+    beforeEach(() => {
+      mockCharacter.data.level = 40;
+      (
+        getMonsterInformation as jest.MockedFunction<
+          typeof getMonsterInformation
+        >
+      ).mockResolvedValue(airRaidBoss);
+    });
+
+    it('armours the tank against the element the boss actually hits with', async () => {
+      mockCharacter.bankItems.res_air_armor = 1;
+      mockCharacter.bankItems.air_armor = 1;
+
+      const objective = new EvaluateGearObjective({
+        character: mockCharacter as any,
+        activityType: 'combat',
+        targetMob: 'pixie',
+        bossFightRole: 'tank',
+      });
+
+      const proposed = await objective.proposeCombatLoadout(
+        mockCharacter.data.level,
+        'pixie',
+      );
+
+      expect(proposed.body_armor_slot).toBe('res_air_armor');
     });
   });
 

@@ -17,7 +17,9 @@ import {
   BossFightRole,
   BossFightRoster,
   BossFightSimResult,
+  MaxBossFightParty,
 } from './bossFight.types.js';
+import { resolveGearPlan } from '../evaluateGear/gearPlan.js';
 
 /**
  * A lot of these functions are also used by RaidObjective because they are kind of the same procedure
@@ -63,16 +65,6 @@ export async function simulateBossFight(
     return noSimResult(ObjectiveFailed);
   }
 
-  // Build FakeCharacterSchemas to run a fight sim. The leader proposes its own
-  // loadout the same way the participants do: this runs before anyone gears up,
-  // so simulating the gear it happens to be standing in would judge the fight
-  // on a gathering tool
-  const leaderFakeCharSchema = await character.proposeCombatLoadout(
-    target.code,
-    undefined,
-    leaderRole,
-  );
-
   const participantLoadouts: FakeCharacterSchema[] = [];
 
   for (const [index, participant] of participants.entries()) {
@@ -102,34 +94,71 @@ export async function simulateBossFight(
     participantLoadouts.push(loadoutRequest.proposedLoadout);
   }
 
-  const loadouts = [leaderFakeCharSchema, ...participantLoadouts];
+  // The participants' parts are settled the moment the leader's is, so their
+  // loadouts are fetched once and reused across every variant. Only the leader's
+  // own allocation is an open question, which is what the variants explore.
+  const plan = resolveGearPlan({
+    monster: mobInfo.data,
+    role: leaderRole,
+    partySize: MaxBossFightParty,
+  });
 
-  // Owning the job rather than going through simulateFightNow is what keeps the
-  // win rate and turn count reachable; the helper returns only a pass/fail
-  const sim = new FightSimulator(
-    character,
-    loadouts,
-    target.code,
-    target.quantity,
-    { winRateThreshold: options?.winRateThreshold },
-  );
-  const simResult = await character.executeJobNow(
-    sim,
-    true,
-    true,
-    character.currentExecutingJob?.objectiveId,
-  );
+  let best: BossFightSimResult | undefined;
 
-  logger.info(
-    `Sim result was a ${simResult.success ? 'win' : 'loss'} at a ${sim.winRate}% win rate over ${sim.averageTurns} turns`,
-  );
+  for (const variant of plan.variants) {
+    // The leader proposes its own loadout the same way the participants do: this
+    // runs before anyone gears up, so simulating the gear it happens to be
+    // standing in would judge the fight on a gathering tool
+    const leaderFakeCharSchema = await character.proposeCombatLoadout(
+      target.code,
+      undefined,
+      leaderRole,
+      variant.name,
+    );
 
-  return {
-    ...simResult,
-    winRate: sim.winRate,
-    averageTurns: sim.averageTurns,
-    loadouts,
-  };
+    const loadouts = [leaderFakeCharSchema, ...participantLoadouts];
+
+    // Owning the job rather than going through simulateFightNow is what keeps
+    // the win rate and turn count reachable; the helper returns only a pass/fail
+    const sim = new FightSimulator(
+      character,
+      loadouts,
+      target.code,
+      target.quantity,
+      { winRateThreshold: options?.winRateThreshold },
+    );
+    const simResult = await character.executeJobNow(
+      sim,
+      true,
+      true,
+      character.currentExecutingJob?.objectiveId,
+    );
+
+    logger.info(
+      `Sim result for the ${variant.name} variant was a ${simResult.success ? 'win' : 'loss'} at a ${sim.winRate}% win rate over ${sim.averageTurns} turns`,
+    );
+
+    const candidate: BossFightSimResult = {
+      ...simResult,
+      winRate: sim.winRate,
+      averageTurns: sim.averageTurns,
+      loadouts,
+      variant: variant.name,
+    };
+
+    if (!best || candidate.winRate > best.winRate) {
+      best = candidate;
+    }
+
+    // A variant that already clears the bar is good enough. Simulating the rest
+    // would only spend the shared request budget to refine a decision already
+    // made, and the sim endpoint is rate limited to roughly one call a second.
+    if (simResult.success) {
+      break;
+    }
+  }
+
+  return best ?? noSimResult(ObjectiveFailed);
 }
 
 /**

@@ -34,6 +34,8 @@ import {
   BossFightTank,
 } from '../fightBosses/bossFight.types.js';
 import {
+  Amulet,
+  BodyArmor,
   BoostDmgAir,
   BoostDmgEarth,
   BoostDmgFire,
@@ -43,20 +45,23 @@ import {
   BoostResEarth,
   BoostResFire,
   BoostResWater,
+  Boots,
   Gearcrafting,
+  Helmet,
   Jewelrycrafting,
+  LegArmor,
   Restore,
+  Ring1,
+  Ring2,
+  Shield,
   SplashRestore,
   Weaponcrafting,
 } from '../gameDataConstants.js';
 import { MaxEquippedUtilities, MinEquippedUtilities } from '../constants.js';
-import { EvaluateGearParams } from './evaluateGear.types.js';
-
-/** A potion the character can field, and how many of it it can muster */
-type PotionStock = {
-  code: string;
-  quantity: number;
-};
+import { EvaluateGearParams, PotionStock } from './evaluateGear.types.js';
+import { GearPlan, StatWeights, resolveGearPlan } from './gearPlan.js';
+import { scoreGear } from './gearScore.js';
+import { MaxBossFightParty } from '../fightBosses/bossFight.types.js';
 
 /**
  * @description Evaluates which gear is the best to use for the upcoming fight
@@ -69,6 +74,8 @@ export class EvaluateGearObjective extends Objective {
   targetMob?: string;
   targetResource?: string;
   bossFightRole?: BossFightRole;
+  /** Which of the plan's loadout variants to gear for; the first if unnamed */
+  gearVariant?: string;
   private bankCache?: BankCache;
 
   constructor(params: EvaluateGearParams) {
@@ -84,6 +91,7 @@ export class EvaluateGearObjective extends Objective {
     this.targetMob = params.targetMob;
     this.targetResource = params.targetResource;
     this.bossFightRole = params.bossFightRole;
+    this.gearVariant = params.gearVariant;
   }
 
   async runPrerequisiteChecks(): Promise<ObjectiveResult> {
@@ -342,6 +350,137 @@ export class EvaluateGearObjective extends Objective {
     return await this.selectForSlot(gearType, 'dmg', charLevel, allocated);
   }
 
+  /**
+   * @description Every item that fits the slot, regardless of which effect it
+   * offers
+   */
+  private slotCatalogue(gearType: ItemSlot): ItemSchema[] {
+    const gearMap =
+      gearType === Amulet
+        ? this.character.amuletMap
+        : gearType === BodyArmor
+          ? this.character.armorMap
+          : gearType === Boots
+            ? this.character.bootsMap
+            : gearType === Helmet
+              ? this.character.helmetMap
+              : gearType === LegArmor
+                ? this.character.legsArmorMap
+                : gearType === Ring1 || gearType === Ring2
+                  ? this.character.ringsMap
+                  : gearType === Shield
+                    ? this.character.shieldMap
+                    : undefined;
+
+    if (!gearMap) {
+      logger.warn(`No gear map for ${gearType}; leaving the slot alone`);
+      return [];
+    }
+
+    const byCode = new Map<string, ItemSchema>();
+    for (const bucket of Object.values(gearMap)) {
+      for (const item of bucket ?? []) {
+        byCode.set(item.code, item);
+      }
+    }
+
+    return [...byCode.values()];
+  }
+
+  /**
+   * @description Picks the slot's best item for a plan's weights.
+   */
+  private async selectForSlotByScore(
+    gearType: ItemSlot,
+    weights: StatWeights,
+    charLevel: number,
+    allocated: Map<string, number>,
+  ): Promise<string | undefined> {
+    const ranked = this.slotCatalogue(gearType)
+      .filter((item) => item.level <= charLevel)
+      .map((item) => ({ item, score: scoreGear(item, weights) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (ranked.length === 0) {
+      logger.debug(`Nothing scores for ${gearType} on this plan`);
+      return undefined;
+    }
+
+    logger.info(
+      `Best ${gearType} for the plan: ${ranked
+        .slice(0, 3)
+        .map(({ item, score }) => `${item.code} (${score.toFixed(0)})`)
+        .join(', ')}`,
+    );
+
+    const claimed = await this.claimBestAvailable(
+      ranked.map(({ item }) => item),
+      gearType,
+      allocated,
+    );
+
+    return claimed?.code;
+  }
+
+  /**
+   * @description Gear for a party fight, chosen by what the fight is worth per
+   * stat rather than by a fixed slot order
+   */
+  private async chooseCombatGearForPlan(
+    plan: GearPlan,
+    charLevel: number,
+    mobResistances: MonsterResistance[],
+  ): Promise<Map<ItemSlot, string>> {
+    const variant =
+      plan.variants.find((candidate) => candidate.name === this.gearVariant) ??
+      plan.variants[0];
+
+    logger.info(
+      `Gearing for a ${plan.profile} fight as ${plan.role ?? 'no role'} (${variant.name} variant)`,
+    );
+
+    const allocated = new Map<string, number>();
+    const chosen = new Map<ItemSlot, string>();
+
+    const slots: ItemSlot[] = [
+      Shield,
+      Helmet,
+      BodyArmor,
+      LegArmor,
+      Boots,
+      Ring1,
+      Ring2,
+      Amulet,
+    ];
+
+    for (const slot of slots) {
+      const code = await this.selectForSlotByScore(
+        slot,
+        variant.weights,
+        charLevel,
+        allocated,
+      );
+      if (code) {
+        chosen.set(slot, code);
+      }
+    }
+
+    // The weapon is still chosen by damage after resistances: a plan prices
+    // defence per slot, but every weapon is pure offence, so there is nothing
+    // for the weights to trade off against.
+    const weaponCode = await this.selectWeapon(
+      mobResistances,
+      charLevel,
+      allocated,
+    );
+    if (weaponCode) {
+      chosen.set('weapon', weaponCode);
+    }
+
+    return chosen;
+  }
+
   private async chooseCombatGear(
     charLevel: number,
     targetMob: string,
@@ -400,6 +539,20 @@ export class EvaluateGearObjective extends Objective {
         value: mobInfo.data.res_water,
       },
     ].sort((a, b) => a.value - b.value);
+
+    // A role means this is a party fight, which is the only place a plan
+    // applies. Ordinary fights keep the pipeline below.
+    if (this.bossFightRole) {
+      return await this.chooseCombatGearForPlan(
+        resolveGearPlan({
+          monster: mobInfo.data,
+          role: this.bossFightRole,
+          partySize: MaxBossFightParty,
+        }),
+        charLevel,
+        mobResistances,
+      );
+    }
 
     // Tracks how many of each item code have already been claimed by earlier
     // slots in this pass, so a single-copy item isn't picked for two slots.

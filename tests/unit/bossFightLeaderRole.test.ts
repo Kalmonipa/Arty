@@ -77,6 +77,25 @@ describe('FightBossLeaderObjective role assignment', () => {
     expect(executedJobs[0].targetMob).toBe('lich');
   });
 
+  it('gears up for the variant the sim settled on', async () => {
+    mockedSimulate.mockResolvedValue({
+      ...ObjectiveCompleted,
+      winRate: 100,
+      averageTurns: 12,
+      loadouts: [],
+      variant: 'resist',
+    });
+
+    const objective = new FightBossLeaderObjective(character, {
+      code: 'lich',
+      quantity: 1,
+    });
+
+    await objective.run();
+
+    expect(executedJobs[0].gearVariant).toBe('resist');
+  });
+
   it('registers the other two characters as dps and healer', async () => {
     const objective = new FightBossLeaderObjective(character, {
       code: 'lich',

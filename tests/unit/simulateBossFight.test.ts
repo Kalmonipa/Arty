@@ -147,6 +147,7 @@ describe('simulateBossFight', () => {
       'lich',
       undefined,
       'tank',
+      'default',
     );
     // Not the gear it is standing in: the sim runs before anyone gears up
     expect(leader.createFakeCharacterSchema).not.toHaveBeenCalledWith(
@@ -249,8 +250,18 @@ describe('simulateBossFight for a party that is not the boss roster', () => {
       { roster: RaidRoster },
     );
 
-    expect(mockedLoadout).toHaveBeenNthCalledWith(1, 'BouncyBella', 'lich', 'tank');
-    expect(mockedLoadout).toHaveBeenNthCalledWith(2, 'JumpyJimmy', 'lich', 'tank');
+    expect(mockedLoadout).toHaveBeenNthCalledWith(
+      1,
+      'BouncyBella',
+      'lich',
+      'healer',
+    );
+    expect(mockedLoadout).toHaveBeenNthCalledWith(
+      2,
+      'JumpyJimmy',
+      'lich',
+      'healer',
+    );
   });
 
   it('takes the leader part from the caller, not from the first participant', async () => {
@@ -266,6 +277,7 @@ describe('simulateBossFight for a party that is not the boss roster', () => {
       'pixie',
       undefined,
       'tank',
+      'default',
     );
   });
 
@@ -278,5 +290,97 @@ describe('simulateBossFight for a party that is not the boss roster', () => {
 
     const job = leader.executeJobNow.mock.calls[0][0] as FightSimulator;
     expect(job.winRateThreshold).toBe(50);
+  });
+});
+
+describe('simulateBossFight variant selection', () => {
+  const pixie = {
+    code: 'pixie',
+    name: 'Pixie',
+    type: 'raid_boss',
+    level: 40,
+    hp: 1200000,
+    attack_air: 675,
+    attack_earth: 0,
+    attack_fire: 0,
+    attack_water: 0,
+    res_air: 5,
+    res_earth: 5,
+    res_fire: 10,
+    res_water: 10,
+    critical_strike: 5,
+    initiative: 800,
+    effects: [{ code: 'enchanted_mirror', value: 50 }],
+  };
+
+  const raidOptions = {
+    roster: RaidRoster,
+    leaderRole: RaidLeaderRole,
+    winRateThreshold: RaidWinRateThreshold,
+  };
+
+  beforeEach(() => {
+    mockedMonster.mockResolvedValue({ data: pixie } as never);
+  });
+
+  it('simulates every loadout variant the leader plan offers', async () => {
+    await simulateBossFight(
+      leader as never,
+      { code: 'pixie', quantity: 10 },
+      raidOptions,
+    );
+
+    // tank plans offer threat / resist / bulk
+    expect(leader.proposeCombatLoadout).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps the variant with the best win rate, not the last one tried', async () => {
+    const rates = [20, 80, 50];
+    let call = 0;
+    leader.executeJobNow = jest.fn(async (job: FightSimulator) => {
+      const winRate = rates[call++];
+      job.winRate = winRate;
+      job.averageTurns = 100;
+      return winRate >= RaidWinRateThreshold
+        ? ObjectiveCompleted
+        : ObjectiveFailed;
+    }) as never;
+
+    const result = await simulateBossFight(
+      leader as never,
+      { code: 'pixie', quantity: 10 },
+      raidOptions,
+    );
+
+    expect(result.winRate).toBe(80);
+    expect(result.success).toBe(true);
+    expect(result.variant).toBe('resist');
+  });
+
+  it('asks each participant for its loadout once, however many variants it tries', async () => {
+    await simulateBossFight(
+      leader as never,
+      { code: 'pixie', quantity: 10 },
+      raidOptions,
+    );
+
+    expect(mockedLoadout).toHaveBeenCalledTimes(RaidRoster.length);
+  });
+
+  it('stops at the first variant that clears the threshold', async () => {
+    leader.executeJobNow = jest.fn(async (job: FightSimulator) => {
+      job.winRate = 100;
+      job.averageTurns = 100;
+      return ObjectiveCompleted;
+    }) as never;
+
+    const result = await simulateBossFight(
+      leader as never,
+      { code: 'pixie', quantity: 10 },
+      raidOptions,
+    );
+
+    expect(leader.proposeCombatLoadout).toHaveBeenCalledTimes(1);
+    expect(result.variant).toBe('threat');
   });
 });

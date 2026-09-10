@@ -133,14 +133,18 @@ beforeEach(() => {
 });
 
 describe('RaidLeaderObjective mustering the party', () => {
-  it('registers every participant as a tank', async () => {
+  // The leader takes the threat lead and the boss commits to it, so the other
+  // two never need to survive a hit — their turns are worth more spent healing.
+  // Three equal tanks split the boss's attacks three ways and each then needs
+  // its own restores, which simulated far worse than one tank and two healers.
+  it('registers the other two as healers, leaving the leader to tank', async () => {
     await buildObjective().run();
 
     expect(
       mockedRegisterParticipant.mock.calls.map(
         ([params]) => params.participant.role,
       ),
-    ).toEqual(['tank', 'tank']);
+    ).toEqual(['healer', 'healer']);
   });
 
   it('registers them against the raid rather than a boss fight', async () => {
@@ -170,6 +174,27 @@ describe('RaidLeaderObjective mustering the party', () => {
     expect(mockedGearUp.mock.calls[0][0]).toMatchObject({
       targetMob: 'pixie',
       bossFightRole: 'tank',
+    });
+  });
+
+  // The sim already paid to find out which allocation works. Re-deciding at
+  // gear-up time would throw that answer away and equip whatever the plan
+  // happens to list first.
+  it('gears up for the variant the sim settled on', async () => {
+    mockedFight.mockResolvedValue(fought('win'));
+    raidOpenFor(1);
+    mockedSimulate.mockResolvedValue({
+      ...ObjectiveCompleted,
+      winRate: 100,
+      averageTurns: 100,
+      loadouts: [],
+      variant: 'bulk',
+    });
+
+    await buildObjective().run();
+
+    expect(mockedGearUp.mock.calls[0][0]).toMatchObject({
+      gearVariant: 'bulk',
     });
   });
 

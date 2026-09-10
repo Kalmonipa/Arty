@@ -100,7 +100,7 @@ export class RaidLeaderObjective extends Objective {
 
     let fightFinished = false;
     try {
-      const result = await this.leadFight(fightId);
+      const result = await this.leadFight(fightId, fightSimResult.variant);
       fightFinished = result.success;
       return result;
     } finally {
@@ -115,7 +115,10 @@ export class RaidLeaderObjective extends Objective {
    * the party loses RaidLossLimit fights in a row. Registered fights are torn
    * down by the caller, so this is free to return early on any failure.
    */
-  private async leadFight(fightId: number): Promise<ObjectiveResult> {
+  private async leadFight(
+    fightId: number,
+    gearVariant?: string,
+  ): Promise<ObjectiveResult> {
     const participants = RaidRoster;
     let consecutiveLosses = 0;
     let fightsDone = 0;
@@ -160,6 +163,7 @@ export class RaidLeaderObjective extends Objective {
           activityType: 'combat',
           targetMob: raid.monster,
           bossFightRole: RaidLeaderRole,
+          gearVariant,
         }),
       );
       if (!gearUpJob.success) {

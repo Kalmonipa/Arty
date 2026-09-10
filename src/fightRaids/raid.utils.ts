@@ -1,5 +1,6 @@
 import { BouncyBella, JumpyJimmy } from '../constants.js';
 import {
+  BossFightHealer,
   BossFightParticipant,
   BossFightTank,
 } from '../fightBosses/bossFight.types.js';
@@ -11,14 +12,22 @@ import {
 } from '../types/types.js';
 
 /**
- * @description Raids are won by surviving 100 rounds so we want everyone to be a tank
- * @todo Check if we can win the raid by having a DPS and/or healer in the party
+ * @description A raid is won by lasting 100 turns, and a turn belongs to one
+ * actor: with three characters the boss lands only a quarter of them, and it
+ * lands all of those on whoever holds the highest threat. So the leader tanks
+ * alone and the other two heal it.
+ *
+ * Three equal tanks looks safer and is not. The boss spreads its attacks across
+ * the party, every character then has to fund its own restores out of two
+ * utility slots, and none of them can spare a slot for splash healing. One
+ * committed tank fed by two healers simulated at a hundred percent on the same
+ * gear that scored sixty as three tanks.
  */
 export const RaidLeaderRole = BossFightTank;
 
 export const RaidRoster: BossFightParticipant[] = [
-  { characterName: BouncyBella, role: BossFightTank },
-  { characterName: JumpyJimmy, role: BossFightTank },
+  { characterName: BouncyBella, role: BossFightHealer },
+  { characterName: JumpyJimmy, role: BossFightHealer },
 ];
 
 /**

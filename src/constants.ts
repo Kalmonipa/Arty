@@ -93,6 +93,12 @@ export const MaxInventorySlots = 20;
 /**
  * Maximum number of potions that can be equipped
  */
+/**
+ * @description The hard cap on a fight. A raid fight is won by reaching it, an
+ * ordinary one is lost by reaching it.
+ */
+export const MaxFightTurns = 100;
+
 export const MaxEquippedUtilities = 100;
 /**
  * Minimum number of potions to equip

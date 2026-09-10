@@ -40,6 +40,14 @@ export function isBossFightOver(state: BossFightStatus): boolean {
   return state === 'complete' || state === 'aborted';
 }
 
+/**
+ * @description The most characters that can join a boss or raid fight. The game
+ * caps a party at three, so this is a rule rather than a preference — it also
+ * sets how many of the hundred turns the monster gets, since a turn belongs to
+ * one actor.
+ */
+export const MaxBossFightParty = 3;
+
 export type BossFightRole = 'tank' | 'dps' | 'healer';
 
 export const BossFightTank = 'tank' as const satisfies BossFightRole;
@@ -104,6 +112,11 @@ export type BossFightSimResult = ObjectiveResult & {
   averageTurns: number;
   /** The loadouts the fight was simulated with, leader first */
   loadouts: FakeCharacterSchema[];
+  /**
+   * Which of the leader's plan variants these loadouts came from, so the leader
+   * gears for the one that actually simulated best rather than re-deciding.
+   */
+  variant?: string;
 };
 
 export type registerBossFightParticipantParams = {

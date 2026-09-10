@@ -81,7 +81,7 @@ export class FightBossLeaderObjective extends Objective {
 
     let fightFinished = false;
     try {
-      const result = await this.leadFight(fightId);
+      const result = await this.leadFight(fightId, fightSimResult.variant);
       fightFinished = result.success;
       return result;
     } finally {
@@ -96,7 +96,10 @@ export class FightBossLeaderObjective extends Objective {
    * times. Registered fights are torn down by the caller, so this is free to
    * return early on any failure.
    */
-  private async leadFight(fightId: number): Promise<ObjectiveResult> {
+  private async leadFight(
+    fightId: number,
+    gearVariant?: string,
+  ): Promise<ObjectiveResult> {
     let progress = 0;
     const participants = BossFightRoster;
 
@@ -122,6 +125,7 @@ export class FightBossLeaderObjective extends Objective {
           activityType: 'combat',
           targetMob: this.target.code,
           bossFightRole: BossFightLeaderRole,
+          gearVariant,
         }),
       );
       if (!gearUpJob.success) {

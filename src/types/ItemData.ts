@@ -7,7 +7,12 @@ export type GearEffects =
   | 'dmg'
   | 'heal'
   | 'hp'
+  | 'initiative'
   | 'prospecting'
+  // Decides who the monster attacks in a party fight, so it is the stat a tank
+  // is really buying. buildListOf buckets by whatever codes items carry, so the
+  // threat and initiative maps already exist — this only names them.
+  | 'threat'
   | 'wisdom'
   | ResistanceType
   | AttackType

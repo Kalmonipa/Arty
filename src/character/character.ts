@@ -268,14 +268,14 @@ export class Character {
   /**
    * Game state that we can refer to without API calls
    */
-  amuletMap?: Record<GearEffects, ItemSchema[]>;
-  armorMap?: Record<GearEffects, ItemSchema[]>;
-  bootsMap?: Record<GearEffects, ItemSchema[]>;
-  helmetMap?: Record<GearEffects, ItemSchema[]>;
-  legsArmorMap?: Record<GearEffects, ItemSchema[]>;
-  ringsMap?: Record<GearEffects, ItemSchema[]>;
-  shieldMap?: Record<GearEffects, ItemSchema[]>;
-  artifactsMap?: Record<GearEffects, ItemSchema[]>;
+  amuletMap?: Partial<Record<GearEffects, ItemSchema[]>>;
+  armorMap?: Partial<Record<GearEffects, ItemSchema[]>>;
+  bootsMap?: Partial<Record<GearEffects, ItemSchema[]>>;
+  helmetMap?: Partial<Record<GearEffects, ItemSchema[]>>;
+  legsArmorMap?: Partial<Record<GearEffects, ItemSchema[]>>;
+  ringsMap?: Partial<Record<GearEffects, ItemSchema[]>>;
+  shieldMap?: Partial<Record<GearEffects, ItemSchema[]>>;
+  artifactsMap?: Partial<Record<GearEffects, ItemSchema[]>>;
   // ToDo: Get rune information
   //runesMap?: Record<
 
@@ -3566,12 +3566,14 @@ export class Character {
     targetMob: string,
     cache?: BankCache,
     bossFightRole?: BossFightRole,
+    gearVariant?: string,
   ): Promise<FakeCharacterSchema> {
     const job = new EvaluateGearObjective({
       character: this,
       activityType: 'combat',
       targetMob: targetMob,
       bossFightRole: bossFightRole,
+      gearVariant: gearVariant,
     });
     const charLevel = this.getCharacterLevel(this.data);
     return await job.proposeCombatLoadout(charLevel, targetMob, cache);

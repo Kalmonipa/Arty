@@ -32,6 +32,15 @@ export const BoostResWater =
 export const Restore = 'restore' as const satisfies UtilityEffects;
 export const SplashRestore = 'splash_restore' as const satisfies UtilityEffects;
 
+export const AttackAir = 'attack_air';
+export const AttackEarth = 'attack_earth';
+export const AttackFire = 'attack_fire';
+export const AttackWater = 'attack_water';
+export const ResistAir = 'res_air';
+export const ResistEarth = 'res_earth';
+export const ResistFire = 'res_fire';
+export const ResistWater = 'res_water';
+
 /**
  * @description Items
  */
@@ -95,6 +104,8 @@ export const Boots = 'boots';
 export const Helmet = 'helmet';
 export const LegArmor = 'leg_armor';
 export const Ring = 'ring';
+export const Ring1 = 'ring1';
+export const Ring2 = 'ring2';
 export const Rune = 'rune';
 export const Shield = 'shield';
 export const Utility = 'utility';

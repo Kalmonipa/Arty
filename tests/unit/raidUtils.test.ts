@@ -11,10 +11,15 @@ const raidWith = (status: RaidStatus) =>
   ({ code: 'enchanted_fairy', monster: 'pixie', status }) as RaidSchema;
 
 describe('the raid party', () => {
-  it('sends everyone in as a tank, leader included', () => {
-    // Surviving all 100 turns is the win, and the fairy reflects half of what
-    // it takes, so damage gear costs survivability and buys nothing
-    expect(RaidRoster.map((member) => member.role)).toEqual(['tank', 'tank']);
+  it('sends one tank and two healers', () => {
+    // Surviving all 100 turns is the win, and the boss spends its share of them
+    // on whoever holds the highest threat. One character holding it is what frees
+    // the other two to spend their utility slots on splash healing instead of
+    // funding their own restores.
+    expect(RaidRoster.map((member) => member.role)).toEqual([
+      'healer',
+      'healer',
+    ]);
     expect(RaidLeaderRole).toBe('tank');
   });
 
