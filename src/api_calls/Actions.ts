@@ -119,6 +119,24 @@ export async function actionFight(
       logger.info(
         `Fight against ${result.data.fight.opponent} was a ${result.data.fight.result} after ${result.data.fight.turns} turns.`,
       );
+      let dropsReceived: string = '';
+      if (result.data.fight.characters.length > 1) {
+        result.data.fight.characters.forEach((char) => {
+          dropsReceived = char.drops
+            .map((drop) => `${drop.quantity} ${drop.code}`)
+            .join(', ');
+          logger.info(
+            `  - ${char.character_name} received ${char.xp} xp, ${char.gold} gold and ${dropsReceived}.`,
+          );
+        });
+      } else {
+        dropsReceived = result.data.fight.characters[0].drops
+          .map((drop) => `${drop.quantity} ${drop.code}`)
+          .join(', ');
+        logger.info(
+          `Received ${result.data.fight.characters[0].xp} xp, ${result.data.fight.characters[0].gold} gold and ${dropsReceived}.`,
+        );
+      }
     },
   });
 }
