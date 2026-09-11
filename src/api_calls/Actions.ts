@@ -126,7 +126,7 @@ export async function actionFight(
             .map((drop) => `${drop.quantity} ${drop.code}`)
             .join(', ');
           logger.info(
-            `  - ${char.character_name} received ${char.xp} xp, ${char.gold} gold and ${dropsReceived}.`,
+            `  - ${char.character_name} received ${char.xp} xp, ${char.gold} gold${dropsReceived ? ` and ${dropsReceived}` : ''}.`,
           );
         });
       } else {
@@ -134,7 +134,7 @@ export async function actionFight(
           .map((drop) => `${drop.quantity} ${drop.code}`)
           .join(', ');
         logger.info(
-          `Received ${result.data.fight.characters[0].xp} xp, ${result.data.fight.characters[0].gold} gold and ${dropsReceived}.`,
+          `Received ${result.data.fight.characters[0].xp} xp, ${result.data.fight.characters[0].gold} gold${dropsReceived ? ` and ${dropsReceived}` : ''}.`,
         );
       }
     },
