@@ -281,10 +281,16 @@ export async function markAsNotExecuting(
 }
 
 /**
- * Releases the claims this character was holding. Run once at startup: a fresh
- * process has nothing of its own in flight, so any row it still holds was
- * stranded by an interrupted fulfilment (crash, restart, or error) and must be
- * made available again.
+ * Releases the claims this character was holding. Run once at startup: a row it
+ * still holds that nothing in its restored job queue is working on was stranded
+ * by an interrupted fulfilment (crash, restart, or error) and must be made
+ * available again.
+ *
+ * `stillInFlight` is the exception, and the reason this takes an argument at
+ * all: the job queue is persisted, so a restart resumes the fulfilment it was
+ * part-way through. Releasing those rows put the request back in the open pool
+ * while the character carried on working it, and a second character picked it
+ * up and gathered the same materials.
  *
  * Only this character's rows are touched — every character runs its own process
  * against the shared table, so releasing all of them would pull requests out
@@ -293,15 +299,18 @@ export async function markAsNotExecuting(
  * realistic fulfilment so a live claim is never stolen. Rows with no owner
  * predate claim tracking.
  * @param characterName The character whose claims should be released
+ * @param stillInFlight Request ids the restored job queue is still working on
  * @returns the number of rows reset
  */
 export async function reclaimExecutingWishlistRequests(
   characterName: string,
+  stillInFlight: number[] = [],
 ): Promise<number> {
   const query = `
     UPDATE wishlist
     SET executing = false, executing_by = NULL, claimed_at = NULL
     WHERE executing = true AND fulfilled = false
+      AND NOT (id = ANY($2))
       AND (
         executing_by = $1
         OR executing_by IS NULL
@@ -310,7 +319,7 @@ export async function reclaimExecutingWishlistRequests(
   `;
 
   try {
-    const result = await db.query(query, [characterName]);
+    const result = await db.query(query, [characterName, stillInFlight]);
     return result.rowCount ?? 0;
   } catch (err) {
     logger.error(`Failed to reclaim executing wishlist requests: ${err}`);

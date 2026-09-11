@@ -97,8 +97,10 @@ import { FightSimulator } from '../fights/fight.simulator.js';
 import { IdleObjective } from '../idleObjectives/idleObjective.js';
 import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
 import {
+  claimWishlistRequest,
   deleteWishlistRequestsForJob,
   getWishlistRequestsForJob,
+  reclaimExecutingWishlistRequests,
 } from '../wishlist/wishlist.utils.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
@@ -1150,6 +1152,46 @@ export class Character {
     }
     await this.saveJobQueue();
     return true;
+  }
+
+  /**
+   * @description Settles the wishlist claims for the queue that was just
+   * restored from disk, then releases whatever this character was left holding.
+   *
+   * Run once at startup, after the job queue is loaded. A claim is taken in
+   * `FulfillWishlistRequestObjective.run()` and nothing renews it, but the queue
+   * outlives the process: a restart resumes at the deepest child job, so the
+   * fulfil job above it isn't re-entered — and its claim not retaken — until
+   * hours of gathering finish. Retaking the claim here is what keeps the request
+   * out of the open pool for that whole stretch; without it a second character
+   * picks the request up and gathers the same materials over again.
+   *
+   * A claim this character can't retake is held by someone else who has since
+   * taken the request over, so the restored job is cancelled rather than left to
+   * work for hours and discover the same thing when it finally re-enters.
+   * @returns the number of stranded rows released
+   */
+  async restoreWishlistClaims(): Promise<number> {
+    const characterName = this.data.name;
+    const stillInFlight: number[] = [];
+
+    const restoredFulfilJobs = this.jobList.filter(
+      (job): job is FulfillWishlistRequestObjective =>
+        job instanceof FulfillWishlistRequestObjective,
+    );
+
+    for (const job of restoredFulfilJobs) {
+      if (await claimWishlistRequest(job.request.id, characterName)) {
+        stillInFlight.push(job.request.id);
+      } else {
+        logger.info(
+          `Request #${job.request.id} is claimed by another character now. Cancelling ${job.objectiveId}`,
+        );
+        await this.cancelJobAndChildren(job.objectiveId);
+      }
+    }
+
+    return reclaimExecutingWishlistRequests(characterName, stillInFlight);
   }
 
   /**

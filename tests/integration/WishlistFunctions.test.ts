@@ -448,7 +448,7 @@ describe('wishlist functions', () => {
       const sql = mockedQuery.mock.calls[0][0] as string;
       expect(sql).toMatch(/SET\s+executing = false/i);
       expect(sql).toMatch(/executing = true AND fulfilled = false/i);
-      expect(mockedQuery.mock.calls[0][1]).toEqual(['JumpyJimmy']);
+      expect(mockedQuery.mock.calls[0][1]).toEqual(['JumpyJimmy', []]);
     });
 
     it("leaves other characters' in-flight claims alone", async () => {
@@ -458,6 +458,19 @@ describe('wishlist functions', () => {
 
       const sql = mockedQuery.mock.calls[0][0] as string;
       expect(sql).toMatch(/executing_by = \$1/i);
+    });
+
+    it('spares the rows the restored job queue is still working on', async () => {
+      mockedQuery.mockResolvedValue({ rowCount: 1 } as any);
+
+      await reclaimExecutingWishlistRequests('JumpyJimmy', [4295, 4301]);
+
+      const sql = mockedQuery.mock.calls[0][0] as string;
+      expect(sql).toMatch(/NOT \(id = ANY\(\$2\)\)/i);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([
+        'JumpyJimmy',
+        [4295, 4301],
+      ]);
     });
 
     it('returns 0 when the update fails', async () => {

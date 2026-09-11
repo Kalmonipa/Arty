@@ -20,7 +20,6 @@ import { register } from './metrics.js';
 import { db } from './db.js';
 import EventRouter from './events/events.routes.js';
 import WishlistRouter from './wishlist/wishlist.routes.js';
-import { reclaimExecutingWishlistRequests } from './wishlist/wishlist.utils.js';
 
 async function main() {
   // First thing out, so a container crash-looping on a bad token or a rate
@@ -46,10 +45,11 @@ async function main() {
     logger.info('Database connection successful!');
   }
 
-  // A fresh process has nothing of its own in flight, so any request this
-  // character still holds was stranded by an interrupted fulfilment; release it
-  // so it can be picked up again rather than blocking jobs waiting on it.
-  const reclaimed = await reclaimExecutingWishlistRequests(CharName);
+  // The job queue is restored from disk, so some of the requests this character
+  // holds are still being worked on and have to stay claimed. Anything else it
+  // holds was stranded by an interrupted fulfilment; release it so it can be
+  // picked up again rather than blocking jobs waiting on it.
+  const reclaimed = await char.restoreWishlistClaims();
   if (reclaimed > 0) {
     logger.info(
       `Reclaimed ${reclaimed} stranded executing wishlist request(s)`,
