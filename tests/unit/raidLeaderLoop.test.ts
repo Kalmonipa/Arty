@@ -50,6 +50,7 @@ import { RaidLeaderObjective } from '../../src/fightRaids/raidLeader.objective.j
 import {
   RaidFightAttempts,
   RaidLossLimit,
+  RaidOpenWaitSeconds,
   RaidRoster,
   RaidTransientErrorCodes,
   RaidWinRateThreshold,
@@ -371,5 +372,86 @@ describe('RaidLeaderObjective riding out a transient API error', () => {
     await objective.run();
 
     expect(objective.failedTransiently).toBe(false);
+  });
+});
+
+describe('RaidLeaderObjective getting ready before the doors open', () => {
+  /** A raid in its lead-in still reads as the previous instance, plus a start time */
+  const opensIn = (seconds: number) =>
+    ({
+      code: 'enchanted_fairy',
+      monster: 'pixie',
+      status: 'finished_success',
+      next_start_at: new Date(Date.now() + seconds * 1000).toISOString(),
+    }) as never;
+
+  it('musters for a raid whose window has not opened yet', async () => {
+    // Shut for the first two reads, open by the time the party is mustered, and
+    // over after the one fight so the loop has somewhere to stop
+    mockedFindRaid
+      .mockResolvedValueOnce(opensIn(240))
+      .mockResolvedValueOnce(opensIn(240))
+      .mockResolvedValueOnce(running())
+      .mockResolvedValue(raidWith('finished_success'));
+    mockedFight.mockResolvedValue(fought('win'));
+
+    const result = await buildObjective().run();
+
+    expect(mockedFight).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(true);
+  });
+
+  it('gears up and travels before it waits at the door', async () => {
+    mockedFindRaid
+      .mockResolvedValueOnce(opensIn(240))
+      .mockResolvedValueOnce(opensIn(240))
+      .mockResolvedValueOnce(running())
+      .mockResolvedValue(raidWith('finished_success'));
+    mockedFight.mockResolvedValue(fought('win'));
+    const objective = buildObjective();
+
+    await objective.run();
+
+    expect(character.executeJobNow).toHaveBeenCalled();
+    expect(character.move).toHaveBeenCalled();
+  });
+
+  it('still refuses a raid the sim says it cannot survive', async () => {
+    mockedFindRaid.mockResolvedValue(opensIn(240));
+    mockedSimulate.mockResolvedValue({
+      complete: true,
+      success: false,
+      reason: 'failed',
+      winRate: 0,
+      averageTurns: 0,
+      loadouts: [],
+    });
+
+    const result = await buildObjective().run();
+
+    expect(result.success).toBe(false);
+    expect(mockedFight).not.toHaveBeenCalled();
+  });
+
+  it('leaves a raid alone that is shut and not opening soon', async () => {
+    mockedFindRaid.mockResolvedValue(opensIn(60 * 60 * 6));
+
+    const result = await buildObjective().run();
+
+    expect(result.success).toBe(false);
+    expect(mockedSimulate).not.toHaveBeenCalled();
+  });
+
+  it('stands the party down if the doors never open', async () => {
+    mockedFindRaid.mockResolvedValue(opensIn(240));
+
+    const result = await buildObjective().run();
+
+    expect(result.success).toBe(false);
+    expect(mockedFight).not.toHaveBeenCalled();
+    // Polled rather than waited forever
+    expect(mockedFindRaid.mock.calls.length).toBeLessThan(
+      RaidOpenWaitSeconds,
+    );
   });
 });

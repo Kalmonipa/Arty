@@ -24,13 +24,17 @@ import {
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
 import { logger, sleep } from '../utils.js';
-import { CharacterFightResponseSchema } from '../types/types.js';
+import { CharacterFightResponseSchema, RaidSchema } from '../types/types.js';
 import { RaidTarget } from './raid.types.js';
 import {
   isRaidRunning,
+  raidOpensWithin,
   RaidFightAttempts,
   RaidLeaderRole,
   RaidLossLimit,
+  RaidOpenPollSeconds,
+  RaidOpenWaitSeconds,
+  RaidPrepLeadSeconds,
   RaidRetryDelaySeconds,
   RaidRoster,
   RaidSimIterations,
@@ -78,7 +82,9 @@ export class RaidLeaderObjective extends Objective {
       logger.warn(`No raid found for ${this.target.code}. Exiting`);
       return ObjectiveFailed;
     }
-    if (!isRaidRunning(raid)) {
+    // Getting ready takes about five minutes and the window is only worth about
+    // fifteen, so a raid that is about to open is worth mustering for now
+    if (!isRaidRunning(raid) && !raidOpensWithin(raid, RaidPrepLeadSeconds)) {
       logger.warn(`Raid ${raid.code} is ${raid.status}, not active. Exiting`);
       return ObjectiveFailed;
     }
@@ -162,7 +168,12 @@ export class RaidLeaderObjective extends Objective {
         );
         return ObjectiveFailed;
       }
-      if (!isRaidRunning(raid)) {
+      // Before the first fight, shut may only mean the doors are not open yet;
+      // after one, it means the boss is dead or the window has run out
+      const waitingForDoors =
+        fightsDone === 0 && raidOpensWithin(raid, RaidPrepLeadSeconds);
+
+      if (!isRaidRunning(raid) && !waitingForDoors) {
         logger.info(
           `Raid ${raid.code} is ${raid.status} after ${fightsDone} fights. Standing the party down`,
         );
@@ -200,9 +211,16 @@ export class RaidLeaderObjective extends Objective {
 
       // Sleep for a period until all participants are ready
       while (!allReady) {
-        await sleep(30, 'waiting_for_participants');
+        await sleep(10, 'waiting_for_participants');
 
         allReady = await checkAllParticipantsReady(fightId, participants);
+      }
+
+      // The party is geared and standing on the map by now. If it got here
+      // early, hold at the door rather than swinging at a raid that is still shut
+      if (!(await this.waitForDoorsToOpen(raid))) {
+        logger.warn(`Raid ${raid.code} never opened. Standing the party down`);
+        return ObjectiveFailed;
       }
 
       const response = await this.fightUntilItStarts(participants);
@@ -242,6 +260,34 @@ export class RaidLeaderObjective extends Objective {
         return ObjectiveFailed;
       }
     }
+  }
+
+  /**
+   * @description Holds the mustered party at the raid map until its window
+   * opens, so an early muster turns into a fight on the minute rather than a
+   * swing at a raid that is still shut.
+   *
+   * @param raid the raid as it read when the party finished mustering
+   * @returns whether the raid is open
+   */
+  private async waitForDoorsToOpen(raid: RaidSchema): Promise<boolean> {
+    if (isRaidRunning(raid)) return true;
+
+    for (
+      let waited = 0;
+      waited < RaidOpenWaitSeconds;
+      waited += RaidOpenPollSeconds
+    ) {
+      logger.info(`Waiting at ${raid.code} for its window to open`);
+      await sleep(RaidOpenPollSeconds, 'raid_doors');
+
+      if (isRaidRunning(await findRaid(this.target.code))) {
+        logger.info(`Raid ${raid.code} is open. Starting the fight`);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

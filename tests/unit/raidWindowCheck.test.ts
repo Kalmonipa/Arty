@@ -50,6 +50,10 @@ const sun = {
 const IN_WINDOW = new Date('2026-09-05T23:00:00Z');
 /** Sunday morning, an hour after it shut */
 const AFTER_WINDOW = new Date('2026-09-06T10:00:00Z');
+/** Saturday 20:55, five minutes before the doors open */
+const DURING_LEAD_IN = new Date('2026-09-05T20:55:00Z');
+/** Saturday 20:45, before the party has any business getting ready */
+const BEFORE_LEAD_IN = new Date('2026-09-05T20:45:00Z');
 
 describe('checking for an open raid window', () => {
   let character: Character;
@@ -221,6 +225,57 @@ describe('checking for an open raid window', () => {
       await character.checkForRaidWindow();
 
       expect(executed).toHaveLength(1);
+    });
+  });
+  describe('getting ready before the doors open', () => {
+    /**
+     * The character reads the clock when it is built, so it has to be rebuilt at
+     * the moment under test or its own check throttle sits in the future
+     */
+    const atTime = (when: Date) => {
+      jest.setSystemTime(when);
+      executed = [];
+      character = new Character({ ...mockCharacterData, name: 'LongLegLarry' });
+      character.role = 'crafter';
+      character.executeJobNow = jest.fn(async (job: unknown) => {
+        executed.push(job);
+        return ObjectiveCompleted;
+      }) as never;
+    };
+
+    // Gearing up and walking to the map cost five minutes of the 2026-09-12
+    // window, which other players had finished off inside eighteen
+    it('leads the raid during the lead-in, before the window opens', async () => {
+      atTime(DURING_LEAD_IN);
+
+      await character.checkForRaidWindow();
+
+      expect(executed).toHaveLength(1);
+      expect(executed[0]).toBeInstanceOf(RaidLeaderObjective);
+    });
+
+    it('does nothing before the lead-in starts', async () => {
+      atTime(BEFORE_LEAD_IN);
+
+      await character.checkForRaidWindow();
+
+      expect(executed).toHaveLength(0);
+    });
+
+    it('still writes a lead-in failure off against the window it leads into', async () => {
+      atTime(DURING_LEAD_IN);
+      character.executeJobNow = jest.fn(async (job: unknown) => {
+        executed.push(job);
+        (job as RaidLeaderObjective).failedTransiently = false;
+        return ObjectiveFailed;
+      }) as never;
+
+      await character.checkForRaidWindow();
+
+      // Written off until the window shuts, not until the lead-in ends
+      expect(character.raidBackoffs.get('enchanted_fairy')).toBe(
+        Math.round(new Date('2026-09-06T09:00:00Z').getTime() / 1000),
+      );
     });
   });
 });

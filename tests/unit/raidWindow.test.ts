@@ -1,4 +1,7 @@
-import { raidWindowEnd } from '../../src/fightRaids/raid.utils.js';
+import {
+  RaidPrepLeadSeconds,
+  raidWindowEnd,
+} from '../../src/fightRaids/raid.utils.js';
 import { RaidScheduleSchema } from '../../src/types/types.js';
 
 /** enchanted_fairy's live schedule: Tue/Thu/Sat/Sun, 21:00 UTC, 12 hours */
@@ -93,5 +96,74 @@ describe('raidWindowEnd', () => {
       at('2026-09-07T00:00:00Z'),
     );
     expect(raidWindowEnd(bare, at('2026-09-07T00:00:00Z'))).toBeUndefined();
+  });
+});
+
+describe('raidWindowEnd with a lead time', () => {
+  // A raid's usable life is the fifteen-odd minutes before the server drains the
+  // shared pool. Gearing and travelling only once the doors open spent five of
+  // them, so the party sets off before the window starts.
+  const lead = RaidPrepLeadSeconds;
+
+  /** Saturday's 21:00 opening, offset by seconds */
+  const beforeOpening = (seconds: number) =>
+    new Date(at('2026-09-05T21:00:00Z').getTime() - seconds * 1000);
+
+  it('counts the window as reachable the moment the lead time starts', () => {
+    expect(raidWindowEnd(fairy, beforeOpening(lead), lead)).toEqual(
+      at('2026-09-06T09:00:00Z'),
+    );
+  });
+
+  it('is still shut a second before the lead time', () => {
+    expect(raidWindowEnd(fairy, beforeOpening(lead + 1), lead)).toBeUndefined();
+  });
+
+  it('leaves an open window reading exactly as it did', () => {
+    expect(raidWindowEnd(fairy, at('2026-09-05T23:30:00Z'), lead)).toEqual(
+      raidWindowEnd(fairy, at('2026-09-05T23:30:00Z')),
+    );
+  });
+
+  it('does not reach into a day the raid never opens on', () => {
+    // Sunday's lead-in runs into Sunday 21:00, which the fairy does open
+    expect(
+      raidWindowEnd(
+        fairy,
+        new Date(beforeOpening(lead).getTime() + DayMs),
+        lead,
+      ),
+    ).toBeDefined();
+    // Monday's leads nowhere
+    expect(
+      raidWindowEnd(
+        fairy,
+        new Date(beforeOpening(lead).getTime() + 2 * DayMs),
+        lead,
+      ),
+    ).toBeUndefined();
+  });
+
+  const DayMs = 24 * 60 * 60 * 1000;
+
+  it('reaches a window that opens just after midnight', () => {
+    const midnightRaid: RaidScheduleSchema = {
+      weekdays: ['sunday'],
+      start_hour_utc: 0,
+      start_minute_utc: 2,
+      duration_hours: 12,
+    };
+
+    // Late on Saturday, inside the lead-in for Sunday 00:02
+    const justBefore = new Date(
+      at('2026-09-06T00:02:00Z').getTime() - (lead - 60) * 1000,
+    );
+    expect(raidWindowEnd(midnightRaid, justBefore, lead)).toEqual(
+      at('2026-09-06T12:02:00Z'),
+    );
+  });
+
+  it('changes nothing without a lead time', () => {
+    expect(raidWindowEnd(fairy, beforeOpening(lead))).toBeUndefined();
   });
 });

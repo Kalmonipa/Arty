@@ -47,7 +47,10 @@ import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objecti
 import { RaidLeaderObjective } from '../fightRaids/raidLeader.objective.js';
 import { RaidParticipantObjective } from '../fightRaids/raidParticipant.objective.js';
 import { RaidTarget } from '../fightRaids/raid.types.js';
-import { raidWindowEnd } from '../fightRaids/raid.utils.js';
+import {
+  RaidPrepLeadSeconds,
+  raidWindowEnd,
+} from '../fightRaids/raid.utils.js';
 import { loadRaidSchedules } from '../api_calls/Raids.js';
 import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
 import { DepositObjective } from '../core/DepositObjective.js';
@@ -1478,7 +1481,13 @@ export class Character {
     this.lastRaidCheckTimestamp = currentTimestamp;
 
     for (const raid of await loadRaidSchedules()) {
-      const windowEnd = raidWindowEnd(raid.schedule);
+      // Reachable during the lead-in too, so the party gears up and travels
+      // before the doors open rather than after
+      const windowEnd = raidWindowEnd(
+        raid.schedule,
+        new Date(),
+        RaidPrepLeadSeconds,
+      );
       if (!windowEnd) continue;
 
       const writtenOffUntil = this.raidBackoffs.get(raid.code);

@@ -1,4 +1,8 @@
-import { BouncyBella, JumpyJimmy } from '../constants.js';
+import {
+  BouncyBella,
+  JumpyJimmy,
+  RaidCheckIntervalSeconds,
+} from '../constants.js';
 import {
   BossFightHealer,
   BossFightParticipant,
@@ -67,6 +71,48 @@ export const RaidFightAttempts = 3;
 export const RaidRetryDelaySeconds = 10;
 
 /**
+ * @description How long before a window opens the party starts getting ready.
+ *
+ * Gearing up, walking to the map and mustering took five minutes of the
+ * 2026-09-12 window, which the rest of the server had drained inside eighteen.
+ * Starting that before the doors open buys the whole of it back.
+ *
+ * Twice {@link RaidCheckIntervalSeconds} rather than the five minutes it is
+ * worth: the leader only looks for a window every five minutes, so a five minute
+ * lead could be missed entirely — a check at 20:54 and the next at 20:59 leaves
+ * one minute to get ready. At ten minutes, some check always lands at least five
+ * minutes out, and the party waits at the map for the rest.
+ */
+export const RaidPrepLeadSeconds = 2 * RaidCheckIntervalSeconds;
+
+/** How often to re-read a raid while waiting at the map for it to open */
+export const RaidOpenPollSeconds = 10;
+
+/**
+ * @description How long to stand at the map waiting for a window that should be
+ * about to open, before accepting it is not going to.
+ */
+export const RaidOpenWaitSeconds = RaidPrepLeadSeconds + 120;
+
+/**
+ * @description Whether a raid that is not open yet is about to be, so the party
+ * can gear up and travel in time to fight on the minute it opens.
+ *
+ * Reads `next_start_at` off the raid rather than recomputing from the schedule:
+ * it is the server's own answer and cannot drift from it.
+ */
+export function raidOpensWithin(
+  raid: RaidSchema | undefined,
+  seconds: number,
+  now: Date = new Date(),
+): boolean {
+  if (!raid?.next_start_at) return false;
+
+  const opensIn = new Date(raid.next_start_at).getTime() - now.getTime();
+  return opensIn > 0 && opensIn <= seconds * 1000;
+}
+
+/**
  * @description Whether the raid is open and its boss still standing. Anything
  * else — not open yet, already killed, or the event has finished — means there is
  * nothing left to fight.
@@ -95,6 +141,9 @@ const HourMs = 60 * 60 * 1000;
  * @description When the raid's current window closes, or undefined if it is not
  * open right now.
  *
+ * With a `leadSeconds` the window also counts as reachable that long before it
+ * opens, so the party can be geared and standing on the map by the time it does.
+ *
  * Walks back over recent scheduled starts rather than asking whether the raid
  * opens today: a window runs for duration_hours and routinely spills past
  * midnight into a weekday the raid never opens on. The fairy opens 21:00 for 12
@@ -103,10 +152,14 @@ const HourMs = 60 * 60 * 1000;
 export function raidWindowEnd(
   schedule: RaidScheduleSchema,
   now: Date = new Date(),
+  leadSeconds = 0,
 ): Date | undefined {
   const durationMs = (schedule.duration_hours ?? 24) * HourMs;
+  const leadMs = leadSeconds * 1000;
 
-  for (let daysAgo = 0; daysAgo <= MaxWindowDays; daysAgo++) {
+  // Starts at -1 so a window opening just after midnight is still reachable from
+  // the lead time on the day before
+  for (let daysAgo = -1; daysAgo <= MaxWindowDays; daysAgo++) {
     const start = new Date(
       Date.UTC(
         now.getUTCFullYear(),
@@ -122,7 +175,7 @@ export function raidWindowEnd(
     }
 
     const end = new Date(start.getTime() + durationMs);
-    if (start <= now && now < end) {
+    if (start.getTime() - leadMs <= now.getTime() && now < end) {
       return end;
     }
   }
