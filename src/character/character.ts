@@ -2136,19 +2136,22 @@ export class Character {
 
   /**
    * @description Add item to itemsToKeep list
+   * @returns true when this call added the item, false when something else was
+   * already keeping it. Callers use this to release only their own entries and
+   * leave an outer job's protection in place.
    */
-  addItemToItemsToKeep(itemCode: string) {
+  addItemToItemsToKeep(itemCode: string): boolean {
     if (!this.itemsToKeep) {
       // Hacky fix for undefined itemsToKeep
       this.itemsToKeep = [];
     }
     if (this.itemsToKeep.includes(itemCode)) {
       logger.info(`${itemCode} already in exceptions list`);
-      return;
+      return false;
     } else {
       logger.debug(`Adding ${itemCode} to itemsToKeep list`);
       this.itemsToKeep.push(itemCode);
-      return;
+      return true;
     }
   }
 
@@ -2757,7 +2760,6 @@ export class Character {
       const contentLocation = this.evaluateClosestMap(maps);
 
       await this.move(contentLocation);
-      await this.topUpTeleportPotions();
 
       const keep = [...new Set([...(itemsToKeep ?? []), ...this.itemsToKeep])];
 
@@ -2829,6 +2831,9 @@ export class Character {
         }
         // Already at the bank, so shed any gold above the carry cap before leaving
         await this.depositExcessGold();
+        // Restock travel potions only once the deposit list is settled. Topping
+        // up first put them back in the inventory in time to be deposited again.
+        await this.topUpTeleportPotions();
         if (priorLocation) {
           logger.debug(
             `Moving to prior location ${priorLocation.map_id} (x: ${priorLocation.x}, y: ${priorLocation.y})`,

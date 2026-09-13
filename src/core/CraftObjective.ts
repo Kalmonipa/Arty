@@ -59,6 +59,13 @@ export class CraftObjective extends Objective {
    * (the default) a missing ingredient just fails the craft, as before.
    */
   blockOnMissing: boolean;
+  /**
+   * Ingredient codes this job put on the character's keep list. Tracked so the
+   * job can hand back exactly what it took: a craft that dies part way through
+   * used to leave its ingredients protected forever, and the character then
+   * carried them past every deposit, unable to free space for anything else.
+   */
+  private ownedKeeps = new Set<string>();
 
   constructor(
     character: Character,
@@ -103,6 +110,31 @@ export class CraftObjective extends Objective {
    * @description Craft the item. Character will move to the correct workshop map
    */
   async run(): Promise<ObjectiveResult> {
+    try {
+      return await this.runCraft();
+    } finally {
+      this.releaseOwnedKeeps();
+    }
+  }
+
+  private keepIngredient(code: string): void {
+    if (this.character.addItemToItemsToKeep(code)) {
+      this.ownedKeeps.add(code);
+    }
+  }
+
+  private releaseIngredient(code: string): void {
+    if (!this.ownedKeeps.delete(code)) return;
+    this.character.removeItemFromItemsToKeep(code);
+  }
+
+  private releaseOwnedKeeps(): void {
+    for (const code of [...this.ownedKeeps]) {
+      this.releaseIngredient(code);
+    }
+  }
+
+  private async runCraft(): Promise<ObjectiveResult> {
     if (this.target.quantity === 0 || this.progress >= this.target.quantity) {
       logger.info(
         `Already crafted the requested amount (${this.target.quantity}) of ${this.target.code}. Completing job`,
@@ -251,7 +283,7 @@ export class CraftObjective extends Objective {
           }
 
           for (const craftItem of itemToCraft.craft.items) {
-            this.character.addItemToItemsToKeep(craftItem.code);
+            this.keepIngredient(craftItem.code);
 
             const numInInvAfterGathering =
               this.character.checkQuantityOfItemInInv(craftItem.code);
@@ -271,7 +303,7 @@ export class CraftObjective extends Objective {
                 logger.warn(
                   `Regathering ingredients for ${itemToCraft.code} has failed`,
                 );
-                this.character.removeItemFromItemsToKeep(craftItem.code);
+                this.releaseIngredient(craftItem.code);
                 break;
               }
             }
@@ -314,7 +346,7 @@ export class CraftObjective extends Objective {
             }
 
             for (const ingredient of itemToCraft.craft?.items) {
-              this.character.removeItemFromItemsToKeep(ingredient.code);
+              this.releaseIngredient(ingredient.code);
             }
 
             if (this.numBatches > 1) {
@@ -441,7 +473,7 @@ export class CraftObjective extends Objective {
 
       if (craftingItemInfo instanceof ApiError) {
         await this.character.handleErrors(craftingItemInfo);
-        this.character.removeItemFromItemsToKeep(craftingItem.code);
+        this.releaseIngredient(craftingItem.code);
         return ObjectiveFailed;
       }
 
@@ -504,7 +536,7 @@ export class CraftObjective extends Objective {
               gaveUpOnIngredient = true;
               continue;
             }
-            this.character.removeItemListfromItemsToKeep(craftingItems);
+            craftingItems.forEach((item) => this.releaseIngredient(item.code));
             return ObjectiveFailed;
           }
 
@@ -538,7 +570,7 @@ export class CraftObjective extends Objective {
               gaveUpOnIngredient = true;
               continue;
             }
-            this.character.removeItemListfromItemsToKeep(craftingItems);
+            craftingItems.forEach((item) => this.releaseIngredient(item.code));
             return ObjectiveFailed;
           }
 
@@ -568,7 +600,7 @@ export class CraftObjective extends Objective {
               gaveUpOnIngredient = true;
               continue;
             }
-            this.character.removeItemListfromItemsToKeep(craftingItems);
+            craftingItems.forEach((item) => this.releaseIngredient(item.code));
             return ObjectiveFailed;
           }
 

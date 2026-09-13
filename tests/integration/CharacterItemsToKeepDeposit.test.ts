@@ -87,4 +87,29 @@ describe('Character.evaluateDepositItemsInBank - itemsToKeep', () => {
     expect(codes).not.toContain('iron_ore');
     expect(codes).toContain('cooked_trout');
   });
+
+  it('tops up teleport potions after depositing, not before', async () => {
+    // Topping up first meant the potions were sitting in the inventory when the
+    // deposit list was built, so they went straight back into the bank. Every
+    // bank visit then re-withdrew them, which is what made Bella's stuck task
+    // spin as a withdraw/deposit loop rather than just fail.
+    const character = makeCharacter();
+    const order: string[] = [];
+    character.topUpTeleportPotions = jest.fn(async () => {
+      order.push('topUp');
+    }) as any;
+    mockActionDepositItems.mockImplementation(async (data: any) => {
+      order.push('deposit');
+      return {
+        data: {
+          character: { ...data },
+          cooldown: { remaining_seconds: 0, reason: 'deposit' },
+        },
+      } as any;
+    });
+
+    await character.evaluateDepositItemsInBank([], bankLocation, true);
+
+    expect(order).toEqual(['deposit', 'topUp']);
+  });
 });
