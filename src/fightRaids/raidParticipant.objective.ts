@@ -38,6 +38,8 @@ export class RaidParticipantObjective extends Objective {
 
     this.character = character;
     this.jobFlavour = 'RaidParticipant';
+    this.shouldEmitMetrics = true;
+    this.metricLabel = target.code;
     this.target = target;
     this.role = role;
     this.fightId = fightId;

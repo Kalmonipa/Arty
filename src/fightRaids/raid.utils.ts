@@ -45,6 +45,28 @@ export const RaidWinRateThreshold = 50;
 export const RaidSimIterations = 10;
 
 /**
+ * @description API error codes worth another go rather than standing the party
+ * down.
+ *
+ * A raid's usable window is the fifteen-odd minutes before the rest of the
+ * server drains the shared pool, not the twelve hours it is scheduled for, so a
+ * blip that costs ten seconds is cheap and giving up costs the whole night. On
+ * 2026-09-12 a single 486 one fight in ended the raid; the boss died to other
+ * players eight minutes later.
+ *
+ * 486 another action already in flight for the character, 499 a cooldown that
+ * has not quite elapsed, 598 the monster not on the map yet, 500/502 the server
+ * having a moment, 599 a transport blip.
+ */
+export const RaidTransientErrorCodes = new Set([486, 499, 598, 500, 502, 599]);
+
+/** How many times to call the fight before accepting it will not start */
+export const RaidFightAttempts = 3;
+
+/** How long to wait between those attempts */
+export const RaidRetryDelaySeconds = 10;
+
+/**
  * @description Whether the raid is open and its boss still standing. Anything
  * else — not open yet, already killed, or the event has finished — means there is
  * nothing left to fight.

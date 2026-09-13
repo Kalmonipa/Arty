@@ -1492,13 +1492,20 @@ export class Character {
       logger.info(
         `Raid ${raid.code} is open until ${windowEnd.toISOString()}. Leading it`,
       );
-      const result = await this.executeJobNow(
-        new RaidLeaderObjective(this, { code: raid.code }),
-        true,
-        true,
-      );
+      const leadJob = new RaidLeaderObjective(this, { code: raid.code });
+      const result = await this.executeJobNow(leadJob, true, true);
 
       if (!result.success) {
+        // A blip says nothing about whether the raid can be won, and the window
+        // it interrupted is minutes of usable time, not the twelve hours it is
+        // scheduled for. Only a real verdict costs the rest of the window.
+        if (leadJob.failedTransiently) {
+          logger.warn(
+            `Raid ${raid.code} could not be started just now. Leaving it open to try again`,
+          );
+          continue;
+        }
+
         const until = Math.round(windowEnd.getTime() / 1000);
         this.raidBackoffs.set(raid.code, until);
         logger.warn(

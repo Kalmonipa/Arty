@@ -288,6 +288,10 @@ describe('building the restore potion stock past the boss reserve', () => {
 describe('stocking the bank with splash restore potions', () => {
   const healthSplash = potion('health_splash_potion', 30, 30);
   const enhancedSplash = potion('enhanced_health_splash_potion', 50, 50);
+  const restorePotions = [
+    potion('health_potion', 30, 30),
+    potion('greater_health_potion', 40, 40),
+  ];
 
   const healerWith = (
     craftNow: jest.Mock,
@@ -306,10 +310,20 @@ describe('stocking the bank with splash restore potions', () => {
         skill === 'alchemy' ? 50 : 37,
       utilitiesMap: {
         ...utilitiesMap,
+        restore: restorePotions,
         splash_restore: [healthSplash, enhancedSplash],
       },
       craftNow,
     }) as unknown as Character;
+
+  const runTopUp = async (character: Character) => {
+    const healer = new IdleHealerObjective(character);
+    await (
+      healer as unknown as {
+        topUpRestorePotionsInBank: () => Promise<unknown>;
+      }
+    ).topUpRestorePotionsInBank();
+  };
 
   it('brews the splash potion the healers can actually drink', async () => {
     const craftNow = jest.fn(async () => true);
@@ -317,6 +331,19 @@ describe('stocking the bank with splash restore potions', () => {
     await runTopUp(healerWith(craftNow));
 
     expect(craftedCodes(craftNow)).toContain('health_splash_potion');
+  });
+
+  // Splash sits with the restores rather than the elemental boosts because the
+  // self-restore target is 500 deep: behind it, a raid's healing engine waited
+  // hours for a batch that never came
+  it('brews splash before the self restores it shares a pass with', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    await runTopUp(healerWith(craftNow));
+
+    const order = craftedCodes(craftNow);
+    expect(order.indexOf('health_splash_potion')).toBe(0);
+    expect(order).toContain('health_potion');
   });
 
   it('skips a splash tier no character is high enough to drink', async () => {
@@ -349,8 +376,6 @@ describe('stocking the bank with splash restore potions', () => {
   it('keeps brewing at a stock that would leave a boost alone', async () => {
     const craftNow = jest.fn(async () => true);
 
-    // Splash has no floor to sit at: a stock this deep is plenty for a boost
-    // and nowhere near a raid window's worth of splash
     await runTopUp(
       healerWith(craftNow, { health_splash_potion: FightPotionsToStock }),
     );
@@ -374,6 +399,20 @@ describe('stocking the bank with splash restore potions', () => {
     await runTopUp(
       healerWith(craftNow, { health_splash_potion: SplashPotionsToStock }),
     );
+
+    expect(craftedCodes(craftNow)).not.toContain('health_splash_potion');
+  });
+
+  it('is not brewed alongside the elemental boosts any more', async () => {
+    const craftNow = jest.fn(async () => true);
+    const character = healerWith(craftNow);
+    const healer = new IdleHealerObjective(character);
+
+    await (
+      healer as unknown as {
+        topUpFightPotionsInBank: () => Promise<unknown>;
+      }
+    ).topUpFightPotionsInBank();
 
     expect(craftedCodes(craftNow)).not.toContain('health_splash_potion');
   });

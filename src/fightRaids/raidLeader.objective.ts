@@ -24,24 +24,38 @@ import {
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
 import { logger, sleep } from '../utils.js';
+import { CharacterFightResponseSchema } from '../types/types.js';
 import { RaidTarget } from './raid.types.js';
 import {
   isRaidRunning,
+  RaidFightAttempts,
   RaidLeaderRole,
   RaidLossLimit,
+  RaidRetryDelaySeconds,
   RaidRoster,
   RaidSimIterations,
+  RaidTransientErrorCodes,
   RaidWinRateThreshold,
 } from './raid.utils.js';
 
 export class RaidLeaderObjective extends Objective {
   target: RaidTarget;
 
+  /**
+   * @description Whether the raid stopped for a reason that says nothing about
+   * whether it can be won — a blip rather than a verdict. The caller leaves one
+   * of these open to be led again at the next check, instead of writing the raid
+   * off until its window shuts.
+   */
+  failedTransiently = false;
+
   constructor(character: Character, target: RaidTarget) {
     super(character, `lead_raid_${target.code}`, 'not_started');
 
     this.character = character;
     this.jobFlavour = 'LeadRaid';
+    this.shouldEmitMetrics = true;
+    this.metricLabel = target.code;
     this.target = target;
   }
 
@@ -191,15 +205,8 @@ export class RaidLeaderObjective extends Objective {
         allReady = await checkAllParticipantsReady(fightId, participants);
       }
 
-      const response = await actionFight(
-        this.character.data,
-        participants.map((participant) => participant.characterName),
-      );
-
-      if (response instanceof ApiError) {
-        logger.warn(
-          `Fight responded with an [${response.error.code}] error: ${response.error.message}`,
-        );
+      const response = await this.fightUntilItStarts(participants);
+      if (!response) {
         return ObjectiveFailed;
       }
 
@@ -235,5 +242,54 @@ export class RaidLeaderObjective extends Objective {
         return ObjectiveFailed;
       }
     }
+  }
+
+  /**
+   * @description Calls the fight, riding out the errors that clear on their own.
+   *
+   * The party is already assembled and standing on the map by this point, so a
+   * blip is worth ten seconds rather than the rest of the window. Anything that
+   * retrying cannot help — a full inventory, a party member missing — stands the
+   * party down on the first try.
+   *
+   * @returns the fight, or undefined if it never started
+   */
+  private async fightUntilItStarts(
+    participants: typeof RaidRoster,
+  ): Promise<CharacterFightResponseSchema | undefined> {
+    for (let attempt = 1; attempt <= RaidFightAttempts; attempt++) {
+      const response = await actionFight(
+        this.character.data,
+        participants.map((participant) => participant.characterName),
+      );
+
+      if (!(response instanceof ApiError)) {
+        return response;
+      }
+
+      logger.warn(
+        `Fight responded with an [${response.error.code}] error: ${response.error.message}`,
+      );
+
+      if (!RaidTransientErrorCodes.has(response.error.code)) {
+        return undefined;
+      }
+
+      this.failedTransiently = true;
+
+      if (attempt === RaidFightAttempts) {
+        logger.warn(
+          `The raid fight would not start after ${RaidFightAttempts} attempts. Standing the party down for now`,
+        );
+        return undefined;
+      }
+
+      logger.info(
+        `Retrying the raid fight (attempt ${attempt + 1}/${RaidFightAttempts})`,
+      );
+      await sleep(RaidRetryDelaySeconds, 'raid_fight_retry');
+    }
+
+    return undefined;
   }
 }

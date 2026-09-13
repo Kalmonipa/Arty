@@ -18,6 +18,7 @@ import {
   ObjectiveFailed,
 } from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
+import { RaidCheckIntervalSeconds } from '../../src/constants.js';
 
 const mockedSchedules = loadRaidSchedules as jest.MockedFunction<
   typeof loadRaidSchedules
@@ -167,7 +168,59 @@ describe('checking for an open raid window', () => {
     expect(attempted.filter((code) => code === 'enchanted_fairy')).toHaveLength(
       1,
     );
-    expect(attempted.filter((code) => code === 'god_of_the_sun').length).
-      toBeGreaterThan(1);
+    expect(
+      attempted.filter((code) => code === 'god_of_the_sun').length,
+    ).toBeGreaterThan(1);
+  });
+  describe('a raid that stopped for a transient reason', () => {
+    /** Fails the raid the way a blip does: no verdict on whether it can be won */
+    const failTransiently = () => {
+      character.executeJobNow = jest.fn(async (job: unknown) => {
+        executed.push(job);
+        (job as RaidLeaderObjective).failedTransiently = true;
+        return ObjectiveFailed;
+      }) as never;
+    };
+
+    /** Far enough on that the routine check is due again */
+    const afterTheNextCheck = () =>
+      jest.setSystemTime(
+        new Date(IN_WINDOW.getTime() + (RaidCheckIntervalSeconds + 30) * 1000),
+      );
+
+    it('is led again at the next check rather than written off for the window', async () => {
+      failTransiently();
+
+      await character.checkForRaidWindow();
+      expect(executed).toHaveLength(1);
+
+      afterTheNextCheck();
+      await character.checkForRaidWindow();
+
+      expect(executed).toHaveLength(2);
+    });
+
+    it('records no write-off at all, so nothing has to expire first', async () => {
+      failTransiently();
+
+      await character.checkForRaidWindow();
+
+      expect(character.raidBackoffs.has('enchanted_fairy')).toBe(false);
+    });
+
+    it('still writes off a raid that failed on its merits', async () => {
+      character.executeJobNow = jest.fn(async (job: unknown) => {
+        executed.push(job);
+        (job as RaidLeaderObjective).failedTransiently = false;
+        return ObjectiveFailed;
+      }) as never;
+
+      await character.checkForRaidWindow();
+
+      afterTheNextCheck();
+      await character.checkForRaidWindow();
+
+      expect(executed).toHaveLength(1);
+    });
   });
 });

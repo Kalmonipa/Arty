@@ -44,6 +44,8 @@ export class FightBossLeaderObjective extends Objective {
 
     this.character = character;
     this.jobFlavour = 'LeadBossFight';
+    this.shouldEmitMetrics = true;
+    this.metricLabel = target.code;
     this.target = target;
   }
 

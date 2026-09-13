@@ -48,10 +48,13 @@ import { registerBossFightParticipant } from '../../src/fightBosses/bossFightPar
 import { EvaluateGearObjective } from '../../src/evaluateGear/evaluateGear.objective.js';
 import { RaidLeaderObjective } from '../../src/fightRaids/raidLeader.objective.js';
 import {
+  RaidFightAttempts,
   RaidLossLimit,
   RaidRoster,
+  RaidTransientErrorCodes,
   RaidWinRateThreshold,
 } from '../../src/fightRaids/raid.utils.js';
+import { ApiError } from '../../src/core/Error.js';
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 
 const mockedSimulate = simulateBossFight as jest.MockedFunction<
@@ -290,5 +293,83 @@ describe('RaidLeaderObjective ending the raid', () => {
 
     expect(result.success).toBe(false);
     expect(mockedFight).not.toHaveBeenCalled();
+  });
+});
+
+describe('RaidLeaderObjective riding out a transient API error', () => {
+  // A single 486 one fight into the 2026-09-12 window stood the party down and
+  // wrote the raid off for the next eleven hours. Other players finished the
+  // boss eight minutes later.
+  const apiError = (code: number) =>
+    new ApiError({ code, message: `error ${code}` }) as never;
+
+  it('treats an action-already-in-progress as worth another go', () => {
+    expect(RaidTransientErrorCodes.has(486)).toBe(true);
+  });
+
+  it('retries a transient error and fights on when it clears', async () => {
+    raidOpenFor(1);
+    mockedFight
+      .mockResolvedValueOnce(apiError(486))
+      .mockResolvedValue(fought('win'));
+
+    const result = await buildObjective().run();
+
+    expect(mockedFight).toHaveBeenCalledTimes(2);
+    expect(result.success).toBe(true);
+  });
+
+  it('gives up once the retries are spent', async () => {
+    mockedFight.mockResolvedValue(apiError(486));
+
+    const result = await buildObjective().run();
+
+    expect(mockedFight).toHaveBeenCalledTimes(RaidFightAttempts);
+    expect(result.success).toBe(false);
+  });
+
+  it('leaves the raid retryable rather than written off for the window', async () => {
+    mockedFight.mockResolvedValue(apiError(486));
+
+    const objective = buildObjective();
+    await objective.run();
+
+    expect(objective.failedTransiently).toBe(true);
+  });
+
+  it('stands down at once on an error retrying cannot help', async () => {
+    // 497, a full inventory, is not going to clear itself in ten seconds
+    mockedFight.mockResolvedValue(apiError(497));
+
+    const result = await buildObjective().run();
+
+    expect(mockedFight).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(false);
+  });
+
+  it('does not call a lost fight transient', async () => {
+    // Losing is a real verdict on the party's gear, not a blip
+    mockedFight.mockResolvedValue(fought('loss'));
+
+    const objective = buildObjective();
+    await objective.run();
+
+    expect(objective.failedTransiently).toBe(false);
+  });
+
+  it('does not call an unsurvivable sim transient', async () => {
+    mockedSimulate.mockResolvedValue({
+      complete: true,
+      success: false,
+      reason: 'failed',
+      winRate: 0,
+      averageTurns: 0,
+      loadouts: [],
+    });
+
+    const objective = buildObjective();
+    await objective.run();
+
+    expect(objective.failedTransiently).toBe(false);
   });
 });
