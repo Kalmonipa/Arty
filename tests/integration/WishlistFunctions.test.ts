@@ -20,6 +20,7 @@ import {
   markAsFulfilled,
   markAsNotExecuting,
   reclaimExecutingWishlistRequests,
+  bankedStockSpokenFor,
 } from '../../src/wishlist/wishlist.utils.js';
 
 const mockedQuery = db.query as jest.MockedFunction<typeof db.query>;
@@ -479,6 +480,48 @@ describe('wishlist functions', () => {
       const reclaimed = await reclaimExecutingWishlistRequests('JumpyJimmy');
 
       expect(reclaimed).toBe(0);
+    });
+  });
+  describe('bankedStockSpokenFor', () => {
+    // Three characters each asking for their own air_shield used to be settled by
+    // a single banked copy: the first craft closed all three rows and two of them
+    // silently got nothing, then re-requested it on the next gear evaluation.
+    it('totals what earlier open requests for the same item are waiting on', async () => {
+      mockedQuery.mockResolvedValue({ rows: [{ demand: '3' }] } as any);
+
+      const spokenFor = await bankedStockSpokenFor('air_shield', 4395);
+
+      expect(spokenFor).toBe(3);
+      const [sql, params] = mockedQuery.mock.calls[0];
+      expect(params).toEqual(['air_shield', 4395]);
+      expect(sql as string).toMatch(/fulfilled = false/i);
+      expect(sql as string).toMatch(/id < \$2/i);
+    });
+
+    it('ignores expired rows, which nobody is waiting on any more', async () => {
+      mockedQuery.mockResolvedValue({ rows: [{ demand: '0' }] } as any);
+
+      await bankedStockSpokenFor('air_shield', 4395);
+
+      expect(mockedQuery.mock.calls[0][0] as string).toMatch(
+        /expiration_date IS NULL OR expiration_date > NOW\(\)/i,
+      );
+    });
+
+    it('reports nothing spoken for when no earlier request wants it', async () => {
+      mockedQuery.mockResolvedValue({ rows: [{ demand: null }] } as any);
+
+      expect(await bankedStockSpokenFor('gold_shield', 1)).toBe(0);
+    });
+
+    // Claiming the whole banked stock on a failed read would hand it to one
+    // character and leave the rest crafting duplicates
+    it('assumes the stock is spoken for when the lookup fails', async () => {
+      mockedQuery.mockRejectedValue(new Error('db down'));
+
+      expect(await bankedStockSpokenFor('gold_shield', 1)).toBe(
+        Number.MAX_SAFE_INTEGER,
+      );
     });
   });
 });

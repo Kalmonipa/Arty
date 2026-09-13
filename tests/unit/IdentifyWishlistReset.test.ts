@@ -9,6 +9,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   claimWishlistRequest: jest.fn(async () => true),
   markAsFulfilled: jest.fn(async () => true),
   markAsNotExecuting: jest.fn(async () => true),
+  bankedStockSpokenFor: jest.fn(async () => 0),
 }));
 jest.mock('../../src/api_calls/Items.js', () => ({
   getItemInformation: jest.fn(),

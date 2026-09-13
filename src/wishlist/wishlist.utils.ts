@@ -105,6 +105,48 @@ export async function addToWishlist(
 }
 
 /**
+ * How many of an item the wishlist rows ahead of this one are already waiting on.
+ *
+ * Banked stock is a shared pool, so "there is one in the bank" does not mean this
+ * request is covered: three characters each asking for their own air_shield were
+ * all closed by a single banked copy, two of them got nothing, and their next gear
+ * evaluation raised the request again. Counting the demand ahead of a row lets it
+ * claim only the stock nobody earlier is relying on.
+ *
+ * Ordered by id rather than created_at: ids are sequential, so this is the same
+ * ordering the FIFO queue works in and it cannot tie.
+ *
+ * @param itemCode the item the caller is about to make
+ * @param beforeRequestId the caller's own request id; only older rows count
+ * @returns the quantity spoken for, or MAX_SAFE_INTEGER if the lookup fails so a
+ * failed read makes the caller craft rather than claim stock it may not own
+ */
+export async function bankedStockSpokenFor(
+  itemCode: string,
+  beforeRequestId: number,
+): Promise<number> {
+  const query = `
+    SELECT COALESCE(SUM(quantity), 0) AS demand
+    FROM wishlist
+    WHERE item_code = $1
+      AND fulfilled = false
+      AND id < $2
+      AND (expiration_date IS NULL OR expiration_date > NOW());
+  `;
+
+  try {
+    const result = await db.query<{ demand: string | null }>(query, [
+      itemCode,
+      beforeRequestId,
+    ]);
+    return Number(result.rows[0]?.demand ?? 0);
+  } catch (err) {
+    logger.error(`Failed to read demand for ${itemCode}: ${err}`);
+    return Number.MAX_SAFE_INTEGER;
+  }
+}
+
+/**
  * Finds open wishlist requests for a given acquisition method — i.e. requests
  * that no character has picked up (executing) or completed (fulfilled) yet.
  * Ordered oldest-first so requests are worked as a FIFO queue.
