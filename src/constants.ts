@@ -106,24 +106,18 @@ export const MaxEquippedUtilities = 100;
 export const MinEquippedUtilities = 20;
 
 /**
- * @description Potions held back in the bank for boss fights, by effect.
- * 300 potions is enough for 3 chars to do a boss fight
+ * @description Potions held back in the bank for boss fights and raids, by
+ * effect. 300 restores is enough for three characters to fight a boss.
+ *
+ * This is a hard floor: ordinary fights see only what is banked above it, and
+ * see nothing at all once stock is down to it. A raid window is a few minutes
+ * long and the party cannot break off to brew, so the stock has to already be
+ * there when it opens. The cost is that a fleet whose stock has fallen to the
+ * floor fights unaided until the alchemist gets back above it.
  */
 export const BossFightPotionReserve: Partial<Record<UtilityEffects, number>> = {
   restore: 300,
 };
-
-/**
- * @description The largest share of the banked stock the boss fight reserve is
- * allowed to claim.
- *
- * A flat reserve turns into a hard floor the moment stock falls below it: every
- * ordinary fight in the fleet is refused a potion, so nothing fights, nothing
- * drops, and the reserve is never spent either. Capping it at a share of what
- * is actually banked keeps the reserve meaningful when stock is healthy and
- * still leaves ordinary fights something to draw on when it is not.
- */
-export const BossFightReserveMaxShare = 0.5;
 
 /**
  * @description The unaided win rate a character will settle for rather than
@@ -156,6 +150,24 @@ export const RestorePotionCraftBatch = 100;
  */
 export const FightPotionsToStock = 100;
 export const MinFightPotionsInBank = 50;
+
+/**
+ * @description How many splash restore potions the alchemist works toward.
+ *
+ * Stocked far deeper than a boost because splash restore is what wins a raid:
+ * both healers carry a full stack, and the party gets three or four fights in a
+ * window, so a boost-sized 100 would not cover one fight. Nothing but a boss
+ * fight ever draws on these, so the deep stock never competes with the fleet's
+ * ordinary fighting.
+ */
+export const SplashPotionsToStock = 600;
+
+/**
+ * @description How many splash potions the alchemist brews in one pass, so
+ * filling an empty bank is spread over several idle cycles instead of one job
+ * that gathers for hours.
+ */
+export const SplashPotionCraftBatch = 100;
 /**
  * Desired number of food in inventory
  */

@@ -8,6 +8,8 @@ import {
   MinFightPotionsInBank,
   RestorePotionCraftBatch,
   RestorePotionStockTarget,
+  SplashPotionCraftBatch,
+  SplashPotionsToStock,
 } from '../../src/constants.js';
 
 const potion = (code: string, level: number, craftLevel: number): ItemSchema =>
@@ -273,6 +275,112 @@ describe('building the restore potion stock past the boss reserve', () => {
   it('brews nothing off a bank snapshot that failed to load', async () => {
     const craftNow = jest.fn(async () => true);
     const character = healerWith(craftNow, {});
+    (character.getAllBankItems as jest.Mock).mockImplementation(
+      async () => undefined,
+    );
+
+    await runTopUp(character);
+
+    expect(craftNow).not.toHaveBeenCalled();
+  });
+});
+
+describe('stocking the bank with splash restore potions', () => {
+  const healthSplash = potion('health_splash_potion', 30, 30);
+  const enhancedSplash = potion('enhanced_health_splash_potion', 50, 50);
+
+  const healerWith = (
+    craftNow: jest.Mock,
+    bank: Record<string, number> = {},
+    charLevels: number[] = [44, 39],
+  ) =>
+    ({
+      data: { name: 'ZippyZoe', level: 37 },
+      allCharacterDetails: charLevels.map(
+        (level) => ({ level }) as CharacterSchema,
+      ),
+      getAllBankItems: jest.fn(async () =>
+        Object.entries(bank).map(([code, quantity]) => ({ code, quantity })),
+      ),
+      getCharacterLevel: (_char: CharacterSchema, skill?: string) =>
+        skill === 'alchemy' ? 50 : 37,
+      utilitiesMap: {
+        ...utilitiesMap,
+        splash_restore: [healthSplash, enhancedSplash],
+      },
+      craftNow,
+    }) as unknown as Character;
+
+  it('brews the splash potion the healers can actually drink', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    await runTopUp(healerWith(craftNow));
+
+    expect(craftedCodes(craftNow)).toContain('health_splash_potion');
+  });
+
+  it('skips a splash tier no character is high enough to drink', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    await runTopUp(healerWith(craftNow));
+
+    expect(craftedCodes(craftNow)).not.toContain(
+      'enhanced_health_splash_potion',
+    );
+  });
+
+  it('stocks splash potions far deeper than an elemental boost', () => {
+    // Two healers empty a full stack each per raid fight, and the party gets
+    // several fights per window, so the boost-sized target would not last one
+    expect(SplashPotionsToStock).toBeGreaterThan(FightPotionsToStock);
+  });
+
+  it('brews a batch at a time rather than the whole target in one job', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    await runTopUp(healerWith(craftNow));
+
+    expect(craftNow).toHaveBeenCalledWith(
+      SplashPotionCraftBatch,
+      'health_splash_potion',
+    );
+  });
+
+  it('keeps brewing at a stock that would leave a boost alone', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    // Splash has no floor to sit at: a stock this deep is plenty for a boost
+    // and nowhere near a raid window's worth of splash
+    await runTopUp(
+      healerWith(craftNow, { health_splash_potion: FightPotionsToStock }),
+    );
+
+    expect(craftedCodes(craftNow)).toContain('health_splash_potion');
+  });
+
+  it('never brews past the target', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    await runTopUp(
+      healerWith(craftNow, { health_splash_potion: SplashPotionsToStock - 10 }),
+    );
+
+    expect(craftNow).toHaveBeenCalledWith(10, 'health_splash_potion');
+  });
+
+  it('leaves a full splash stock alone', async () => {
+    const craftNow = jest.fn(async () => true);
+
+    await runTopUp(
+      healerWith(craftNow, { health_splash_potion: SplashPotionsToStock }),
+    );
+
+    expect(craftedCodes(craftNow)).not.toContain('health_splash_potion');
+  });
+
+  it('brews nothing off a bank snapshot that failed to load', async () => {
+    const craftNow = jest.fn(async () => true);
+    const character = healerWith(craftNow);
     (character.getAllBankItems as jest.Mock).mockImplementation(
       async () => undefined,
     );

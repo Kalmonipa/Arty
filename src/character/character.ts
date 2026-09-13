@@ -127,10 +127,7 @@ import {
   Restore,
   Tool,
 } from '../gameDataConstants.js';
-import {
-  BossFightPotionReserve,
-  BossFightReserveMaxShare,
-} from '../constants.js';
+import { BossFightPotionReserve } from '../constants.js';
 import {
   BankFullRetryMs,
   DepositRetryLimit,
@@ -2468,14 +2465,15 @@ export class Character {
    * @description How many potions of an effect an ordinary fight may take out
    * of the bank.
    *
-   * A slice of the stock is held back for boss fights, which kit out three
+   * The reserve is held back flat for boss fights and raids, which kit out three
    * characters at once and cannot break off to farm more once the party is
-   * assembled. The reserve counts across every tier of the effect rather than
-   * per tier, so a bank holding a mix of tiers reads as one pool.
+   * assembled. It counts across every tier of the effect rather than per tier,
+   * so a bank holding a mix of tiers reads as one pool.
    *
-   * The reserve is capped at a share of what is banked rather than held flat:
-   * a flat reserve larger than the stock leaves nothing spare, which stops the
-   * whole fleet fighting without making the boss fight any more possible.
+   * Below the reserve an ordinary fight gets nothing. Taking a share of the
+   * stock instead only looks gentler: halving a shrinking pool never reaches a
+   * floor, so the fleet drained the bank to single digits overnight and the
+   * raid party found it empty.
    */
   private spareOutsideBossReserve(
     utilityType: UtilityEffects,
@@ -2492,13 +2490,9 @@ export class Character {
       0,
     );
 
-    const reserved = Math.min(
-      configured,
-      Math.floor(totalOfEffect * BossFightReserveMaxShare),
-    );
-    const spare = Math.max(0, totalOfEffect - reserved);
+    const spare = Math.max(0, totalOfEffect - configured);
     logger.info(
-      `${totalOfEffect} ${utilityType} banked, ${reserved} held for boss fights, ${spare} spare`,
+      `${totalOfEffect} ${utilityType} banked, ${configured} held for boss fights, ${spare} spare`,
     );
     return spare;
   }

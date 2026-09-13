@@ -189,8 +189,10 @@ describe('Character.equipUtility', () => {
   });
 
   it('withdraws potions from the bank when the inventory is short', async () => {
-    // Half of 80 is held back for boss fights, so 40 is what this fight sees
-    bankItems = { greater_health_potion: 80 };
+    // The reserve is held back flat, so this fight sees the 40 above it
+    bankItems = {
+      greater_health_potion: BossFightPotionReserve.restore + 40,
+    };
 
     const result = await character.equipUtility('restore', 'utility1');
 
@@ -225,8 +227,7 @@ describe('Character.equipUtility', () => {
   });
 
   it('falls back to a lesser potion held in the bank rather than crafting the best one', async () => {
-    // Half of 60 held back, so 30 are spare
-    bankItems = { health_potion: 60 };
+    bankItems = { health_potion: BossFightPotionReserve.restore + 30 };
 
     const result = await character.equipUtility('restore', 'utility1');
 
@@ -234,12 +235,13 @@ describe('Character.equipUtility', () => {
     expect(character.withdrawNow).toHaveBeenCalledWith(30, 'health_potion');
     expect(result.success).toBe(true);
   });
-  it('holds back a share of the stock from an ordinary fight', async () => {
-    bankItems = { greater_health_potion: 120 };
+
+  it('holds the whole reserve back from an ordinary fight', async () => {
+    bankItems = { greater_health_potion: BossFightPotionReserve.restore + 60 };
 
     const result = await character.equipUtility('restore', 'utility1');
 
-    // Half stays behind for boss fights; a boss fight would see all 120
+    // Only the surplus is spendable; a boss fight would see the whole stock
     expect(character.withdrawNow).toHaveBeenCalledWith(
       60,
       'greater_health_potion',
@@ -247,18 +249,15 @@ describe('Character.equipUtility', () => {
     expect(result.success).toBe(true);
   });
 
-  it('leaves ordinary fights something even when stock is below the reserve', async () => {
-    // The state the fleet stalled in: well short of the reserve, yet a flat
-    // reserve would refuse every character a potion indefinitely
+  it('refuses an ordinary fight any potion while stock is below the reserve', async () => {
+    // The raid party has to find the reserve intact when its window opens, so
+    // ordinary fights go unaided until the alchemist gets back above it
     bankItems = { greater_health_potion: BossFightPotionReserve.restore - 144 };
 
     const result = await character.equipUtility('restore', 'utility1');
 
-    expect(character.withdrawNow).toHaveBeenCalledWith(
-      78,
-      'greater_health_potion',
-    );
-    expect(result.success).toBe(true);
+    expect(character.withdrawNow).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
   });
 
   it('gives a boss fight the whole stock, reserve included', async () => {
@@ -274,10 +273,10 @@ describe('Character.equipUtility', () => {
   });
 
   it('counts the reserve across every tier, not per tier', async () => {
-    // 40 + 20 = 60 restores banked, so 30 are spare whichever tier they are
+    // Neither tier clears the reserve alone; together they leave 30 spare
     bankItems = {
-      greater_health_potion: 40,
-      health_potion: 20,
+      greater_health_potion: BossFightPotionReserve.restore - 20,
+      health_potion: 50,
     };
 
     await character.equipUtility('restore', 'utility1');

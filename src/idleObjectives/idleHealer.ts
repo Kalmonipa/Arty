@@ -8,9 +8,12 @@ import {
   MinFightPotionsInBank,
   RestorePotionCraftBatch,
   RestorePotionStockTarget,
+  SplashPotionCraftBatch,
+  SplashPotionsToStock,
 } from '../constants.js';
 import {
   Restore,
+  SplashRestore,
   BoostDmgAir,
   BoostDmgEarth,
   BoostDmgFire,
@@ -47,6 +50,36 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
+
+/**
+ * @description How deep the bank is filled with a potion, the level that starts
+ * the alchemist brewing again, and how much of the gap one idle pass closes.
+ *
+ * A boost is left alone until it falls to a floor, because topping a near-full
+ * stock up by a handful is not worth the gathering. Splash restores have no such
+ * floor: a single raid window empties several hundred, so anything short of the
+ * target is worth brewing. They are filled a batch at a time so an empty bank is
+ * rebuilt over several idle passes rather than one job that gathers for hours.
+ */
+function stockLevelsFor(effect: UtilityEffects): {
+  target: number;
+  brewBelow: number;
+  batch: number;
+} {
+  if (effect === SplashRestore) {
+    return {
+      target: SplashPotionsToStock,
+      brewBelow: SplashPotionsToStock,
+      batch: SplashPotionCraftBatch,
+    };
+  }
+
+  return {
+    target: FightPotionsToStock,
+    brewBelow: MinFightPotionsInBank,
+    batch: FightPotionsToStock,
+  };
+}
 
 export class IdleHealerObjective extends Objective {
   role: Role;
@@ -368,17 +401,21 @@ export class IdleHealerObjective extends Objective {
    * @returns
    */
   /**
-   * @description Keeps a stock of damage boost and resistance potions in the
-   * bank for the fighters to draw on.
+   * @description Keeps a stock of the potions a party brings to a fight — splash
+   * restores for the healers, damage boosts and resistances for everyone else —
+   * in the bank for the fighters to draw on.
    *
-   * Unlike restores, these are stocked per element rather than per character
-   * level: which one a fighter wants is decided by the monster it is facing,
-   * not by how high level the fighter is. Every tier the alchemist can craft is
-   * kept, not just the best one, so a fighter still has something to reach for
-   * once the top tier runs out.
+   * Unlike restores, these are stocked per potion rather than per character
+   * level: which one a fighter wants is decided by the role it is filling and
+   * the monster it is facing, not by how high level it is. Every tier the
+   * alchemist can craft is kept, not just the best one, so a fighter still has
+   * something to reach for once the top tier runs out.
    */
   private async topUpFightPotionsInBank(): Promise<ObjectiveResult> {
+    // Splash restore leads: it is the one a raid cannot be won without, and an
+    // idle pass can be cut short at any point by a real job arriving
     const effects: UtilityEffects[] = [
+      SplashRestore,
       BoostDmgAir,
       BoostDmgEarth,
       BoostDmgFire,
@@ -410,7 +447,9 @@ export class IdleHealerObjective extends Objective {
     const alreadyConsidered = new Set<string>();
 
     for (const effect of effects) {
-      for (const potion of this.character.utilitiesMap[effect]) {
+      const { target, brewBelow, batch } = stockLevelsFor(effect);
+
+      for (const potion of this.character.utilitiesMap[effect] ?? []) {
         if (alreadyConsidered.has(potion.code)) {
           continue;
         }
@@ -426,14 +465,14 @@ export class IdleHealerObjective extends Objective {
         }
 
         const numInBank = bankContents.quantityOf(potion.code);
-        if (numInBank >= MinFightPotionsInBank) {
+        if (numInBank >= brewBelow) {
           logger.debug(`${numInBank} ${potion.code} in the bank already`);
           continue;
         }
 
-        const potsToCraft = FightPotionsToStock - numInBank;
+        const potsToCraft = Math.min(target - numInBank, batch);
         logger.info(
-          `Crafting ${potsToCraft} ${potion.code} to bring the bank up to ${FightPotionsToStock}`,
+          `Crafting ${potsToCraft} ${potion.code} to bring the bank up to ${target}`,
         );
         await this.character.craftNow(potsToCraft, potion.code);
 
