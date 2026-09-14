@@ -9,6 +9,10 @@ import {
   DataPageSimpleItemSchema,
 } from '../types/types.js';
 import { apiRequest } from './request.js';
+import {
+  cacheBankGold,
+  clearBankGoldCache,
+} from '../core/bankQuantityCache.js';
 
 /**
  * @description Fetch all items in your bank.
@@ -63,6 +67,7 @@ export async function actionDepositGold(
     },
     fallbackMessage: 'Unknown error from /action/bank/deposit/gold',
     onSuccess: (result) => {
+      cacheBankGold(result.data.bank.quantity);
       logger.info(
         `Deposited ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
       );
@@ -94,6 +99,7 @@ export async function actionWithdrawGold(
     },
     fallbackMessage: 'Unknown error from /action/bank/withdraw/gold',
     onSuccess: (result) => {
+      cacheBankGold(result.data.bank.quantity);
       logger.info(
         `Withdrew ${quantity} gold. Total gold in bank: ${result.data.bank.quantity}`,
       );
@@ -117,6 +123,8 @@ export async function purchaseBankExpansion(
     },
     fallbackMessage: 'Unknown error from /action/bank/buy_expansion',
     onSuccess: (result) => {
+      // Spends bank gold but reports no resulting balance, so it can only be dropped.
+      clearBankGoldCache();
       logger.info(
         `Bank expansion purchased for ${result.data.transaction.price} gold.`,
       );

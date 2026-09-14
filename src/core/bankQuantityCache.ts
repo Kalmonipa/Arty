@@ -126,3 +126,30 @@ export function cacheBankSnapshot(items: SimpleItemSchema[]): void {
 export function clearBankSnapshot(): void {
   snapshot = undefined;
 }
+
+/**
+ * @description A memo of the gold held in the bank.
+ */
+let bankGold: { gold: number; readAt: number } | undefined;
+
+export function readCachedBankGold(): number | undefined {
+  if (!bankGold) {
+    return undefined;
+  }
+
+  if (Date.now() - bankGold.readAt >= BankQuantityCacheTtlMs) {
+    bankGold = undefined;
+    return undefined;
+  }
+
+  return bankGold.gold;
+}
+
+export function cacheBankGold(gold: number): void {
+  bankGold = { gold, readAt: Date.now() };
+}
+
+/** Test seam: forget the balance so each case starts from a clean fetch. */
+export function clearBankGoldCache(): void {
+  bankGold = undefined;
+}

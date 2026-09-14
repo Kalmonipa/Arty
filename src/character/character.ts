@@ -57,7 +57,9 @@ import { DepositObjective } from '../core/DepositObjective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
 import { BankCache } from '../core/BankCache.js';
 import {
+  cacheBankGold,
   cacheBankQuantity,
+  readCachedBankGold,
   readCachedBankQuantity,
 } from '../core/bankQuantityCache.js';
 import { GatherObjective } from '../core/GatherObjective.js';
@@ -4018,11 +4020,17 @@ export class Character {
    * character plus gold in the bank. Bank read failures count as 0.
    */
   private async getBankGold(): Promise<number> {
+    const cached = readCachedBankGold();
+    if (cached !== undefined) {
+      return cached;
+    }
+
     const details = await getBankDetails();
     if (details instanceof ApiError) {
       logger.warn('Failed to read bank gold; treating bank gold as 0');
       return 0;
     }
+    cacheBankGold(details.data.gold);
     return details.data.gold;
   }
 
