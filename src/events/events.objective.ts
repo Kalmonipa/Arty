@@ -280,7 +280,9 @@ export class EventObjective extends Objective {
 
     const expirationTime = new Date(event.expiration).getTime();
     while (Date.now() < expirationTime) {
-      await this.character.evaluateGear(resourceInfo.data.skill);
+      await this.character.evaluateGear({
+        activityType: resourceInfo.data.skill,
+      });
 
       await this.character.move(event.map);
 
@@ -332,10 +334,10 @@ export class EventObjective extends Objective {
       return ObjectiveFailed;
     }
 
-    await this.character.evaluateGear(
-      'combat',
-      event.map.interactions.content.code,
-    );
+    await this.character.evaluateGear({
+      activityType: 'combat',
+      targetMob: event.map.interactions.content.code,
+    });
     const preferredWeapon = this.character.data.weapon_slot;
 
     const expirationTime = new Date(event.expiration).getTime();

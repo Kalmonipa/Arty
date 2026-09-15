@@ -1,3 +1,5 @@
+import { BankCache } from '../core/BankCache.js';
+import { EvaluateGearParams } from '../evaluateGear/evaluateGear.types.js';
 import { MapSchema } from '../types/types.js';
 
 /**
@@ -25,4 +27,24 @@ export type SettledRoute = {
   ok: boolean;
   path: MapSchema[];
   blockedTransitionId?: number | null;
+};
+
+/******
+ * Parameters for job queue functions
+ */
+export type FightObjectiveParams = {
+  quantity: number;
+  code: string;
+  participants?: string[];
+  runFightSim?: boolean;
+  useHealthPots?: boolean;
+};
+
+export type EvaluateGearOptions = Omit<EvaluateGearParams, 'character'>;
+
+export type ProposeLoadoutOptions = Pick<
+  EvaluateGearParams,
+  'bossFightRole' | 'gearVariant' | 'usePotions'
+> & {
+  cache?: BankCache;
 };

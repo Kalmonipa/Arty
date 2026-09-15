@@ -143,12 +143,10 @@ describe('simulateBossFight', () => {
       quantity: 10,
     });
 
-    expect(leader.proposeCombatLoadout).toHaveBeenCalledWith(
-      'lich',
-      undefined,
-      'tank',
-      'default',
-    );
+    expect(leader.proposeCombatLoadout).toHaveBeenCalledWith('lich', {
+      bossFightRole: 'tank',
+      gearVariant: 'default',
+    });
     // Not the gear it is standing in: the sim runs before anyone gears up
     expect(leader.createFakeCharacterSchema).not.toHaveBeenCalledWith(
       leader.data,
@@ -273,12 +271,10 @@ describe('simulateBossFight for a party that is not the boss roster', () => {
       { roster: RaidRoster, leaderRole: RaidLeaderRole },
     );
 
-    expect(leader.proposeCombatLoadout).toHaveBeenCalledWith(
-      'pixie',
-      undefined,
-      'tank',
-      'default',
-    );
+    expect(leader.proposeCombatLoadout).toHaveBeenCalledWith('pixie', {
+      bossFightRole: 'tank',
+      gearVariant: 'default',
+    });
   });
 
   it('gates the sim at the threshold it was given', async () => {

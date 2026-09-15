@@ -445,10 +445,9 @@ async function mobDropCost(
   }
 
   for (const { mob, cost } of droppers) {
-    const proposedLoadout = await character.proposeCombatLoadout(
-      mob.code,
-      bankSnapshot,
-    );
+    const proposedLoadout = await character.proposeCombatLoadout(mob.code, {
+      cache: bankSnapshot,
+    });
 
     const canWin = await character.simulateFightNow(
       [proposedLoadout],

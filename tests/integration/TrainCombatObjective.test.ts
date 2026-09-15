@@ -18,6 +18,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 // Import the mocked functions
 import { getAllMonsterInformation } from '../../src/api_calls/Monsters.js';
 import { BankCache } from '../../src/core/BankCache.js';
+import { ProposeLoadoutOptions } from '../../src/character/character.types.js';
 
 // Simple mock character
 class SimpleMockCharacter {
@@ -32,7 +33,7 @@ class SimpleMockCharacter {
   });
 
   proposeCombatLoadout = jest.fn(
-    async (mobCode: string, _cache?: BankCache): Promise<any> => {
+    async (mobCode: string, _options?: ProposeLoadoutOptions): Promise<any> => {
       return { level: this.data.level, weapon_slot: `weapon_for_${mobCode}` };
     },
   );
@@ -259,7 +260,7 @@ describe('TrainCombatObjective Integration Tests', () => {
       const loadoutCalls = mockCharacter.proposeCombatLoadout.mock.calls;
       expect(loadoutCalls.length).toBeGreaterThan(0);
       for (const call of loadoutCalls) {
-        expect(call[1]).toBeInstanceOf(BankCache);
+        expect(call[1].cache).toBeInstanceOf(BankCache);
       }
     });
 
@@ -490,13 +491,12 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
-        10,
-        expect.any(String),
-        undefined,
-        false,
-        false,
-      );
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith({
+        quantity: 10,
+        code: expect.any(String),
+        runFightSim: false,
+        useHealthPots: false,
+      });
     });
 
     it('should handle structured clone of character data', async () => {
@@ -649,11 +649,11 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
         'blue_slime',
-        expect.any(BankCache),
+        expect.objectContaining({ cache: expect.any(BankCache) }),
       );
       expect(mockCharacter.proposeCombatLoadout).toHaveBeenCalledWith(
         'red_slime',
-        expect.any(BankCache),
+        expect.objectContaining({ cache: expect.any(BankCache) }),
       );
       expect(mockCharacter.simulateFightNow).toHaveBeenCalledWith(
         [{ level: 10, weapon_slot: 'weapon_for_blue_slime' }],
@@ -661,8 +661,10 @@ describe('TrainCombatObjective Integration Tests', () => {
       );
       expect(mockCharacter.evaluateGear).toHaveBeenCalledTimes(1);
       expect(mockCharacter.evaluateGear).toHaveBeenCalledWith(
-        'combat',
-        'red_slime',
+        expect.objectContaining({
+          activityType: 'combat',
+          targetMob: 'red_slime',
+        }),
       );
     });
 
@@ -679,6 +681,8 @@ describe('TrainCombatObjective Integration Tests', () => {
   });
 
   describe('Restore potions during combat training', () => {
+    // The first pass over the candidates goes dry; potions only come out once
+    // nothing in range can be beaten without them
     it('tells the fight job not to equip restore potions', async () => {
       mockCharacter.data.level = 10;
       mockCharacter.getCharacterLevel.mockReturnValue(10);
@@ -690,13 +694,12 @@ describe('TrainCombatObjective Integration Tests', () => {
 
       await trainCombatObjective.run();
 
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
-        10,
-        expect.any(String),
-        undefined,
-        false,
-        false,
-      );
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith({
+        quantity: 10,
+        code: expect.any(String),
+        runFightSim: false,
+        useHealthPots: false,
+      });
     });
   });
 });

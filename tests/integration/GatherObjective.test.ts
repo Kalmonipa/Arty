@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { GatherObjective } from '../../src/core/GatherObjective.js';
+import { FightObjectiveParams } from '../../src/character/character.types.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,
@@ -203,7 +204,7 @@ class SimpleMockCharacter {
   });
 
   fightNow = jest.fn(
-    async (_quantity?: number, _code?: string): Promise<ObjectiveResult> => {
+    async (_params: FightObjectiveParams): Promise<ObjectiveResult> => {
       return ObjectiveCompleted;
     },
   );
@@ -440,11 +441,10 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       await gatherObjective.run();
 
       // Assert
-      expect(mockCharacter.evaluateGear).toHaveBeenCalledWith(
-        'mining', // resourceDetails.subtype cast to WeaponFlavours
-        undefined, // targetMob
-        'iron_ore', // targetResource — the item code being gathered
-      );
+      expect(mockCharacter.evaluateGear).toHaveBeenCalledWith({
+        activityType: 'mining', // resourceDetails.subtype cast to WeaponFlavours
+        targetResource: 'iron_ore', // the item code being gathered
+      });
     });
 
     it('should return false if gathering item is wooden_stick', async () => {
@@ -863,7 +863,9 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objective.run();
 
       expect(result.success).toBe(true);
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'owlbear');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 10, code: 'owlbear' }),
+      );
       expect(mockCharacter.fightNow).not.toHaveBeenCalledWith(
         10,
         'corrupted_owlbear',
@@ -881,7 +883,9 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
 
       await objective.run();
 
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'owlbear');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 10, code: 'owlbear' }),
+      );
     });
 
     it('falls through to the next dropper when the best one cannot be beaten', async () => {
@@ -893,7 +897,7 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
         ['cultist_emperor', 'owlbear'],
       );
 
-      mockCharacter.fightNow.mockImplementation(async (_quantity, code) => {
+      mockCharacter.fightNow.mockImplementation(async ({ code }) => {
         if (code === 'cultist_emperor') return ObjectiveFailed;
         mockCharacter.addItemToInventory('owlbear_claw', 1);
         return ObjectiveCompleted;
@@ -902,7 +906,9 @@ describe('GatherObjective Integration Tests (Minimal)', () => {
       const result = await objective.run();
 
       expect(result.success).toBe(true);
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'owlbear');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 10, code: 'owlbear' }),
+      );
     });
 
     it('fails without fighting when every dropper is a boss or event mob', async () => {

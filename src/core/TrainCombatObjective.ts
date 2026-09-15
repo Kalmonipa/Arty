@@ -11,6 +11,11 @@ import {
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
 
+/** No mob in range could be beaten, as opposed to a mob being beaten and the fight going badly */
+const NoWinnableMob = 'no_winnable_mob';
+
+type TrainingRun = ObjectiveResult | typeof NoWinnableMob;
+
 /**
  * @description Finds a suitable mob to fight to level up the characters combat level until the desired level
  * Fights 10 mobs at a time
@@ -34,15 +39,46 @@ export class TrainCombatObjective extends Objective {
   }
 
   async run(): Promise<ObjectiveResult> {
-    let attempts = 0;
-    let charLevel = this.character.getCharacterLevel(this.character.data);
-
     if (!(await this.checkStatus())) return ObjectiveCancelled;
 
-    if (charLevel >= this.targetLevel) {
+    if (
+      this.character.getCharacterLevel(this.character.data) >= this.targetLevel
+    ) {
       logger.info(`Already at target combat level ${this.targetLevel}`);
       return ObjectiveCompleted;
     }
+
+    const dry = await this.trainTowardsTarget(false);
+    if (dry !== NoWinnableMob) return dry;
+
+    // Training is a job somebody queued deliberately, so a mob the character
+    // can only take with restore potions still beats levelling nothing at all
+    logger.info(
+      `Nothing in range is winnable bare. Looking again with restore potions`,
+    );
+
+    const potioned = await this.trainTowardsTarget(true);
+    if (potioned === NoWinnableMob) {
+      logger.warn(
+        `Found no suitable mobs to fight, with or without potions. Failing job`,
+      );
+      return ObjectiveFailed;
+    }
+    return potioned;
+  }
+
+  /**
+   * @description Fights the best mob in range, ten at a time, until the target
+   * level lands or the attempts run out.
+   *
+   * @param usePotions whether a mob that only wins on restore potions counts as
+   * winnable, both for the simulation and for the fight that follows
+   * @returns {@link NoWinnableMob} when every attempt ran out of candidates, so
+   * the caller can decide whether a different loadout is worth trying
+   */
+  private async trainTowardsTarget(usePotions: boolean): Promise<TrainingRun> {
+    let attempts = 0;
+    let charLevel = this.character.getCharacterLevel(this.character.data);
 
     while (charLevel < this.targetLevel && attempts < this.maxRetries) {
       // Get fresh monster data for each attempt
@@ -76,7 +112,7 @@ export class TrainCombatObjective extends Objective {
 
         const proposedLoadout = await this.character.proposeCombatLoadout(
           mob.code,
-          bankCache,
+          { cache: bankCache, usePotions: usePotions },
         );
 
         const fightSimResult = await this.character.simulateFightNow(
@@ -86,14 +122,17 @@ export class TrainCombatObjective extends Objective {
 
         if (fightSimResult.success) {
           foundSuitableMob = true;
-          await this.character.evaluateGear('combat', mob.code);
-          const fightResult = await this.character.fightNow(
-            10,
-            mob.code,
-            undefined,
-            false,
-            false,
-          );
+          await this.character.evaluateGear({
+            activityType: 'combat',
+            targetMob: mob.code,
+            usePotions: usePotions,
+          });
+          const fightResult = await this.character.fightNow({
+            quantity: 10,
+            code: mob.code,
+            runFightSim: false,
+            useHealthPots: usePotions,
+          });
 
           if (fightResult.success) {
             fightSuccessful = true;
@@ -113,14 +152,11 @@ export class TrainCombatObjective extends Objective {
         attempts++;
         if (attempts >= this.maxRetries) {
           if (!foundSuitableMob) {
-            logger.warn(
-              `Found no suitable mobs to fight after ${attempts} attempts. Failing job`,
-            );
-          } else {
-            logger.warn(
-              `${attempts}/${this.maxRetries} attempts to fight reached. Failing job`,
-            );
+            return NoWinnableMob;
           }
+          logger.warn(
+            `${attempts}/${this.maxRetries} attempts to fight reached. Failing job`,
+          );
           return ObjectiveFailed;
         }
         // Continue the while loop to try again with fresh monster data

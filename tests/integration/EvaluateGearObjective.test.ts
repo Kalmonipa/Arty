@@ -21,6 +21,7 @@ import {
   WeaponFlavours,
 } from '../../src/types/ItemData.js';
 import { BankCache } from '../../src/core/BankCache.js';
+import { Character } from '../../src/character/character.js';
 
 // Mock the API modules
 jest.mock('../../src/api_calls/Monsters', () => ({
@@ -247,6 +248,9 @@ const OwningJobId = 'train_28_gearcrafting_d194';
 class SimpleMockCharacter {
   data = { ...mockCharacterData };
   minEquippedUtilities = 20;
+
+  // The real thing, so the boss reserve behaves here as it does in the game
+  spareOutsideBossReserve = Character.prototype.spareOutsideBossReserve;
 
   // The best crafter in the fleet, as applyFleetSnapshot would set it
   highestWeaponcraftingLevel: number | undefined = MaxSkillLevel;

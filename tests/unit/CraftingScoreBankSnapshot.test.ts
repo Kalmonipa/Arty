@@ -34,7 +34,7 @@ const craftable = (code: string, ingredients: string[]): ItemSchema =>
 describe('crafting score reuses the caller bank snapshot', () => {
   it('gives every mob-drop ingredient the same snapshot, not its own', async () => {
     const proposeCombatLoadout = jest.fn<
-      (mob: string, cache?: BankCache) => Promise<object>
+      (mob: string, options?: { cache?: BankCache }) => Promise<object>
     >(async () => ({}));
     const character = {
       data: { name: 'LongLegLarry' },
@@ -79,13 +79,13 @@ describe('crafting score reuses the caller bank snapshot', () => {
     // apiece — against a fleet-wide budget of 2000 data requests an hour.
     expect(proposeCombatLoadout).toHaveBeenCalledTimes(2);
     for (const call of proposeCombatLoadout.mock.calls) {
-      expect(call[1]).toBe(snapshot);
+      expect(call[1].cache).toBe(snapshot);
     }
   });
 
   it('passes the shared snapshot into every loadout proposal', async () => {
     const proposeCombatLoadout = jest.fn<
-      (mob: string, cache?: BankCache) => Promise<object>
+      (mob: string, options?: { cache?: BankCache }) => Promise<object>
     >(async () => ({}));
     const character = {
       data: { name: 'LongLegLarry' },
@@ -115,6 +115,8 @@ describe('crafting score reuses the caller bank snapshot', () => {
       snapshot,
     );
 
-    expect(proposeCombatLoadout).toHaveBeenCalledWith('chicken', snapshot);
+    expect(proposeCombatLoadout).toHaveBeenCalledWith('chicken', {
+      cache: snapshot,
+    });
   });
 });

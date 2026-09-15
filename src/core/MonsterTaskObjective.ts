@@ -136,10 +136,10 @@ export class MonsterTaskObjective extends Objective {
       this.character.data.task_total - this.character.data.task_progress;
 
     if (!this.shouldYieldBetweenFights) {
-      return await this.character.fightNow(
-        remaining(),
-        this.character.data.task,
-      );
+      return await this.character.fightNow({
+        quantity: remaining(),
+        code: this.character.data.task,
+      });
     }
 
     let result: ObjectiveResult = ObjectiveCompleted;
@@ -147,10 +147,10 @@ export class MonsterTaskObjective extends Objective {
     while (remaining() > 0) {
       const before = this.character.data.task_progress;
 
-      result = await this.character.fightNow(
-        Math.min(FightsPerYieldCheck, remaining()),
-        this.character.data.task,
-      );
+      result = await this.character.fightNow({
+        quantity: Math.min(FightsPerYieldCheck, remaining()),
+        code: this.character.data.task,
+      });
 
       if (!result.success) return result;
 

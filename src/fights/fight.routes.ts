@@ -163,11 +163,9 @@ export default function FightRouter(char: Character) {
 
       // Without a role the loadout is gear only, which is what an ordinary
       // fight sim wants. A role adds the potions for that part in the party
-      const proposedLoadout = await char.proposeCombatLoadout(
-        targetMob,
-        undefined,
+      const proposedLoadout = await char.proposeCombatLoadout(targetMob, {
         bossFightRole,
-      );
+      });
 
       return res.status(200).json({
         message: `Proposed loadout for target mob ${targetMob}: helmet: ${proposedLoadout.helmet_slot}, weapon: ${proposedLoadout.weapon_slot}`,

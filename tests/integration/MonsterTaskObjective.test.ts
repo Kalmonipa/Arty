@@ -6,6 +6,7 @@ import {
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
 import { MonsterTaskObjective } from '../../src/core/MonsterTaskObjective.js';
+import { FightObjectiveParams } from '../../src/character/character.types.js';
 import { FightsPerYieldCheck } from '../../src/constants.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlotSchema, MapSchema } from '../../src/types/types.js';
@@ -41,11 +42,13 @@ class SimpleMockCharacter {
 
   // Returns an ObjectiveResult like the real fightNow: a bare boolean here let a
   // truthiness bug in the retry loop pass unnoticed
-  fightNow = jest.fn(async (quantity: number): Promise<ObjectiveResult> => {
-    // Mock fighting monsters
-    this.data.task_progress += quantity;
-    return ObjectiveCompleted;
-  });
+  fightNow = jest.fn(
+    async ({ quantity }: FightObjectiveParams): Promise<ObjectiveResult> => {
+      // Mock fighting monsters
+      this.data.task_progress += quantity;
+      return ObjectiveCompleted;
+    },
+  );
 
   // Stands in for really running the job: the fight simulator records its
   // average turns on itself, which is what the task cost estimate reads.
@@ -146,7 +149,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(5, 'red_slime');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 5, code: 'red_slime' }),
+      );
       expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
@@ -193,7 +198,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(startNewTaskSpy).not.toHaveBeenCalled();
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(3, 'red_slime'); // 5 - 2 = 3 remaining
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 3, code: 'red_slime' }),
+      ); // 5 - 2 = 3 remaining
     });
   });
 
@@ -429,8 +436,7 @@ describe('MonsterTaskObjective Integration Tests', () => {
         // Assert
         expect(result.success).toBe(true);
         expect(mockCharacter.fightNow).toHaveBeenCalledWith(
-          test.total,
-          test.task,
+          expect.objectContaining({ quantity: test.total, code: test.task }),
         );
 
         // Reset for next test
@@ -453,7 +459,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(3, 'red_slime'); // 5 - 2 = 3 remaining
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 3, code: 'red_slime' }),
+      ); // 5 - 2 = 3 remaining
     });
   });
 
@@ -495,7 +503,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
       await objective.run();
 
       expect(spies.cancel).not.toHaveBeenCalled();
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(400, 'sheep');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 400, code: 'sheep' }),
+      );
     });
 
     it('cancels a small task against an expensive target', async () => {
@@ -539,7 +549,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
       await objective.run();
 
       expect(spies.cancel).not.toHaveBeenCalled();
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(50, 'skeleton');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 50, code: 'skeleton' }),
+      );
     });
 
     it('gives up rerolling rather than burning coins indefinitely', async () => {
@@ -714,7 +726,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
       await objective.run();
 
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1);
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(128, 'mushmush');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 128, code: 'mushmush' }),
+      );
     });
 
     it('stops after the current chunk when parked work became ready', async () => {
@@ -730,8 +744,10 @@ describe('MonsterTaskObjective Integration Tests', () => {
       expect(result.success).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(1);
       expect(mockCharacter.fightNow).toHaveBeenCalledWith(
-        FightsPerYieldCheck,
-        'mushmush',
+        expect.objectContaining({
+          quantity: FightsPerYieldCheck,
+          code: 'mushmush',
+        }),
       );
       // The task isn't finished, so it must not be handed in
       expect(handInTaskSpy).not.toHaveBeenCalled();
@@ -750,9 +766,18 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
       expect(result.success).toBe(true);
       expect(mockCharacter.fightNow).toHaveBeenCalledTimes(3);
-      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(1, 25, 'mushmush');
-      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(2, 25, 'mushmush');
-      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(3, 10, 'mushmush');
+      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ quantity: 25, code: 'mushmush' }),
+      );
+      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ quantity: 25, code: 'mushmush' }),
+      );
+      expect(mockCharacter.fightNow).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({ quantity: 10, code: 'mushmush' }),
+      );
       expect(handInTaskSpy).toHaveBeenCalledWith('monsters');
     });
 
@@ -765,7 +790,9 @@ describe('MonsterTaskObjective Integration Tests', () => {
 
       await objective.run();
 
-      expect(mockCharacter.fightNow).toHaveBeenCalledWith(10, 'mushmush');
+      expect(mockCharacter.fightNow).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 10, code: 'mushmush' }),
+      );
       expect(shouldYield).not.toHaveBeenCalled();
     });
 

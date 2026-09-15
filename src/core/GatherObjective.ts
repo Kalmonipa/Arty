@@ -160,11 +160,10 @@ export class GatherObjective extends Objective {
         );
         return ObjectiveFailed;
       } else if (isGatheringSkill(resourceDetails.subtype)) {
-        await this.character.evaluateGear(
-          resourceDetails.subtype as WeaponFlavours,
-          undefined,
-          code,
-        );
+        await this.character.evaluateGear({
+          activityType: resourceDetails.subtype as WeaponFlavours,
+          targetResource: code,
+        });
       }
 
       // Evaluate our inventory space before we start collecting items
@@ -369,7 +368,14 @@ export class GatherObjective extends Objective {
 
           const dropper = droppers[dropperIndex];
 
-          if (!(await this.character.fightNow(10, dropper.code)).success) {
+          if (
+            !(
+              await this.character.fightNow({
+                quantity: 10,
+                code: dropper.code,
+              })
+            ).success
+          ) {
             logger.debug(`Fight attempt against ${dropper.code} failed`);
 
             dropperIndex++;

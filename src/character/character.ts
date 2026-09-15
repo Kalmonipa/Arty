@@ -188,6 +188,9 @@ import {
   BossFightRole,
 } from '../fightBosses/bossFight.types.js';
 import {
+  EvaluateGearOptions,
+  FightObjectiveParams,
+  ProposeLoadoutOptions,
   PreparedRouteResult,
   SettledRoute,
   TransitionStepResult,
@@ -2496,7 +2499,7 @@ export class Character {
    * floor, so the fleet drained the bank to single digits overnight and the
    * raid party found it empty.
    */
-  private spareOutsideBossReserve(
+  spareOutsideBossReserve(
     utilityType: UtilityEffects,
     bankContents: BankCache,
     forBossFight: boolean,
@@ -3599,18 +3602,10 @@ export class Character {
     );
   }
 
-  async evaluateGear(
-    activityType: WeaponFlavours,
-    targetMob?: string,
-    targetResource?: string,
-    bossfightRole?: BossFightRole,
-  ) {
+  async evaluateGear(params: EvaluateGearOptions) {
     const evaluateGearJob = new EvaluateGearObjective({
+      ...params,
       character: this,
-      activityType: activityType,
-      targetMob: targetMob,
-      targetResource: targetResource,
-      bossFightRole: bossfightRole,
     });
 
     return await this.executeJobNow(
@@ -3623,19 +3618,18 @@ export class Character {
 
   async proposeCombatLoadout(
     targetMob: string,
-    cache?: BankCache,
-    bossFightRole?: BossFightRole,
-    gearVariant?: string,
+    options: ProposeLoadoutOptions = {},
   ): Promise<FakeCharacterSchema> {
     const job = new EvaluateGearObjective({
       character: this,
       activityType: 'combat',
       targetMob: targetMob,
-      bossFightRole: bossFightRole,
-      gearVariant: gearVariant,
+      bossFightRole: options.bossFightRole,
+      gearVariant: options.gearVariant,
+      usePotions: options.usePotions,
     });
     const charLevel = this.getCharacterLevel(this.data);
-    return await job.proposeCombatLoadout(charLevel, targetMob, cache);
+    return await job.proposeCombatLoadout(charLevel, targetMob, options.cache);
   }
 
   /**
@@ -3702,22 +3696,16 @@ export class Character {
   /**
    * @description Creates a new fight objective and executes it
    */
-  async fightNow(
-    quantity: number,
-    code: string,
-    participants?: string[],
-    runFightSim?: boolean,
-    useHealthPots?: boolean,
-  ): Promise<ObjectiveResult> {
+  async fightNow(params: FightObjectiveParams): Promise<ObjectiveResult> {
     const fightJob = new FightObjective(
       this,
       {
-        code: code,
-        quantity: quantity,
+        code: params.code,
+        quantity: params.quantity,
       },
-      participants,
-      runFightSim,
-      useHealthPots,
+      params.participants,
+      params.runFightSim,
+      params.useHealthPots,
     );
 
     const result = await this.executeJobNow(

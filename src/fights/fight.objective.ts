@@ -79,7 +79,10 @@ export class FightObjective extends Objective {
 
     await this.character.evaluateDepositItemsInBank(itemsToKeep);
 
-    await this.character.evaluateGear('combat', this.target.code);
+    await this.character.evaluateGear({
+      activityType: 'combat',
+      targetMob: this.target.code,
+    });
 
     this.combatWeapon = this.character.data.weapon_slot;
 

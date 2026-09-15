@@ -111,9 +111,7 @@ export async function simulateBossFight(
     // standing in would judge the fight on a gathering tool
     const leaderFakeCharSchema = await character.proposeCombatLoadout(
       target.code,
-      undefined,
-      leaderRole,
-      variant.name,
+      { bossFightRole: leaderRole, gearVariant: variant.name },
     );
 
     const loadouts = [leaderFakeCharSchema, ...participantLoadouts];
