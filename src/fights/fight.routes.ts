@@ -3,6 +3,7 @@ import { Character } from '../character/character.js';
 import { FightObjective } from './fight.objective.js';
 import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objective.js';
 import { simulateBossFight } from '../fightBosses/bossfightPreRequisite.js';
+import { simulateSoloFight } from './soloFightSim.js';
 import { RaidLeaderObjective } from '../fightRaids/raidLeader.objective.js';
 import { findRaid } from '../api_calls/Raids.js';
 import {
@@ -56,6 +57,45 @@ export default function FightRouter(char: Character) {
       return res
         .status(500)
         .json({ error: error.message || 'Internal server error.' });
+    }
+  });
+
+  /**
+   * Simulates a solo fight without queueing anything, so the caller can see
+   * whether the character can take a mob with the gear currently available.
+   */
+  router.post('/simulate', async (req: Request, res: Response) => {
+    try {
+      const { quantity, targetMob } = req.body;
+
+      if (Number.isNaN(quantity) || !targetMob) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid quantity or targetMob.' });
+      }
+
+      if (char === undefined || !char) {
+        return res
+          .status(500)
+          .json({ error: 'Character instance not available.' });
+      }
+
+      const result = await simulateSoloFight(char, {
+        code: targetMob,
+        quantity: quantity,
+      });
+
+      return res.status(200).json({
+        message: `Fight sim against ${targetMob} was a ${result.success ? 'win' : 'loss'}`,
+        character: char.data.name,
+        winRate: result.winRate,
+        averageTurns: result.averageTurns,
+        loadout: result.loadout,
+      });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: error.message || 'Internal server error' });
     }
   });
 
