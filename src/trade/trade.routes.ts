@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../character/character.js';
-import { TradeObjective } from '../core/TradeWithNPCObjective.js';
+import { TradeObjective } from './trade.objective.js';
 import { TradeType } from '../types/NPCData.js';
 
 export default function TradeRouter(char: Character) {

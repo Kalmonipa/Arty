@@ -1,7 +1,7 @@
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
-import { TradeObjective } from '../core/TradeWithNPCObjective.js';
+import { TradeObjective } from '../trade/trade.objective.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, ItemSlot, Skill } from '../types/types.js';
 import {

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../character/character.js';
 import { SimpleItemSchema } from '../types/types.js';
-import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
+import { DeleteItemObjective } from './deleteItem.objective.js';
 
 export default function ItemsRouter(char: Character) {
   const router = Router();

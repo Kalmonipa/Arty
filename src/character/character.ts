@@ -96,7 +96,7 @@ import {
 import { TrainGatheringSkillObjective } from '../gathering/trainGatheringSkill.objective.js';
 import { TidyBankObjective } from '../bank/tidyBank.objective.js';
 import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
-import { TradeObjective } from '../core/TradeWithNPCObjective.js';
+import { TradeObjective } from '../trade/trade.objective.js';
 import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from '../fights/fight.simulator.js';
 import { IdleObjective } from '../idleObjectives/idleObjective.js';
@@ -176,7 +176,7 @@ import { db } from '../db.js';
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { IdleHealerObjective } from '../idleObjectives/idleHealer.js';
 import { IdleCrafterObjective } from '../idleObjectives/idleCrafter.js';
-import { DeleteItemObjective } from '../core/DeleteItemObjective.js';
+import { DeleteItemObjective } from '../items/deleteItem.objective.js';
 import { IdleLabourerObjective } from '../idleObjectives/idleLabourer.js';
 import { IdleFishermanObjective } from '../idleObjectives/idleFisherman.js';
 import { FulfillWishlistRequestObjective } from '../wishlist/fulfillWishlistRequest.objective.js';

@@ -1,5 +1,5 @@
 import { Character } from '../character/character.js';
-import { Objective } from './Objective.js';
+import { Objective } from '../core/Objective.js';
 import { ObjectiveResult } from '../types/ObjectiveData.js';
 
 /**

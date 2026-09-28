@@ -7,11 +7,11 @@ import { TradeType } from '../types/NPCData.js';
 import { NPCItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from './Error.js';
+import { ApiError } from '../core/Error.js';
 import { GatherObjective } from '../gathering/gather.objective.js';
 import { getAllMaps } from '../api_calls/Maps.js';
 import { ItemTaskObjective } from '../tasks/itemTask.objective.js';
-import { Objective } from './Objective.js';
+import { Objective } from '../core/Objective.js';
 import { MonsterTaskObjective } from '../tasks/monsterTask.objective.js';
 import { TasksCoin } from '../gameDataConstants.js';
 import {
