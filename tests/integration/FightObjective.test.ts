@@ -12,7 +12,7 @@ import {
 import { FightObjective } from '../../src/fights/fight.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import {
   ObjectiveCancelled,
   ObjectiveTargets,

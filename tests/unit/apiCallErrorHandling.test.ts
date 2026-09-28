@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 import { actionUse } from '../../src/api_calls/Items.js';
 import { actionFight } from '../../src/api_calls/Actions.js';
 import { requestLoadout } from '../../src/api_calls/Account.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 describe('api_calls error handling', () => {

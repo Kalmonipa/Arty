@@ -21,7 +21,7 @@ import {
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import FightRouter from '../../src/fights/fight.routes.js';
 import { RaidLeaderObjective } from '../../src/fightRaids/raidLeader.objective.js';
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 
 const mockedFindRaid = findRaid as jest.MockedFunction<typeof findRaid>;
 const mockedSimulate = simulateBossFight as jest.MockedFunction<

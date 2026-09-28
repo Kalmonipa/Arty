@@ -1,8 +1,8 @@
 import { getItemInformation } from '../api_calls/Items.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
-import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/error.js';
+import { Objective } from '../core/objective.js';
 import { getOpenWishlistRequests } from './wishlist.utils.js';
 import { AcquisitionMethod } from './wishlist.types.js';
 import { eventBlockedIngredients } from '../events/events.cache.js';

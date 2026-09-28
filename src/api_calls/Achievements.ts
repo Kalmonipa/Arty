@@ -1,5 +1,5 @@
 import { ApiUrl } from '../constants.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import {
   AchievementResponseSchema,
   DataPageAccountAchievementSchema,

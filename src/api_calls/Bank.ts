@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { logger } from '../utils.js';
 import { ApiUrl } from '../constants.js';
 import {

@@ -8,7 +8,7 @@ import {
 } from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { EquipmentResponseSchema, ItemSlot } from '../../src/types/types.js';
 
 // Mock the API modules

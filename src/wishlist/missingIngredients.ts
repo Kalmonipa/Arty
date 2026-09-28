@@ -1,6 +1,6 @@
 import { getItemInformation } from '../api_calls/Items.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { ItemSchema } from '../types/types.js';
 
 /** An ingredient a craft came up short on, and the nearest thing to a why */

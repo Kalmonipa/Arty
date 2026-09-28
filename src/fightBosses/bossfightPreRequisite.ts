@@ -2,7 +2,7 @@ import { requestLoadout } from '../api_calls/Account.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getMyCharacters } from '../character/character.apiCalls.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import {
   ObjectiveFailed,
   ObjectiveResult,

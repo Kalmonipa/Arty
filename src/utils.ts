@@ -9,7 +9,7 @@ import {
   MapSchema,
   SimpleEffectSchema,
 } from './types/types.js';
-import { ApiError } from './core/Error.js';
+import { ApiError } from './core/error.js';
 import { UtilityEffects, WeaponFlavours } from './types/ItemData.js';
 import { MonsterResistance } from './types/MonsterData.js';
 import { Role, ROLES } from './types/CharacterData.js';

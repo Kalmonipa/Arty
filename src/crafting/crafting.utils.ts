@@ -11,7 +11,7 @@ import { getAllNpcItems } from '../api_calls/NPC.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
 import { BankCache } from '../bank/bank.cache.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { CostContext, CraftCostMemo, Ledger } from './crafting.types.js';
 
 /**

@@ -10,7 +10,7 @@ import {
   getAllNpcItems,
   getNpcItems,
 } from '../../src/api_calls/NPC.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {

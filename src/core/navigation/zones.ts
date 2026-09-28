@@ -1,18 +1,5 @@
-import { MapSchema, MapLayer } from '../../types/types.js';
-
-export type ZoneId = number;
-
-export interface Zone {
-  id: ZoneId;
-  layer: MapLayer;
-  mapIds: Set<number>;
-}
-
-export interface ZoneIndex {
-  /** Maps every walkable/restricted map_id to the zone it belongs to. */
-  zoneOfMapId: Map<number, ZoneId>;
-  zones: Map<ZoneId, Zone>;
-}
+import { MapLayer, MapSchema } from '../../types/types.js';
+import { Zone, ZoneId, ZoneIndex } from './navigation.types.js';
 
 // Tiles you can stand on and freely walk between. 'blocked' and 'teleportation'
 // are boundaries; 'restricted' forms its own isolated zones (handled in a

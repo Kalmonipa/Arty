@@ -18,7 +18,7 @@ import {
   clearBankSlotCache,
   readCachedBankSlotsUsed,
 } from '../../src/bank/bankQuantity.cache.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 
 const mockedItems = getBankItems as jest.MockedFunction<typeof getBankItems>;
 const mockedDetails = getBankDetails as jest.MockedFunction<

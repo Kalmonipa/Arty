@@ -3,7 +3,7 @@ import { Character } from './character.js';
 import { isRole, logger } from '../utils.js';
 import { ROLES } from '../types/CharacterData.js';
 import { getCharacter } from './character.apiCalls.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 
 export default function CharacterRouter(char: Character) {
   const router = Router();

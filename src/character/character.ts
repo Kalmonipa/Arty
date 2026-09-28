@@ -54,7 +54,7 @@ import {
 import { loadRaidSchedules } from '../api_calls/Raids.js';
 import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
 import { DepositObjective } from '../bank/deposit.objective.js';
-import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
+import { ApiError, TRANSPORT_ERROR_CODE } from '../core/error.js';
 import { BankCache } from '../bank/bank.cache.js';
 import {
   cacheBankGold,
@@ -63,7 +63,7 @@ import {
   readCachedBankQuantity,
 } from '../bank/bankQuantity.cache.js';
 import { GatherObjective } from '../gathering/gather.objective.js';
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import {
   ObjectiveTargets,
   ObjectiveStatus,
@@ -121,10 +121,8 @@ import {
   buildTeleportTable,
   chooseTeleportPotion,
 } from '../core/navigation/teleports.js';
-import {
-  getNavigationGraph,
-  NavigationGraph,
-} from '../core/navigation/graph.js';
+import { getNavigationGraph } from '../core/navigation/graph.js';
+import { NavigationGraph } from '../core/navigation/navigation.types.js';
 import {
   DepositableEquipmentTypes,
   Fishing,

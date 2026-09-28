@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { Character } from '../../src/character/character.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

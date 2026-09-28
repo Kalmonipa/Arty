@@ -1,4 +1,4 @@
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/error.js';
 import { logger, MyHeaders, sleep as defaultSleep } from '../utils.js';
 import { CharName } from '../constants.js';
 import { apiRequestsCounter, rateLimitBackoffSeconds } from '../metrics.js';

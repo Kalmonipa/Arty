@@ -1,5 +1,5 @@
 import { BossFightRole } from '../fightBosses/bossFight.types.js';
-import { ApiError, toApiError } from '../core/Error.js';
+import { ApiError, toApiError } from '../core/error.js';
 import { ProposeLoadoutResponse } from '../fights/fight.types.js';
 import { CraftResponse, JobResponse } from '../types/CharacterData.js';
 import { SimpleItemSchema } from '../types/types.js';

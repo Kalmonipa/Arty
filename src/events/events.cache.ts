@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import { getItemInformation } from '../api_calls/Items.js';
 import { getResourceNodesDropping } from '../api_calls/Resources.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { EventSchema, MapContentType } from '../types/types.js';
 import { logger } from '../utils.js';
 import type { Character } from '../character/character.js';

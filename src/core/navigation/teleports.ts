@@ -1,6 +1,10 @@
 import { ConditionOperator, ItemSchema, MapSchema } from '../../types/types.js';
 import { effectValueOf } from '../../utils.js';
-import { NavigationGraph } from './graph.js';
+import {
+  JourneyCost,
+  NavigationGraph,
+  TeleportPotion,
+} from './navigation.types.js';
 import { buildTransitionPath } from './pathfinding.js';
 import {
   MoveSecondsPerTile,
@@ -8,23 +12,6 @@ import {
   TransitionSeconds,
   UseItemSeconds,
 } from '../../constants.js';
-
-/** What a journey costs, in the two currencies a route can be paid in */
-export type JourneyCost = {
-  /** Cooldown seconds: five a tile walked, five a transition taken */
-  seconds: number;
-  /** Gold the transitions on the route charge to pass */
-  gold: number;
-};
-
-/** A potion that drops the drinker onto a fixed map when used */
-export type TeleportPotion = {
-  code: string;
-  /** The map the potion lands you on */
-  mapId: number;
-  /** Character level needed to use it */
-  level: number;
-};
 
 /**
  * @description Every teleport potion the game knows about, with its destination.

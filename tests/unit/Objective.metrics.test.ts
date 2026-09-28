@@ -1,4 +1,4 @@
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 import { jobActiveGauge } from '../../src/metrics.js';
 import {
   ObjectiveCompleted,

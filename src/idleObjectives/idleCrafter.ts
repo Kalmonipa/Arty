@@ -23,8 +23,8 @@ import {
 } from '../types/types.js';
 import { isGatheringSkill, logger, sleep } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
-import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/error.js';
+import { Objective } from '../core/objective.js';
 import { TrainCombatObjective } from '../fights/trainCombat.objective.js';
 import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';
 import { TrainGatheringSkillObjective } from '../gathering/trainGatheringSkill.objective.js';

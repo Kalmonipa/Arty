@@ -6,7 +6,7 @@ import {
 } from '../../src/types/ObjectiveData.js';
 import { EventObjective } from '../../src/events/events.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { ActiveEventSchema } from '../../src/types/types.js';
 
 jest.mock('../../src/api_calls/NPC', () => ({
@@ -20,7 +20,7 @@ jest.mock('../../src/api_calls/Items', () => ({
 
 import { getNpc, getAllNpcItems } from '../../src/api_calls/NPC.js';
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 
 const mockGetNpc = getNpc as jest.MockedFunction<typeof getNpc>;
 const mockGetItemInformation = getItemInformation as jest.MockedFunction<

@@ -8,7 +8,7 @@ import {
 } from '../../src/types/ObjectiveData.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot, Role } from '../../src/types/CharacterData.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import {
   ItemSchema,
   CraftSkill,

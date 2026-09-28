@@ -6,7 +6,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   getWishlistRequestsForJob: jest.fn(async () => []),
 }));
 
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 import {
   ObjectiveFailed,
   ObjectiveOnHold,

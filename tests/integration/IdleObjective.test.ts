@@ -8,7 +8,7 @@ import { IdleObjective } from '../../src/idleObjectives/idleObjective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { ItemSchema, CharacterSchema } from '../../src/types/types.js';
 import { GearEffects } from '../../src/types/ItemData.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 
 jest.mock('../../src/api_calls/NPC', () => ({
   getAllNpcItems: jest.fn(),

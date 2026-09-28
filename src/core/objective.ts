@@ -14,7 +14,7 @@ import {
   jobDurationHistogram,
 } from '../metrics.js';
 import { actionAcceptNewTask, actionCancelTask } from '../api_calls/Tasks.js';
-import { ApiError } from './Error.js';
+import { ApiError } from './error.js';
 import { SimpleItemSchema, Skill, TaskType } from '../types/types.js';
 import {
   addToWishlist,

@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { apiRequest } from '../../src/api_calls/request.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 
 // A no-op sleep so the rate-limit backoff and cooldown waits don't slow tests.
 const makeSleep = () =>

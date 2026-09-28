@@ -9,7 +9,7 @@ import {
 import {
   NavigationGraph,
   TransitionEdge,
-} from '../../src/core/navigation/graph.js';
+} from '../../src/core/navigation/navigation.types.js';
 
 // canSatisfyConditions only reaches the bank via getBankGold /
 // checkQuantityOfItemInBank, which we stub on the instance — so the real Bank

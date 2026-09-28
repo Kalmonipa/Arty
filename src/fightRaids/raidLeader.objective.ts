@@ -1,8 +1,8 @@
 import { actionFight } from '../api_calls/Actions.js';
 import { findRaid } from '../api_calls/Raids.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
-import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/error.js';
+import { Objective } from '../core/objective.js';
 import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
 import { BossFightUnready } from '../fightBosses/bossFight.types.js';
 import {

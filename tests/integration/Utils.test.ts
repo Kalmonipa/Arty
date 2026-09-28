@@ -1,7 +1,7 @@
 import { TransitionLocations } from '../../src/utils.js';
 import { getAllMaps, getMaps } from '../../src/api_calls/Maps.js';
 import { MapSchema } from '../../src/types/types.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 
 jest.mock('../../src/api_calls/Maps.js', () => ({
   getMaps: jest.fn(),

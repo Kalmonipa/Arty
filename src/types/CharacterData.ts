@@ -1,4 +1,4 @@
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import { ObjectiveStatus } from './ObjectiveData.js';
 
 /**

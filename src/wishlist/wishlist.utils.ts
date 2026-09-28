@@ -1,5 +1,5 @@
 import { getItemInformation } from '../api_calls/Items.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { db } from '../db.js';
 import { ItemSchema } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';

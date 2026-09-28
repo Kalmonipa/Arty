@@ -1,5 +1,5 @@
 import { Character } from '../character/character.js';
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import {
   bankedStockSpokenFor,
   claimWishlistRequest,

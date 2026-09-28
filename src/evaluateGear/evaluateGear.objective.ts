@@ -4,7 +4,7 @@ import {
   scoreWeaponAgainstResistances,
 } from '../utils.js';
 import { Character } from '../character/character.js';
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import {
   WeaponFlavours,
   GearEffects,
@@ -18,7 +18,7 @@ import {
 } from '../types/types.js';
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { BankCache } from '../bank/bank.cache.js';
 import { MonsterAttack, MonsterResistance } from '../types/MonsterData.js';
 import {

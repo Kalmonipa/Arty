@@ -7,7 +7,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   dropUnclaimedWishlistRequest: jest.fn(async () => true),
 }));
 
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 import {
   ObjectiveCompleted,
   ObjectiveResult,

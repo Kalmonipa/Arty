@@ -9,7 +9,7 @@ jest.mock('../../src/api_calls/Actions', () => ({
 
 import { actionDepositItems } from '../../src/api_calls/Actions.js';
 import { Character } from '../../src/character/character.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 const mockedDeposit = actionDepositItems as jest.MockedFunction<

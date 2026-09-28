@@ -3,8 +3,8 @@ import { ItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
 import { DepositObjective } from '../bank/deposit.objective.js';
-import { ApiError } from '../core/Error.js';
-import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/error.js';
+import { Objective } from '../core/objective.js';
 import { TasksCoin } from '../gameDataConstants.js';
 import {
   ObjectiveCancelled,

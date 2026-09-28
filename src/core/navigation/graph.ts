@@ -1,20 +1,6 @@
 import { MapSchema } from '../../types/types.js';
-import { buildZones, Zone, ZoneId } from './zones.js';
-
-export interface TransitionEdge {
-  fromZone: ZoneId;
-  toZone: ZoneId;
-  transitionPoint: MapSchema;
-}
-
-export interface NavigationGraph {
-  zoneOfMapId: Map<number, ZoneId>;
-  zones: Map<ZoneId, Zone>;
-  /** Outgoing transition edges keyed by source zone. */
-  edges: Map<ZoneId, TransitionEdge[]>;
-  /** Every map by id, so a journey can be costed from map ids alone. */
-  mapById: Map<number, MapSchema>;
-}
+import { buildZones } from './zones.js';
+import { NavigationGraph, TransitionEdge, ZoneId } from './navigation.types.js';
 
 export function buildNavigationGraph(allMaps: MapSchema[]): NavigationGraph {
   const { zoneOfMapId, zones } = buildZones(allMaps);

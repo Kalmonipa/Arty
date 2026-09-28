@@ -12,7 +12,7 @@ import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
 import { BankCache } from '../../src/bank/bank.cache.js';
 import { simulateSoloFight } from '../../src/fights/soloFightSim.js';
 import { Character } from '../../src/character/character.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { ItemSchema, MonsterSchema } from '../../src/types/types.js';
 import {
   FightSimVerdict,

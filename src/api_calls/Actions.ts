@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import {
   BankItemTransactionResponseSchema,
   CharacterFightResponseSchema,

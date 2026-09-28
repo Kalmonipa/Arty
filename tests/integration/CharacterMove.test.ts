@@ -5,7 +5,7 @@ import {
 } from '../../src/types/ObjectiveData.js';
 import { Character } from '../../src/character/character.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import {
   CharacterMovementResponseSchema,
   CharacterTransitionResponseSchema,
@@ -16,8 +16,9 @@ import {
 import {
   NavigationGraph,
   TransitionEdge,
-} from '../../src/core/navigation/graph.js';
-import { Zone, ZoneId } from '../../src/core/navigation/zones.js';
+  Zone,
+  ZoneId,
+} from '../../src/core/navigation/navigation.types.js';
 
 // Builds a NavigationGraph from explicit zone assignments and edges, so the
 // move() mechanics can be tested without depending on flood-fill geometry.

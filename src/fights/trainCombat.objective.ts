@@ -1,9 +1,9 @@
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { BankCache } from '../bank/bank.cache.js';
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

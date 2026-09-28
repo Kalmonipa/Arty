@@ -1,6 +1,6 @@
 import { findRaid } from '../api_calls/Raids.js';
 import { Character } from '../character/character.js';
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
 import {
   BossFightReady,

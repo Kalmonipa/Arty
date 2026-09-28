@@ -1,4 +1,4 @@
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { CharacterSchema } from '../types/types.js';
 import { ApiUrl } from '../constants.js';
 import { apiRequest } from '../api_calls/request.js';

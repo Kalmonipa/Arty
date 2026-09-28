@@ -1,8 +1,8 @@
 import {
   buildTeleportTable,
   chooseTeleportPotion,
-  TeleportPotion,
 } from '../../../src/core/navigation/teleports.js';
+import { TeleportPotion } from '../../../src/core/navigation/navigation.types.js';
 import { buildNavigationGraph } from '../../../src/core/navigation/graph.js';
 import { buildTransitionPath } from '../../../src/core/navigation/pathfinding.js';
 import {

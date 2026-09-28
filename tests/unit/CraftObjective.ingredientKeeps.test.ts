@@ -14,7 +14,7 @@ jest.mock('../../src/events/events.cache.js', () => ({
 
 import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import { actionCraft } from '../../src/api_calls/Actions.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import { ItemSchema, MapSchema } from '../../src/types/types.js';
 

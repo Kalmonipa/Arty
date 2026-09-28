@@ -55,7 +55,7 @@ import {
   RaidTransientErrorCodes,
   RaidWinRateThreshold,
 } from '../../src/fightRaids/raid.utils.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 
 const mockedSimulate = simulateBossFight as jest.MockedFunction<

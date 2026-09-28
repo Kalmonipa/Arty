@@ -6,8 +6,8 @@ jest.mock('../../src/api_calls/Tasks', () => ({
 }));
 
 import { actionCancelTask } from '../../src/api_calls/Tasks.js';
-import { Objective } from '../../src/core/Objective.js';
-import { ApiError } from '../../src/core/Error.js';
+import { Objective } from '../../src/core/objective.js';
+import { ApiError } from '../../src/core/error.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

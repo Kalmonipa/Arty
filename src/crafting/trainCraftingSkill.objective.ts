@@ -3,8 +3,8 @@ import { CraftSkill, GetAllItemsItemsGetParams } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
 import { BankCache } from '../bank/bank.cache.js';
-import { ApiError } from '../core/Error.js';
-import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/error.js';
+import { Objective } from '../core/objective.js';
 import { calculateBestCraftingItem } from './crafting.utils.js';
 import {
   Alchemy,

@@ -6,7 +6,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   getWishlistRequestsForJob: jest.fn(async () => []),
 }));
 
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 import { RaidLeaderObjective } from '../../src/fightRaids/raidLeader.objective.js';
 import { RaidParticipantObjective } from '../../src/fightRaids/raidParticipant.objective.js';
 import { FightBossLeaderObjective } from '../../src/fightBosses/bossFightLeader.objective.js';

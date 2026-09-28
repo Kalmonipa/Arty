@@ -1,7 +1,6 @@
 import { MapSchema } from '../../types/types.js';
 import { logger } from '../../utils.js';
-import { NavigationGraph } from './graph.js';
-import { ZoneId } from './zones.js';
+import { NavigationGraph, ZoneId } from './navigation.types.js';
 
 const manhattan = (
   a: { x: number; y: number },

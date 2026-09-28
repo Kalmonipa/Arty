@@ -1,6 +1,6 @@
 import { logger, sleep } from '../utils.js';
 import { Character } from '../character/character.js';
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

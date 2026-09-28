@@ -2,8 +2,8 @@ import { actionDepositItems } from '../api_calls/Actions.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
-import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/error.js';
+import { Objective } from '../core/objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

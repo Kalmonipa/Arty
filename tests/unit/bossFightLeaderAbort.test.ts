@@ -34,7 +34,7 @@ jest.mock('../../src/evaluateGear/evaluateGear.objective.js', () => ({
 }));
 
 import { actionFight } from '../../src/api_calls/Actions.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import { simulateBossFight } from '../../src/fightBosses/bossfightPreRequisite.js';
 import {
   incrementBossFightCounter,

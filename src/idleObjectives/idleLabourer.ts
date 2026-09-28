@@ -7,8 +7,8 @@ import { Role } from '../types/CharacterData.js';
 import { Skill, StaticDataPageResourceSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
-import { Objective } from '../core/Objective.js';
+import { ApiError } from '../core/error.js';
+import { Objective } from '../core/objective.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,

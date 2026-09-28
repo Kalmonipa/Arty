@@ -13,7 +13,7 @@ import { FightBossLeaderObjective } from '../../src/fightBosses/bossFightLeader.
 import { FightBossParticipantObjective } from '../../src/fightBosses/bossFightParticipant.objective.js';
 import { RaidLeaderObjective } from '../../src/fightRaids/raidLeader.objective.js';
 import { RaidParticipantObjective } from '../../src/fightRaids/raidParticipant.objective.js';
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 describe('job serialization round trip', () => {

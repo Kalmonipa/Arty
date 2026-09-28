@@ -1,6 +1,6 @@
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { Character } from '../character/character.js';
-import { ApiError } from '../core/Error.js';
+import { ApiError } from '../core/error.js';
 import { TradeObjective } from '../trade/trade.objective.js';
 import { Role } from '../types/CharacterData.js';
 import { ItemSchema, ItemSlot, Skill } from '../types/types.js';
@@ -20,7 +20,7 @@ import { AcquisitionMethod } from '../wishlist/wishlist.types.js';
 import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.objective.js';
 import { MonsterTaskObjective } from '../tasks/monsterTask.objective.js';
 import { ItemTaskObjective } from '../tasks/itemTask.objective.js';
-import { Objective } from '../core/Objective.js';
+import { Objective } from '../core/objective.js';
 import { ObjectiveCompleted, ObjectiveResult } from '../types/ObjectiveData.js';
 import { MaxLevelDisparity } from '../constants.js';
 

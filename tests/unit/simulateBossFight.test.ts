@@ -21,7 +21,7 @@ import {
   ObjectiveCompleted,
   ObjectiveFailed,
 } from '../../src/types/ObjectiveData.js';
-import { ApiError } from '../../src/core/Error.js';
+import { ApiError } from '../../src/core/error.js';
 import {
   RaidLeaderRole,
   RaidRoster,

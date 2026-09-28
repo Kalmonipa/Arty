@@ -12,7 +12,7 @@ import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import { deleteWishlistRequestsForJob } from '../../src/wishlist/wishlist.utils.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { OnHoldJob } from '../../src/types/ObjectiveData.js';
-import { Objective } from '../../src/core/Objective.js';
+import { Objective } from '../../src/core/objective.js';
 import {
   ObjectiveCompleted,
   ObjectiveResult,
