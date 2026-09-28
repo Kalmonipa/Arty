@@ -7,7 +7,7 @@ import { GetCharacterData, logger } from './utils.js';
 import { ApiUrl, AppVersion } from './constants.js';
 import JobsRouter from './routes/Jobs.js';
 import CraftRouter from './routes/Craft.js';
-import EquipRouter from './routes/Equip.js';
+import EquipRouter from './equip/equip.routes.js';
 import FightRouter from './fights/fight.routes.js';
 import RecycleRouter from './routes/Recycle.js';
 import ItemsRouter from './routes/Items.js';

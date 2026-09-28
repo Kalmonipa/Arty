@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../character/character.js';
-import { EquipObjective } from '../core/EquipObjective.js';
+import { EquipObjective } from './equip.objective.js';
 
 export default function EquipRouter(char: Character) {
   const router = Router();

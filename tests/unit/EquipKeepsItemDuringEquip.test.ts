@@ -13,7 +13,7 @@ jest.mock('../../src/api_calls/Items.js', () => ({
 }));
 
 import { Character } from '../../src/character/character.js';
-import { EquipObjective } from '../../src/core/EquipObjective.js';
+import { EquipObjective } from '../../src/equip/equip.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 describe('EquipObjective holds its item off the spare-equipment sweep', () => {

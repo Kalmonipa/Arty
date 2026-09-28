@@ -2,8 +2,8 @@ import { actionEquipItem } from '../api_calls/Items.js';
 import { EquipSchema, ItemSlot } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from './Error.js';
-import { Objective } from './Objective.js';
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

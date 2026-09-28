@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { EquipObjective } from '../../src/core/EquipObjective.js';
+import { EquipObjective } from '../../src/equip/equip.objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

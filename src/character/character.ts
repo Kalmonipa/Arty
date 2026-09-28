@@ -77,8 +77,8 @@ import {
   ObjectiveCompleted,
 } from '../types/ObjectiveData.js';
 import { FightObjective } from '../fights/fight.objective.js';
-import { EquipObjective } from '../core/EquipObjective.js';
-import { UnequipObjective } from '../core/UnequipObjective.js';
+import { EquipObjective } from '../equip/equip.objective.js';
+import { UnequipObjective } from '../equip/unequip.objective.js';
 import { WithdrawObjective } from '../bank/withdraw.objective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import {
