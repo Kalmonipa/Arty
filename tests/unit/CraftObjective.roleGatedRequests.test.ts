@@ -10,7 +10,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
   getWishlistRequestsForJob: jest.fn(async () => []),
 }));
 
-import { CraftObjective } from '../../src/core/CraftObjective.js';
+import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import { ItemSchema, SimpleItemSchema } from '../../src/types/types.js';
 
 const ITEMS: Record<string, Partial<ItemSchema>> = {

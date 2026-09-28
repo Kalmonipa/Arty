@@ -6,7 +6,7 @@ jest.mock('../../src/api_calls/Items.js', () => ({
 }));
 
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { calculateBestCraftingItem } from '../../src/core/TrainCraftingSkillObjective.js';
+import { calculateBestCraftingItem } from '../../src/crafting/crafting.utils.js';
 import { BankCache } from '../../src/bank/bank.cache.js';
 import { Character } from '../../src/character/character.js';
 import { ItemSchema } from '../../src/types/types.js';

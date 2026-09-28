@@ -3,7 +3,7 @@ import { Character } from '../character/character.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import { isGatheringSkill } from '../utils.js';
 import { CraftSkill, Skill } from '../types/types.js';
-import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 
 export default function TrainSkillRouter(char: Character) {

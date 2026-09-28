@@ -12,7 +12,7 @@ jest.mock('../../src/events/events.cache.js', () => ({
   eventBlockedIngredients: jest.fn(async () => []),
 }));
 
-import { CraftObjective } from '../../src/core/CraftObjective.js';
+import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import { actionCraft } from '../../src/api_calls/Actions.js';
 import { ApiError } from '../../src/core/Error.js';
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';

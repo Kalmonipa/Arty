@@ -24,7 +24,7 @@ import { getItemInformation } from '../../src/api_calls/Items.js';
 import { actionCraft } from '../../src/api_calls/Actions.js';
 import { getOpenWishlistRequests } from '../../src/wishlist/wishlist.utils.js';
 import { clearEventContentCache } from '../../src/events/events.cache.js';
-import { CraftObjective } from '../../src/core/CraftObjective.js';
+import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import { GatherObjective } from '../../src/core/GatherObjective.js';
 import { IdentifyValidWishlistRequestsObjective } from '../../src/wishlist/identifyValidWishlistRequests.objective.js';
 import { Character } from '../../src/character/character.js';

@@ -8,7 +8,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
 
 import * as fs from 'node:fs/promises';
 import { Character } from '../../src/character/character.js';
-import { CraftObjective } from '../../src/core/CraftObjective.js';
+import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import { FightBossLeaderObjective } from '../../src/fightBosses/bossFightLeader.objective.js';
 import { FightBossParticipantObjective } from '../../src/fightBosses/bossFightParticipant.objective.js';
 import { RaidLeaderObjective } from '../../src/fightRaids/raidLeader.objective.js';

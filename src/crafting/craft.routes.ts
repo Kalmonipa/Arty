@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { CraftObjective } from '../core/CraftObjective.js';
+import { CraftObjective } from './craft.objective.js';
 import { Character } from '../character/character.js';
 import { CraftResponse } from '../types/CharacterData.js';
 

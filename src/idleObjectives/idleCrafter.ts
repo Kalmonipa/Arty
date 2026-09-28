@@ -26,7 +26,7 @@ import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
-import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
 import {
   checkWithinLevelRange,

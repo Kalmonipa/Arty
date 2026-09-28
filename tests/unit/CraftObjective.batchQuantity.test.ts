@@ -1,4 +1,4 @@
-import { CraftObjective } from '../../src/core/CraftObjective.js';
+import { CraftObjective } from '../../src/crafting/craft.objective.js';
 
 describe('CraftObjective.batchQuantity', () => {
   it('returns the full batch size while plenty remains', () => {

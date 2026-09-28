@@ -8,7 +8,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
 }));
 
 import { Character } from '../../src/character/character.js';
-import { CraftObjective } from '../../src/core/CraftObjective.js';
+import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import { deleteWishlistRequestsForJob } from '../../src/wishlist/wishlist.utils.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { OnHoldJob } from '../../src/types/ObjectiveData.js';

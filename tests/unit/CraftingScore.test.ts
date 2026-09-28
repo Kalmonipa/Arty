@@ -22,7 +22,7 @@ import {
   GOLD_PER_ACTION,
   TASK_REWARD_ACTIONS,
   UNATTAINABLE,
-} from '../../src/core/TrainCraftingSkillObjective.js';
+} from '../../src/crafting/crafting.utils.js';
 import { BankCache } from '../../src/bank/bank.cache.js';
 import { Character } from '../../src/character/character.js';
 import {

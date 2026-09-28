@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { CraftObjective } from '../../src/core/CraftObjective.js';
+import { CraftObjective } from '../../src/crafting/craft.objective.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

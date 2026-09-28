@@ -41,7 +41,7 @@ import {
 } from '../utils.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { CraftObjective } from '../core/CraftObjective.js';
+import { CraftObjective } from '../crafting/craft.objective.js';
 import { FightBossParticipantObjective } from '../fightBosses/bossFightParticipant.objective.js';
 import { FightBossLeaderObjective } from '../fightBosses/bossFightLeader.objective.js';
 import { RaidLeaderObjective } from '../fightRaids/raidLeader.objective.js';
@@ -100,7 +100,7 @@ import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
 import { FightSimulator } from '../fights/fight.simulator.js';
 import { IdleObjective } from '../idleObjectives/idleObjective.js';
-import { TrainCraftingSkillObjective } from '../core/TrainCraftingSkillObjective.js';
+import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';
 import {
   claimWishlistRequest,
   deleteWishlistRequestsForJob,
@@ -108,7 +108,7 @@ import {
   reclaimExecutingWishlistRequests,
 } from '../wishlist/wishlist.utils.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
-import { RecycleObjective } from '../core/RecycleObjective.js';
+import { RecycleObjective } from '../crafting/recycle.objective.js';
 import { ExpandBankObjective } from '../bank/expandBank.objective.js';
 import { getActiveEvents } from '../events/events.apiCalls.js';
 import { EventObjective } from '../events/events.objective.js';

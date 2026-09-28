@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { TrainCraftingSkillObjective } from '../../src/core/TrainCraftingSkillObjective.js';
+import { TrainCraftingSkillObjective } from '../../src/crafting/trainCraftingSkill.objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
