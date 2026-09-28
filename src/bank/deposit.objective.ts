@@ -2,8 +2,8 @@ import { actionDepositItems } from '../api_calls/Actions.js';
 import { getMaps } from '../api_calls/Maps.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from './Error.js';
-import { Objective } from './Objective.js';
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
@@ -17,7 +17,7 @@ import {
   SimpleItemSchema,
 } from '../types/types.js';
 import { actionDepositGold } from '../api_calls/Bank.js';
-import { ExpandBankObjective } from './BankExpansion.js';
+import { ExpandBankObjective } from './expandBank.objective.js';
 
 export class DepositObjective extends Objective {
   target: ObjectiveTargets;

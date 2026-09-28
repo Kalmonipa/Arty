@@ -12,8 +12,8 @@ import {
 } from '../types/types.js';
 import { getCraftableItems, logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from './Error.js';
-import { Objective } from './Objective.js';
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
 import {
   Gearcrafting,
   Jewelrycrafting,
@@ -27,7 +27,7 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
-import { BankCache } from './BankCache.js';
+import { BankCache } from './bank.cache.js';
 
 export class TidyBankObjective extends Objective {
   //ToDo: get the list of stuff via API

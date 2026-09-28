@@ -15,7 +15,7 @@ import {
   clearBankQuantityCache,
   readCachedBankGold,
   readCachedBankQuantity,
-} from '../../src/core/bankQuantityCache.js';
+} from '../../src/bank/bankQuantity.cache.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 function okResponse(): Response {

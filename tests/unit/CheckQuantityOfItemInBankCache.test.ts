@@ -8,7 +8,7 @@ jest.mock('../../src/api_calls/Bank.js', () => ({
 
 import { getBankItems } from '../../src/api_calls/Bank.js';
 import { Character } from '../../src/character/character.js';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 
 describe('Character.checkQuantityOfItemInBank with a BankCache', () => {

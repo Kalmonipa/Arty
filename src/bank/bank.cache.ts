@@ -3,7 +3,7 @@ import type { SimpleItemSchema } from '../types/types.js';
 import {
   cacheBankSnapshot,
   readCachedBankSnapshot,
-} from './bankQuantityCache.js';
+} from './bankQuantity.cache.js';
 
 /**
  * @description A snapshot of the bank's item quantities, built once and read

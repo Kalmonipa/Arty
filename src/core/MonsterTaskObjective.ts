@@ -1,6 +1,6 @@
 import { estimateFightCooldown, logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { DepositObjective } from './DepositObjective.js';
+import { DepositObjective } from '../bank/deposit.objective.js';
 import { FightSimulator } from '../fights/fight.simulator.js';
 import { Objective } from './Objective.js';
 import {

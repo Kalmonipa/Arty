@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { DepositObjective } from '../../src/core/DepositObjective.js';
+import { DepositObjective } from '../../src/bank/deposit.objective.js';
 import {
   ObjectiveCompleted,
   ObjectiveResult,

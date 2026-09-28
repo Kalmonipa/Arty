@@ -13,11 +13,11 @@ import {
   actionWithdrawGold,
   purchaseBankExpansion,
 } from '../../src/api_calls/Bank.js';
-import { ExpandBankObjective } from '../../src/core/BankExpansion.js';
+import { ExpandBankObjective } from '../../src/bank/expandBank.objective.js';
 import {
   clearBankSlotCache,
   readCachedBankSlotsUsed,
-} from '../../src/core/bankQuantityCache.js';
+} from '../../src/bank/bankQuantity.cache.js';
 import { ApiError } from '../../src/core/Error.js';
 
 const mockedItems = getBankItems as jest.MockedFunction<typeof getBankItems>;

@@ -1,4 +1,4 @@
-import { BankCache } from '../core/BankCache.js';
+import { BankCache } from '../bank/bank.cache.js';
 import { EvaluateGearParams } from '../evaluateGear/evaluateGear.types.js';
 import { MapSchema } from '../types/types.js';
 

@@ -15,7 +15,7 @@ import {
 } from '../types/types.js';
 import { logger } from '../utils.js';
 import { ApiUrl, CharName } from '../constants.js';
-import { invalidateBankQuantities } from '../core/bankQuantityCache.js';
+import { invalidateBankQuantities } from '../bank/bankQuantity.cache.js';
 import {
   cacheFightSimulation,
   fightSimulationKey,

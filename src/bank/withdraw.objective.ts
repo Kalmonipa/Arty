@@ -8,9 +8,9 @@ import {
 } from '../types/ObjectiveData.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { invalidateBankQuantities } from './bankQuantityCache.js';
-import { ApiError } from './Error.js';
-import { Objective } from './Objective.js';
+import { invalidateBankQuantities } from './bankQuantity.cache.js';
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
 
 export class WithdrawObjective extends Objective {
   target: ObjectiveTargets;

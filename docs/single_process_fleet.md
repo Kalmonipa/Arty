@@ -133,7 +133,7 @@ deliberate thought rather than being allowed to happen by accident.
 (`character.ts:415-445`) builds eleven item maps plus monster and resource data;
 for characters two through five that becomes nearly free.
 
-**Good, with a caveat** — `src/core/bankQuantityCache.ts`. The bank is
+**Good, with a caveat** — `src/bank/bankQuantity.cache.ts`. The bank is
 account-wide, so one shared memo across five characters is not just safe, it is
 _more correct_ than today: one character's deposit currently leaves the other
 four containers holding stale numbers for the full TTL, and in one process that

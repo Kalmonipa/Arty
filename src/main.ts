@@ -12,7 +12,7 @@ import FightRouter from './fights/fight.routes.js';
 import RecycleRouter from './routes/Recycle.js';
 import ItemsRouter from './routes/Items.js';
 import TradeRouter from './routes/Trade.js';
-import BankRouter from './routes/Bank.js';
+import BankRouter from './bank/bank.routes.js';
 import CharacterRouter from './character/character.routes.js';
 import { CharacterSchema } from './types/types.js';
 import { CharName } from './constants.js';

@@ -1,5 +1,5 @@
 import { Character } from '../../src/character/character.js';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { ItemSchema } from '../../src/types/types.js';
 import {
   BossFightPotionReserve,

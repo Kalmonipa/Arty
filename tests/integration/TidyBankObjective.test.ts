@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { TidyBankObjective } from '../../src/core/TidyBankObjective.js';
+import { TidyBankObjective } from '../../src/bank/tidyBank.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { CraftSkill, ItemSchema } from '../../src/types/types.js';
 

@@ -4,12 +4,12 @@ jest.mock('../../src/api_calls/Monsters', () => ({
   getMonsterInformation: jest.fn(),
 }));
 
-jest.mock('../../src/core/BankCache', () => ({
+jest.mock('../../src/bank/bank.cache', () => ({
   BankCache: { create: jest.fn() },
 }));
 
 import { getMonsterInformation } from '../../src/api_calls/Monsters.js';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { simulateSoloFight } from '../../src/fights/soloFightSim.js';
 import { Character } from '../../src/character/character.js';
 import { ApiError } from '../../src/core/Error.js';

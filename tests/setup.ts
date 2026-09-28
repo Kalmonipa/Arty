@@ -38,7 +38,7 @@ jest.mock('node:fs/promises', () => ({
 // read from one test silently satisfies the next one's expected API call
 beforeEach(async () => {
   const { clearBankQuantityCache, clearBankSnapshot } = await import(
-    '../src/core/bankQuantityCache.js'
+    '../src/bank/bankQuantity.cache.js'
   );
   clearBankQuantityCache();
   clearBankSnapshot();

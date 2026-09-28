@@ -15,7 +15,7 @@ import { getResourceNodesDropping } from '../api_calls/Resources.js';
 import { getAllNpcItems } from '../api_calls/NPC.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { BankCache } from './BankCache.js';
+import { BankCache } from '../bank/bank.cache.js';
 import { ApiError } from './Error.js';
 import { Objective } from './Objective.js';
 import {

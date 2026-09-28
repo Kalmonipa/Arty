@@ -8,12 +8,12 @@ jest.mock('../../src/api_calls/Bank.js', () => ({
 
 import { getBankItems } from '../../src/api_calls/Bank.js';
 import { Character } from '../../src/character/character.js';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { ApiError } from '../../src/core/Error.js';
 import {
   clearBankQuantityCache,
   invalidateBankQuantities,
-} from '../../src/core/bankQuantityCache.js';
+} from '../../src/bank/bankQuantity.cache.js';
 import { BankQuantityCacheTtlMs } from '../../src/constants.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 

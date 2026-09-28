@@ -14,7 +14,7 @@ import { ApiError } from '../../src/core/Error.js';
 import {
   cacheBankGold,
   clearBankGoldCache,
-} from '../../src/core/bankQuantityCache.js';
+} from '../../src/bank/bankQuantity.cache.js';
 import { BankQuantityCacheTtlMs } from '../../src/constants.js';
 import { ConditionOperator } from '../../src/types/types.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';

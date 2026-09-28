@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { EvaluateGearObjective } from '../../src/evaluateGear/evaluateGear.objective.js';
 import { Character } from '../../src/character/character.js';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { CharacterSchema, ItemSchema } from '../../src/types/types.js';
 import {
   BossFightPotionReserve,

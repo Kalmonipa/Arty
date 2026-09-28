@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../character/character.js';
-import { DepositObjective } from '../core/DepositObjective.js';
+import { WithdrawObjective } from './withdraw.objective.js';
 
-export default function DepositRouter(char: Character) {
+export default function WithdrawRouter(char: Character) {
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {
@@ -25,12 +25,12 @@ export default function DepositRouter(char: Character) {
         quantity: quantity,
       };
 
-      const job = new DepositObjective(char, target);
+      const job = new WithdrawObjective(char, target);
 
       await char.appendJob(job);
 
       return res.status(201).json({
-        message: `Deposit ${quantity} ${itemCode} job added to queue.`,
+        message: `Withdraw ${quantity} ${itemCode} job added to queue.`,
         character: char.data.name,
 
         job: {

@@ -17,7 +17,7 @@ jest.mock('../../src/api_calls/Monsters', () => ({
 
 // Import the mocked functions
 import { getAllMonsterInformation } from '../../src/api_calls/Monsters.js';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { ProposeLoadoutOptions } from '../../src/character/character.types.js';
 
 // Simple mock character

@@ -20,7 +20,7 @@ import {
   UtilityEffects,
   WeaponFlavours,
 } from '../../src/types/ItemData.js';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { Character } from '../../src/character/character.js';
 
 // Mock the API modules

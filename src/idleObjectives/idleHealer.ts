@@ -43,7 +43,7 @@ import {
   fishFoodsForCharacter,
 } from './idle.utils.js';
 import { getAllResourceInformation } from '../api_calls/Resources.js';
-import { BankCache } from '../core/BankCache.js';
+import { BankCache } from '../bank/bank.cache.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,

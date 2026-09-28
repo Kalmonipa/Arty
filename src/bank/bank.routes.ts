@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../character/character.js';
-import { DepositObjective } from '../core/DepositObjective.js';
-import { WithdrawObjective } from '../core/WithdrawObjective.js';
-import { ExpandBankObjective } from '../core/BankExpansion.js';
+import { DepositObjective } from './deposit.objective.js';
+import { WithdrawObjective } from './withdraw.objective.js';
+import { ExpandBankObjective } from './expandBank.objective.js';
 
 export default function BankRouter(char: Character) {
   const router = Router();

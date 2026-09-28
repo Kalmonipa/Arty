@@ -1,6 +1,6 @@
 import { getMonsterInformation } from '../api_calls/Monsters.js';
 import { Character } from '../character/character.js';
-import { BankCache } from '../core/BankCache.js';
+import { BankCache } from '../bank/bank.cache.js';
 import { ApiError } from '../core/Error.js';
 import { Antidote, Restore } from '../gameDataConstants.js';
 import {

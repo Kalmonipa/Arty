@@ -12,7 +12,7 @@ import { apiRequest } from './request.js';
 import {
   cacheBankGold,
   clearBankGoldCache,
-} from '../core/bankQuantityCache.js';
+} from '../bank/bankQuantity.cache.js';
 
 /**
  * @description Fetch all items in your bank.

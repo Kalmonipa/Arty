@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { BankCache } from '../../src/core/BankCache.js';
+import { BankCache } from '../../src/bank/bank.cache.js';
 import { Character } from '../../src/character/character.js';
 import { SimpleItemSchema } from '../../src/types/types.js';
 

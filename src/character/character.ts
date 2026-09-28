@@ -53,15 +53,15 @@ import {
 } from '../fightRaids/raid.utils.js';
 import { loadRaidSchedules } from '../api_calls/Raids.js';
 import { getBossFightTarget } from '../fightBosses/bossFight.utils.js';
-import { DepositObjective } from '../core/DepositObjective.js';
+import { DepositObjective } from '../bank/deposit.objective.js';
 import { ApiError, TRANSPORT_ERROR_CODE } from '../core/Error.js';
-import { BankCache } from '../core/BankCache.js';
+import { BankCache } from '../bank/bank.cache.js';
 import {
   cacheBankGold,
   cacheBankQuantity,
   readCachedBankGold,
   readCachedBankQuantity,
-} from '../core/bankQuantityCache.js';
+} from '../bank/bankQuantity.cache.js';
 import { GatherObjective } from '../core/GatherObjective.js';
 import { Objective } from '../core/Objective.js';
 import {
@@ -79,7 +79,7 @@ import {
 import { FightObjective } from '../fights/fight.objective.js';
 import { EquipObjective } from '../core/EquipObjective.js';
 import { UnequipObjective } from '../core/UnequipObjective.js';
-import { WithdrawObjective } from '../core/WithdrawObjective.js';
+import { WithdrawObjective } from '../bank/withdraw.objective.js';
 import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import {
   actionDepositGold,
@@ -94,7 +94,7 @@ import {
   ConsumableEffects,
 } from '../types/ItemData.js';
 import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
-import { TidyBankObjective } from '../core/TidyBankObjective.js';
+import { TidyBankObjective } from '../bank/tidyBank.objective.js';
 import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';
 import { TradeType } from '../types/NPCData.js';
@@ -109,7 +109,7 @@ import {
 } from '../wishlist/wishlist.utils.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { RecycleObjective } from '../core/RecycleObjective.js';
-import { ExpandBankObjective } from '../core/BankExpansion.js';
+import { ExpandBankObjective } from '../bank/expandBank.objective.js';
 import { getActiveEvents } from '../events/events.apiCalls.js';
 import { EventObjective } from '../events/events.objective.js';
 import {
