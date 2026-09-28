@@ -107,7 +107,7 @@ import {
   getWishlistRequestsForJob,
   reclaimExecutingWishlistRequests,
 } from '../wishlist/wishlist.utils.js';
-import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { TrainCombatObjective } from '../fights/trainCombat.objective.js';
 import { RecycleObjective } from '../crafting/recycle.objective.js';
 import { ExpandBankObjective } from '../bank/expandBank.objective.js';
 import { getActiveEvents } from '../events/events.apiCalls.js';

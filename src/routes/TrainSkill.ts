@@ -4,7 +4,7 @@ import { TrainGatheringSkillObjective } from '../gathering/trainGatheringSkill.o
 import { isGatheringSkill } from '../utils.js';
 import { CraftSkill, Skill } from '../types/types.js';
 import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';
-import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { TrainCombatObjective } from '../fights/trainCombat.objective.js';
 
 export default function TrainSkillRouter(char: Character) {
   const router = Router();

@@ -20,7 +20,7 @@ import { Character } from '../character/character.js';
 import { ApiError } from '../core/Error.js';
 import { Objective } from '../core/Objective.js';
 import { selectResourceNode } from './gathering.utils.js';
-import { selectMobsForDrop } from '../core/monsterSelection.js';
+import { selectMobsForDrop } from '../fights/fight.utils.js';
 import { isEventOnlyDrop } from '../events/events.cache.js';
 import { Sap } from '../gameDataConstants.js';
 

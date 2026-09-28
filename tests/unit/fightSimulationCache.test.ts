@@ -4,7 +4,7 @@ import {
   fightSimulationKey,
   readCachedFightSimulation,
   FIGHT_SIMULATION_CACHE_LIMIT,
-} from '../../src/core/fightSimulationCache.js';
+} from '../../src/fights/fightSimulation.cache.js';
 import {
   CombatSimulationResponseSchema,
   FakeCharacterSchema,

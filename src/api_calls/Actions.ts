@@ -20,7 +20,7 @@ import {
   cacheFightSimulation,
   fightSimulationKey,
   readCachedFightSimulation,
-} from '../core/fightSimulationCache.js';
+} from '../fights/fightSimulation.cache.js';
 import { fightSimulationCacheCounter } from '../metrics.js';
 import { apiRequest } from './request.js';
 

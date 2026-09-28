@@ -1,20 +1,16 @@
 import { getAllMonsterInformation } from '../api_calls/Monsters.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from './Error.js';
+import { ApiError } from '../core/Error.js';
 import { BankCache } from '../bank/bank.cache.js';
-import { Objective } from './Objective.js';
+import { Objective } from '../core/Objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
   ObjectiveFailed,
   ObjectiveResult,
 } from '../types/ObjectiveData.js';
-
-/** No mob in range could be beaten, as opposed to a mob being beaten and the fight going badly */
-const NoWinnableMob = 'no_winnable_mob';
-
-type TrainingRun = ObjectiveResult | typeof NoWinnableMob;
+import { NoWinnableMob, TrainingRun } from './fight.types.js';
 
 /**
  * @description Finds a suitable mob to fight to level up the characters combat level until the desired level

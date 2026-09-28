@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 
 import * as fs from 'node:fs/promises';
 import { clearEventContentCache } from '../../src/events/events.cache.js';
-import { selectMobsForDrop } from '../../src/core/monsterSelection.js';
+import { selectMobsForDrop } from '../../src/fights/fight.utils.js';
 import { Character } from '../../src/character/character.js';
 import {
   EventSchema,

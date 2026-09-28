@@ -32,7 +32,7 @@ import { ApiError } from '../core/Error.js';
 import { ItemTaskObjective } from '../tasks/itemTask.objective.js';
 import { MonsterTaskObjective } from '../tasks/monsterTask.objective.js';
 import { Objective } from '../core/Objective.js';
-import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
+import { TrainCombatObjective } from '../fights/trainCombat.objective.js';
 import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';
 import { TrainGatheringSkillObjective } from '../gathering/trainGatheringSkill.objective.js';
 import {

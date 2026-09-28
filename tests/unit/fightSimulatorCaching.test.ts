@@ -11,7 +11,7 @@ jest.mock('../../src/utils.js', () => {
 });
 
 import { fightSimulator } from '../../src/api_calls/Actions.js';
-import { clearFightSimulationCache } from '../../src/core/fightSimulationCache.js';
+import { clearFightSimulationCache } from '../../src/fights/fightSimulation.cache.js';
 import { fightSimulationCacheCounter, register } from '../../src/metrics.js';
 import { ApiError } from '../../src/core/Error.js';
 import { FakeCharacterSchema } from '../../src/types/types.js';

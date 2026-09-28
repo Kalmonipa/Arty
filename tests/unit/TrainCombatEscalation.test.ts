@@ -6,7 +6,7 @@ jest.mock('../../src/api_calls/Monsters.js', () => ({
   getAllMonsterInformation: mockGetAllMonsterInformation,
 }));
 
-import { TrainCombatObjective } from '../../src/core/TrainCombatObjective.js';
+import { TrainCombatObjective } from '../../src/fights/trainCombat.objective.js';
 import { BankCache } from '../../src/bank/bank.cache.js';
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import { Character } from '../../src/character/character.js';

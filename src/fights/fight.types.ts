@@ -15,3 +15,8 @@ export type SoloFightSimResult = ObjectiveResult & {
   /** The loadout behind the best run, potions included */
   loadout?: FakeCharacterSchema;
 };
+
+/** No mob in range could be beaten, as opposed to a mob being beaten and the fight going badly */
+export const NoWinnableMob = 'no_winnable_mob';
+
+export type TrainingRun = ObjectiveResult | typeof NoWinnableMob;

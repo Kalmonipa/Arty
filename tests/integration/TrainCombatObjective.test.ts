@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { TrainCombatObjective } from '../../src/core/TrainCombatObjective.js';
+import { TrainCombatObjective } from '../../src/fights/trainCombat.objective.js';
 import {
   ObjectiveCancelled,
   ObjectiveCompleted,
