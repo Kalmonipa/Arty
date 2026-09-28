@@ -10,9 +10,9 @@ import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
 import { GatherObjective } from '../gathering/gather.objective.js';
 import { getAllMaps } from '../api_calls/Maps.js';
-import { ItemTaskObjective } from './ItemTaskObjective.js';
+import { ItemTaskObjective } from '../tasks/itemTask.objective.js';
 import { Objective } from './Objective.js';
-import { MonsterTaskObjective } from './MonsterTaskObjective.js';
+import { MonsterTaskObjective } from '../tasks/monsterTask.objective.js';
 import { TasksCoin } from '../gameDataConstants.js';
 import {
   ObjectiveCancelled,

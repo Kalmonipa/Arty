@@ -5,7 +5,7 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { ItemTaskObjective } from '../../src/core/ItemTaskObjective.js';
+import { ItemTaskObjective } from '../../src/tasks/itemTask.objective.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
 import { InventorySlot } from '../../src/types/CharacterData.js';
 import { ApiError } from '../../src/core/Error.js';

@@ -12,7 +12,7 @@ jest.mock('../../src/api_calls/Tasks', () => ({
 }));
 
 import { getItemInformation } from '../../src/api_calls/Items.js';
-import { ItemTaskObjective } from '../../src/core/ItemTaskObjective.js';
+import { ItemTaskObjective } from '../../src/tasks/itemTask.objective.js';
 import { Character } from '../../src/character/character.js';
 import {
   ObjectiveCompleted,

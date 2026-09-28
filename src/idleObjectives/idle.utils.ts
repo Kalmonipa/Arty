@@ -18,8 +18,8 @@ import {
 } from '../wishlist/wishlist.utils.js';
 import { AcquisitionMethod } from '../wishlist/wishlist.types.js';
 import { IdentifyValidWishlistRequestsObjective } from '../wishlist/identifyValidWishlistRequests.objective.js';
-import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
-import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
+import { MonsterTaskObjective } from '../tasks/monsterTask.objective.js';
+import { ItemTaskObjective } from '../tasks/itemTask.objective.js';
 import { Objective } from '../core/Objective.js';
 import { ObjectiveCompleted, ObjectiveResult } from '../types/ObjectiveData.js';
 import { MaxLevelDisparity } from '../constants.js';

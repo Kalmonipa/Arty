@@ -1,7 +1,7 @@
 import { Character } from './character/character.js';
 import express from 'express';
 import GatherRouter from './gathering/gather.routes.js';
-import TaskRouter from './routes/Task.js';
+import TaskRouter from './tasks/task.routes.js';
 import TrainSkillRouter from './routes/TrainSkill.js';
 import { GetCharacterData, logger } from './utils.js';
 import { ApiUrl, AppVersion } from './constants.js';

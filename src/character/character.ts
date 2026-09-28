@@ -80,13 +80,13 @@ import { FightObjective } from '../fights/fight.objective.js';
 import { EquipObjective } from '../equip/equip.objective.js';
 import { UnequipObjective } from '../equip/unequip.objective.js';
 import { WithdrawObjective } from '../bank/withdraw.objective.js';
-import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
+import { MonsterTaskObjective } from '../tasks/monsterTask.objective.js';
 import {
   actionDepositGold,
   getBankDetails,
   getBankItems,
 } from '../api_calls/Bank.js';
-import { ItemTaskObjective } from '../core/ItemTaskObjective.js';
+import { ItemTaskObjective } from '../tasks/itemTask.objective.js';
 import {
   UtilityEffects,
   WeaponFlavours,

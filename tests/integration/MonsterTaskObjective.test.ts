@@ -5,7 +5,7 @@ import {
   ObjectiveFailed,
   ObjectiveResult,
 } from '../../src/types/ObjectiveData.js';
-import { MonsterTaskObjective } from '../../src/core/MonsterTaskObjective.js';
+import { MonsterTaskObjective } from '../../src/tasks/monsterTask.objective.js';
 import { FightObjectiveParams } from '../../src/character/character.types.js';
 import { FightsPerYieldCheck } from '../../src/constants.js';
 import { mockCharacterData } from '../mocks/apiMocks.js';
