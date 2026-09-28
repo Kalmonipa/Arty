@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { Character } from '../character/character.js';
-import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import { TrainGatheringSkillObjective } from '../gathering/trainGatheringSkill.objective.js';
 import { isGatheringSkill } from '../utils.js';
 import { CraftSkill, Skill } from '../types/types.js';
 import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';

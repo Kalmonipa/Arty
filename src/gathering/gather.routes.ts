@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { GatherObjective } from '../core/GatherObjective.js';
+import { GatherObjective } from './gather.objective.js';
 import { Character } from '../character/character.js';
 
 export default function GatherRouter(char: Character) {

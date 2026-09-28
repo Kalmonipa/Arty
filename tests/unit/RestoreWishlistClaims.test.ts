@@ -9,7 +9,7 @@ jest.mock('../../src/wishlist/wishlist.utils.js', () => ({
 
 import { Character } from '../../src/character/character.js';
 import { FulfillWishlistRequestObjective } from '../../src/wishlist/fulfillWishlistRequest.objective.js';
-import { GatherObjective } from '../../src/core/GatherObjective.js';
+import { GatherObjective } from '../../src/gathering/gather.objective.js';
 import {
   claimWishlistRequest,
   reclaimExecutingWishlistRequests,

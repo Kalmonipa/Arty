@@ -62,7 +62,7 @@ import {
   readCachedBankGold,
   readCachedBankQuantity,
 } from '../bank/bankQuantity.cache.js';
-import { GatherObjective } from '../core/GatherObjective.js';
+import { GatherObjective } from '../gathering/gather.objective.js';
 import { Objective } from '../core/Objective.js';
 import {
   ObjectiveTargets,
@@ -93,7 +93,7 @@ import {
   GearEffects,
   ConsumableEffects,
 } from '../types/ItemData.js';
-import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import { TrainGatheringSkillObjective } from '../gathering/trainGatheringSkill.objective.js';
 import { TidyBankObjective } from '../bank/tidyBank.objective.js';
 import { EvaluateGearObjective } from '../evaluateGear/evaluateGear.objective.js';
 import { TradeObjective } from '../core/TradeWithNPCObjective.js';

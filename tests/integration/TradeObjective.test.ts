@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { ObjectiveCompleted } from '../../src/types/ObjectiveData.js';
 import { TradeObjective } from '../../src/core/TradeWithNPCObjective.js';
-import { GatherObjective } from '../../src/core/GatherObjective.js';
+import { GatherObjective } from '../../src/gathering/gather.objective.js';
 import { getAllNpcItems, actionBuyItem } from '../../src/api_calls/NPC.js';
 import { getAllMaps } from '../../src/api_calls/Maps.js';
 

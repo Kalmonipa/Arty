@@ -34,7 +34,7 @@ import { MonsterTaskObjective } from '../core/MonsterTaskObjective.js';
 import { Objective } from '../core/Objective.js';
 import { TrainCombatObjective } from '../core/TrainCombatObjective.js';
 import { TrainCraftingSkillObjective } from '../crafting/trainCraftingSkill.objective.js';
-import { TrainGatheringSkillObjective } from '../core/TrainGatheringSkillObjective.js';
+import { TrainGatheringSkillObjective } from '../gathering/trainGatheringSkill.objective.js';
 import {
   checkWithinLevelRange,
   checkOnHoldQueue,

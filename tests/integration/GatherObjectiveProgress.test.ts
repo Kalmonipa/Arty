@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { GatherObjective } from '../../src/core/GatherObjective.js';
+import { GatherObjective } from '../../src/gathering/gather.objective.js';
 import {
   ObjectiveCompleted,
   ObjectiveFailed,

@@ -8,7 +8,7 @@ import { NPCItemSchema, SimpleItemSchema } from '../types/types.js';
 import { logger } from '../utils.js';
 import { Character } from '../character/character.js';
 import { ApiError } from './Error.js';
-import { GatherObjective } from './GatherObjective.js';
+import { GatherObjective } from '../gathering/gather.objective.js';
 import { getAllMaps } from '../api_calls/Maps.js';
 import { ItemTaskObjective } from './ItemTaskObjective.js';
 import { Objective } from './Objective.js';

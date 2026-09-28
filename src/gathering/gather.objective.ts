@@ -17,10 +17,10 @@ import {
 } from '../types/types.js';
 import { isGatheringSkill, logger } from '../utils.js';
 import { Character } from '../character/character.js';
-import { ApiError } from './Error.js';
-import { Objective } from './Objective.js';
-import { selectResourceNode } from './resourceNodeSelection.js';
-import { selectMobsForDrop } from './monsterSelection.js';
+import { ApiError } from '../core/Error.js';
+import { Objective } from '../core/Objective.js';
+import { selectResourceNode } from './gathering.utils.js';
+import { selectMobsForDrop } from '../core/monsterSelection.js';
 import { isEventOnlyDrop } from '../events/events.cache.js';
 import { Sap } from '../gameDataConstants.js';
 

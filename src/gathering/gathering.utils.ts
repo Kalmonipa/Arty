@@ -1,18 +1,13 @@
 import type { Character } from '../character/character.js';
 import { Algae, Sap } from '../gameDataConstants.js';
 import { GatheringSkill, ResourceSchema } from '../types/types.js';
+import { ResourceNodeSelection } from './gathering.types.js';
 
 /**
  * Drops that every node yields at the same rate, so a higher level node buys
  * nothing but a longer cooldown
  */
 const CHEAPEST_NODE_DROPS = new Set([Algae, Sap]);
-
-export type ResourceNodeSelection = {
-  resource?: ResourceSchema;
-  skillNeeded?: GatheringSkill;
-  levelNeeded?: number;
-};
 
 /**
  * Every gathering tool is crafted at weaponcrafting, so gathering levels beyond what
